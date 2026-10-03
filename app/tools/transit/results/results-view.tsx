@@ -83,7 +83,7 @@ export function ResultsView({ origin, dest, mode }: { origin: string; dest: stri
     <div className="flex flex-col px-5 pb-6 pt-6">
       <div className="flex items-center gap-3">
         <Link
-          href="/tools/transit-dream"
+          href="/tools/transit"
           aria-label="返回首頁"
           className="grid size-8 shrink-0 place-items-center rounded-full bg-[#F3EFFC] text-[#6F5FD6]"
         >

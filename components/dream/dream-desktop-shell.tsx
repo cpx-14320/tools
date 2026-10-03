@@ -9,10 +9,10 @@ import { ICON_PATHS } from "./icon-paths";
 import { usePageAction } from "./page-action-context";
 
 const navItems = [
-  { href: "/tools/transit-dream", label: "首頁", icon: ICON_PATHS.navHome },
-  { href: "/tools/transit-dream/trips", label: "我的行程", icon: ICON_PATHS.navTrips },
-  { href: "/tools/transit-dream/favorites", label: "我的最愛", icon: ICON_PATHS.navFavorites },
-  { href: "/tools/transit-dream/more", label: "更多", icon: ICON_PATHS.navMore },
+  { href: "/tools/transit", label: "首頁", icon: ICON_PATHS.navHome },
+  { href: "/tools/transit/trips", label: "我的行程", icon: ICON_PATHS.navTrips },
+  { href: "/tools/transit/favorites", label: "我的最愛", icon: ICON_PATHS.navFavorites },
+  { href: "/tools/transit/more", label: "更多", icon: ICON_PATHS.navMore },
 ];
 
 export function DreamDesktopShell({ children }: { children: ReactNode }) {
@@ -46,7 +46,7 @@ export function DreamDesktopShell({ children }: { children: ReactNode }) {
           </p>
           <nav className="mt-5 flex flex-col gap-0.5">
             {navItems.map((item) => {
-              const active = item.href === "/tools/transit-dream" ? pathname === item.href : pathname.startsWith(item.href);
+              const active = item.href === "/tools/transit" ? pathname === item.href : pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.href}

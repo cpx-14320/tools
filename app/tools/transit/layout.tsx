@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { TransitShell } from "@/components/transit-shell";
+import { DreamShell } from "@/components/dream/dream-shell";
 
-export const metadata: Metadata = { title: "搭乘車查詢" };
+export const metadata: Metadata = { title: "夢幻紫彩火車旅行" };
 
-export default function TransitLayout({ children }: { children: ReactNode }) {
-  return <TransitShell>{children}</TransitShell>;
+export default function DreamLayout({ children }: { children: ReactNode }) {
+  return <DreamShell>{children}</DreamShell>;
 }

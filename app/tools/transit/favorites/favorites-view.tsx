@@ -117,7 +117,7 @@ export function FavoritesView() {
             </div>
             <button
               type="button"
-              onClick={() => router.push(`/tools/transit-dream/results?origin=${encodeURIComponent(r.origin)}&dest=${encodeURIComponent(r.dest)}`)}
+              onClick={() => router.push(`/tools/transit/results?origin=${encodeURIComponent(r.origin)}&dest=${encodeURIComponent(r.dest)}`)}
               className="shrink-0 rounded-full bg-[#F3EFFC] px-3 py-1.5 text-xs font-medium text-[#6F5FD6]"
             >
               搜尋班次 →

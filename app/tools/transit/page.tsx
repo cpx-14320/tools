@@ -1,5 +1,5 @@
-import { OverviewView } from "./overview-view";
+import { DreamHomeView } from "./home-view";
 
-export default function TransitOverviewPage() {
-  return <OverviewView />;
+export default function DreamHomePage() {
+  return <DreamHomeView />;
 }

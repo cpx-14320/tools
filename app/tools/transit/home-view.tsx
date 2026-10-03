@@ -10,7 +10,7 @@ import { usePageAction } from "@/components/dream/page-action-context";
 import { HomeSettingsModal, type HomeDefaults } from "@/components/dream/home-settings-modal";
 import { TimePickerModal } from "@/components/dream/time-picker-modal";
 
-const DEFAULTS_KEY = "cpx-tools:transit-dream:home-defaults";
+const DEFAULTS_KEY = "cpx-tools:transit:home-defaults";
 
 function loadDefaults(): HomeDefaults | null {
   try {
@@ -235,7 +235,7 @@ export function DreamHomeView() {
 
   function searchTrains() {
     router.push(
-      `/tools/transit-dream/results?origin=${encodeURIComponent(origin)}&dest=${encodeURIComponent(dest)}&mode=${mode}&date=${date}&time=${encodeURIComponent(time)}`,
+      `/tools/transit/results?origin=${encodeURIComponent(origin)}&dest=${encodeURIComponent(dest)}&mode=${mode}&date=${date}&time=${encodeURIComponent(time)}`,
     );
   }
 
