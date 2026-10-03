@@ -1,0 +1,721 @@
+<meta charset="utf-8">
+<title>cpx-tools</title>
+<style>
+  :root{
+    --bg:#F5F6F2;
+    --surface:#FFFFFF;
+    --surface-2:#ECEEE8;
+    --ink:#1C2320;
+    --muted:#5C675F;
+    --line:#DADFD5;
+    --accent:#2F6F62;
+    --accent-soft:#DEEAE5;
+    --gold:#95752A;
+    --future:#8B9088;
+    --future-soft:#ECECE7;
+    --font-display:'Fraunces',Georgia,'Noto Serif TC',serif;
+    --font-body:'IBM Plex Sans','Noto Sans TC',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono','Noto Sans Mono TC',ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161A;
+      --surface:#181E22;
+      --surface-2:#1F262A;
+      --ink:#E8ECE6;
+      --muted:#9BA69E;
+      --line:#2B3430;
+      --accent:#63B6A3;
+      --accent-soft:rgba(99,182,163,0.14);
+      --gold:#D3AD58;
+      --future:#6E7670;
+      --future-soft:rgba(110,118,112,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161A;
+    --surface:#181E22;
+    --surface-2:#1F262A;
+    --ink:#E8ECE6;
+    --muted:#9BA69E;
+    --line:#2B3430;
+    --accent:#63B6A3;
+    --accent-soft:rgba(99,182,163,0.14);
+    --gold:#D3AD58;
+    --future:#6E7670;
+    --future-soft:rgba(110,118,112,0.16);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:15px;
+    line-height:1.65;
+  }
+  a{color:var(--accent);}
+
+  .shell{
+    max-width:1180px;
+    margin:0 auto;
+    padding:48px 32px 96px;
+    display:grid;
+    grid-template-columns:220px minmax(0,780px);
+    gap:56px;
+    align-items:start;
+  }
+  @media (max-width:860px){
+    .shell{grid-template-columns:1fr; padding:28px 18px 64px; gap:28px;}
+    nav.toc{position:static !important;}
+  }
+
+  header.doc-head{
+    grid-column:1 / -1;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    padding-bottom:28px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:8px;
+  }
+  header.doc-head .eyebrow{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  h1{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:38px;
+    letter-spacing:-0.01em;
+    text-wrap:balance;
+    margin:0;
+  }
+  header.doc-head p{
+    max-width:62ch;
+    color:var(--muted);
+    margin:0;
+    font-size:15.5px;
+  }
+  .asof{
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--muted);
+  }
+
+  nav.toc{
+    position:sticky;
+    top:32px;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    font-size:13px;
+  }
+  nav.toc .toc-label{
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  nav.toc a{
+    color:var(--muted);
+    text-decoration:none;
+    padding:5px 0;
+    border-left:2px solid transparent;
+    padding-left:10px;
+  }
+  nav.toc a:hover{color:var(--ink); border-left-color:var(--line);}
+  nav.toc a.tool-link{padding-left:18px; font-size:12.5px;}
+
+  main{min-width:0; display:flex; flex-direction:column; gap:56px;}
+
+  section{scroll-margin-top:28px;}
+  section > .section-label{
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:0 0 6px;
+  }
+  h2{
+    font-family:var(--font-display);
+    font-size:26px;
+    font-weight:600;
+    margin:0 0 14px;
+    text-wrap:balance;
+  }
+  h3{
+    font-family:var(--font-body);
+    font-weight:600;
+    font-size:16.5px;
+    margin:28px 0 10px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+  }
+  h3:first-of-type{border-top:none; padding-top:0;}
+  h3 code{font-size:14.5px;}
+  p{margin:0 0 12px;}
+  section > p.lead{
+    font-size:16px;
+    color:var(--ink);
+    max-width:68ch;
+  }
+  ul,ol{margin:0 0 14px; padding-left:22px;}
+  li{margin-bottom:5px;}
+  li::marker{color:var(--muted);}
+
+  code,.mono{font-family:var(--font-mono); font-size:0.92em;}
+  code{
+    background:var(--surface-2);
+    padding:1.5px 5px;
+    border-radius:4px;
+  }
+
+  .table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px;}
+  table{
+    width:100%;
+    border-collapse:collapse;
+    background:var(--surface);
+    font-size:13.5px;
+  }
+  caption{
+    text-align:left;
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--muted);
+    padding:10px 14px 0;
+  }
+  th,td{
+    text-align:left;
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+    vertical-align:top;
+  }
+  thead th{
+    font-family:var(--font-mono);
+    font-weight:500;
+    font-size:11.5px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:var(--muted);
+    background:var(--surface-2);
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--surface-2);}
+
+  .status{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:.03em;
+    padding:2px 8px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .status.active{background:var(--accent-soft); color:var(--accent);}
+  .status.future{background:var(--future-soft); color:var(--future); border:1px dashed var(--future);}
+
+  .callout{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-left:3px solid var(--gold);
+    border-radius:8px;
+    padding:14px 18px;
+    margin:18px 0;
+  }
+  .callout .callout-label{
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin-bottom:6px;
+  }
+  .callout p:last-child{margin-bottom:0;}
+  .callout.decided{border-left-color:var(--accent);}
+  .callout.decided .callout-label{color:var(--accent);}
+
+  .tool-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:14px;
+    margin:18px 0 6px;
+  }
+  .tool-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px 18px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .tool-card.future{border-style:dashed;}
+  .tool-card .tool-name{font-weight:600; font-size:15px;}
+  .tool-card .tool-desc{color:var(--muted); font-size:13px;}
+
+  figure{margin:20px 0 8px;}
+  figure.diagram{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:18px 18px 6px;
+  }
+  figure.diagram svg{width:100%; height:auto; display:block; color:var(--ink);}
+  figcaption{
+    font-size:12.5px;
+    color:var(--muted);
+    margin-top:8px;
+    text-align:center;
+  }
+
+  footer.doc-foot{
+    grid-column:1 / -1;
+    border-top:1px solid var(--line);
+    margin-top:12px;
+    padding-top:18px;
+    font-size:12.5px;
+    color:var(--muted);
+  }
+
+  ::selection{background:var(--accent-soft); color:var(--ink);}
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<div class="shell">
+  <header class="doc-head">
+    <span class="eyebrow">內部參考 · 動工前先看這份</span>
+    <h1>cpx-tools 規劃文件</h1>
+    <p>一個共用登入的小工具整合包。登入一次，底下可以切換用各種小工具——記帳本是第一個，之後會陸續加進來（例如搭乘車查詢）。所有工具的規劃內容都集中記錄在這一頁，寫完規劃就先更新這裡，再開始動工。</p>
+    <span class="asof">最後更新 2026-10-02</span>
+  </header>
+
+  <nav class="toc">
+    <span class="toc-label">目錄</span>
+    <a href="#platform">平台架構</a>
+    <a href="#expenses">工具：記帳本</a>
+    <a class="tool-link" href="#expenses-model">資料模型</a>
+    <a class="tool-link" href="#expenses-pages">頁面與路由</a>
+    <a class="tool-link" href="#expenses-flow">頁面流程與功能邏輯</a>
+    <a class="tool-link" href="#expenses-perm">權限與可見性</a>
+    <a class="tool-link" href="#expenses-phases">開發順序</a>
+    <a class="tool-link" href="#expenses-open">待確認事項</a>
+    <a href="#transit">工具：搭乘車查詢</a>
+    <a class="tool-link" href="#transit-api">外部資料來源</a>
+    <a class="tool-link" href="#transit-model">資料模型</a>
+    <a class="tool-link" href="#transit-pages">頁面與路由</a>
+    <a class="tool-link" href="#transit-flow">頁面流程與功能邏輯</a>
+    <a class="tool-link" href="#transit-phases">開發順序</a>
+    <a class="tool-link" href="#transit-open">待確認事項</a>
+  </nav>
+
+  <main>
+
+    <section id="platform">
+      <p class="section-label">平台</p>
+      <h2>平台架構</h2>
+      <p class="lead">cpx-tools 是「一組共用帳號登入的小工具」：帳號系統（註冊／登入／session）整個平台只有一套，登入後在工具選單裡切換使用不同工具；每個工具自己的功能資料彼此獨立，只共用這一份帳號。</p>
+
+      <div class="callout decided">
+        <div class="callout-label">已確認：單一 Next.js 專案</div>
+        <p>整個平台是<strong>一個 Next.js 專案</strong>，裡面用路由切出每個工具（例如 <code>/tools/expenses/...</code>、<code>/tools/transit/...</code>），共用一份 <code>User</code>／session，不用處理跨專案登入。</p>
+        <p>待辦：目前 <code>cpx-tools/expenses</code> 是獨立 scaffold 出來的 Next.js 專案，要搬移／重新定位成平台本身（<code>cpx-tools/</code> 專案根目錄），記帳本變成裡面 <code>/tools/expenses</code> 下的一個路由群組——實際動工時再處理這個搬遷。</p>
+      </div>
+
+      <table style="margin-top:4px">
+        <caption>工具清單</caption>
+        <thead><tr><th>工具</th><th>狀態</th><th>說明</th></tr></thead>
+        <tbody>
+          <tr><td>記帳本（Expenses）</td><td><span class="status active">規劃中</span></td><td>計算每月薪水、記錄各類消費，可多人共用一個帳本</td></tr>
+          <tr><td>搭乘車查詢</td><td><span class="status future">規劃完成・待開發</span></td><td>串接 TDX 運輸資料流通服務查詢台鐵／公車／捷運／高鐵固定通勤班次，並做即時到站與誤點推播提醒</td></tr>
+        </tbody>
+      </table>
+
+      <figure class="diagram">
+        <svg viewBox="0 0 760 210" role="img" aria-label="登入後進入工具選單，可選擇已規劃的記帳本或尚未開發的搭乘車查詢">
+          <defs>
+            <marker id="pf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <polygon points="0,0 10,5 0,10" fill="currentColor"/>
+            </marker>
+          </defs>
+          <g font-family="IBM Plex Sans, sans-serif" font-size="13">
+            <g stroke="currentColor" stroke-width="1.25" fill="none">
+              <rect x="24" y="52" width="128" height="44" rx="8"/>
+              <rect x="300" y="52" width="150" height="44" rx="8"/>
+            </g>
+            <text x="88" y="78" text-anchor="middle">登入／註冊</text>
+            <text x="375" y="78" text-anchor="middle">工具選單（Hub）</text>
+
+            <path d="M152 74H300" stroke="currentColor" stroke-width="1.25" fill="none" marker-end="url(#pf-arrow)"/>
+            <path d="M375 96V118H230V150" stroke="currentColor" stroke-width="1.25" fill="none" marker-end="url(#pf-arrow)"/>
+            <path d="M375 96V118H560V150" stroke="currentColor" stroke-width="1.25" fill="none" marker-end="url(#pf-arrow)"/>
+
+            <g color="var(--accent)">
+              <rect x="140" y="150" width="180" height="48" rx="8" fill="var(--accent-soft)" stroke="currentColor" stroke-width="1.75"/>
+              <text x="230" y="170" text-anchor="middle" font-weight="600" fill="currentColor">記帳本</text>
+              <text x="230" y="186" text-anchor="middle" font-size="11" fill="currentColor">規劃中，見下方詳細規劃</text>
+            </g>
+
+            <g color="var(--future)">
+              <rect x="470" y="150" width="180" height="48" rx="8" fill="none" stroke="currentColor" stroke-width="1.25" stroke-dasharray="4 3"/>
+              <text x="560" y="170" text-anchor="middle" font-weight="600" fill="currentColor">搭乘車查詢</text>
+              <text x="560" y="186" text-anchor="middle" font-size="11" fill="currentColor">規劃完成，見下方詳細規劃</text>
+            </g>
+          </g>
+        </svg>
+        <figcaption>登入後進入共用的工具選單；記帳本正在規劃中，搭乘車查詢列在選單上但尚未開發。</figcaption>
+      </figure>
+    </section>
+
+    <section id="expenses">
+      <p class="section-label">工具 01</p>
+      <h2>記帳本（Expenses）</h2>
+      <p class="lead">多人共用的記帳本：計算每月薪水（多種明細可自訂）、記錄各類消費（分類可自訂）。以下規劃沿用既有的 MyMeal 技術棧——Next.js App Router、TypeScript、Tailwind、MongoDB + Mongoose、bcrypt + cookie session。</p>
+
+      <h3 id="expenses-model">資料模型</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Collection</th><th>欄位</th><th>說明</th></tr></thead>
+          <tbody>
+            <tr><td><code>User</code></td><td class="mono">account, passwordHash, name, createdAt</td><td>帳號制登入（平台共用一份，見上方平台架構）</td></tr>
+            <tr><td><code>Ledger</code></td><td class="mono">name, ownerId, inviteCode, members: [{userId, role, joinedAt}]</td><td>role 分 owner／member，owner 可移除成員、重新產生邀請碼</td></tr>
+            <tr><td><code>ExpenseCategory</code></td><td class="mono">ledgerId, name, icon/color, createdBy</td><td>帳本共用，任一成員新增其他成員都看得到</td></tr>
+            <tr><td><code>SalaryItemType</code></td><td class="mono">ledgerId, name, kind: "加項"|"扣項"</td><td>帳本共用，例如本薪／獎金（加項）、請假扣款／勞健保（扣項）</td></tr>
+            <tr><td><code>SalaryRecord</code></td><td class="mono">ledgerId, userId, yearMonth, items: [{typeId, amount}], note</td><td>淨額＝加項總和－扣項總和，即時計算，不另外存快取</td></tr>
+            <tr><td><code>Transaction</code></td><td class="mono">ledgerId, userId, categoryId, amount, date, note</td><td>純支出紀錄；薪水以外的收入目前不在範圍內</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="expenses-pages">頁面與路由規劃</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>路徑</th><th>功能</th></tr></thead>
+          <tbody>
+            <tr><td><code>/register</code> <code>/login</code></td><td>註冊登入</td></tr>
+            <tr><td><code>/ledgers</code></td><td>建立帳本／輸入邀請碼加入既有帳本</td></tr>
+            <tr><td><code>/dashboard</code></td><td>當月總覽：總收入、總支出、結餘、分類佔比</td></tr>
+            <tr><td><code>/transactions</code></td><td>消費紀錄列表＋新增／編輯／刪除，可依分類／日期篩選</td></tr>
+            <tr><td><code>/categories</code></td><td>管理消費分類</td></tr>
+            <tr><td><code>/salary</code></td><td>依月份列出薪資紀錄，新增／編輯（多筆明細加總）</td></tr>
+            <tr><td><code>/salary/types</code></td><td>管理薪資明細類型</td></tr>
+            <tr><td><code>/members</code></td><td>帳本成員列表、邀請碼顯示／重新產生、移除成員</td></tr>
+            <tr><td><code>/reports</code></td><td>月度／年度趨勢圖表、分類佔比、收支比較</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="expenses-flow">頁面流程與功能邏輯</h3>
+
+      <p><strong>登入分流</strong>——新帳號註冊後、或登入後，選了記帳本這個工具，依照所屬帳本數量導向不同頁面：</p>
+      <figure class="diagram">
+        <svg viewBox="0 0 760 300" role="img" aria-label="選擇記帳本後，依照使用者所屬帳本數量導向建立加入帳本、直接進入唯一帳本，或選擇帳本三種結果">
+          <defs>
+            <marker id="ef-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <polygon points="0,0 10,5 0,10" fill="currentColor"/>
+            </marker>
+          </defs>
+          <g font-family="IBM Plex Sans, sans-serif" font-size="13">
+            <rect x="40" y="46" width="140" height="48" rx="8" fill="none" stroke="currentColor" stroke-width="1.25"/>
+            <text x="110" y="74" text-anchor="middle">選擇「記帳本」</text>
+
+            <path d="M180 70H256" stroke="currentColor" stroke-width="1.25" fill="none" marker-end="url(#ef-arrow)"/>
+
+            <polygon points="256,70 330,28 404,70 330,112" fill="none" stroke="currentColor" stroke-width="1.25"/>
+            <text x="330" y="74" text-anchor="middle">帳本數量？</text>
+
+            <g stroke="currentColor" stroke-width="1.25" fill="none">
+              <path d="M330 112V150"/>
+              <path d="M110 150H630"/>
+              <path d="M110 150V188" marker-end="url(#ef-arrow)"/>
+              <path d="M380 150V188" marker-end="url(#ef-arrow)"/>
+              <path d="M630 150V188" marker-end="url(#ef-arrow)"/>
+            </g>
+            <text x="110" y="142" text-anchor="middle" font-size="11.5" fill="var(--muted)">0 個</text>
+            <text x="380" y="142" text-anchor="middle" font-size="11.5" fill="var(--muted)">1 個</text>
+            <text x="630" y="142" text-anchor="middle" font-size="11.5" fill="var(--muted)">多個</text>
+
+            <rect x="20" y="188" width="180" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="1.25"/>
+            <text x="110" y="212" text-anchor="middle" font-weight="600">/ledgers</text>
+            <text x="110" y="232" text-anchor="middle" font-size="11.5" fill="var(--muted)">建立或加入帳本</text>
+
+            <g color="var(--accent)">
+              <rect x="290" y="188" width="180" height="64" rx="8" fill="var(--accent-soft)" stroke="currentColor" stroke-width="1.75"/>
+              <text x="380" y="212" text-anchor="middle" font-weight="600" fill="currentColor">/dashboard</text>
+              <text x="380" y="232" text-anchor="middle" font-size="11.5" fill="currentColor">直接進入唯一帳本</text>
+            </g>
+
+            <rect x="540" y="188" width="180" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="1.25"/>
+            <text x="630" y="212" text-anchor="middle" font-weight="600">/ledgers</text>
+            <text x="630" y="232" text-anchor="middle" font-size="11.5" fill="var(--muted)">選擇要進入哪個帳本</text>
+          </g>
+        </svg>
+        <figcaption>選了記帳本之後，系統依使用者所屬帳本數量導向三種結果之一。</figcaption>
+      </figure>
+
+      <h4 style="margin:18px 0 6px;font-size:14.5px;"><code>/register</code> <code>/login</code></h4>
+      <ul>
+        <li><code>/register</code>：填寫帳號、密碼、姓名 → 建立 User → 自動登入 → 依登入分流邏輯導向</li>
+        <li><code>/login</code>：帳號密碼驗證（bcrypt 比對）→ 成功後依登入分流邏輯導向；失敗顯示對應錯誤訊息</li>
+      </ul>
+
+      <h4 style="margin:18px 0 6px;font-size:14.5px;"><code>/ledgers</code> 建立／加入帳本</h4>
+      <ul>
+        <li>建立帳本：輸入帳本名稱 → 建立 <code>Ledger</code>，自己是 owner，系統產生唯一邀請碼（比照 MyMeal memberCode 的「產生＋查重試」機制）→ 導向該帳本 <code>/dashboard</code></li>
+        <li>加入帳本：輸入邀請碼 → 查到對應 <code>Ledger</code> → 加入 <code>members</code>（role: member）→ 導向 <code>/dashboard</code></li>
+      </ul>
+
+      <h4 style="margin:18px 0 6px;font-size:14.5px;"><code>/dashboard</code> 當月總覽</h4>
+      <ul>
+        <li>預設顯示當月，可切換月份</li>
+        <li>計算邏輯（即時查詢彙總，不存快取數字）：
+          <ol>
+            <li>當月總收入＝該帳本當月所有成員 <code>SalaryRecord</code> 淨額加總</li>
+            <li>當月總支出＝該帳本當月所有 <code>Transaction</code> 金額加總</li>
+            <li>結餘＝總收入－總支出</li>
+            <li>分類佔比＝依 <code>ExpenseCategory</code> 分組加總 <code>Transaction</code></li>
+          </ol>
+        </li>
+      </ul>
+
+      <h4 style="margin:18px 0 6px;font-size:14.5px;"><code>/transactions</code> 消費紀錄</h4>
+      <ul>
+        <li>列表依帳本查詢，預設當月，可依分類／日期篩選</li>
+        <li>新增：選分類（下拉，來自該帳本 <code>ExpenseCategory</code>）、金額、日期（預設今天）、備註（選填）→ 寫入 <code>Transaction</code>，記錄人＝目前登入者</li>
+        <li>編輯／刪除：權限範圍待確認，見下方「待確認事項」</li>
+      </ul>
+
+      <h4 style="margin:18px 0 6px;font-size:14.5px;"><code>/categories</code> 消費分類管理</h4>
+      <ul>
+        <li>新增：輸入名稱（可選顏色／icon）→ 寫入 <code>ExpenseCategory</code>，帳本全員共用可見</li>
+        <li>刪除：處理方式待確認，見下方「待確認事項」</li>
+      </ul>
+
+      <h4 style="margin:18px 0 6px;font-size:14.5px;"><code>/salary</code> 薪資紀錄</h4>
+      <ul>
+        <li>依月份列出帳本所有成員的薪資紀錄（全員可見）</li>
+        <li>新增／編輯：選擇月份，依序輸入各薪資明細類型金額（類型已設定加項／扣項）→ 即時預覽加總淨額 → 儲存為 <code>SalaryRecord</code></li>
+        <li>一人一個月限一筆紀錄，重複新增視為編輯既有紀錄</li>
+      </ul>
+
+      <h4 style="margin:18px 0 6px;font-size:14.5px;"><code>/salary/types</code> 薪資明細類型管理</h4>
+      <ul>
+        <li>新增：輸入名稱＋選擇「加項」或「扣項」→ 寫入 <code>SalaryItemType</code>，帳本共用</li>
+        <li>刪除：處理方式待確認，同分類刪除邏輯，見下方「待確認事項」</li>
+      </ul>
+
+      <h4 style="margin:18px 0 6px;font-size:14.5px;"><code>/members</code> 成員管理</h4>
+      <ul>
+        <li>列出帳本所有成員與角色</li>
+        <li>owner 可：重新產生邀請碼（讓舊碼失效）、移除成員（移除後該成員看不到此帳本，歷史紀錄保留並標示「已離開成員」）</li>
+        <li>member 僅能自己「離開帳本」，不能移除他人</li>
+      </ul>
+
+      <h4 style="margin:18px 0 6px;font-size:14.5px;"><code>/reports</code> 報表</h4>
+      <ul>
+        <li>月度／年度趨勢圖（收入、支出、結餘）、分類佔比圖</li>
+        <li>屬開發第 5 階段，細節屆時再展開</li>
+      </ul>
+
+      <h3 id="expenses-perm">權限與可見性規則</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>項目</th><th>規則</th></tr></thead>
+          <tbody>
+            <tr><td>薪資紀錄可見性</td><td>帳本全員可見</td></tr>
+            <tr><td>加入帳本方式</td><td>邀請碼</td></tr>
+            <tr><td>消費分類／薪資明細類型範圍</td><td>帳本共用，任一成員新增其他成員都看得到</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="expenses-phases">開發順序</h3>
+      <ol>
+        <li>註冊登入＋建立／加入帳本（邀請碼機制）</li>
+        <li>消費分類管理＋消費紀錄 CRUD</li>
+        <li>薪資明細類型管理＋薪資紀錄 CRUD</li>
+        <li>Dashboard 月度總覽</li>
+        <li>報表頁（趨勢圖表）</li>
+        <li>成員管理頁（移除成員、重新產生邀請碼）</li>
+      </ol>
+
+      <h3 id="expenses-open">待確認／未來可擴充項目</h3>
+      <ul>
+        <li>消費紀錄的編輯／刪除權限範圍：帳本全員皆可改，還是只能改自己記的</li>
+        <li>分類／薪資明細類型被使用後刪除的處理方式：目前預設比照 MyMeal「刪除會員但保留財務紀錄」的精神，保留歷史紀錄並標示「已刪除分類／已刪除類型」，而非直接禁止刪除或連動刪除紀錄</li>
+        <li>薪水以外的額外收入紀錄：目前不在範圍內</li>
+        <li>多帳本切換 UI：使用者可能同時屬於多個帳本，介面上如何快速切換</li>
+        <li>預算設定／超支提醒：目前未提出需求，先不做</li>
+        <li>分帳／平帳功能（類似 Splitwise）：目前未提出需求，先不做</li>
+      </ul>
+    </section>
+
+    <section id="transit">
+      <p class="section-label">工具 02</p>
+      <h2>搭乘車查詢<span class="status future" style="margin-left:10px;">規劃完成・待開發</span></h2>
+      <p class="lead">固定通勤路線（上下班搭特定班次的台鐵／公車／捷運／高鐵）的查詢與提醒工具：查時刻表，以及誤點或即將到站時主動推播通知。資料來源統一採用交通部 TDX 運輸資料流通服務，不用分別接各縣市或各業者自己的 API。開發順序排在記帳本之後，見下方「開發順序」。</p>
+
+      <h3 id="transit-api">外部資料來源：TDX 運輸資料流通服務</h3>
+      <p>TDX（<span class="mono">tdx.transportdata.tw</span>）是交通部整合台鐵、高鐵、公車、捷運的官方開放資料平台，RESTful JSON、免費申請。所有端點都要加 <code>/api/basic</code> 前綴（例如 <code>https://tdx.transportdata.tw/api/basic/v3/Rail/TRA/Station</code>），下表已標示哪幾項是實際用真帳號打過、確認可用：</p>
+
+      <div class="table-wrap">
+        <table>
+          <caption>TDX 端點對照（路徑省略 /api/basic 前綴）</caption>
+          <thead><tr><th>功能</th><th>運輸工具</th><th>Endpoint</th><th>狀態</th></tr></thead>
+          <tbody>
+            <tr><td rowspan="3">查時刻表</td><td>台鐵</td><td class="mono">/v3/Rail/TRA/DailyTrainTimetable/OD/{起站ID}/to/{迄站ID}/{日期}</td><td><span class="status active">已串接</span> 起訖站雙向都能查，車種不篩選、全部顯示；另外併查 StationLiveBoard 把誤點分鐘數疊上去</td></tr>
+            <tr><td>高鐵</td><td class="mono">/v2/Rail/THSR/DailyTimetable/OD/{起站ID}/to/{迄站ID}/{日期}</td><td><span class="status active">已串接</span> 要給起訖站 ID，不是單站查詢</td></tr>
+            <tr><td>公車</td><td class="mono">/v2/Bus/Route/City/{City}/{RouteName}</td><td><span class="status active">已串接</span> 用來取方向對應的終點站名稱</td></tr>
+            <tr><td rowspan="3">即時到站／誤點</td><td>台鐵</td><td class="mono">/v3/Rail/TRA/StationLiveBoard/Station/{StationID}</td><td><span class="status active">已串接</span>（與上面同一個 API）</td></tr>
+            <tr><td>公車</td><td class="mono">/v2/Bus/EstimatedTimeOfArrival/City/{City}/{RouteName}</td><td><span class="status active">已串接</span> 用站名精確比對篩出單一站牌</td></tr>
+            <tr><td>捷運／輕軌</td><td class="mono">/v2/Rail/Metro/LiveBoard/{RailSystem}</td><td><span class="status future">待驗證</span> 實測 TRTC 回傳的站點覆蓋很稀疏，目前仍用示範資料</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout decided">
+        <div class="callout-label">已驗證的站碼</div>
+        <p>台鐵站名用傳統字「臺」、高鐵站名用「台」，兩套系統的 StationID 是分開的命名空間。已查到並寫進 <code>lib/tdx-stations.ts</code>：台鐵中壢 1100／臺北 1000／七堵 0930／基隆 0900；高鐵台北 1000／台中 1040／新竹 1030／左營 1070／板橋 1010；北捷（TRTC）古亭 O05。要加新站就用 <code>/api/basic/v3/Rail/TRA/Station</code> 這類站列表 API 查，不要憑記憶猜 ID。</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">認證與限制</div>
+        <p>OAuth2 Client Credentials：先在 TDX 會員中心（<code>/user/dataservice/key</code>）建立 API 金鑰取得 Client ID／Secret，再用 HTTP POST 向 <code>https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token</code>（Header 帶 <code>Content-Type: application/x-www-form-urlencoded</code>，Body 帶 <code>grant_type=client_credentials</code>＋client_id／client_secret）換取 access token（效期 86400 秒／24 小時，已在 <code>lib/tdx-client.ts</code> 做記憶體快取＋自動重新換發）。免費「一般會員」額度查時刻表夠用，但即時到站是高頻輪詢，之後做背景推播時要注意不要對同一站打太密、只查使用者實際設定的少數路線。</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">已知限制</div>
+        <p>高鐵幾乎不提供可靠的即時誤點資料、且準點率極高，因此高鐵只做時刻表查詢，不納入誤點推播功能。捷運／輕軌的即時到離站實測覆蓋不穩定（TRTC 整個系統同時間只回傳數十筆、不保證每站都有），要再花時間確認資料規律才能接，目前維持示範資料。</p>
+      </div>
+
+      <h3 id="transit-model">資料模型</h3>
+      <p>帳號沿用平台共用的 <code>User</code>（見上方平台架構），不另外做帳號系統。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Collection</th><th>欄位</th><th>說明</th></tr></thead>
+          <tbody>
+            <tr><td><code>CommuteRoute</code></td><td class="mono">userId, label, mode: "TRA"|"THSR"|"Bus"|"Metro", originName, originStopId, destName, destStopId, routeKey, activeWeekdays, notifyBeforeMinutes, delayThresholdMinutes, enabled</td><td>一條使用者設定的監控路線。<code>routeKey</code> 依 mode 意義不同：台鐵／高鐵存車次號或時間窗；公車存 city＋RouteName；捷運存 RailSystem＋線別。個人設定，不像記帳本的帳本資料需要共用</td></tr>
+            <tr><td><code>NotificationChannel</code></td><td class="mono">userId, provider: "telegram", chatId, enabled</td><td>推播目的地；先只做一種管道（見下方「通知管道」待確認事項）</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="transit-pages">頁面與路由規劃</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>路徑</th><th>功能</th></tr></thead>
+          <tbody>
+            <tr><td><code>/tools/transit</code></td><td>總覽：列出所有監控路線目前狀態（準時／誤點幾分／已到站），可手動重新整理</td></tr>
+            <tr><td><code>/tools/transit/routes</code></td><td>監控路線清單＋新增／編輯／刪除／啟用停用</td></tr>
+            <tr><td><code>/tools/transit/routes/new</code></td><td>新增監控路線：選運輸工具 → 選站／路線 → 設定提醒門檻</td></tr>
+            <tr><td><code>/tools/transit/notify</code></td><td>設定通知管道（綁定 Telegram chatId）</td></tr>
+            <tr><td><code>/tools/transit/timetable</code></td><td>單純查時刻表，不需要先設定監控路線，任何站／車次／路線都能查</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="transit-flow">頁面流程與功能邏輯</h3>
+
+      <h4 style="margin:18px 0 6px;font-size:14.5px;"><code>/tools/transit/routes/new</code> 新增監控路線</h4>
+      <ul>
+        <li>選運輸工具（台鐵／高鐵／公車／捷運）→ 介面依 mode 切換選擇方式：台鐵／高鐵選車站＋車次（或不指定車次、改監控某時間窗內所有列車）；公車選縣市＋路線＋站牌；捷運選系統＋站</li>
+        <li>設定提醒門檻：<code>notifyBeforeMinutes</code>（提前幾分鐘通知即將到站）、<code>delayThresholdMinutes</code>（僅台鐵／捷運適用，誤點超過多少分鐘才通知）</li>
+        <li>設定 <code>activeWeekdays</code>（預設平日一～五，避免週末誤觸發上班提醒）</li>
+        <li>儲存為 <code>CommuteRoute</code>，預設 enabled</li>
+      </ul>
+
+      <h4 style="margin:18px 0 6px;font-size:14.5px;">背景輪詢與推播</h4>
+      <p>Next.js 本身是 request-driven，沒有背景 worker，需要外部排程觸發一個輪詢用的 API endpoint（例如 Vercel Cron 或其他排程服務，定時打 <code>/api/tools/transit/poll</code>）：</p>
+      <figure class="diagram">
+        <svg viewBox="0 0 760 260" role="img" aria-label="排程每1到2分鐘觸發輪詢，讀取所有監控路線查詢TDX，若誤點或即將到站超過門檻才推播通知，否則不動作等待下次輪詢">
+          <defs>
+            <marker id="tf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <polygon points="0,0 10,5 0,10" fill="currentColor"/>
+            </marker>
+          </defs>
+          <g font-family="IBM Plex Sans, sans-serif" font-size="13">
+            <rect x="30" y="30" width="190" height="48" rx="8" fill="none" stroke="currentColor" stroke-width="1.25"/>
+            <text x="125" y="50" text-anchor="middle">排程觸發</text>
+            <text x="125" y="66" text-anchor="middle" font-size="11" fill="var(--muted)">每 1–2 分鐘一次</text>
+
+            <path d="M220 54H300" stroke="currentColor" stroke-width="1.25" fill="none" marker-end="url(#tf-arrow)"/>
+
+            <rect x="300" y="30" width="220" height="48" rx="8" fill="none" stroke="currentColor" stroke-width="1.25"/>
+            <text x="410" y="50" text-anchor="middle">讀取所有啟用中的</text>
+            <text x="410" y="66" text-anchor="middle" font-size="12">CommuteRoute，逐一查 TDX</text>
+
+            <path d="M410 78V110" stroke="currentColor" stroke-width="1.25" fill="none" marker-end="url(#tf-arrow)"/>
+
+            <polygon points="410,110 480,150 410,190 340,150" fill="none" stroke="currentColor" stroke-width="1.25"/>
+            <text x="410" y="146" text-anchor="middle" font-size="12">誤點／到站</text>
+            <text x="410" y="162" text-anchor="middle" font-size="12">超過門檻？</text>
+
+            <g stroke="currentColor" stroke-width="1.25" fill="none">
+              <path d="M480 150H620"/>
+              <path d="M620 150V214" marker-end="url(#tf-arrow)"/>
+              <path d="M340 150H160"/>
+              <path d="M160 150V214" marker-end="url(#tf-arrow)"/>
+            </g>
+            <text x="550" y="142" text-anchor="middle" font-size="11.5" fill="var(--muted)">是</text>
+            <text x="270" y="142" text-anchor="middle" font-size="11.5" fill="var(--muted)">否</text>
+
+            <g color="var(--accent)">
+              <rect x="530" y="214" width="180" height="40" rx="8" fill="var(--accent-soft)" stroke="currentColor" stroke-width="1.75"/>
+              <text x="620" y="238" text-anchor="middle" font-weight="600" fill="currentColor">推播通知（Telegram）</text>
+            </g>
+
+            <rect x="70" y="214" width="180" height="40" rx="8" fill="none" stroke="currentColor" stroke-width="1.25"/>
+            <text x="160" y="238" text-anchor="middle" font-size="12">不動作，等下次輪詢</text>
+          </g>
+        </svg>
+        <figcaption>每次輪詢都重新比對一次，不額外存誤點歷史——只在超過門檻那一刻推播。</figcaption>
+      </figure>
+      <ul>
+        <li>同一條路線在門檻內重複達標，應避免重複推播（例如同一班車誤點期間只通知一次，到站或離站後才重新允許下次通知）</li>
+        <li>公車用「預估到站秒數」本身是否小於 <code>notifyBeforeMinutes</code> 判斷；台鐵／捷運用「誤點分鐘數」是否超過 <code>delayThresholdMinutes</code>，或快到站時用到站時間判斷</li>
+      </ul>
+
+      <h4 style="margin:18px 0 6px;font-size:14.5px;"><code>/tools/transit/timetable</code> 時刻表查詢</h4>
+      <ul>
+        <li>選運輸工具＋站／路線＋日期 → 即時打對應 TDX 時刻表 API → 列表顯示，不快取即時到站資料，但時刻表這類低變動資料可以快取一整天</li>
+        <li>可以從查詢結果直接「加入監控」，帶入 <code>/tools/transit/routes/new</code> 的對應欄位，不用重新輸入</li>
+      </ul>
+
+      <h3 id="transit-phases">開發順序</h3>
+      <ol>
+        <li><span class="status active">完成</span> TDX 帳號申請＋OAuth2 token 取得與刷新機制（<code>lib/tdx-client.ts</code>）</li>
+        <li><span class="status active">完成（部分）</span> 時刻表查詢頁已串台鐵／高鐵／公車真資料（<code>app/api/transit/**</code>），捷運因 LiveBoard 覆蓋不穩定仍用示範資料</li>
+        <li>監控路線 CRUD（<code>CommuteRoute</code>）——目前頁面還是示範資料，尚未接到資料庫</li>
+        <li>通知管道設定（Telegram chatId 綁定）——頁面是示範資料，尚未真的串 Telegram Bot API</li>
+        <li>背景輪詢 endpoint＋排程串接＋推播邏輯</li>
+        <li>總覽頁改接真資料（目前總覽／監控路線頁的即時狀態都還是 <code>lib/transit-mock-data.ts</code> 的示範資料，只有時刻表查詢頁換成真資料）</li>
+      </ol>
+
+      <h3 id="transit-open">待確認／未來可擴充項目</h3>
+      <ul>
+        <li>通知管道選擇：目前建議 Telegram Bot API（LINE Notify 已於2025年3月終止服務，改用 LINE Messaging API 門檻較高）；若之後想用 LINE 或網頁推播（Web Push）再擴充 <code>NotificationChannel.provider</code></li>
+        <li>要先確認實際通勤會用到的捷運系統是否支援 TDX 的 LiveBoard 即時到離站，不支援的話該路線只能做時刻表查詢，不能做即時提醒</li>
+        <li>排程方案：Vercel Cron、或自架排程打內部 API，待實際部署環境決定</li>
+        <li>歷史準點率統計／延誤分析：這次規劃的範圍只有查詢與即時提醒，不包含統計功能，先不做</li>
+        <li>多人共用某條監控路線（例如同事共用上班路線設定）：目前設計是每個使用者各自的 <code>CommuteRoute</code>，不共用，之後有需求再評估</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <footer class="doc-foot">
+    cpx-tools 規劃文件 · 這份文件會持續更新——新工具或既有工具的規劃變動，寫完就回來更新這裡，動工前先看一眼。
+  </footer>
+</div>
