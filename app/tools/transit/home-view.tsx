@@ -566,7 +566,13 @@ export function DreamHomeView() {
 
         {/* 常用路線：先照「我的最愛」頁面同一塊搬過來，純展示用的假資料，不串任何 API，
             之後樣式會再陸續調整。 */}
-        <div className="mt-5 flex flex-col gap-2.5">
+        <p className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-[#4A3B7C]">
+          <span aria-hidden className="text-[#C9A6F2]">
+            ♦
+          </span>
+          小小備忘錄
+        </p>
+        <div className="mt-2 flex flex-col gap-2.5">
           {FREQUENT_ROUTES.map((r, i) => (
             <div key={i} className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
               <ImageSlot alt={`${r.origin}到${r.dest}`} className="size-12 shrink-0 rounded-xl" />
