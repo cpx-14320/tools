@@ -12,6 +12,8 @@ import { HomeSettingsModal, type HomeDefaults } from "@/components/dream/home-se
 import { TimePickerModal } from "@/components/dream/time-picker-modal";
 import { DatePickerModal } from "@/components/dream/date-picker-modal";
 import { StationPickerModal } from "@/components/dream/station-picker-modal";
+import { MemoEditorModal, type MemoDraft } from "@/components/dream/memo-editor-modal";
+import { memoIconPath } from "@/components/dream/memo-icons";
 
 const DEFAULTS_KEY = "cpx-tools:transit:home-defaults";
 
@@ -79,6 +81,37 @@ const FREQUENT_ROUTES = [
   { origin: "台北站", dest: "高雄站", duration: "約 1 小時 36 分" },
   { origin: "台中站", dest: "花蓮站", duration: "約 2 小時 34 分" },
 ];
+
+// 前端用的輕量備忘錄型別，故意不從 lib/memos.ts 匯入——那個檔案會連到 mongodb 驅動程式，
+// 絕不能進到 "use client" 檔案（會把伺服器端套件打包進前端 bundle）。
+interface Memo {
+  id: string;
+  title: string;
+  content: string;
+  icon: string;
+  remindAt: string | null;
+}
+
+type RemindTone = "soon" | "later";
+
+// 跟我的行程頁面卡片徽章同一種「圓角淡色底」視覺語言，這裡獨立定義一份，不直接
+// import 那個檔案裡的常數（兩邊是不同頁面，不應該互相耦合）。
+const REMIND_TONE_STYLE: Record<RemindTone, string> = {
+  soon: "bg-[#DFF4EB] text-[#2FAE82]",
+  later: "bg-[#F3EFFC] text-[#9C94C4]",
+};
+
+// remindAt 已經過去就算「soon」（用同一個醒目色調提示使用者已經逾期），24 小時內也算
+// soon，再久一點才轉成 later 那種比較不急迫的淡色。
+function formatRemindCountdown(remindAtIso: string): { text: string; tone: RemindTone } {
+  const diffMs = new Date(remindAtIso).getTime() - Date.now();
+  if (diffMs <= 0) return { text: "已逾期", tone: "soon" };
+  const totalHours = Math.floor(diffMs / (60 * 60 * 1000));
+  const days = Math.floor(totalHours / 24);
+  const hours = totalHours % 24;
+  const text = days > 0 ? `還有 ${days} 天 ${hours} 小時` : `還有 ${hours} 小時`;
+  return { text, tone: days === 0 ? "soon" : "later" };
+}
 
 function nowHHMM(): string {
   const d = new Date();
@@ -175,6 +208,44 @@ export function DreamHomeView() {
   const [date, setDate] = useState(todayLocal);
   const [time, setTime] = useState(nowHHMM);
   const [timePickerOpen, setTimePickerOpen] = useState(false);
+  const [memos, setMemos] = useState<Memo[]>([]);
+  const [memoEditorOpen, setMemoEditorOpen] = useState(false);
+
+  // 掛載時抓一次使用者自己的備忘錄；儲存後也會用同一份 API 回應直接更新畫面，不用重抓。
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/transit/memos")
+      .then((res) => res.json())
+      .then((data: { memos?: Memo[] }) => {
+        if (!cancelled) setMemos(data.memos ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // datetime-local 的值是瀏覽器所在時區的本地時間字串，沒有填就是空字串；送去 API 前
+  // 轉成帶時區資訊的 ISO 字串（.toISOString()），這一步要在瀏覽器端做——伺服器收到裸的
+  // "YYYY-MM-DDTHH:mm" 字串時是用伺服器自己的時區去解讀，跟使用者選的時間可能會對不上。
+  function saveMemos(drafts: MemoDraft[]) {
+    const items = drafts.map((d) => ({
+      id: d.id,
+      title: d.title,
+      content: d.content,
+      icon: d.icon,
+      remindAt: d.remindAt ? new Date(d.remindAt).toISOString() : null,
+    }));
+    fetch("/api/transit/memos", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    })
+      .then((res) => res.json())
+      .then((data: { memos?: Memo[] }) => setMemos(data.memos ?? []))
+      .catch(() => {});
+    setMemoEditorOpen(false);
+  }
   const stationLabel = mode === "bus" ? "站牌" : "站";
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [originPickerOpen, setOriginPickerOpen] = useState(false);
@@ -566,13 +637,7 @@ export function DreamHomeView() {
 
         {/* 常用路線：先照「我的最愛」頁面同一塊搬過來，純展示用的假資料，不串任何 API，
             之後樣式會再陸續調整。 */}
-        <p className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-[#4A3B7C]">
-          <span aria-hidden className="text-[#C9A6F2]">
-            ♦
-          </span>
-          小小備忘錄
-        </p>
-        <div className="mt-2 flex flex-col gap-2.5">
+        <div className="mt-5 flex flex-col gap-2.5">
           {FREQUENT_ROUTES.map((r, i) => (
             <div key={i} className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
               <ImageSlot alt={`${r.origin}到${r.dest}`} className="size-12 shrink-0 rounded-xl" />
@@ -585,7 +650,48 @@ export function DreamHomeView() {
             </div>
           ))}
         </div>
+
+        <p className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-[#4A3B7C]">
+          <span aria-hidden className="text-[#C9A6F2]">
+            ♦
+          </span>
+          小小備忘錄
+          <button type="button" onClick={() => setMemoEditorOpen(true)} aria-label="編輯備忘錄" className="ml-auto">
+            <IconImg src={ICON_PATHS.edit} alt="編輯" size={14} />
+          </button>
+        </p>
+        {memos.length === 0 ? (
+          <p className="mt-2 text-xs text-[#B3ABD4]">還沒有備忘錄，點右上角新增</p>
+        ) : (
+          <div className="mt-2 flex flex-col gap-2.5">
+            {memos.map((m) => {
+              const countdown = m.remindAt ? formatRemindCountdown(m.remindAt) : null;
+              return (
+                <div key={m.id} className="relative flex items-start gap-3 rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
+                  <ImageSlot src={memoIconPath(m.icon)} alt={m.title || "備忘錄"} className="size-12 shrink-0 rounded-xl" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-[#4A3B7C]">{m.title || "（未命名）"}</p>
+                    {m.content && <p className="mt-0.5 truncate text-xs text-[#9C94C4]">{m.content}</p>}
+                  </div>
+                  {countdown && (
+                    <span className={`absolute right-3 top-3 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${REMIND_TONE_STYLE[countdown.tone]}`}>
+                      {countdown.text}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      <MemoEditorModal
+        key={memoEditorOpen ? "memo-open" : "memo-closed"}
+        open={memoEditorOpen}
+        initial={memos}
+        onClose={() => setMemoEditorOpen(false)}
+        onSave={saveMemos}
+      />
 
       <HomeSettingsModal
         key={settingsOpen ? "settings-open" : "settings-closed"}

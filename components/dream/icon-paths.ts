@@ -31,4 +31,11 @@ export const ICON_PATHS = {
   heartOutline: "/icons/dream/heart-outline.png",
   goTop: "/icons/dream/go-top.png",
   back: "/icons/dream/back.png",
+  edit: "/icons/dream/edit.png",
+
+  // 備忘錄可選的圖示，key 跟 components/dream/memo-icons.ts 的 MEMO_ICON_OPTIONS 對應。
+  memoCard: "/icons/dream/memo-card.png",
+  memoBill: "/icons/dream/memo-bill.png",
+  memoNote: "/icons/dream/memo-note.png",
+  memoGift: "/icons/dream/memo-gift.png",
 } as const;

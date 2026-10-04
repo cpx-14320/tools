@@ -34,6 +34,7 @@ async function ensureIndexes(db: Db): Promise<void> {
     db.collection("users").createIndex({ username: 1 }, { unique: true }),
     db.collection("sessions").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
     db.collection("toolsRegistry").createIndex({ toolId: 1 }, { unique: true }),
+    db.collection("transit.memos").createIndex({ userId: 1, order: 1 }),
   ]);
 
   // toolsRegistry 是目前工具清單的真實來源，用 upsert 寫入已知的兩個工具，
