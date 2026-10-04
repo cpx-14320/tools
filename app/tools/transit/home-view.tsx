@@ -577,17 +577,11 @@ export function DreamHomeView() {
             <div key={i} className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
               <ImageSlot alt={`${r.origin}到${r.dest}`} className="size-12 shrink-0 rounded-xl" />
               <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-1.5 truncate text-sm font-semibold text-[#4A3B7C]">
+                <p className="truncate text-sm font-semibold text-[#4A3B7C]">
                   {r.origin} <span aria-hidden>⇄</span> {r.dest}
-                  <IconImg src={ICON_PATHS.heartFilled} alt="已收藏" size={14} />
                 </p>
-                <p className="mt-0.5 flex items-center gap-1 text-xs text-[#9C94C4]">
-                  <IconImg src={ICON_PATHS.clock} alt="時間" size={12} /> {r.duration}
-                </p>
+                <p className="mt-0.5 text-xs text-[#9C94C4]">{r.duration}</p>
               </div>
-              <button type="button" className="shrink-0 rounded-full bg-[#F3EFFC] px-3 py-1.5 text-xs font-medium text-[#6F5FD6]">
-                搜尋班次 →
-              </button>
             </div>
           ))}
         </div>
