@@ -16,23 +16,9 @@ export const ICON_PATHS = {
   modeBus: "/icons/dream/mode-bus.png",
   modeMetro: "/icons/dream/mode-metro.png",
 
-  quickRoutes: "/icons/dream/quick-routes.png",
-  quickFavorites: "/icons/dream/quick-favorites.png",
-  quickTimetable: "/icons/dream/quick-timetable.png",
-  quickFare: "/icons/dream/quick-fare.png",
-
   weatherSunny: "/icons/dream/weather-sunny.png",
   weatherCloudy: "/icons/dream/weather-cloudy.png",
   weatherRain: "/icons/dream/weather-rain.png",
-
-  pin: "/icons/dream/pin.png",
-  clock: "/icons/dream/clock.png",
-  calendar: "/icons/dream/calendar.png",
-  search: "/icons/dream/search.png",
-  refresh: "/icons/dream/refresh.png",
-  goTop: "/icons/dream/go-top.png",
-  back: "/icons/dream/back.png",
-  edit: "/icons/dream/edit.png",
 
   // 備忘錄可選的圖示，key 跟 components/dream/memo-icons.ts 的 MEMO_ICON_OPTIONS 對應。
   memoDrinks: "/icons/dream/drinks.png",
@@ -41,8 +27,7 @@ export const ICON_PATHS = {
 
   // 常用行程可選的圖示，key 跟 components/dream/frequent-trip-icons.ts 的
   // FREQUENT_TRIP_ICON_OPTIONS 對應。
-  tripHome: "/icons/dream/trip-home.png",
-  tripWork: "/icons/dream/trip-work.png",
-  tripSchool: "/icons/dream/trip-school.png",
-  tripOther: "/icons/dream/trip-other.png",
+  tripOutbound: "/icons/dream/trip-outbound.png",
+  tripInbound: "/icons/dream/trip-inbound.png",
+  tripGoout: "/icons/dream/trip-goout.png",
 } as const;

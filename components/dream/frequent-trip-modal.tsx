@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY, type Mode } from "./stations-data";
-import { IconImg } from "./icon-img";
+import { FaIcon } from "./fa-icon";
 import { ImageSlot } from "./image-slot";
-import { ICON_PATHS } from "./icon-paths";
 import { FREQUENT_TRIP_ICON_OPTIONS } from "./frequent-trip-icons";
 
 export interface FrequentTripDraft {
@@ -146,9 +145,12 @@ export function FrequentTripModal({
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30" onClick={onClose}>
+      {/* max-h 用 % 不是 vh：外層卡片容器有 transform，是這個 fixed 彈窗的定位基準，桌面寬度
+          時卡片是寫死 850px 高、不是跟著瀏覽器視窗高度變化，vh 會抓到瀏覽器高度而不是卡片
+          高度，兩者不一致時彈窗會比卡片本身還高。 */}
       <div
-        className="flex max-h-[85vh] w-full max-w-[400px] flex-col overflow-y-auto rounded-t-[1.75rem] bg-white sm:rounded-[1.75rem]"
+        className="flex max-h-[70%] w-full flex-col overflow-y-auto rounded-t-[1.75rem] bg-white"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-[#ECE4FA] px-5 py-4">
@@ -209,7 +211,7 @@ export function FrequentTripModal({
                     <span className="text-xs font-medium text-[#9C94C4]">出發{stationLabel}</span>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] px-3 py-3">
-                        <IconImg src={ICON_PATHS.pin} alt="地點" size={14} />
+                        <FaIcon icon="location-dot" size={14} />
                         <select
                           value={safeOriginCity}
                           onChange={(e) => selectOriginCity(i, e.target.value)}
@@ -234,9 +236,6 @@ export function FrequentTripModal({
                             </option>
                           ))}
                         </select>
-                        <span aria-hidden className="pointer-events-none text-[#C7BFE6]">
-                          ⌄
-                        </span>
                       </div>
                     </div>
                   </label>
@@ -256,7 +255,7 @@ export function FrequentTripModal({
                     <span className="text-xs font-medium text-[#9C94C4]">抵達{stationLabel}</span>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] px-3 py-3">
-                        <IconImg src={ICON_PATHS.pin} alt="地點" size={14} />
+                        <FaIcon icon="location-dot" size={14} />
                         <select
                           value={safeDestCity}
                           onChange={(e) => selectDestCity(i, e.target.value)}
@@ -281,9 +280,6 @@ export function FrequentTripModal({
                             </option>
                           ))}
                         </select>
-                        <span aria-hidden className="pointer-events-none text-[#C7BFE6]">
-                          ⌄
-                        </span>
                       </div>
                     </div>
                   </label>
@@ -293,21 +289,21 @@ export function FrequentTripModal({
                   <span className="text-xs font-medium text-[#9C94C4]">時段區間</span>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] px-4 py-3">
-                      <IconImg src={ICON_PATHS.clock} alt="開始時間" size={14} />
+                      <FaIcon icon="clock" size={14} />
                       <input
                         type="time"
                         value={item.startTime}
                         onChange={(e) => updateItem(i, { startTime: e.target.value })}
-                        className="flex-1 bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
+                        className="flex-1 bg-transparent text-sm font-medium text-[#4A3B7C] outline-none [&::-webkit-calendar-picker-indicator]:hidden"
                       />
                     </div>
                     <div className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] px-4 py-3">
-                      <IconImg src={ICON_PATHS.clock} alt="結束時間" size={14} />
+                      <FaIcon icon="clock" size={14} />
                       <input
                         type="time"
                         value={item.endTime}
                         onChange={(e) => updateItem(i, { endTime: e.target.value })}
-                        className="flex-1 bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
+                        className="flex-1 bg-transparent text-sm font-medium text-[#4A3B7C] outline-none [&::-webkit-calendar-picker-indicator]:hidden"
                       />
                     </div>
                   </div>

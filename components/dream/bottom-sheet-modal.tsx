@@ -18,7 +18,10 @@ export function BottomSheetModal({
   onClose,
   children,
   footer,
-  maxWidthClassName = "max-w-[400px]",
+  // 跟 DreamMobileShell 卡片容器的 max-w-[430px] 對齊——這個彈窗用 Portal 掛到
+  // document.body，脫離卡片容器的 transform 定位脈絡，不會自動跟著卡片寬度縮放，
+  // 要自己手動對齊同一個數字，不然在螢幕比卡片寬時會跟卡片對不齊、看起來沒有滿版。
+  maxWidthClassName = "max-w-[430px]",
   bodyClassName = "flex flex-col gap-4 px-5 py-5",
 }: {
   open: boolean;
@@ -44,21 +47,31 @@ export function BottomSheetModal({
   if (!open || !mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 sm:items-center" onClick={onClose}>
-      <div
-        className={`flex max-h-[85vh] w-full ${maxWidthClassName} flex-col overflow-y-auto rounded-t-[1.75rem] bg-white sm:rounded-[1.75rem]`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-[#ECE4FA] px-5 py-4">
-          <p className="font-semibold text-[#4A3B7C]">{title}</p>
-          <button type="button" onClick={onClose} aria-label="關閉" className="grid size-8 place-items-center rounded-full text-[#9C94C4] hover:bg-[#F3EFFC]">
-            ✕
-          </button>
+    <div className="fixed inset-0 z-50" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/30" />
+      {/* 這一層刻意複製 DreamMobileShell 卡片容器本身的版面公式（justify-center 置中、
+          px-0/sm:px-4、h-dvh／sm:h-[850px]），不是量測卡片實際位置來算座標——這個彈窗用
+          Portal 掛到 document.body，脫離卡片的 transform 定位脈絡，螢幕比卡片高／寬時，
+          單純的 fixed inset-0 滿版只會貼齊瀏覽器視窗邊界、貼不齊卡片邊界。兩邊用同一套
+          公式，不管視窗多大，算出來的框永遠跟卡片本身疊在一起。 */}
+      <div className="relative flex h-full w-full justify-center px-0 py-0 sm:px-4 sm:py-6">
+        <div className="flex h-dvh w-full max-w-[430px] items-end sm:h-[850px]">
+          <div
+            className={`flex max-h-[70%] w-full ${maxWidthClassName} flex-col overflow-y-auto rounded-t-[1.75rem] bg-white`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#ECE4FA] px-5 py-4">
+              <p className="font-semibold text-[#4A3B7C]">{title}</p>
+              <button type="button" onClick={onClose} aria-label="關閉" className="grid size-8 place-items-center rounded-full text-[#9C94C4] hover:bg-[#F3EFFC]">
+                ✕
+              </button>
+            </div>
+
+            <div className={bodyClassName}>{children}</div>
+
+            {footer && <div className="flex items-center justify-end gap-2 border-t border-[#ECE4FA] px-5 py-4">{footer}</div>}
+          </div>
         </div>
-
-        <div className={bodyClassName}>{children}</div>
-
-        {footer && <div className="flex items-center justify-end gap-2 border-t border-[#ECE4FA] px-5 py-4">{footer}</div>}
       </div>
     </div>,
     document.body,

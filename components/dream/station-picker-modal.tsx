@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { IconImg } from "./icon-img";
-import { ICON_PATHS } from "./icon-paths";
+import { FaIcon } from "./fa-icon";
 import { BottomSheetModal } from "./bottom-sheet-modal";
 
 /** 城市＋站名雙欄選擇彈窗：取代原生 <select>，手機上不會跳出系統原生的下拉選單，
@@ -69,7 +68,7 @@ export function StationPickerModal({
               c === city ? "bg-[#F3EFFC] font-semibold text-[#6F5FD6]" : "text-[#4A3B7C]"
             }`}
           >
-            <IconImg src={ICON_PATHS.pin} alt="" size={12} />
+            <FaIcon icon="location-dot" size={12} />
             <span className="truncate">{c}</span>
           </button>
         ))}

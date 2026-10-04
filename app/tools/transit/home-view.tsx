@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImageSlot } from "@/components/dream/image-slot";
-import { IconImg } from "@/components/dream/icon-img";
+import { FaIcon } from "@/components/dream/fa-icon";
 import { ICON_PATHS } from "@/components/dream/icon-paths";
 import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY, type Mode } from "@/components/dream/stations-data";
 import { DISTRICTS_BY_CITY } from "@/lib/cwa-districts";
@@ -66,13 +66,6 @@ const MODES: { key: Mode; label: string; icon: string }[] = [
   { key: "train", label: "火車", icon: ICON_PATHS.modeTrain },
   { key: "metro", label: "捷運", icon: ICON_PATHS.modeMetro },
   { key: "thsr", label: "高鐵", icon: ICON_PATHS.modeThsr },
-];
-
-const QUICK_ACTIONS: { label: string; icon: string }[] = [
-  { label: "常用路線", icon: ICON_PATHS.quickRoutes },
-  { label: "我的最愛", icon: ICON_PATHS.quickFavorites },
-  { label: "時刻查詢", icon: ICON_PATHS.quickTimetable },
-  { label: "票價查詢", icon: ICON_PATHS.quickFare },
 ];
 
 // 前端用的輕量備忘錄型別，故意不從 lib/memos.ts 匯入——那個檔案會連到 mongodb 驅動程式，
@@ -332,7 +325,7 @@ export function DreamHomeView() {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="-mb-24 flex min-h-full flex-col bg-white pb-24">
       <div className="relative h-80 w-full shrink-0 overflow-hidden">
         <ImageSlot src={ICON_PATHS.heroMain} alt="夢幻紫彩火車旅行插畫" className="absolute inset-0 h-full w-full" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-transparent" />
@@ -386,7 +379,7 @@ export function DreamHomeView() {
             <span className="text-xs font-medium text-[#9C94C4]">出發{stationLabel}</span>
             <button type="button" onClick={() => setOriginPickerOpen(true)} className="grid grid-cols-2 gap-2 text-left">
               <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                <IconImg src={ICON_PATHS.pin} alt="地點" size={14} />
+                <FaIcon icon="location-dot" size={14} />
                 <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{safeOriginCity}</span>
               </div>
               <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
@@ -408,7 +401,7 @@ export function DreamHomeView() {
             <span className="text-xs font-medium text-[#9C94C4]">抵達{stationLabel}</span>
             <button type="button" onClick={() => setDestPickerOpen(true)} className="grid grid-cols-2 gap-2 text-left">
               <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                <IconImg src={ICON_PATHS.pin} alt="地點" size={14} />
+                <FaIcon icon="location-dot" size={14} />
                 <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{safeDestCity}</span>
               </div>
               <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
@@ -455,7 +448,7 @@ export function DreamHomeView() {
               onClick={() => setDatePickerOpen(true)}
               className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-left text-sm text-[#4A3B7C]"
             >
-              <IconImg src={ICON_PATHS.calendar} alt="日期" size={14} />
+              <FaIcon icon="calendar" size={14} />
               <span className="flex-1 truncate font-medium">{date.replaceAll("-", "/")}</span>
             </button>
           </label>
@@ -466,7 +459,7 @@ export function DreamHomeView() {
               onClick={() => setTimePickerOpen(true)}
               className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-left text-sm text-[#4A3B7C]"
             >
-              <IconImg src={ICON_PATHS.clock} alt="時間" size={14} />
+              <FaIcon icon="clock" size={14} />
               <span className="flex-1 font-medium">{time}</span>
             </button>
           </label>
@@ -500,43 +493,16 @@ export function DreamHomeView() {
           className="mt-5 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)]"
           style={{ background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
         >
-          <IconImg src={ICON_PATHS.search} alt="搜尋" size={14} /> 搜尋{MODES.find((m) => m.key === mode)?.label}班次 <span aria-hidden>→</span>
+          <FaIcon icon="magnifying-glass" size={14} className="text-white" /> 搜尋{MODES.find((m) => m.key === mode)?.label}班次 <span aria-hidden>→</span>
         </button>
 
-        <div className="mt-5 grid grid-cols-4 gap-2">
-          {QUICK_ACTIONS.map((a) => (
-            <button key={a.label} type="button" className="flex flex-col items-center gap-1.5">
-              <span className="grid size-11 place-items-center overflow-hidden rounded-full bg-[#F3EFFC]">
-                <ImageSlot src={a.icon} alt={`${a.label}圖示`} className="size-6 rounded" />
-              </span>
-              <span className="text-[11px] text-[#7A71A8]">{a.label}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="relative mt-5 h-28 overflow-hidden rounded-2xl">
-          {/* 整個卡片背景換成真圖，不是右邊一個小圖示；圖還沒上傳前 ImageSlot 會自動退回
-              漸層佔位，所以這裡不用再額外寫死一層漸層背景。 */}
-          <ImageSlot src={ICON_PATHS.weekendTripBanner} alt="週末小旅行" className="absolute inset-0 h-full w-full" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20" />
-          <div className="relative z-10 flex h-full items-center justify-between px-5 py-4">
-            <div>
-              <p className="text-base font-bold text-white">週末小旅行</p>
-              <p className="mt-0.5 text-xs text-white/85">收藏屬於你的風景 ♡</p>
-            </div>
-            <span aria-hidden className="text-white">
-              ›
-            </span>
-          </div>
-        </div>
-
-        <p className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-[#4A3B7C]">
+        <p className="mt-6 flex items-center gap-1.5 text-sm font-semibold text-[#4A3B7C]">
           <span aria-hidden className="text-[#C9A6F2]">
             ♦
           </span>
           小小備忘錄
           <button type="button" onClick={() => setMemoEditorOpen(true)} aria-label="編輯備忘錄" className="ml-auto">
-            <IconImg src={ICON_PATHS.edit} alt="編輯" size={14} />
+            <FaIcon icon="pen" size={14} />
           </button>
         </p>
         {memos.length === 0 ? (
@@ -561,6 +527,19 @@ export function DreamHomeView() {
             })}
           </div>
         )}
+
+        <div className="relative mt-6 h-28 overflow-hidden rounded-2xl">
+          {/* 整個卡片背景換成真圖，不是右邊一個小圖示；圖還沒上傳前 ImageSlot 會自動退回
+              漸層佔位，所以這裡不用再額外寫死一層漸層背景。 */}
+          <ImageSlot src={ICON_PATHS.weekendTripBanner} alt="週末小旅行" className="absolute inset-0 h-full w-full" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20" />
+          <div className="relative z-10 flex h-full items-center px-5 py-4">
+            <div>
+              <p className="text-base font-bold text-white">週末小旅行</p>
+              <p className="mt-0.5 text-xs text-white/85">收藏屬於你的風景 ♡</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <MemoEditorModal

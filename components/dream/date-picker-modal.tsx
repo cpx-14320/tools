@@ -82,7 +82,6 @@ export function DatePickerModal({
       open={open}
       title="選擇日期"
       onClose={onClose}
-      maxWidthClassName="max-w-[360px]"
       bodyClassName="flex flex-col items-center gap-4 px-5 py-5"
       footer={
         <>

@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { FrequentTripModal, type FrequentTripDraft } from "@/components/dream/frequent-trip-modal";
 import { frequentTripIconPath } from "@/components/dream/frequent-trip-icons";
 import { ImageSlot } from "@/components/dream/image-slot";
-import { IconImg } from "@/components/dream/icon-img";
-import { ICON_PATHS } from "@/components/dream/icon-paths";
+import { FaIcon } from "@/components/dream/fa-icon";
 import type { HomeDefaults } from "@/components/dream/home-settings-modal";
 
 type Mode = "bus" | "train" | "metro" | "thsr";
@@ -197,9 +196,6 @@ export function TripsView() {
         return (
           <div key={g.id}>
             <p className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-[#4A3B7C]">
-              <span aria-hidden className="text-[#C9A6F2]">
-                ♦
-              </span>
               <span className="truncate">{g.name}</span>
               <button
                 type="button"
@@ -207,7 +203,7 @@ export function TripsView() {
                 aria-label={`編輯${g.name}`}
                 className="ml-auto shrink-0"
               >
-                <IconImg src={ICON_PATHS.edit} alt="編輯" size={14} />
+                <FaIcon icon="pen" size={14} />
               </button>
             </p>
             {groupTrips.length === 0 ? (

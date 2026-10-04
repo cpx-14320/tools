@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { IconImg } from "@/components/dream/icon-img";
-import { ICON_PATHS } from "@/components/dream/icon-paths";
+import { FaIcon } from "@/components/dream/fa-icon";
 import { scrollContainerToTop, scrollWithin } from "@/lib/scroll-within";
 import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY } from "@/components/dream/stations-data";
 import { TripGroupPickerModal } from "@/components/dream/trip-group-picker-modal";
@@ -12,11 +11,11 @@ import type { FrequentTripDraft } from "@/components/dream/frequent-trip-modal";
 
 export type Mode = "bus" | "train" | "metro" | "thsr";
 
-const MODE_META: Record<Mode, { label: string; icon: string }> = {
-  train: { label: "火車", icon: ICON_PATHS.modeTrain },
-  thsr: { label: "高鐵", icon: ICON_PATHS.modeThsr },
-  bus: { label: "公車", icon: ICON_PATHS.modeBus },
-  metro: { label: "捷運", icon: ICON_PATHS.modeMetro },
+const MODE_META: Record<Mode, { label: string }> = {
+  train: { label: "火車" },
+  thsr: { label: "高鐵" },
+  bus: { label: "公車" },
+  metro: { label: "捷運" },
 };
 
 // TDX 回傳的車種名稱其實很雜（自強號依車型/有無自行車車廂細分成好幾種寫法，例如
@@ -277,8 +276,7 @@ export function ResultsView({
             aria-label="返回首頁"
             className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-[#6F5FD6]"
           >
-            {/* 先用圖示佔位，之後放真的圖片連結就會直接套用（見 icon-paths.ts 的 back）。 */}
-            <IconImg src={ICON_PATHS.back} alt="返回" size={16} />
+            <FaIcon icon="arrow-left" size={16} />
           </Link>
         </div>
 
@@ -341,8 +339,6 @@ export function ResultsView({
                   </span>
                 ) : null}
                 <span className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${badgeClass(mode)}`}>
-                  {/* 火車已經有上面的車種分類頁籤了，這裡不用再重複講車種名稱也不用圖示，只顯示車次號。 */}
-                  {!isTrain && <IconImg src={meta.icon} alt={meta.label} size={12} />}
                   {isTrain ? trainNumberOf(r.code) : r.code}
                   {mode === "bus" ? " 路" : ""}
                 </span>
@@ -393,8 +389,7 @@ export function ResultsView({
           style={{ bottom: "calc(env(safe-area-inset-bottom) + 5.5rem)", background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
           className="fixed right-5 z-20 grid size-11 place-items-center rounded-full shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)] transition-opacity hover:opacity-90"
         >
-          {/* 箭頭先用圖示佔位，之後放真的圖片連結就會直接套用（見 icon-paths.ts 的 goTop）。 */}
-          <IconImg src={ICON_PATHS.goTop} alt="回到頂部" size={20} />
+          <FaIcon icon="arrow-up" size={18} className="text-white" />
         </button>
       )}
 

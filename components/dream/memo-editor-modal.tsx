@@ -60,9 +60,12 @@ export function MemoEditorModal({
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30" onClick={onClose}>
+      {/* max-h 用 % 不是 vh：外層卡片容器有 transform，是這個 fixed 彈窗的定位基準，桌面寬度
+          時卡片是寫死 850px 高、不是跟著瀏覽器視窗高度變化，vh 會抓到瀏覽器高度而不是卡片
+          高度，兩者不一致時彈窗會比卡片本身還高。 */}
       <div
-        className="flex max-h-[85vh] w-full max-w-[400px] flex-col overflow-y-auto rounded-t-[1.75rem] bg-white sm:rounded-[1.75rem]"
+        className="flex max-h-[70%] w-full flex-col overflow-y-auto rounded-t-[1.75rem] bg-white"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-[#ECE4FA] px-5 py-4">

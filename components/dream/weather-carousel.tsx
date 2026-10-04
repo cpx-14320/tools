@@ -77,13 +77,13 @@ function WeatherCard({ block, dayOffset }: { block: WeatherBlock; dayOffset: 0 |
 
   return (
     <div className="flex min-w-0 items-center gap-2 rounded-2xl bg-[#F3EFFC] p-3">
-      {weather && <ImageSlot src={weather.icon} alt={weather.label} className="size-8 shrink-0 rounded-lg" />}
+      {weather && <ImageSlot src={weather.icon} alt={weather.label} className="size-10 shrink-0 rounded-lg" />}
       <div className="min-w-0 flex-1">
         <p className="truncate text-[11px] text-[#9C94C4]">
           {block.city} {block.district}
         </p>
         {weather?.pop !== undefined && <p className="truncate text-[11px] text-[#9C94C4]">降雨機率 {weather.pop}%</p>}
-        <p className="truncate text-sm font-semibold text-[#4A3B7C]">
+        <p className="truncate text-[12px] font-semibold text-[#4A3B7C]">
           {/* 查詢中先顯示「載入中」，不要先塞假資料再被真資料蓋掉，看起來會像閃一下。 */}
           {weather ? `${weather.temp}°C・${weather.label}` : "載入中…"}
         </p>

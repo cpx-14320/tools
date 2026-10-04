@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import { type Mode } from "./stations-data";
-import { IconImg } from "./icon-img";
-import { ICON_PATHS } from "./icon-paths";
+import { FaIcon } from "./fa-icon";
 import { DISTRICTS_BY_CITY } from "@/lib/cwa-districts";
 import type { WeatherBlock } from "./weather-carousel";
 
 const MODES: { key: Mode; label: string; icon: string }[] = [
-  { key: "bus", label: "公車", icon: ICON_PATHS.modeBus },
-  { key: "train", label: "火車", icon: ICON_PATHS.modeTrain },
-  { key: "metro", label: "捷運", icon: ICON_PATHS.modeMetro },
-  { key: "thsr", label: "高鐵", icon: ICON_PATHS.modeThsr },
+  { key: "bus", label: "公車", icon: "bus" },
+  { key: "train", label: "火車", icon: "train" },
+  { key: "metro", label: "捷運", icon: "train-subway" },
+  // Font Awesome 免費版沒有專門的高鐵圖示，先沿用火車圖示代替。
+  { key: "thsr", label: "高鐵", icon: "train" },
 ];
 
 export interface HomeDefaults {
@@ -45,7 +45,7 @@ function CityDistrictPicker({
   return (
     <div className="grid grid-cols-2 gap-2">
       <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] px-3 py-3">
-        <IconImg src={ICON_PATHS.pin} alt="地點" size={14} />
+        <FaIcon icon="location-dot" size={14} />
         <select
           value={safeCity}
           onChange={(e) => {
@@ -103,9 +103,12 @@ export function HomeSettingsModal({
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30" onClick={onClose}>
+      {/* max-h 用 % 不是 vh：外層卡片容器有 transform，是這個 fixed 彈窗的定位基準，桌面寬度
+          時卡片是寫死 850px 高、不是跟著瀏覽器視窗高度變化，vh 會抓到瀏覽器高度而不是卡片
+          高度，兩者不一致時彈窗會比卡片本身還高。 */}
       <div
-        className="flex max-h-[85vh] w-full max-w-[400px] flex-col overflow-y-auto rounded-t-[1.75rem] bg-white sm:rounded-[1.75rem]"
+        className="flex max-h-[70%] w-full flex-col overflow-y-auto rounded-t-[1.75rem] bg-white"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-[#ECE4FA] px-5 py-4">
@@ -119,7 +122,7 @@ export function HomeSettingsModal({
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-[#9C94C4]">預設運輸工具</span>
             <div className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] px-4 py-3">
-              <IconImg src={MODES.find((m) => m.key === draft.defaultMode)?.icon ?? ICON_PATHS.modeTrain} alt="運輸工具" size={18} />
+              <FaIcon icon={MODES.find((m) => m.key === draft.defaultMode)?.icon ?? "train"} size={16} />
               <select
                 value={draft.defaultMode}
                 onChange={(e) => setDraft((d) => ({ ...d, defaultMode: e.target.value as Mode }))}

@@ -34,7 +34,12 @@ export function MoreView() {
             ) : (
               otherTools.map((tool) => (
                 <Link key={tool.toolId} href={tool.href} className="flex w-full items-center gap-3 px-4 py-3 text-left">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#F3EFFC] text-lg">{tool.icon}</span>
+                  {tool.iconImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={tool.iconImage} alt={tool.name} className="size-10 shrink-0 object-contain" />
+                  ) : (
+                    <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#F3EFFC] text-lg">{tool.icon}</span>
+                  )}
                   <span className="flex-1 text-sm text-[#4A3B7C]">{tool.name}</span>
                   <span aria-hidden className="text-[#C7BFE6]">
                     ›

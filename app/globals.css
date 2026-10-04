@@ -17,6 +17,7 @@
   --positive-soft: #DFF4EB;
   --negative: #E0607B;
   --negative-soft: #FBE3E8;
+  --icon: #ada0ff;
 
   --cat-a-bg: #FDE7D8; --cat-a-fg: #D97A3D;
   --cat-b-bg: #DCEAFC; --cat-b-fg: #3B6FD1;
@@ -43,6 +44,7 @@
   --color-positive-soft: var(--positive-soft);
   --color-negative: var(--negative);
   --color-negative-soft: var(--negative-soft);
+  --color-icon: var(--icon);
 
   --color-cat-a-bg: var(--cat-a-bg); --color-cat-a-fg: var(--cat-a-fg);
   --color-cat-b-bg: var(--cat-b-bg); --color-cat-b-fg: var(--cat-b-fg);
