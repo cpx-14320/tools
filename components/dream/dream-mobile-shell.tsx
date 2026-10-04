@@ -12,8 +12,21 @@ export function DreamMobileShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex justify-center bg-[#EFE9FB] px-0 py-0 sm:px-4 sm:py-6">
       <div
-        className="relative flex min-h-screen w-full max-w-[430px] flex-col overflow-hidden sm:min-h-[850px] sm:rounded-[2.25rem] sm:border-[6px] sm:border-white sm:shadow-2xl"
-        style={{ background: "linear-gradient(180deg, #EDE6FB 0%, #F3E7F3 45%, #E7DEF9 100%)" }}
+        // h-screen（不是 min-h-screen）是關鍵：卡片容器要有「固定、確定」的高度，
+        // flex 子項 main 才能正確算出「剩下的可用空間」當自己的高度，overflow-y-auto
+        // 才會真的在 main 內部產生捲動，而不是讓整個卡片被內容撐得比螢幕還高。之前
+        // 用 min-h-screen（只設下限）時，內容一多卡片就被撐到上萬 px 高，main 自己
+        // 完全沒有內部捲動（跟著整個 document 一起捲），連帶讓 sticky 失效（sticky
+        // 參照的「最近捲動祖先」變成這個永遠 scrollTop=0 的卡片本身，不是真的在捲的
+        // 那層）、go-top 按鈕的點擊命中也跟著出問題。
+        className="relative flex h-screen w-full max-w-[430px] flex-col overflow-hidden sm:h-[850px] sm:rounded-[2.25rem] sm:border-[6px] sm:border-white sm:shadow-2xl"
+        // transform（哪怕是沒作用的 translateZ(0)）會讓這個卡片容器變成底下所有
+        // position:fixed 子孫的定位基準，不再是整個瀏覽器視窗。寬螢幕時卡片本身是
+        // 置中、縮小顯示的「手機外觀」，不加這個的話 fixed 子孫（底部導覽列、
+        // go-top 按鈕）會貼齊整個瀏覽器視窗邊緣、跟卡片分家飄走，之前得每個 fixed
+        // 元素各自用 mx-auto max-w-[430px] 去手動湊；加了這行，底下的 fixed 元素
+        // 直接 inset-x-0／right-*／bottom-* 就會精確貼齊卡片邊界，不用再湊。
+        style={{ background: "linear-gradient(180deg, #EDE6FB 0%, #F3E7F3 45%, #E7DEF9 100%)", transform: "translateZ(0)" }}
       >
         {action && (
           <div className="absolute right-4 top-4 z-20">
@@ -27,9 +40,7 @@ export function DreamMobileShell({ children }: { children: ReactNode }) {
           </div>
         )}
 
-        {/* 導覽列只在窄螢幕（真手機）是 fixed 的，這裡補 padding-bottom 留出同等高度避免蓋住內容；
-            sm: 以上導覽列回到一般排列、本來就會自己佔位，不需要這段留白。 */}
-        <main className="min-h-0 flex-1 overflow-y-auto pb-24 sm:pb-0">{children}</main>
+        <main className="min-h-0 flex-1 overflow-y-auto pb-24">{children}</main>
 
         <DreamMobileNav />
       </div>

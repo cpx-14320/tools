@@ -40,7 +40,6 @@ interface TrainLastSearch {
   destCity: string;
   dest: string;
   date: string;
-  time: string;
 }
 
 function loadTrainSearch(): TrainLastSearch | null {
@@ -170,6 +169,14 @@ export function DreamHomeView() {
   const [weatherOriginDistrict, setWeatherOriginDistrict] = useState(initWeatherOrigin.station);
   const [weatherDestCity, setWeatherDestCity] = useState(initWeatherDest.city);
   const [weatherDestDistrict, setWeatherDestDistrict] = useState(initWeatherDest.station);
+  // 剛掛載、還沒讀完 localStorage 偏好值之前，天氣小卡的縣市／行政區文字先顯示「載入中…」，
+  // 不要顯示 initWeatherOrigin/initWeatherDest 算出來的寫死預設值（DISTRICTS_BY_CITY 表
+  // 第一筆剛好是宜蘭縣宜蘭市）——不然會先閃一下這個不是使用者設定、也不是真的查詢結果的
+  // 地名，看起來像是哪裡冒出來的錯誤資料。這個 state 故意不用 localStorage 同步讀（useState
+  // 初始值裡讀），因為這個頁面會先在伺服器端渲染一次，伺服器端沒有 localStorage，會跟瀏覽器
+  // 端算出來的結果不一致、觸發 hydration 不匹配；用「掛載後才翻成 true」这个效果本身跟
+  // hydration 無關，比較安全。
+  const [weatherReady, setWeatherReady] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   // 點「編輯」開彈窗那一刻的天氣設定快照，使用者點「取消」時要能還原回這個狀態
   // （彈窗內改天氣地區會即時套用到首頁，不是等按「儲存」才生效）。
@@ -225,7 +232,12 @@ export function DreamHomeView() {
   // 時這裡會換成真的使用者設定讀取）。
   useEffect(() => {
     const saved = loadDefaults();
-    if (!saved) return;
+    if (!saved) {
+      // 一樣是掛載時的一次性初始化，理由跟下面那一大段 disable 註解相同。
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setWeatherReady(true);
+      return;
+    }
     // localStorage 是外部、可能被改過或跨版本留下舊格式的資料來源，欄位不能直接信任；
     // 之前就真的發生過改了欄位名稱、舊資料對不上造成整頁壞掉的狀況（defaultTimeSlot→defaultTime）。
     // city 跟 district 是一組的，不能各自獨立 fallback——不然舊資料裡存的 city 配新預設值的
@@ -236,13 +248,12 @@ export function DreamHomeView() {
     const destValid = saved.weatherDestCity && DISTRICTS_BY_CITY[saved.weatherDestCity]?.includes(saved.weatherDestDistrict);
     // 這幾個 setState 是故意同步呼叫的：頁面掛載後才讀得到 localStorage，讀到就要立刻套用
     // 這組預設值，不是在訂閱外部事件、也不會連鎖觸發其他 effect，屬於這個規則容許的例外。
-    /* eslint-disable react-hooks/set-state-in-effect */
     selectMode(validMode);
     setWeatherOriginCity(originValid ? saved.weatherOriginCity : initWeatherOrigin.city);
     setWeatherOriginDistrict(originValid ? saved.weatherOriginDistrict : initWeatherOrigin.station);
     setWeatherDestCity(destValid ? saved.weatherDestCity : initWeatherDest.city);
     setWeatherDestDistrict(destValid ? saved.weatherDestDistrict : initWeatherDest.station);
-    /* eslint-enable react-hooks/set-state-in-effect */
+    setWeatherReady(true);
     // 這個 effect 故意只在掛載時跑一次：mode/selectMode 讀的是掛載當下的值，
     // 不需要、也不該在使用者之後自己切換運輸工具時重新套用存檔的預設值。
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -289,7 +300,9 @@ export function DreamHomeView() {
         setDestCity(saved.destCity);
         setDest(saved.dest);
         setDate(saved.date || todayLocal());
-        setTime(saved.time || nowHHMM());
+        // 時間不記住——每次進來都先用現在的時間頂著，使用者想要別的時間自己調，
+        // 不要讓很久以前選過的一個時間點一直陰魂不散地出現在新的一次查詢裡。
+        setTime(nowHHMM());
         return;
       }
     }
@@ -303,12 +316,13 @@ export function DreamHomeView() {
     setDest(cities[dCity][dCity === oCity && cities[dCity].length > 1 ? 1 : 0]);
   }
 
-  // 火車模式下，出發／抵達站、日期、時間只要變動就存起來，下次切回火車模式會自動還原，
-  // 不用另外在編輯彈窗裡設「預設站牌」。
+  // 火車模式下，出發／抵達站、日期只要變動就存起來，下次切回火車模式會自動還原，不用
+  // 另外在編輯彈窗裡設「預設站牌」。時間故意不存——時間欄位永遠先顯示現在的時間，
+  // 使用者想要別的時間自己調（見 selectMode 裡的說明）。
   useEffect(() => {
     if (mode !== "train") return;
-    saveTrainSearch({ originCity, origin, destCity, dest, date, time });
-  }, [mode, originCity, origin, destCity, dest, date, time]);
+    saveTrainSearch({ originCity, origin, destCity, dest, date });
+  }, [mode, originCity, origin, destCity, dest, date]);
 
   function swapStations() {
     setOriginCity(destCity);
@@ -344,8 +358,8 @@ export function DreamHomeView() {
       <div className="relative z-10 -mt-16 flex-1 rounded-t-[2rem] bg-white px-5 pb-6 pt-5 shadow-[0_-8px_24px_-8px_rgba(111,95,214,0.2)]">
         <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-[#F3EFFC] p-3">
           {[
-            { label: `${weatherOriginCity} ${weatherOriginDistrict}`, weather: weatherOrigin },
-            { label: `${weatherDestCity} ${weatherDestDistrict}`, weather: weatherDest },
+            { label: weatherReady ? `${weatherOriginCity} ${weatherOriginDistrict}` : "載入中…", weather: weatherOrigin },
+            { label: weatherReady ? `${weatherDestCity} ${weatherDestDistrict}` : "載入中…", weather: weatherDest },
           ].map((place, i) => (
             <div key={i} className="flex items-center gap-2">
               <IconImg src={place.weather.icon} alt={place.weather.label} size={28} />

@@ -16,15 +16,10 @@ export function DreamMobileNav() {
   const pathname = usePathname();
 
   return (
-    // fixed 在手機外觀容器（最大 430px、置中）的正下方，不佔版面流動空間——
-    // 跟 expenses-mobile-nav.tsx 同一套做法，main 要記得補對應的 padding-bottom，
-    // 不然內容最下面會被這個 nav 蓋住。sm: 以上（寬螢幕時維持手機外觀）改回一般
-    // 文件流排列：這種情況下卡片本身會置中顯示、不會貼齊視窗邊緣，fixed 是相對
-    // 整個瀏覽器視窗定位，會讓 nav 跟卡片分家、懸空跑到視窗最下面。
-    // sm:mx-0 很關鍵：static 時這個 div 是 flex-col 容器（卡片）的 flex item，
-    // 殘留的 mx-auto（水平自動 margin）會讓 flexbox 的 stretch 失效、整個 nav
-    // 縮成內容最小寬度，害「我的行程」「我的最愛」擠到換行——取消掉才會撐滿卡片寬度。
-    <div className="fixed inset-x-0 bottom-0 z-10 mx-auto max-w-[430px] sm:static sm:mx-0 sm:max-w-none">
+    // fixed 貼在手機外觀容器（卡片）正下方——DreamMobileShell 的卡片容器本身有
+    // transform，會變成 fixed 後代的定位基準，不是整個瀏覽器視窗，所以 inset-x-0
+    // 直接就貼齊卡片左右邊界，不用再額外用 mx-auto／max-w 去手動湊寬度。
+    <div className="fixed inset-x-0 bottom-0 z-10">
       <nav
         className="flex items-center justify-around border-t border-[#ECE4FA] bg-white px-2 py-2.5"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 10px)" }}

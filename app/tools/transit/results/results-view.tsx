@@ -160,64 +160,71 @@ export function ResultsView({
   const [typeTab, setTypeTab] = useState("全部");
   const visibleResults = isTrain && typeTab !== "全部" ? results.filter((r) => trainTypeOf(r.code) === typeTab) : results;
 
-  // 錨點效果：列表一出現（或切換車種頁籤）就跳到「還沒過站」的第一筆卡片，不用讓使用者
-  // 自己往下滑過一排已經發車的班次才找到真正有用的那筆。全部都過站了就不特別捲動，
-  // 留在最上面就好（捲到最後一筆past意義不大，使用者自己往下看就知道全部都過了）。
+  // 錨點效果：列表一出現（或切換車種頁籤）就跳到「最後一筆已過站」的卡片，讓使用者一眼
+  // 看到「剛好錯過的那班」再往下接著看還沒過站的班次，不用自己往下滑過一排已發車的班次。
+  // 沒有任何一筆過站（第一筆就是還沒過站）或全部都過站了，都不特別捲動，留在最上面就好。
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   useEffect(() => {
     if (visibleResults.length === 0) return;
     const firstUpcoming = visibleResults.findIndex((r) => !r.isPast);
-    const target = cardRefs.current[firstUpcoming];
-    if (firstUpcoming > 0 && target) scrollWithin(target, "start");
+    const lastPastIndex = firstUpcoming > 0 ? firstUpcoming - 1 : -1;
+    const target = lastPastIndex >= 0 ? cardRefs.current[lastPastIndex] : null;
+    if (target) scrollWithin(target, "start");
   }, [visibleResults]);
 
   return (
-    <div className="flex flex-col px-5 pb-6 pt-6">
-      <div className="flex items-center gap-3">
-        <Link
-          href="/tools/transit"
-          aria-label="返回首頁"
-          className="grid size-8 shrink-0 place-items-center rounded-full bg-[#F3EFFC] text-[#6F5FD6]"
-        >
-          ←
-        </Link>
-        <div className="min-w-0">
-          <p className="truncate text-base font-bold text-[#4A3B7C]">
-            {origin} <span aria-hidden>→</span> {dest}
-          </p>
-          <p className="flex items-center gap-1 text-xs text-[#B3ABD4]">
-            <IconImg src={meta.icon} alt={meta.label} size={12} />{" "}
-            {meta.label}・
-            {isTrain ? (loading ? "查詢中…" : `共 ${visibleResults.length} 筆班次`) : `共 ${results.length} 筆班次・之後會接真的即時資料`}
-          </p>
-        </div>
-      </div>
-
-      {isTrain && (
-        <div className="-mx-5 mt-4 overflow-x-auto px-5">
-          <div className="inline-flex items-center gap-1 rounded-full bg-[#F3EFFC] p-1">
-            {TRAIN_TYPE_TABS.map((t) => {
-              const active = typeTab === t;
-              return (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTypeTab(t)}
-                  className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
-                    active ? "bg-white text-[#6F5FD6] shadow-[0_2px_8px_-2px_rgba(111,95,214,0.4)]" : "text-[#9C94C4]"
-                  }`}
-                >
-                  {t}
-                </button>
-              );
-            })}
+    <div className="flex flex-col">
+      {/* 起訖站標題跟分類頁籤 sticky 固定在頂端——列表資料一多，使用者切換頁籤或想看
+          共幾筆班次時不用先滑回最上面。sticky 是相對這個可捲動區域本身，不像 fixed
+          需要額外處理寬螢幕手機外框卡片置中的問題。背景要蓋住，不然捲動時後面的卡片
+          會透出來。 */}
+      <div className="sticky top-0 z-10 bg-[#F3EFFC] px-5 pb-4 pt-6">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/tools/transit"
+            aria-label="返回首頁"
+            className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-[#6F5FD6]"
+          >
+            ←
+          </Link>
+          <div className="min-w-0">
+            <p className="truncate text-base font-bold text-[#4A3B7C]">
+              {origin} <span aria-hidden>→</span> {dest}
+            </p>
+            <p className="flex items-center gap-1 text-xs text-[#B3ABD4]">
+              <IconImg src={meta.icon} alt={meta.label} size={12} />{" "}
+              {meta.label}・
+              {isTrain ? (loading ? "查詢中…" : `共 ${visibleResults.length} 筆班次`) : `共 ${results.length} 筆班次・之後會接真的即時資料`}
+            </p>
           </div>
         </div>
-      )}
 
-      {isTrain && trainError && <p className="mt-4 rounded-2xl bg-[#FDEEF0] px-4 py-3 text-xs text-[#D1517E]">{trainError}</p>}
+        {isTrain && (
+          <div className="-mx-5 mt-4 overflow-x-auto px-5">
+            <div className="inline-flex items-center gap-1 rounded-full bg-white p-1">
+              {TRAIN_TYPE_TABS.map((t) => {
+                const active = typeTab === t;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTypeTab(t)}
+                    className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+                      active ? "bg-[#6F5FD6] text-white shadow-[0_2px_8px_-2px_rgba(111,95,214,0.4)]" : "text-[#9C94C4]"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
 
-      <div className="mt-4 flex flex-col gap-2.5">
+      {isTrain && trainError && <p className="mx-5 mt-4 rounded-2xl bg-[#FDEEF0] px-4 py-3 text-xs text-[#D1517E]">{trainError}</p>}
+
+      <div className="mt-4 flex flex-col gap-2.5 px-5 pb-6">
         {visibleResults.map((r, i) => (
           <div
             key={i}
@@ -278,23 +285,22 @@ export function ResultsView({
       </div>
 
       {visibleResults.length > 0 && (
-        // 外層跟底部導覽列用同一套定位技巧（fixed inset-x-0 + mx-auto + max-w-430px）：
-        // 寬螢幕時手機外框卡片是置中的，直接 fixed right-* 會貼齊整個瀏覽器視窗右邊、
-        // 跟卡片分家飄走，要先框出跟卡片對齊的寬度，按鈕再相對這個寬度卡右下角。
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto max-w-[430px]">
-          <button
-            type="button"
-            onClick={() => {
-              const main = document.querySelector("main");
-              if (main) scrollContainerToTop(main);
-            }}
-            aria-label="回到頂部"
-            style={{ bottom: "calc(env(safe-area-inset-bottom) + 5.5rem)", background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
-            className="pointer-events-auto absolute right-5 grid size-11 place-items-center rounded-full text-white shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)] transition-opacity hover:opacity-90"
-          >
-            ↑
-          </button>
-        </div>
+        // DreamMobileShell 的卡片容器本身有 transform，是這個 fixed 按鈕的定位基準
+        // （不是整個瀏覽器視窗），right-5／bottom 直接貼齊卡片邊界，不用再額外包一層
+        // mx-auto + max-w-[430px] 去手動對齊寬度。
+        <button
+          type="button"
+          onClick={() => {
+            const main = document.querySelector("main");
+            if (main) scrollContainerToTop(main);
+          }}
+          aria-label="回到頂部"
+          style={{ bottom: "calc(env(safe-area-inset-bottom) + 5.5rem)", background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
+          className="fixed right-5 z-20 grid size-11 place-items-center rounded-full shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)] transition-opacity hover:opacity-90"
+        >
+          {/* 箭頭先用圖示佔位，之後放真的圖片連結就會直接套用（見 icon-paths.ts 的 goTop）。 */}
+          <IconImg src={ICON_PATHS.goTop} alt="回到頂部" size={20} />
+        </button>
       )}
     </div>
   );
