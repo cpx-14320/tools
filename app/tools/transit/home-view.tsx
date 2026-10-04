@@ -106,8 +106,9 @@ interface WeatherInfo {
   temp: number;
 }
 
-// API 還沒回來、或查詢失敗時先用縣市名稱算一個固定（非隨機）的假天氣頂著畫面，
-// 避免整個天氣小卡在真資料載入前是空的。
+// 查詢「失敗」時（不是還在查詢中）才用縣市名稱算一個固定（非隨機）的假天氣頂著畫面，
+// 避免整個天氣小卡壞掉時是空的。這跟「查詢中」是不同的狀態——查詢中要讓畫面顯示
+// 「載入中」，不能先塞這組假資料，不然等真資料回來會整個跳掉、看起來像資料閃爍。
 function mockWeather(city: string): WeatherInfo {
   let hash = 0;
   for (const ch of city) hash = (hash * 31 + ch.charCodeAt(0)) % 997;
@@ -116,25 +117,37 @@ function mockWeather(city: string): WeatherInfo {
 }
 
 // 串中央氣象署開放資料平台的鄉鎮天氣預報（依縣市＋鄉鎮區查，比只到縣市等級的 36 小時
-// 預報更精確），查詢中或失敗時退回 mockWeather 佔位，卡片呈現方式不用變。
-function useCityWeather(city: string, district: string): WeatherInfo {
+// 預報更精確）。回傳 null 代表「還在查詢中」，呼叫端要自己顯示「載入中」之類的文字，
+// 不要在這裡先塞假資料頂著——查詢失敗（真的查不到）才落到 mockWeather，那是查過一次
+// 就不會再變的最終狀態，不會有「假資料又被真資料蓋掉」這種閃爍問題。
+function useCityWeather(city: string, district: string): WeatherInfo | null {
   const [info, setInfo] = useState<WeatherInfo | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    // city/district 一變就要重新查，故意同步把上一次的結果清掉讓畫面回到查詢中狀態，
+    // 不是在訂閱外部事件、也不會連鎖觸發其他 effect，屬於這個規則容許的例外。
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setInfo(null);
     fetch(`/api/weather/forecast?city=${encodeURIComponent(city)}&district=${encodeURIComponent(district)}`)
       .then((res) => res.json())
       .then((data: { bucket?: string; label?: string; temp?: number; error?: string }) => {
-        if (cancelled || data.error || data.temp === undefined || !data.bucket) return;
+        if (cancelled) return;
+        if (data.error || data.temp === undefined || !data.bucket) {
+          setInfo(mockWeather(city));
+          return;
+        }
         setInfo({ icon: WEATHER_ICON_BY_BUCKET[data.bucket] ?? ICON_PATHS.weatherCloudy, label: data.label ?? "未知", temp: data.temp });
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setInfo(mockWeather(city));
+      });
     return () => {
       cancelled = true;
     };
   }, [city, district]);
 
-  return info ?? mockWeather(city);
+  return info;
 }
 
 function resolveStation(cities: Record<string, string[]>, preferred: string | undefined, fallbackIndex: number) {
@@ -369,11 +382,12 @@ export function DreamHomeView() {
             { label: weatherReady ? `${weatherDestCity} ${weatherDestDistrict}` : "載入中…", weather: weatherDest },
           ].map((place, i) => (
             <div key={i} className="flex items-center gap-2">
-              <IconImg src={place.weather.icon} alt={place.weather.label} size={28} />
+              {place.weather && <IconImg src={place.weather.icon} alt={place.weather.label} size={28} />}
               <div className="min-w-0">
                 <p className="truncate text-[11px] text-[#9C94C4]">{place.label}</p>
                 <p className="truncate text-sm font-semibold text-[#4A3B7C]">
-                  {place.weather.temp}°C・{place.weather.label}
+                  {/* 查詢中先顯示「載入中」，不要先塞假資料再被真資料蓋掉，看起來會像閃一下。 */}
+                  {place.weather ? `${place.weather.temp}°C・${place.weather.label}` : "載入中…"}
                 </p>
               </div>
             </div>
