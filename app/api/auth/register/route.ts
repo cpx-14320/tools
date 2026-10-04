@@ -1,17 +1,15 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import { createUser, createSession, findUserByEmail } from "@/lib/auth";
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { createUser, createSession, findUserByUsername } from "@/lib/auth";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
-  const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+  const username = typeof body?.username === "string" ? body.username.trim().toLowerCase() : "";
   const password = typeof body?.password === "string" ? body.password : "";
   const name = typeof body?.name === "string" ? body.name.trim() : "";
 
-  if (!EMAIL_RE.test(email)) {
-    return NextResponse.json({ error: "請輸入正確的 Email 格式" }, { status: 400 });
+  if (username.length < 3) {
+    return NextResponse.json({ error: "帳號至少要 3 個字元" }, { status: 400 });
   }
   if (password.length < 8) {
     return NextResponse.json({ error: "密碼至少要 8 個字元" }, { status: 400 });
@@ -20,11 +18,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "請輸入名稱" }, { status: 400 });
   }
 
-  if (await findUserByEmail(email)) {
-    return NextResponse.json({ error: "這個 Email 已經註冊過了" }, { status: 409 });
+  if (await findUserByUsername(username)) {
+    return NextResponse.json({ error: "這個帳號已經註冊過了" }, { status: 409 });
   }
 
-  const user = await createUser(email, password, name);
+  const user = await createUser(username, password, name);
   await createSession(new ObjectId(user.id));
   return NextResponse.json({ user });
 }

@@ -10,7 +10,7 @@ export function RegisterView() {
   const router = useRouter();
   const { refresh } = useAuth();
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -23,7 +23,7 @@ export function RegisterView() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, username, password }),
       });
       const data: { error?: string } = await res.json();
       if (!res.ok) {
@@ -61,13 +61,14 @@ export function RegisterView() {
               />
             </label>
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted">Email</span>
+              <span className="text-xs font-medium text-muted">帳號</span>
               <input
-                type="email"
+                type="text"
                 required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                minLength={3}
+                autoComplete="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="rounded-xl border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand"
               />
             </label>

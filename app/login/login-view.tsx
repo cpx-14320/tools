@@ -9,7 +9,7 @@ import { Card, CardBody, Button } from "@/components/ui";
 export function LoginView() {
   const router = useRouter();
   const { refresh } = useAuth();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -22,7 +22,7 @@ export function LoginView() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
       const data: { error?: string } = await res.json();
       if (!res.ok) {
@@ -49,13 +49,13 @@ export function LoginView() {
         <CardBody>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted">Email</span>
+              <span className="text-xs font-medium text-muted">帳號</span>
               <input
-                type="email"
+                type="text"
                 required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="rounded-xl border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand"
               />
             </label>

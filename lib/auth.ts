@@ -9,14 +9,14 @@ const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 天
 
 export interface SessionUser {
   id: string;
-  email: string;
+  username: string;
   name: string;
   tools: string[];
 }
 
 export interface UserDoc {
   _id: ObjectId;
-  email: string;
+  username: string;
   passwordHash: string;
   name: string;
   tools: string[];
@@ -37,7 +37,7 @@ export function verifyPassword(password: string, hash: string): Promise<boolean>
 }
 
 export function toSessionUser(user: UserDoc): SessionUser {
-  return { id: user._id.toHexString(), email: user.email, name: user.name, tools: user.tools };
+  return { id: user._id.toHexString(), username: user.username, name: user.name, tools: user.tools };
 }
 
 /** 建立一筆 session 資料並把對應的 cookie 寫進回應裡，session token 是隨機字串，
@@ -86,17 +86,17 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   return toSessionUser(user);
 }
 
-export async function findUserByEmail(email: string) {
+export async function findUserByUsername(username: string) {
   const db = await getDb();
-  return db.collection<UserDoc>("users").findOne({ email });
+  return db.collection<UserDoc>("users").findOne({ username });
 }
 
 /** 新註冊的使用者預設拿到目前 toolsRegistry 裡所有工具的權限——這個小工具包目前
  *  是朋友／自己人在用，還沒有「申請權限才能用」的審核流程，先用這個簡單預設值。 */
-export async function createUser(email: string, password: string, name: string): Promise<SessionUser> {
+export async function createUser(username: string, password: string, name: string): Promise<SessionUser> {
   const db = await getDb();
   const tools = await db.collection("toolsRegistry").find().map((t) => t.toolId as string).toArray();
   const passwordHash = await hashPassword(password);
-  const result = await db.collection<UserDoc>("users").insertOne({ email, passwordHash, name, tools } as UserDoc);
-  return { id: result.insertedId.toHexString(), email, name, tools };
+  const result = await db.collection<UserDoc>("users").insertOne({ username, passwordHash, name, tools } as UserDoc);
+  return { id: result.insertedId.toHexString(), username, name, tools };
 }

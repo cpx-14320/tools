@@ -31,7 +31,7 @@ let indexesReady: Promise<void> | null = null;
 // 所以每次拿 db 都呼叫一次也沒關係，不會重複建立或壞資料。
 async function ensureIndexes(db: Db): Promise<void> {
   await Promise.all([
-    db.collection("users").createIndex({ email: 1 }, { unique: true }),
+    db.collection("users").createIndex({ username: 1 }, { unique: true }),
     db.collection("sessions").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
     db.collection("toolsRegistry").createIndex({ toolId: 1 }, { unique: true }),
   ]);

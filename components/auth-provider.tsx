@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 
 export interface AuthUser {
   id: string;
-  email: string;
+  username: string;
   name: string;
   tools: string[];
 }
