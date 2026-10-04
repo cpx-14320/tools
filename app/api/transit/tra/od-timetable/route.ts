@@ -61,8 +61,13 @@ export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const origin = params.get("origin") ?? "";
   const dest = params.get("dest") ?? "";
-  const date = params.get("date") || todayInTaipei();
-  const time = params.get("time") || nowHHmmInTaipei();
+  const today = todayInTaipei();
+  const date = params.get("date") || today;
+  // 「已過期」要跟真實的現在時間比，不能用使用者選的搜尋時間——不然選了某個時間點查詢，
+  // 那個時間點之前的車次全部會被標成過期，即使實際上根本還沒發車（例如首頁「記住上次查詢」
+  // 復原了之前選的時間，跟當下真正的時間完全無關）。查詢的日期如果不是今天，過去/未來一整天
+  // 直接整批判斷，不用管時分。
+  const nowTime = nowHHmmInTaipei();
 
   try {
     const stations = await getTraStations();
@@ -107,7 +112,7 @@ export async function GET(request: Request) {
         // 「每日行駛」「只在假日行駛」之類的行駛狀態說明，台鐵官方寫好的文字直接顯示，不用自己組句子。
         operatingNote: t.TrainInfo.Note,
         delayMinutes: delayByTrainNo.get(t.TrainInfo.TrainNo),
-        isPast: depTime < time,
+        isPast: date < today || (date === today && depTime < nowTime),
       };
     })
       .filter((row): row is NonNullable<typeof row> => row !== null)
