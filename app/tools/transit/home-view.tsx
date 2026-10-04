@@ -79,7 +79,6 @@ const QUICK_ACTIONS: { label: string; icon: string }[] = [
 // 絕不能進到 "use client" 檔案（會把伺服器端套件打包進前端 bundle）。
 interface Memo {
   id: string;
-  title: string;
   content: string;
   icon: string;
   remindAt: string | null;
@@ -224,7 +223,6 @@ export function DreamHomeView() {
   function saveMemos(drafts: MemoDraft[]) {
     const items = drafts.map((d) => ({
       id: d.id,
-      title: d.title,
       content: d.content,
       icon: d.icon,
       remindAt: d.remindAt ? new Date(d.remindAt).toISOString() : null,
@@ -645,7 +643,7 @@ export function DreamHomeView() {
               const countdown = m.remindAt ? formatRemindCountdown(m.remindAt) : null;
               return (
                 <div key={m.id} className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
-                  <ImageSlot src={memoIconPath(m.icon)} alt={m.title || "備忘錄"} className="size-12 shrink-0 rounded-xl" />
+                  <ImageSlot src={memoIconPath(m.icon)} alt="備忘錄" className="size-12 shrink-0 rounded-xl" />
                   <div className="min-w-0 flex-1">
                     <p className="mt-0.5 truncate text-xs text-[#9C94C4]">{m.content}</p>
                     {countdown && (

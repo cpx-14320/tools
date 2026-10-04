@@ -6,7 +6,6 @@ import { MEMO_ICON_OPTIONS } from "./memo-icons";
 
 export interface MemoDraft {
   id?: string;
-  title: string;
   content: string;
   icon: string;
   remindAt: string; // datetime-local 輸入框的格式（本地時間，沒有時區），空字串＝沒填
@@ -14,7 +13,6 @@ export interface MemoDraft {
 
 export interface MemoInitial {
   id: string;
-  title: string;
   content: string;
   icon: string;
   remindAt: string | null; // ISO 字串（UTC）
@@ -31,7 +29,7 @@ function toDatetimeLocal(iso: string | null): string {
 }
 
 function blankDraft(): MemoDraft {
-  return { title: "", content: "", icon: MEMO_ICON_OPTIONS[0].key, remindAt: "" };
+  return { content: "", icon: MEMO_ICON_OPTIONS[0].key, remindAt: "" };
 }
 
 export function MemoEditorModal({
@@ -47,7 +45,7 @@ export function MemoEditorModal({
 }) {
   const [items, setItems] = useState<MemoDraft[]>(
     initial.length > 0
-      ? initial.map((m) => ({ id: m.id, title: m.title, content: m.content, icon: m.icon, remindAt: toDatetimeLocal(m.remindAt) }))
+      ? initial.map((m) => ({ id: m.id, content: m.content, icon: m.icon, remindAt: toDatetimeLocal(m.remindAt) }))
       : [blankDraft()],
   );
 
@@ -100,13 +98,6 @@ export function MemoEditorModal({
                 ))}
               </div>
 
-              <input
-                type="text"
-                placeholder="標題"
-                value={item.title}
-                onChange={(e) => updateItem(i, { title: e.target.value })}
-                className="rounded-xl border border-[#ECE4FA] bg-white px-3 py-2 text-sm text-[#4A3B7C] outline-none focus:border-[#6F5FD6]"
-              />
               <textarea
                 placeholder="內容"
                 value={item.content}
@@ -120,7 +111,7 @@ export function MemoEditorModal({
                   type="datetime-local"
                   value={item.remindAt}
                   onChange={(e) => updateItem(i, { remindAt: e.target.value })}
-                  className="rounded-xl border border-[#ECE4FA] bg-white px-3 py-2 text-sm text-[#4A3B7C] outline-none focus:border-[#6F5FD6]"
+                  className="w-full rounded-xl border border-[#ECE4FA] bg-white px-3 py-2 text-sm text-[#4A3B7C] outline-none focus:border-[#6F5FD6] [&::-webkit-calendar-picker-indicator]:hidden"
                 />
               </label>
             </div>
@@ -141,7 +132,7 @@ export function MemoEditorModal({
           </button>
           <button
             type="button"
-            onClick={() => onSave(items.filter((it) => it.title.trim() || it.content.trim()))}
+            onClick={() => onSave(items.filter((it) => it.content.trim()))}
             className="rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)]"
             style={{ background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
           >

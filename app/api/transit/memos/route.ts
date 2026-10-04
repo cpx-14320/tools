@@ -18,14 +18,13 @@ export async function PUT(request: Request) {
   const body = await request.json().catch(() => null);
   const rawItems = Array.isArray(body?.items) ? body.items : [];
   const items: MemoInput[] = rawItems
-    .map((item: { id?: unknown; title?: unknown; content?: unknown; icon?: unknown; remindAt?: unknown }) => ({
+    .map((item: { id?: unknown; content?: unknown; icon?: unknown; remindAt?: unknown }) => ({
       id: typeof item?.id === "string" ? item.id : undefined,
-      title: typeof item?.title === "string" ? item.title.trim() : "",
       content: typeof item?.content === "string" ? item.content.trim() : "",
       icon: typeof item?.icon === "string" ? item.icon : "",
       remindAt: typeof item?.remindAt === "string" && item.remindAt ? item.remindAt : null,
     }))
-    .filter((item: MemoInput) => item.title || item.content);
+    .filter((item: MemoInput) => item.content);
 
   const memos = await syncMemos(new ObjectId(user.id), items);
   return NextResponse.json({ memos });

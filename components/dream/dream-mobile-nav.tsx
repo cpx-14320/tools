@@ -30,7 +30,6 @@ export function DreamMobileNav() {
             <Link key={tab.href} href={tab.href} className="flex flex-1 flex-col items-center gap-0.5 py-1 text-[11px]">
               <IconImg src={tab.icon} alt={tab.label} size={20} className={active ? "" : "opacity-50"} />
               <span className={active ? "font-semibold text-[#6F5FD6]" : "text-[#B3ABD4]"}>{tab.label}</span>
-              {active && <span className="mt-0.5 h-1 w-1 rounded-full bg-[#6F5FD6]" />}
             </Link>
           );
         })}

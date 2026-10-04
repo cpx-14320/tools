@@ -4,7 +4,6 @@ import { getDb } from "./mongodb";
 interface MemoDoc {
   _id: ObjectId;
   userId: ObjectId;
-  title: string;
   content: string;
   icon: string;
   remindAt: Date | null;
@@ -15,7 +14,6 @@ interface MemoDoc {
 
 export interface MemoDTO {
   id: string;
-  title: string;
   content: string;
   icon: string;
   remindAt: string | null;
@@ -23,7 +21,6 @@ export interface MemoDTO {
 
 export interface MemoInput {
   id?: string;
-  title: string;
   content: string;
   icon: string;
   remindAt: string | null;
@@ -32,7 +29,6 @@ export interface MemoInput {
 function toDTO(doc: MemoDoc): MemoDTO {
   return {
     id: doc._id.toHexString(),
-    title: doc.title,
     content: doc.content,
     icon: doc.icon,
     remindAt: doc.remindAt ? doc.remindAt.toISOString() : null,
@@ -68,13 +64,12 @@ export async function syncMemos(userId: ObjectId, items: MemoInput[]): Promise<M
     if (item.id && existingIds.has(item.id)) {
       await collection.updateOne(
         { _id: new ObjectId(item.id), userId },
-        { $set: { title: item.title, content: item.content, icon: item.icon, remindAt, order: i, updatedAt: now } },
+        { $set: { content: item.content, icon: item.icon, remindAt, order: i, updatedAt: now } },
       );
     } else {
       await collection.insertOne({
         _id: new ObjectId(),
         userId,
-        title: item.title,
         content: item.content,
         icon: item.icon,
         remindAt,
