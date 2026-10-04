@@ -3,8 +3,9 @@ import { MongoClient, type Db } from "mongodb";
 const DB_NAME = "Tools";
 
 declare global {
-  // 開發模式下 Next.js 熱重載會重新執行這個模組，用 global 快取連線，
-  // 不然每次重載都會開一條新的 MongoDB 連線，很快就把連線數用滿。
+  // 開發模式下 Next.js 熱重載會重新執行這個模組，用 global 快取連線，不然每次重載都會開
+  // 一條新的 MongoDB 連線，很快就把連線數用滿；正式環境（Vercel serverless）裡同一個還
+  // 熱著的 function instance 處理下一個請求時也能重複用這條連線，不用每次都重新連。
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
@@ -14,9 +15,14 @@ function createClientPromise(): Promise<MongoClient> {
   return new MongoClient(uri).connect();
 }
 
-const clientPromise = globalThis._mongoClientPromise ?? createClientPromise();
-if (process.env.NODE_ENV !== "production") {
-  globalThis._mongoClientPromise = clientPromise;
+// 故意不在模組頂層就建立連線——Next.js build 階段（`next build`）會匯入、分析這個模組
+// 所在的 import chain（route handler／layout），如果這裡在頂層就急著連線，build 環境
+// 沒有 MONGODB_URI 時會直接整個 build 失敗。改成只有第一次真的呼叫 getDb() 才連線。
+function getClientPromise(): Promise<MongoClient> {
+  if (!globalThis._mongoClientPromise) {
+    globalThis._mongoClientPromise = createClientPromise();
+  }
+  return globalThis._mongoClientPromise;
 }
 
 let indexesReady: Promise<void> | null = null;
@@ -42,7 +48,7 @@ async function ensureIndexes(db: Db): Promise<void> {
 }
 
 export async function getDb(): Promise<Db> {
-  const client = await clientPromise;
+  const client = await getClientPromise();
   const db = client.db(DB_NAME);
   indexesReady ??= ensureIndexes(db);
   await indexesReady;
