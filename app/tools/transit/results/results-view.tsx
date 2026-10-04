@@ -179,14 +179,7 @@ export function ResultsView({
           需要額外處理寬螢幕手機外框卡片置中的問題。背景要蓋住，不然捲動時後面的卡片
           會透出來。 */}
       <div className="sticky top-0 z-10 bg-[#F3EFFC] px-5 pb-4 pt-6">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/tools/transit"
-            aria-label="返回首頁"
-            className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-[#6F5FD6]"
-          >
-            ←
-          </Link>
+        <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-base font-bold text-[#4A3B7C]">
               {origin} <span aria-hidden>→</span> {dest}
@@ -197,6 +190,14 @@ export function ResultsView({
               {isTrain ? (loading ? "查詢中…" : `共 ${visibleResults.length} 筆班次`) : `共 ${results.length} 筆班次・之後會接真的即時資料`}
             </p>
           </div>
+          <Link
+            href="/tools/transit"
+            aria-label="返回首頁"
+            className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-[#6F5FD6]"
+          >
+            {/* 先用圖示佔位，之後放真的圖片連結就會直接套用（見 icon-paths.ts 的 back）。 */}
+            <IconImg src={ICON_PATHS.back} alt="返回" size={16} />
+          </Link>
         </div>
 
         {isTrain && (

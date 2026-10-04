@@ -30,4 +30,5 @@ export const ICON_PATHS = {
   heartFilled: "/icons/dream/heart-filled.png",
   heartOutline: "/icons/dream/heart-outline.png",
   goTop: "/icons/dream/go-top.png",
+  back: "/icons/dream/back.png",
 } as const;
