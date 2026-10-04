@@ -81,7 +81,7 @@ export function MemoEditorModal({
                 <span className="text-xs font-medium text-[#9C94C4]">第 {i + 1} 則</span>
                 {items.length > 1 && (
                   <button type="button" onClick={() => removeItem(i)} className="text-xs font-medium text-[#D1517E]">
-                    刪除這則
+                    刪除
                   </button>
                 )}
               </div>

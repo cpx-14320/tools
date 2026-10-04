@@ -75,13 +75,6 @@ const QUICK_ACTIONS: { label: string; icon: string }[] = [
   { label: "票價查詢", icon: ICON_PATHS.quickFare },
 ];
 
-// 跟「我的最愛」頁面同一組假資料，純展示用，之後要接真的常用路線資料再換掉。
-const FREQUENT_ROUTES = [
-  { origin: "台北站", dest: "台中站", duration: "約 2 小時 8 分" },
-  { origin: "台北站", dest: "高雄站", duration: "約 1 小時 36 分" },
-  { origin: "台中站", dest: "花蓮站", duration: "約 2 小時 34 分" },
-];
-
 // 前端用的輕量備忘錄型別，故意不從 lib/memos.ts 匯入——那個檔案會連到 mongodb 驅動程式，
 // 絕不能進到 "use client" 檔案（會把伺服器端套件打包進前端 bundle）。
 interface Memo {
@@ -635,22 +628,6 @@ export function DreamHomeView() {
           </div>
         </div>
 
-        {/* 常用路線：先照「我的最愛」頁面同一塊搬過來，純展示用的假資料，不串任何 API，
-            之後樣式會再陸續調整。 */}
-        <div className="mt-5 flex flex-col gap-2.5">
-          {FREQUENT_ROUTES.map((r, i) => (
-            <div key={i} className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
-              <ImageSlot alt={`${r.origin}到${r.dest}`} className="size-12 shrink-0 rounded-xl" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-[#4A3B7C]">
-                  {r.origin} <span aria-hidden>⇄</span> {r.dest}
-                </p>
-                <p className="mt-0.5 text-xs text-[#9C94C4]">{r.duration}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
         <p className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-[#4A3B7C]">
           <span aria-hidden className="text-[#C9A6F2]">
             ♦
@@ -667,17 +644,16 @@ export function DreamHomeView() {
             {memos.map((m) => {
               const countdown = m.remindAt ? formatRemindCountdown(m.remindAt) : null;
               return (
-                <div key={m.id} className="relative flex items-start gap-3 rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
+                <div key={m.id} className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
                   <ImageSlot src={memoIconPath(m.icon)} alt={m.title || "備忘錄"} className="size-12 shrink-0 rounded-xl" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-[#4A3B7C]">{m.title || "（未命名）"}</p>
-                    {m.content && <p className="mt-0.5 truncate text-xs text-[#9C94C4]">{m.content}</p>}
+                    <p className="mt-0.5 truncate text-xs text-[#9C94C4]">{m.content}</p>
+                    {countdown && (
+                      <span className={`mt-1.5 inline-block w-fit shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${REMIND_TONE_STYLE[countdown.tone]}`}>
+                        {countdown.text}
+                      </span>
+                    )}
                   </div>
-                  {countdown && (
-                    <span className={`absolute right-3 top-3 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${REMIND_TONE_STYLE[countdown.tone]}`}>
-                      {countdown.text}
-                    </span>
-                  )}
                 </div>
               );
             })}
