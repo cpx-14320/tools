@@ -38,4 +38,11 @@ export const ICON_PATHS = {
   memoBill: "/icons/dream/memo-bill.png",
   memoNote: "/icons/dream/memo-note.png",
   memoGift: "/icons/dream/memo-gift.png",
+
+  // 常用行程可選的圖示，key 跟 components/dream/frequent-trip-icons.ts 的
+  // FREQUENT_TRIP_ICON_OPTIONS 對應。
+  tripHome: "/icons/dream/trip-home.png",
+  tripWork: "/icons/dream/trip-work.png",
+  tripSchool: "/icons/dream/trip-school.png",
+  tripOther: "/icons/dream/trip-other.png",
 } as const;

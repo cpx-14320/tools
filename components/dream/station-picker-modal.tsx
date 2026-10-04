@@ -39,8 +39,11 @@ export function StationPickerModal({
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/30" onClick={onClose}>
-      <div className="flex w-full max-w-[400px] flex-col rounded-[1.75rem] bg-white" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30 sm:items-center" onClick={onClose}>
+      <div
+        className="flex w-full max-w-[400px] flex-col rounded-t-[1.75rem] bg-white sm:rounded-[1.75rem]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between border-b border-[#ECE4FA] px-5 py-4">
           <p className="font-semibold text-[#4A3B7C]">{title}</p>
           <button type="button" onClick={onClose} aria-label="關閉" className="grid size-8 place-items-center rounded-full text-[#9C94C4] hover:bg-[#F3EFFC]">

@@ -5,6 +5,10 @@ import { useEffect, useRef, useState } from "react";
 import { IconImg } from "@/components/dream/icon-img";
 import { ICON_PATHS } from "@/components/dream/icon-paths";
 import { scrollContainerToTop, scrollWithin } from "@/lib/scroll-within";
+import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY } from "@/components/dream/stations-data";
+import { TripGroupPickerModal } from "@/components/dream/trip-group-picker-modal";
+import { FREQUENT_TRIP_ICON_OPTIONS } from "@/components/dream/frequent-trip-icons";
+import type { FrequentTripDraft } from "@/components/dream/frequent-trip-modal";
 
 export type Mode = "bus" | "train" | "metro" | "thsr";
 
@@ -13,14 +17,6 @@ const MODE_META: Record<Mode, { label: string; icon: string }> = {
   thsr: { label: "高鐵", icon: ICON_PATHS.modeThsr },
   bus: { label: "公車", icon: ICON_PATHS.modeBus },
   metro: { label: "捷運", icon: ICON_PATHS.modeMetro },
-};
-
-const TRAIN_STYLE: Record<string, string> = {
-  自強: "bg-[#FBE3E8] text-[#D1517E]",
-  莒光: "bg-[#FDE7D8] text-[#D97A3D]",
-  區間: "bg-[#DCEAFC] text-[#3B6FD1]",
-  區間快: "bg-[#DCF3EC] text-[#2FAE82]",
-  普悠瑪: "bg-[#F0E8FC] text-[#9A5FD6]",
 };
 
 // TDX 回傳的車種名稱其實很雜（自強號依車型/有無自行車車廂細分成好幾種寫法，例如
@@ -41,18 +37,38 @@ function trainNumberOf(code: string): string {
   return code.match(/\d+/)?.[0] ?? code;
 }
 
+// 火車不分車種（自強／莒光／區間...），車次號統一用這個樣式，不再逐車種配色。
+const TRAIN_BADGE_STYLE = "bg-[#EDEAFC] text-[#8477C2]";
+
 const MODE_STYLE: Record<Mode, string> = {
-  train: "",
+  train: TRAIN_BADGE_STYLE,
   thsr: "bg-[#F3E8FC] text-[#9A5FD6]",
   bus: "bg-[#E3F6EC] text-[#2FAE82]",
   metro: "bg-[#E6EEFC] text-[#4E7FE0]",
 };
 
-function badgeClass(mode: Mode, code: string) {
-  if (mode === "train") {
-    return TRAIN_STYLE[trainTypeOf(code)];
-  }
+function badgeClass(mode: Mode) {
   return MODE_STYLE[mode];
+}
+
+// 加入行程分類時，常用行程的站點欄位要存對應的縣市（跟首頁的出發／抵達站選擇器同一套
+// 資料），不然之後打開分類編輯彈窗時，站名的縣市下拉會對不起來。公車／高鐵／捷運用
+// 現成的靜態縣市清單找；火車站名有 ~240 個、不在靜態墊檔清單裡，查一次 TDX 真實站名清單。
+async function resolveCityFor(mode: Mode, stationName: string): Promise<string> {
+  if (mode === "train") {
+    try {
+      const res = await fetch("/api/transit/tra/stations");
+      const data: { cities?: { city: string; stations: { name: string }[] }[] } = await res.json();
+      const found = data.cities?.find((c) => c.stations.some((s) => s.name === stationName));
+      if (found) return found.city;
+    } catch {
+      // 查不到就退回墊檔清單的第一個縣市，使用者之後打開分類編輯彈窗自己校正站名即可。
+    }
+    return Object.keys(FALLBACK_TRAIN_STATIONS_BY_CITY)[0];
+  }
+  const cities = STATIONS_BY_CITY[mode];
+  const found = Object.keys(cities).find((c) => cities[c].includes(stationName));
+  return found ?? Object.keys(cities)[0];
 }
 
 interface ResultRow {
@@ -159,6 +175,63 @@ export function ResultsView({
   const loading = isTrain && trainRows === null && !trainError;
   const [typeTab, setTypeTab] = useState("全部");
   const visibleResults = isTrain && typeTab !== "全部" ? results.filter((r) => trainTypeOf(r.code) === typeTab) : results;
+  // 點班次卡片右邊的「加入行程」時記住是哪一筆，選好分類（或新增分類）後才知道要用
+  // 哪一筆的時間／站名組出常用行程的資料。
+  const [pickerTarget, setPickerTarget] = useState<ResultRow | null>(null);
+
+  async function addPickerTargetToGroup(groupId: string) {
+    const target = pickerTarget;
+    if (!target) return;
+    setPickerTarget(null);
+    const [originCity, destCity] = await Promise.all([resolveCityFor(mode, origin), resolveCityFor(mode, dest)]);
+    const existing: FrequentTripDraft[] = await fetch("/api/transit/frequent-trips")
+      .then((res) => res.json())
+      .then((data: { trips?: (FrequentTripDraft & { groupId: string })[] }) => (data.trips ?? []).filter((t) => t.groupId === groupId))
+      .catch(() => []);
+    const newItem: FrequentTripDraft = {
+      icon: FREQUENT_TRIP_ICON_OPTIONS[0].key,
+      originCity,
+      origin,
+      destCity,
+      dest,
+      startTime: target.time,
+      endTime: target.arrive,
+    };
+    await fetch("/api/transit/frequent-trips", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode, groupId, items: [...existing, newItem] }),
+    }).catch(() => {});
+  }
+
+  async function createGroupAndAddPickerTarget(name: string) {
+    const target = pickerTarget;
+    if (!target) return;
+    setPickerTarget(null);
+    const createData: { group?: { id: string } } = await fetch("/api/transit/trip-groups", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode, name }),
+    })
+      .then((res) => res.json())
+      .catch(() => ({}));
+    if (!createData.group) return;
+    const [originCity, destCity] = await Promise.all([resolveCityFor(mode, origin), resolveCityFor(mode, dest)]);
+    const newItem: FrequentTripDraft = {
+      icon: FREQUENT_TRIP_ICON_OPTIONS[0].key,
+      originCity,
+      origin,
+      destCity,
+      dest,
+      startTime: target.time,
+      endTime: target.arrive,
+    };
+    await fetch("/api/transit/frequent-trips", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode, groupId: createData.group.id, items: [newItem] }),
+    }).catch(() => {});
+  }
 
   // 錨點效果：列表一出現（或切換車種頁籤）就跳到「最後一筆已過站」的卡片，讓使用者一眼
   // 看到「剛好錯過的那班」再往下接著看還沒過站的班次，不用自己往下滑過一排已發車的班次。
@@ -181,13 +254,14 @@ export function ResultsView({
       <div className="sticky top-0 z-10 bg-[#F3EFFC] px-5 pb-4 pt-6">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-base font-bold text-[#4A3B7C]">
-              {origin} <span aria-hidden>→</span> {dest}
-            </p>
-            <p className="flex items-center gap-1 text-xs text-[#B3ABD4]">
-              <IconImg src={meta.icon} alt={meta.label} size={12} />{" "}
-              {meta.label}・
-              {isTrain ? (loading ? "查詢中…" : `共 ${visibleResults.length} 筆班次`) : `共 ${results.length} 筆班次・之後會接真的即時資料`}
+            <p className="flex items-center gap-3 truncate">
+              <span className="text-base font-bold text-[#4A3B7C]">
+                {origin} <span aria-hidden>→</span> {dest}
+              </span>
+              <span className="truncate text-xs text-[#B3ABD4]">
+                {meta.label}・
+                {isTrain ? (loading ? "查詢中…" : `共 ${visibleResults.length} 筆班次`) : `共 ${results.length} 筆班次・之後會接真的即時資料`}
+              </span>
             </p>
           </div>
           <Link
@@ -225,6 +299,10 @@ export function ResultsView({
 
       {isTrain && trainError && <p className="mx-5 mt-4 rounded-2xl bg-[#FDEEF0] px-4 py-3 text-xs text-[#D1517E]">{trainError}</p>}
 
+      {!loading && !trainError && visibleResults.length === 0 && (
+        <p className="mx-5 mt-6 text-left text-xs text-[#B3ABD4]">目前沒有查到任何班次。</p>
+      )}
+
       <div className="mt-4 flex flex-col gap-2.5 px-5 pb-6">
         {visibleResults.map((r, i) => (
           <div
@@ -242,7 +320,7 @@ export function ResultsView({
                 <p className="mt-0.5 truncate text-xs text-[#9C94C4]">{isTrain && r.operatingNote ? r.operatingNote : r.duration}</p>
               </div>
 
-              <div className="flex shrink-0 flex-col items-end gap-1.5">
+              <div className="flex shrink-0 items-center gap-1.5">
                 {r.price ? (
                   <span className="rounded-full bg-[#F3EFFC] px-2.5 py-0.5 text-[11px] font-semibold text-[#6F5FD6]">{r.price}</span>
                 ) : r.delayMinutes !== undefined ? (
@@ -254,12 +332,22 @@ export function ResultsView({
                     {r.delayMinutes > 0 ? `誤點 ${r.delayMinutes} 分` : "準時"}
                   </span>
                 ) : null}
-                <span className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${badgeClass(mode, r.code)}`}>
-                  <IconImg src={meta.icon} alt={meta.label} size={12} />{" "}
-                  {/* 火車已經有上面的車種分類頁籤了，這裡不用再重複講車種名稱，只顯示車次號。 */}
+                <span className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${badgeClass(mode)}`}>
+                  {/* 火車已經有上面的車種分類頁籤了，這裡不用再重複講車種名稱也不用圖示，只顯示車次號。 */}
+                  {!isTrain && <IconImg src={meta.icon} alt={meta.label} size={12} />}
                   {isTrain ? trainNumberOf(r.code) : r.code}
                   {mode === "bus" ? " 路" : ""}
                 </span>
+                {/* 用「加入」而不是收藏愛心：單純是一次性加入分類的動作，不是可切換的收藏
+                    狀態，不用額外判斷、呈現「是否已收藏」。 */}
+                <button
+                  type="button"
+                  onClick={() => setPickerTarget(r)}
+                  aria-label="加入行程"
+                  className="grid size-6 shrink-0 place-items-center rounded-full bg-[#F3EFFC] text-sm font-bold leading-none text-[#6F5FD6]"
+                >
+                  ＋
+                </button>
               </div>
             </div>
 
@@ -301,6 +389,14 @@ export function ResultsView({
           <IconImg src={ICON_PATHS.goTop} alt="回到頂部" size={20} />
         </button>
       )}
+
+      <TripGroupPickerModal
+        open={pickerTarget !== null}
+        mode={mode}
+        onClose={() => setPickerTarget(null)}
+        onSelectGroup={addPickerTargetToGroup}
+        onCreateGroup={createGroupAndAddPickerTarget}
+      />
     </div>
   );
 }

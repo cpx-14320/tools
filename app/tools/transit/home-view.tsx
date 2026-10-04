@@ -7,7 +7,6 @@ import { IconImg } from "@/components/dream/icon-img";
 import { ICON_PATHS } from "@/components/dream/icon-paths";
 import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY, type Mode } from "@/components/dream/stations-data";
 import { DISTRICTS_BY_CITY } from "@/lib/cwa-districts";
-import { usePageAction } from "@/components/dream/page-action-context";
 import { HomeSettingsModal, type HomeDefaults } from "@/components/dream/home-settings-modal";
 import { TimePickerModal } from "@/components/dream/time-picker-modal";
 import { DatePickerModal } from "@/components/dream/date-picker-modal";
@@ -129,6 +128,7 @@ interface WeatherInfo {
   icon: string;
   label: string;
   temp: number;
+  pop?: number;
 }
 
 // 查詢「失敗」時（不是還在查詢中）才用縣市名稱算一個固定（非隨機）的假天氣頂著畫面，
@@ -138,7 +138,7 @@ function mockWeather(city: string): WeatherInfo {
   let hash = 0;
   for (const ch of city) hash = (hash * 31 + ch.charCodeAt(0)) % 997;
   const idx = hash % WEATHER_LABELS.length;
-  return { icon: WEATHER_ICONS[idx], label: WEATHER_LABELS[idx], temp: 20 + (hash % 10) };
+  return { icon: WEATHER_ICONS[idx], label: WEATHER_LABELS[idx], temp: 20 + (hash % 10), pop: hash % 101 };
 }
 
 // 串中央氣象署開放資料平台的鄉鎮天氣預報（依縣市＋鄉鎮區查，比只到縣市等級的 36 小時
@@ -156,13 +156,13 @@ function useCityWeather(city: string, district: string): WeatherInfo | null {
     setInfo(null);
     fetch(`/api/weather/forecast?city=${encodeURIComponent(city)}&district=${encodeURIComponent(district)}`)
       .then((res) => res.json())
-      .then((data: { bucket?: string; label?: string; temp?: number; error?: string }) => {
+      .then((data: { bucket?: string; label?: string; temp?: number; pop?: number; error?: string }) => {
         if (cancelled) return;
         if (data.error || data.temp === undefined || !data.bucket) {
           setInfo(mockWeather(city));
           return;
         }
-        setInfo({ icon: WEATHER_ICON_BY_BUCKET[data.bucket] ?? ICON_PATHS.weatherCloudy, label: data.label ?? "未知", temp: data.temp });
+        setInfo({ icon: WEATHER_ICON_BY_BUCKET[data.bucket] ?? ICON_PATHS.weatherCloudy, label: data.label ?? "未知", temp: data.temp, pop: data.pop });
       })
       .catch(() => {
         if (!cancelled) setInfo(mockWeather(city));
@@ -187,7 +187,6 @@ function resolveStation(cities: Record<string, string[]>, preferred: string | un
 
 export function DreamHomeView() {
   const router = useRouter();
-  const { setAction } = usePageAction();
   const [mode, setMode] = useState<Mode>("bus");
   // 火車先用靜態清單墊著畫面，掛載後換成 /api/transit/tra/stations 抓回來的真實 ~240 站清單。
   const [trainCities, setTrainCities] = useState<Record<string, string[]>>(FALLBACK_TRAIN_STATIONS_BY_CITY);
@@ -237,7 +236,7 @@ export function DreamHomeView() {
       .catch(() => {});
     setMemoEditorOpen(false);
   }
-  const stationLabel = mode === "bus" ? "站牌" : "站";
+  const stationLabel = "站";
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [originPickerOpen, setOriginPickerOpen] = useState(false);
   const [destPickerOpen, setDestPickerOpen] = useState(false);
@@ -245,16 +244,18 @@ export function DreamHomeView() {
   // 天氣小卡要能跟出發／抵達站分開設定（使用者編輯預設值時單獨選），不是永遠跟著搜尋表單目前
   // 選的站——所以用自己獨立的 state，不是直接讀 originCity/origin。天氣是用縣市＋鄉鎮區查，
   // 跟搜尋表單選的「火車站」是兩套完全不同的清單（行政區不等於車站）。
-  const initWeatherOrigin = resolveStation(DISTRICTS_BY_CITY, undefined, 0);
-  const initWeatherDest = resolveStation(DISTRICTS_BY_CITY, undefined, 1);
+  // 剛創帳號、還沒存過任何偏好值時，天氣小卡的出發／抵達地區分別預設桃園市中壢區、
+  // 臺北市南港區，不是隨便挑 DISTRICTS_BY_CITY 表裡第一筆（以前曾經是宜蘭縣宜蘭市，
+  // 跟使用者實際常用的地點完全無關，容易被誤會成查詢結果本身有問題）。
+  const initWeatherOrigin = { city: "桃園市", station: "中壢區" };
+  const initWeatherDest = { city: "臺北市", station: "南港區" };
   const [weatherOriginCity, setWeatherOriginCity] = useState(initWeatherOrigin.city);
   const [weatherOriginDistrict, setWeatherOriginDistrict] = useState(initWeatherOrigin.station);
   const [weatherDestCity, setWeatherDestCity] = useState(initWeatherDest.city);
   const [weatherDestDistrict, setWeatherDestDistrict] = useState(initWeatherDest.station);
   // 剛掛載、還沒讀完 localStorage 偏好值之前，天氣小卡的縣市／行政區文字先顯示「載入中…」，
-  // 不要顯示 initWeatherOrigin/initWeatherDest 算出來的寫死預設值（DISTRICTS_BY_CITY 表
-  // 第一筆剛好是宜蘭縣宜蘭市）——不然會先閃一下這個不是使用者設定、也不是真的查詢結果的
-  // 地名，看起來像是哪裡冒出來的錯誤資料。這個 state 故意不用 localStorage 同步讀（useState
+  // 不要顯示 initWeatherOrigin/initWeatherDest 算出來的預設值——不然會先閃一下這組預設值
+  // 再被使用者實際存的偏好值蓋掉，看起來像資料閃爍。這個 state 故意不用 localStorage 同步讀（useState
   // 初始值裡讀），因為這個頁面會先在伺服器端渲染一次，伺服器端沒有 localStorage，會跟瀏覽器
   // 端算出來的結果不一致、觸發 hydration 不匹配；用「掛載後才翻成 true」这个效果本身跟
   // hydration 無關，比較安全。
@@ -297,18 +298,10 @@ export function DreamHomeView() {
     };
   }, []);
 
-  // 編輯的設定只影響首頁：掛載時才把「編輯」按鈕插進外殼的切換鈕旁邊，離開首頁（卸載）
-  // 就自動收掉，不會跑到我的行程／我的最愛等其他頁面。
-  useEffect(() => {
-    setAction({
-      label: "編輯",
-      onClick: () => {
-        setWeatherSnapshot(weatherStateRef.current);
-        setSettingsOpen(true);
-      },
-    });
-    return () => setAction(null);
-  }, [setAction]);
+  function openSettings() {
+    setWeatherSnapshot(weatherStateRef.current);
+    setSettingsOpen(true);
+  }
 
   // 進頁面時套用使用者上次存的預設值（本機瀏覽器儲存，純前端偏好值，之後接資料庫/API
   // 時這裡會換成真的使用者設定讀取）。
@@ -425,6 +418,15 @@ export function DreamHomeView() {
       <div className="relative h-80 w-full shrink-0 overflow-hidden">
         <ImageSlot alt="夢幻紫彩火車旅行插畫" label="插畫圖片待替換" className="absolute inset-0 h-full w-full" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-transparent" />
+        {/* 跟著首頁內容一起捲動，不是外殼層級的 fixed／absolute 覆蓋層，滑動時不會貼著螢幕
+            右上角不動。 */}
+        <button
+          type="button"
+          onClick={openSettings}
+          className="absolute right-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-full border border-[#ECE4FA] bg-white/80 px-3 py-1.5 text-xs font-medium text-[#6F5FD6] shadow-sm backdrop-blur"
+        >
+          編輯
+        </button>
         <div className="absolute left-5 top-6 right-5 text-white drop-shadow-sm">
           <p className="text-2xl font-bold leading-snug">
             下一站， <span aria-hidden>✦</span>
@@ -449,6 +451,9 @@ export function DreamHomeView() {
               {place.weather && <ImageSlot src={place.weather.icon} alt={place.weather.label} className="size-7 shrink-0 rounded-lg" />}
               <div className="min-w-0">
                 <p className="truncate text-[11px] text-[#9C94C4]">{place.label}</p>
+                {place.weather?.pop !== undefined && (
+                  <p className="truncate text-[11px] text-[#9C94C4]">降雨機率 {place.weather.pop}%</p>
+                )}
                 <p className="truncate text-sm font-semibold text-[#4A3B7C]">
                   {/* 查詢中先顯示「載入中」，不要先塞假資料再被真資料蓋掉，看起來會像閃一下。 */}
                   {place.weather ? `${place.weather.temp}°C・${place.weather.label}` : "載入中…"}

@@ -22,13 +22,6 @@ function resolveStation(mode: Mode, preferred: string | undefined, fallbackIndex
   return { city, station: STATIONS_BY_CITY[mode][city][0] };
 }
 
-const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
-
-// 用固定（非閏年）年份算當月天數就好，這裡只是給「新增行程」選日期用，不需要對到真實年份。
-function daysInMonth(month: number): number {
-  return new Date(2025, month, 0).getDate();
-}
-
 export interface RouteDraft {
   mode?: string;
   origin: string;
@@ -61,9 +54,6 @@ export function RouteModal({
   const [origin, setOrigin] = useState(originInit.station);
   const [destCity, setDestCity] = useState(destInit.city);
   const [dest, setDest] = useState(destInit.station);
-  const today = new Date();
-  const [month, setMonth] = useState(today.getMonth() + 1);
-  const [day, setDay] = useState(today.getDate());
   const [time, setTime] = useState("08:00");
   const [trainType, setTrainType] = useState("all");
   const [favorited, setFavorited] = useState(initial?.favorited ?? true);
@@ -91,12 +81,6 @@ export function RouteModal({
   }, []);
 
   if (!open) return null;
-
-  function selectMonth(value: number) {
-    setMonth(value);
-    const maxDay = daysInMonth(value);
-    if (day > maxDay) setDay(maxDay);
-  }
 
   function selectMode(key: Mode) {
     setMode(key);
@@ -258,43 +242,6 @@ export function RouteModal({
             </div>
           </label>
 
-          {lockedMode && (
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-[#9C94C4]">日期</span>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] px-4 py-3">
-                  <select
-                    value={month}
-                    onChange={(e) => selectMonth(Number(e.target.value))}
-                    className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
-                  >
-                    {MONTHS.map((m) => (
-                      <option key={m} value={m}>
-                        {m} 月
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] px-4 py-3">
-                  <select
-                    value={day}
-                    onChange={(e) => setDay(Number(e.target.value))}
-                    className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
-                  >
-                    {Array.from({ length: daysInMonth(month) }, (_, i) => i + 1).map((d) => (
-                      <option key={d} value={d}>
-                        {d} 日
-                      </option>
-                    ))}
-                  </select>
-                  <span aria-hidden className="pointer-events-none text-[#C7BFE6]">
-                    ⌄
-                  </span>
-                </div>
-              </div>
-            </label>
-          )}
-
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-[#9C94C4]">時間</span>
             <div className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] px-4 py-3">
@@ -308,18 +255,21 @@ export function RouteModal({
             </div>
           </label>
 
-          <button
-            type="button"
-            onClick={() => setFavorited((f) => !f)}
-            className="flex items-center justify-between rounded-2xl border border-[#ECE4FA] px-4 py-3 text-sm text-[#4A3B7C]"
-          >
-            <span>加入我的最愛</span>
-            <IconImg
-              src={favorited ? ICON_PATHS.heartFilled : ICON_PATHS.heartOutline}
-              alt={favorited ? "已收藏" : "未收藏"}
-              size={16}
-            />
-          </button>
+          {/* 常用路線（我的最愛頁）才需要收藏開關；行程（lockedMode，我的行程頁）不需要。 */}
+          {!lockedMode && (
+            <button
+              type="button"
+              onClick={() => setFavorited((f) => !f)}
+              className="flex items-center justify-between rounded-2xl border border-[#ECE4FA] px-4 py-3 text-sm text-[#4A3B7C]"
+            >
+              <span>加入我的最愛</span>
+              <IconImg
+                src={favorited ? ICON_PATHS.heartFilled : ICON_PATHS.heartOutline}
+                alt={favorited ? "已收藏" : "未收藏"}
+                size={16}
+              />
+            </button>
+          )}
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t border-[#ECE4FA] px-5 py-4">

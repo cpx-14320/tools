@@ -63,6 +63,11 @@ export async function GET(request: Request) {
     const findFirst = (name: string) => location.WeatherElement.find((e) => e.ElementName === name)?.Time[0]?.ElementValue[0];
     const temperature = findFirst("溫度");
     const weather = findFirst("天氣現象");
+    // 鄉鎮天氣預報的降雨機率有些資料集是「3小時降雨機率」、有些是「12小時降雨機率」，
+    // 兩種都試一次；查不到或當下時段沒有值（CWA 給 "-"）就不回傳這個欄位。
+    const pop = findFirst("3小時降雨機率") ?? findFirst("12小時降雨機率");
+    const popValue = pop?.ProbabilityOfPrecipitation;
+    const popNumber = popValue && popValue !== "-" ? Number(popValue) : undefined;
 
     const bucket = bucketFromWxCode(weather?.WeatherCode ?? "");
 
@@ -70,6 +75,7 @@ export async function GET(request: Request) {
       bucket,
       label: weather?.Weather ?? "未知",
       temp: temperature?.Temperature ? Number(temperature.Temperature) : undefined,
+      pop: popNumber !== undefined && Number.isFinite(popNumber) ? popNumber : undefined,
     });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "CWA 查詢失敗" }, { status: 502 });

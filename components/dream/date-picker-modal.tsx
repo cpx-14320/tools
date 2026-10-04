@@ -79,9 +79,9 @@ export function DatePickerModal({
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/30" onClick={onClose}>
+    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30 sm:items-center" onClick={onClose}>
       <div
-        className="flex w-full max-w-[360px] flex-col rounded-[1.75rem] bg-white"
+        className="flex w-full max-w-[360px] flex-col rounded-t-[1.75rem] bg-white sm:rounded-[1.75rem]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-[#ECE4FA] px-5 py-4">

@@ -1,12 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RouteModal } from "@/components/dream/route-modal";
+import { useRouter } from "next/navigation";
+import { FrequentTripModal, type FrequentTripDraft } from "@/components/dream/frequent-trip-modal";
+import { frequentTripIconPath } from "@/components/dream/frequent-trip-icons";
 import { ImageSlot } from "@/components/dream/image-slot";
 import { IconImg } from "@/components/dream/icon-img";
 import { ICON_PATHS } from "@/components/dream/icon-paths";
+import type { HomeDefaults } from "@/components/dream/home-settings-modal";
 
 type Mode = "bus" | "train" | "metro" | "thsr";
+
+// 分類名稱（例如「啟程」「返程」「假日出去玩」）完全由使用者自訂、自由新增，不是寫死的
+// 兩種——每個分類是一份獨立的常用行程清單，使用者可以依車種各自新增任意多個分類。
+// 四種車種（公車／火車／捷運／高鐵）都是同一套做法，不另外寫死任何假資料的歷史行程清單。
+interface TripGroup {
+  id: string;
+  mode: Mode;
+  name: string;
+}
+
+interface FrequentTrip extends FrequentTripDraft {
+  id: string;
+  mode: Mode;
+  groupId: string;
+}
 
 const TABS: { key: Mode; label: string }[] = [
   { key: "bus", label: "公車" },
@@ -15,380 +33,146 @@ const TABS: { key: Mode; label: string }[] = [
   { key: "thsr", label: "高鐵" },
 ];
 
-const MODE_ICON: Record<Mode, string> = {
-  train: ICON_PATHS.modeTrain,
-  thsr: ICON_PATHS.modeThsr,
-  bus: ICON_PATHS.modeBus,
-  metro: ICON_PATHS.modeMetro,
-};
+// 跟首頁的「編輯首頁預設值」彈窗共用同一個 localStorage key，首頁存的預設運輸工具
+// 這裡直接拿來當 tabs 預設選中的車種，不用另外存一份。
+const HOME_DEFAULTS_KEY = "cpx-tools:transit:home-defaults";
 
-const TRAIN_STYLE: Record<string, string> = {
-  自強: "bg-[#FBE3E8] text-[#D1517E]",
-  莒光: "bg-[#FDE7D8] text-[#D97A3D]",
-  區間: "bg-[#DCEAFC] text-[#3B6FD1]",
-};
-
-const MODE_STYLE: Record<Mode, string> = {
-  train: "",
-  thsr: "bg-[#F3E8FC] text-[#9A5FD6]",
-  bus: "bg-[#E3F6EC] text-[#2FAE82]",
-  metro: "bg-[#E6EEFC] text-[#4E7FE0]",
-};
-
-function badgeClass(trip: { mode: Mode; code: string }) {
-  if (trip.mode === "train") {
-    const [trainType] = trip.code.split(" ");
-    return TRAIN_STYLE[trainType];
+function loadDefaultTab(): Mode | null {
+  try {
+    const raw = localStorage.getItem(HOME_DEFAULTS_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as HomeDefaults;
+    return TABS.some((t) => t.key === saved.defaultMode) ? (saved.defaultMode as Mode) : null;
+  } catch {
+    return null;
   }
-  return MODE_STYLE[trip.mode];
 }
-
-type StatusTone = "soon" | "later" | "done" | "cancelled";
-
-const STATUS_STYLE: Record<StatusTone, string> = {
-  soon: "bg-[#DFF4EB] text-[#2FAE82]",
-  later: "bg-[#F3EFFC] text-[#9C94C4]",
-  done: "bg-[#EDEAFC] text-[#8477C2]",
-  cancelled: "bg-[#FBE3E8] text-[#D1517E]",
-};
-
-const SECTION_LABEL: Record<Mode, string> = {
-  bus: "公車行程",
-  train: "火車行程",
-  metro: "捷運行程",
-  thsr: "高鐵行程",
-};
-
-// 火車有 TDX 即時誤點資料（StationLiveBoard.DelayTime），高鐵沒有誤點 API，
-// 公車／捷運只有到站倒數秒數、沒有「誤點」這個欄位，所以時間相關文字標題依車種而不同。
-const DURATION_LABEL: Record<Mode, string> = {
-  train: "車程時間",
-  thsr: "車程時間",
-  bus: "預估車程",
-  metro: "預估車程",
-};
-
-// 公車／捷運的 TDX 端點是「路線＋站牌」查詢，沒有起訖站時刻表模型，所以無法像火車／高鐵
-// 一樣用這張卡片的起訖站去查即時資料；火車查一次要打 2 個 TDX 端點（時刻表＋即時誤點看板），
-// 高鐵只有時刻表、查一次打 1 個端點，這個花費數字直接對應帳號每分鐘 5 次的共用額度。
-const CALL_COST: Record<Mode, number> = { train: 2, thsr: 1, bus: 0, metro: 0 };
-const QUOTA_LIMIT = 5;
-const QUOTA_WINDOW_MS = 60_000;
-
-function toTraName(name: string): string {
-  const base = name.replace(/站$/, "");
-  const traditional: Record<string, string> = { 台北: "臺北", 台中: "臺中", 台南: "臺南", 台東: "臺東" };
-  return traditional[base] ?? base;
-}
-
-function toThsrName(name: string): string {
-  return name.replace(/站$/, "");
-}
-
-type LiveStatus = "loading" | "done" | "blocked" | "notfound" | "error";
-
-interface UpcomingRow {
-  time: string;
-  code: string;
-  note?: string;
-  delayMinutes?: number;
-}
-
-interface LiveResult {
-  status: LiveStatus;
-  note?: string; // 高鐵：單一比對到的班次摘要（維持原本邏輯，暫不處理）
-  delayMinutes?: number; // 高鐵專用
-  rows?: UpcomingRow[]; // 火車：當天所有班次裡，取離現在最近的 3 班
-  message?: string;
-}
-
-// 火車卡片頂部的狀態徽章改成顯示真實誤點狀況（取最近一班的誤點分鐘數），
-// 查詢前／查無資料時顯示中性文字，不再使用假的「即將出發／已完成／已取消」。
-function trainBadge(live: LiveResult | undefined): { text: string; tone: StatusTone } {
-  if (!live) return { text: "尚未查詢", tone: "later" };
-  if (live.status === "loading") return { text: "查詢中…", tone: "later" };
-  if (live.status === "blocked") return { text: "額度已滿", tone: "later" };
-  if (live.status === "error" || live.status === "notfound") return { text: "尚未查詢", tone: "later" };
-  const soonest = live.rows?.[0];
-  if (!soonest) return { text: "今日已無班次", tone: "later" };
-  if (soonest.delayMinutes === undefined) return { text: "查無誤點資料", tone: "later" };
-  if (soonest.delayMinutes === 0) return { text: "準點", tone: "soon" };
-  return { text: `誤點 ${soonest.delayMinutes} 分`, tone: "cancelled" };
-}
-
-const TRIP_DATA: Record<Mode, Array<{
-  month: string;
-  day: string;
-  weekday: string;
-  origin: string;
-  dest: string;
-  depart: string;
-  arrive: string;
-  status: string;
-  statusTone: StatusTone;
-  mode: Mode;
-  code: string;
-  duration: string;
-  stops: number;
-}>> = {
-  bus: [
-    {
-      month: "4月",
-      day: "28",
-      weekday: "(二)",
-      origin: "台北轉運站",
-      dest: "中壢站",
-      depart: "08:15",
-      arrive: "09:25",
-      status: "3 天後出發",
-      statusTone: "later",
-      mode: "bus",
-      code: "1861",
-      duration: "1 小時 10 分",
-      stops: 8,
-    },
-    {
-      month: "3月",
-      day: "10",
-      weekday: "(二)",
-      origin: "中壢站",
-      dest: "桃園站",
-      depart: "07:30",
-      arrive: "08:05",
-      status: "已完成",
-      statusTone: "done",
-      mode: "bus",
-      code: "5096",
-      duration: "35 分",
-      stops: 6,
-    },
-    {
-      month: "2月",
-      day: "20",
-      weekday: "(五)",
-      origin: "台北轉運站",
-      dest: "基隆站",
-      depart: "06:50",
-      arrive: "07:40",
-      status: "已取消",
-      statusTone: "cancelled",
-      mode: "bus",
-      code: "1813",
-      duration: "50 分",
-      stops: 5,
-    },
-  ],
-  train: [
-    {
-      month: "4月",
-      day: "26",
-      weekday: "(六)",
-      origin: "台北站",
-      dest: "台中站",
-      depart: "06:28",
-      arrive: "08:36",
-      status: "即將出發",
-      statusTone: "soon",
-      mode: "train",
-      code: "自強 110",
-      duration: "2 小時 8 分",
-      stops: 3,
-    },
-    {
-      month: "3月",
-      day: "15",
-      weekday: "(日)",
-      origin: "台北站",
-      dest: "高雄站",
-      depart: "06:00",
-      arrive: "08:32",
-      status: "已完成",
-      statusTone: "done",
-      mode: "train",
-      code: "自強 102",
-      duration: "2 小時 32 分",
-      stops: 3,
-    },
-    {
-      month: "3月",
-      day: "1",
-      weekday: "(日)",
-      origin: "台北站",
-      dest: "台南站",
-      depart: "07:15",
-      arrive: "09:50",
-      status: "已取消",
-      statusTone: "cancelled",
-      mode: "train",
-      code: "自強 166",
-      duration: "2 小時 35 分",
-      stops: 4,
-    },
-  ],
-  metro: [
-    {
-      month: "5月",
-      day: "1",
-      weekday: "(五)",
-      origin: "台北車站",
-      dest: "淡水站",
-      depart: "10:00",
-      arrive: "10:40",
-      status: "5 天後出發",
-      statusTone: "later",
-      mode: "metro",
-      code: "淡水信義線",
-      duration: "40 分",
-      stops: 12,
-    },
-    {
-      month: "3月",
-      day: "2",
-      weekday: "(一)",
-      origin: "台北車站",
-      dest: "南港站",
-      depart: "09:10",
-      arrive: "09:35",
-      status: "已完成",
-      statusTone: "done",
-      mode: "metro",
-      code: "板南線",
-      duration: "25 分",
-      stops: 7,
-    },
-    {
-      month: "2月",
-      day: "18",
-      weekday: "(三)",
-      origin: "台北車站",
-      dest: "動物園站",
-      depart: "11:00",
-      arrive: "11:30",
-      status: "已取消",
-      statusTone: "cancelled",
-      mode: "metro",
-      code: "文湖線",
-      duration: "30 分",
-      stops: 9,
-    },
-  ],
-  thsr: [
-    {
-      month: "5月",
-      day: "20",
-      weekday: "(二)",
-      origin: "台北站",
-      dest: "左營站",
-      depart: "14:20",
-      arrive: "15:56",
-      status: "24 天後出發",
-      statusTone: "later",
-      mode: "thsr",
-      code: "605",
-      duration: "1 小時 36 分",
-      stops: 4,
-    },
-    {
-      month: "2月",
-      day: "28",
-      weekday: "(六)",
-      origin: "台中站",
-      dest: "左營站",
-      depart: "13:00",
-      arrive: "13:40",
-      status: "已完成",
-      statusTone: "done",
-      mode: "thsr",
-      code: "412",
-      duration: "40 分",
-      stops: 2,
-    },
-    {
-      month: "2月",
-      day: "15",
-      weekday: "(日)",
-      origin: "台北站",
-      dest: "台中站",
-      depart: "16:10",
-      arrive: "16:47",
-      status: "已取消",
-      statusTone: "cancelled",
-      mode: "thsr",
-      code: "210",
-      duration: "37 分",
-      stops: 1,
-    },
-  ],
-};
 
 export function TripsView() {
+  const router = useRouter();
   const [tab, setTab] = useState<Mode>("bus");
-  const [addRouteOpen, setAddRouteOpen] = useState(false);
-  const [callLog, setCallLog] = useState<number[]>([]);
-  const [now, setNow] = useState(() => Date.now());
-  const [liveState, setLiveState] = useState<Record<string, LiveResult>>({});
-  const trips = TRIP_DATA[tab];
+  // 分類（transit.tripGroups）跟分類底下的常用行程（transit.frequentTrips）各自一份
+  // state，掛載時各抓一次使用者自己全部車種的清單，畫面上依目前選中的 tab 篩出對應清單
+  // 顯示；新增/編輯/刪除分類或行程時用 API 回應直接更新對應那份 state。
+  const [tripGroups, setTripGroups] = useState<TripGroup[]>([]);
+  const [frequentTrips, setFrequentTrips] = useState<FrequentTrip[]>([]);
+  // null＝彈窗關閉；groupId 為 null 代表正在新增一個全新分類，否則是在編輯該 id 的既有分類。
+  const [groupModal, setGroupModal] = useState<{ groupId: string | null; name: string } | null>(null);
+  const groupsForTab = tripGroups.filter((g) => g.mode === tab);
 
+  // 進頁面時套用首頁設定的預設運輸工具，決定 tabs 預設停在哪個車種；跟首頁同一套做法，
+  // 只在掛載時套用一次，之後使用者自己切換 tab 不會被這份預設值蓋回去。
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
+    const defaultTab = loadDefaultTab();
+    if (defaultTab) {
+      /* eslint-disable-next-line react-hooks/set-state-in-effect */
+      setTab(defaultTab);
+    }
   }, []);
 
-  const quotaUsed = callLog.filter((t) => now - t < QUOTA_WINDOW_MS).length;
-  const quotaRemaining = Math.max(0, QUOTA_LIMIT - quotaUsed);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/transit/trip-groups")
+      .then((res) => res.json())
+      .then((data: { groups?: TripGroup[] }) => {
+        if (!cancelled) setTripGroups(data.groups ?? []);
+      })
+      .catch(() => {});
+    fetch("/api/transit/frequent-trips")
+      .then((res) => res.json())
+      .then((data: { trips?: FrequentTrip[] }) => {
+        if (!cancelled) setFrequentTrips(data.trips ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  async function checkTrip(key: string, trip: (typeof trips)[number]) {
-    const cost = CALL_COST[trip.mode];
-    if (quotaRemaining < cost) {
-      setLiveState((s) => ({ ...s, [key]: { status: "blocked" } }));
-      return;
+  // 分類名稱、底下的行程清單在同一個彈窗一次編輯：新增分類時先建立分類拿到 id，
+  // 再用這個 id 把填好的行程存進去；編輯既有分類則是改名＋同步清單兩件事一起做。
+  async function saveGroup(name: string, items: FrequentTripDraft[]) {
+    if (!groupModal) return;
+
+    if (groupModal.groupId) {
+      const groupId = groupModal.groupId;
+      if (name !== groupModal.name) {
+        const renameData: { groups?: TripGroup[] } = await fetch("/api/transit/trip-groups", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: groupId, name }),
+        })
+          .then((res) => res.json())
+          .catch(() => ({}));
+        if (renameData.groups) setTripGroups(renameData.groups);
+      }
+      const tripsData: { trips?: FrequentTrip[] } = await fetch("/api/transit/frequent-trips", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: tab, groupId, items }),
+      })
+        .then((res) => res.json())
+        .catch(() => ({}));
+      if (tripsData.trips) setFrequentTrips(tripsData.trips);
+    } else {
+      const createData: { group?: TripGroup; groups?: TripGroup[] } = await fetch("/api/transit/trip-groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: tab, name }),
+      })
+        .then((res) => res.json())
+        .catch(() => ({}));
+      if (!createData.group) {
+        setGroupModal(null);
+        return;
+      }
+      setTripGroups(createData.groups ?? []);
+      if (items.length > 0) {
+        const tripsData: { trips?: FrequentTrip[] } = await fetch("/api/transit/frequent-trips", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode: tab, groupId: createData.group.id, items }),
+        })
+          .then((res) => res.json())
+          .catch(() => ({}));
+        if (tripsData.trips) setFrequentTrips(tripsData.trips);
+      }
     }
-    setCallLog((log) => [...log, ...Array(cost).fill(Date.now())]);
-    setLiveState((s) => ({ ...s, [key]: { status: "loading" } }));
+    setGroupModal(null);
+  }
 
-    try {
-      if (trip.mode === "train") {
-        const url = `/api/transit/tra/od-timetable?origin=${encodeURIComponent(toTraName(trip.origin))}&dest=${encodeURIComponent(toTraName(trip.dest))}`;
-        const res = await fetch(url);
-        const data: { rows?: (UpcomingRow & { isPast?: boolean })[]; error?: string } = await res.json();
-        if (data.error || !data.rows || data.rows.length === 0) {
-          setLiveState((s) => ({ ...s, [key]: { status: "notfound" } }));
-          return;
-        }
-        const upcoming = data.rows.filter((r) => !r.isPast).slice(0, 3);
-        setLiveState((s) => ({ ...s, [key]: { status: "done", rows: upcoming } }));
-        return;
-      }
-
-      const url = `/api/transit/thsr/timetable?origin=${encodeURIComponent(toThsrName(trip.origin))}&dest=${encodeURIComponent(toThsrName(trip.dest))}`;
-      const res = await fetch(url);
-      const data: { rows?: { time: string; code: string; note?: string; delayMinutes?: number }[]; error?: string } = await res.json();
-      if (data.error) {
-        setLiveState((s) => ({ ...s, [key]: { status: "error", message: data.error } }));
-        return;
-      }
-      const trainNo = trip.code.replace(/\D/g, "");
-      const match = data.rows?.find((r) => r.code.includes(trainNo));
-      if (!match) {
-        setLiveState((s) => ({ ...s, [key]: { status: "notfound" } }));
-        return;
-      }
-      setLiveState((s) => ({ ...s, [key]: { status: "done", note: match.note, delayMinutes: match.delayMinutes } }));
-    } catch {
-      setLiveState((s) => ({ ...s, [key]: { status: "error", message: "連線失敗" } }));
-    }
+  async function deleteGroup(groupId: string) {
+    const data: { groups?: TripGroup[]; trips?: FrequentTrip[] } = await fetch(`/api/transit/trip-groups?id=${groupId}`, {
+      method: "DELETE",
+    })
+      .then((res) => res.json())
+      .catch(() => ({}));
+    if (data.groups) setTripGroups(data.groups);
+    if (data.trips) setFrequentTrips(data.trips);
+    setGroupModal(null);
   }
 
   return (
     <div className="flex flex-col px-5 pb-6 pt-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-[#4A3B7C]">我的行程</h1>
-        <button type="button" aria-label="更多" className="text-lg text-[#9C94C4]">
-          •••
-        </button>
       </div>
 
-      <RouteModal key={tab} open={addRouteOpen} lockedMode={tab} title="新增行程" onClose={() => setAddRouteOpen(false)} />
+      <FrequentTripModal
+        key={groupModal ? `group-${groupModal.groupId ?? "new"}` : "group-closed"}
+        open={groupModal !== null}
+        mode={tab}
+        initialName={groupModal?.name ?? ""}
+        initial={groupModal ? frequentTrips.filter((f) => f.groupId === groupModal.groupId) : []}
+        onClose={() => setGroupModal(null)}
+        onSave={saveGroup}
+        onDelete={groupModal?.groupId ? () => deleteGroup(groupModal.groupId as string) : undefined}
+        isNameTaken={(candidate) =>
+          tripGroups.some(
+            (g) => g.mode === tab && g.id !== groupModal?.groupId && g.name.trim().toLowerCase() === candidate.trim().toLowerCase(),
+          )
+        }
+      />
 
       <div className="mt-4 inline-flex items-center gap-1 self-start rounded-full bg-[#F3EFFC] p-1">
         {TABS.map((t) => {
@@ -408,139 +192,63 @@ export function TripsView() {
         })}
       </div>
 
-      <div className="mt-3 flex items-center justify-between rounded-2xl bg-[#F6F3FD] px-3 py-2 text-xs text-[#6F5FD6]">
-        <span>本分鐘可用即時查詢次數（火車/高鐵真實串接 TDX）</span>
-        <span className="font-semibold">
-          {quotaRemaining} / {QUOTA_LIMIT}
-        </span>
-      </div>
-
-      <div className="mt-4 flex items-center justify-between">
-        <p className="text-sm font-semibold text-[#4A3B7C]">{SECTION_LABEL[tab]}</p>
-        <button
-          type="button"
-          onClick={() => setAddRouteOpen(true)}
-          className="flex items-center gap-1 rounded-full bg-[#F3EFFC] px-3 py-1.5 text-xs font-medium text-[#6F5FD6]"
-        >
-          <span aria-hidden>＋</span> 新增
-        </button>
-      </div>
-
-      {trips.length === 0 ? (
-        <div className="mt-3 rounded-[1.5rem] bg-white py-10 text-center text-sm text-[#B3ABD4] shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
-          目前沒有符合的行程
-        </div>
-      ) : (
-      <div className="mt-3 flex flex-col gap-3">
-        {trips.map((trip, i) => {
-          const key = `${tab}-${i}`;
-          const live = liveState[key];
-          const unsupported = trip.mode === "bus" || trip.mode === "metro";
-          const isTrain = trip.mode === "train";
-          const showUpcomingList = isTrain && live?.status === "done";
-          const topBadge = isTrain ? trainBadge(live) : { text: trip.status, tone: trip.statusTone };
-
-          return (
-            <div key={key} className="rounded-[1.5rem] bg-white p-4 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.25)]">
-              <div className="flex items-start gap-3">
-                <ImageSlot alt={`${trip.origin}到${trip.dest}路線圖示`} className="size-14 shrink-0 rounded-xl" />
-
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-[#4A3B7C]">
-                    {trip.origin} <span aria-hidden>→</span> {trip.dest}
-                  </p>
-                  <p className="mt-0.5 text-xs text-[#9C94C4]">
-                    {trip.depart} <span aria-hidden>→</span> {trip.arrive}
-                  </p>
-                  <p className="mt-0.5 text-xs text-[#9C94C4]">
-                    {DURATION_LABEL[trip.mode]}：{trip.duration}
-                  </p>
-                </div>
-
-                <div className="flex shrink-0 flex-col items-end gap-1.5">
-                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${STATUS_STYLE[topBadge.tone]}`}>
-                    {topBadge.text}
-                  </span>
-                  <span className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${badgeClass(trip)}`}>
-                    <IconImg src={MODE_ICON[trip.mode]} alt={trip.mode} size={12} /> {trip.code}
-                    {trip.mode === "bus" ? " 路" : ""}
-                    <span aria-hidden className="ml-0.5">
-                      ›
-                    </span>
-                  </span>
-                </div>
-              </div>
-
-              {showUpcomingList ? (
-                <div className="mt-3 flex flex-col divide-y divide-[#F2EEFA] border-t border-[#F2EEFA]">
-                  {live?.rows && live.rows.length > 0 ? (
-                    live.rows.map((r, idx) => (
-                      <div key={idx} className="flex items-center gap-2 py-2.5">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-medium text-[#4A3B7C]">
-                            {r.time} · {r.code}
-                          </p>
-                          {r.note && <p className="mt-1 truncate text-[11px] text-[#9C94C4]">{r.note}</p>}
-                        </div>
-                        {r.delayMinutes !== undefined && (
-                          <span
-                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                              r.delayMinutes === 0 ? "bg-[#DFF4EB] text-[#2FAE82]" : "bg-[#FBE3E8] text-[#D1517E]"
-                            }`}
-                          >
-                            {r.delayMinutes === 0 ? "準點" : `誤 ${r.delayMinutes} 分`}
-                          </span>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="py-2.5 text-xs text-[#B3ABD4]">今日已無後續班次</p>
-                  )}
-                </div>
-              ) : (
-                <div className="mt-3 border-t border-[#F2EEFA] pt-3 text-xs">
-                  <p className="text-[#B3ABD4]">停靠站數</p>
-                  <p className="mt-0.5 font-medium text-[#4A3B7C]">{trip.stops} 站</p>
-                </div>
-              )}
-
-              <div className="mt-3 border-t border-[#F2EEFA] pt-3">
-                {unsupported ? (
-                  <p className="text-[11px] leading-relaxed text-[#B3ABD4]">
-                    此車種無法用起訖站查詢即時資料（TDX 公車／捷運是路線＋站牌查詢模型，沒有起訖站時刻表 API）
-                  </p>
-                ) : (
-                  <div className="flex flex-col gap-1.5">
+      {groupsForTab.map((g) => {
+        const groupTrips = frequentTrips.filter((f) => f.groupId === g.id);
+        return (
+          <div key={g.id}>
+            <p className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-[#4A3B7C]">
+              <span aria-hidden className="text-[#C9A6F2]">
+                ♦
+              </span>
+              <span className="truncate">{g.name}</span>
+              <button
+                type="button"
+                onClick={() => setGroupModal({ groupId: g.id, name: g.name })}
+                aria-label={`編輯${g.name}`}
+                className="ml-auto shrink-0"
+              >
+                <IconImg src={ICON_PATHS.edit} alt="編輯" size={14} />
+              </button>
+            </p>
+            {groupTrips.length === 0 ? (
+              <p className="mt-2 text-xs text-[#B3ABD4]">還沒有行程，點右上角新增</p>
+            ) : (
+              <div className="mt-2 flex flex-col gap-2.5">
+                {groupTrips.map((f) => (
+                  <div key={f.id} className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
+                    <ImageSlot src={frequentTripIconPath(f.icon)} alt={`${f.origin}到${f.dest}`} className="size-12 shrink-0 rounded-xl" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-[#4A3B7C]">
+                        {f.origin} <span aria-hidden>⇄</span> {f.dest}
+                      </p>
+                      <p className="mt-0.5 text-xs text-[#9C94C4]">
+                        {f.startTime}–{f.endTime}
+                      </p>
+                    </div>
                     <button
                       type="button"
-                      disabled={live?.status === "loading"}
-                      onClick={() => checkTrip(key, trip)}
-                      className="flex items-center gap-1 self-start text-xs font-medium text-[#6F5FD6] disabled:opacity-50"
+                      onClick={() => router.push(`/tools/transit/results?origin=${encodeURIComponent(f.origin)}&dest=${encodeURIComponent(f.dest)}&mode=${tab}`)}
+                      className="shrink-0 rounded-full bg-[#F3EFFC] px-3 py-1.5 text-xs font-medium text-[#6F5FD6]"
                     >
-                      <IconImg src={ICON_PATHS.refresh} alt="重新查詢" size={12} />{" "}
-                      {live ? "重新查詢" : "查即時資料"}（花費 {CALL_COST[trip.mode]} 次額度）
+                      搜尋班次 →
                     </button>
-                    {live?.status === "loading" && <p className="text-xs text-[#9C94C4]">查詢中…</p>}
-                    {live?.status === "blocked" && (
-                      <p className="text-xs font-medium text-[#D1517E]">已達每分鐘 5 次查詢上限，請稍後再試</p>
-                    )}
-                    {live?.status === "notfound" && (
-                      <p className="text-xs text-[#B3ABD4]">今日查無對應班次（可能非營運日或當日已過站）</p>
-                    )}
-                    {live?.status === "error" && <p className="text-xs text-[#D1517E]">{live.message ?? "查詢失敗"}</p>}
-                    {!isTrain && live?.status === "done" && (
-                      <div className="rounded-xl bg-[#F6F3FD] px-3 py-2 text-xs text-[#4A3B7C]">
-                        <p className="font-medium">即時資料（今日）：{live.note}</p>
-                      </div>
-                    )}
                   </div>
-                )}
+                ))}
               </div>
-            </div>
-          );
-        })}
-      </div>
-      )}
+            )}
+          </div>
+        );
+      })}
+
+      {groupsForTab.length === 0 && <p className="mt-5 text-xs text-[#B3ABD4]">還沒有任何分類，點下方新增第一個分類</p>}
+
+      <button
+        type="button"
+        onClick={() => setGroupModal({ groupId: null, name: "" })}
+        className="mt-4 w-full rounded-xl border border-dashed border-[#C7BFE6] py-2.5 text-sm font-medium text-[#6F5FD6]"
+      >
+        ＋ 新增分類
+      </button>
     </div>
   );
 }
