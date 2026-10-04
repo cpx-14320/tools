@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImageSlot } from "@/components/dream/image-slot";
 import { IconImg } from "@/components/dream/icon-img";
 import { ICON_PATHS } from "@/components/dream/icon-paths";
 import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY, type Mode } from "@/components/dream/stations-data";
+import { DISTRICTS_BY_CITY } from "@/lib/cwa-districts";
 import { usePageAction } from "@/components/dream/page-action-context";
 import { HomeSettingsModal, type HomeDefaults } from "@/components/dream/home-settings-modal";
 import { TimePickerModal } from "@/components/dream/time-picker-modal";
+import { DatePickerModal } from "@/components/dream/date-picker-modal";
+import { StationPickerModal } from "@/components/dream/station-picker-modal";
 
 const DEFAULTS_KEY = "cpx-tools:transit:home-defaults";
 
@@ -26,6 +29,34 @@ function saveDefaults(defaults: HomeDefaults) {
     localStorage.setItem(DEFAULTS_KEY, JSON.stringify(defaults));
   } catch {
     // 私密瀏覽模式等情況下 localStorage 可能不可用，失敗就當作這次沒存，不影響當下操作。
+  }
+}
+
+const TRAIN_SEARCH_KEY = "cpx-tools:transit:train-last-search";
+
+interface TrainLastSearch {
+  originCity: string;
+  origin: string;
+  destCity: string;
+  dest: string;
+  date: string;
+  time: string;
+}
+
+function loadTrainSearch(): TrainLastSearch | null {
+  try {
+    const raw = localStorage.getItem(TRAIN_SEARCH_KEY);
+    return raw ? (JSON.parse(raw) as TrainLastSearch) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveTrainSearch(search: TrainLastSearch) {
+  try {
+    localStorage.setItem(TRAIN_SEARCH_KEY, JSON.stringify(search));
+  } catch {
+    // 同上，存不進去就放著，不影響當下搜尋表單的操作。
   }
 }
 
@@ -78,14 +109,14 @@ function mockWeather(city: string): WeatherInfo {
   return { icon: WEATHER_ICONS[idx], label: WEATHER_LABELS[idx], temp: 20 + (hash % 10) };
 }
 
-// 串中央氣象署開放資料平台的 36 小時天氣預報（依縣市查），查詢中或失敗時退回 mockWeather 佔位，
-// 卡片呈現方式不用變。
-function useCityWeather(city: string): WeatherInfo {
+// 串中央氣象署開放資料平台的鄉鎮天氣預報（依縣市＋鄉鎮區查，比只到縣市等級的 36 小時
+// 預報更精確），查詢中或失敗時退回 mockWeather 佔位，卡片呈現方式不用變。
+function useCityWeather(city: string, district: string): WeatherInfo {
   const [info, setInfo] = useState<WeatherInfo | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/weather/forecast?city=${encodeURIComponent(city)}`)
+    fetch(`/api/weather/forecast?city=${encodeURIComponent(city)}&district=${encodeURIComponent(district)}`)
       .then((res) => res.json())
       .then((data: { bucket?: string; label?: string; temp?: number; error?: string }) => {
         if (cancelled || data.error || data.temp === undefined || !data.bucket) return;
@@ -95,7 +126,7 @@ function useCityWeather(city: string): WeatherInfo {
     return () => {
       cancelled = true;
     };
-  }, [city]);
+  }, [city, district]);
 
   return info ?? mockWeather(city);
 }
@@ -126,19 +157,35 @@ export function DreamHomeView() {
   const [time, setTime] = useState(nowHHMM);
   const [timePickerOpen, setTimePickerOpen] = useState(false);
   const stationLabel = mode === "bus" ? "站牌" : "站";
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [originPickerOpen, setOriginPickerOpen] = useState(false);
+  const [destPickerOpen, setDestPickerOpen] = useState(false);
 
   // 天氣小卡要能跟出發／抵達站分開設定（使用者編輯預設值時單獨選），不是永遠跟著搜尋表單目前
-  // 選的站——所以用自己獨立的 state，不是直接讀 originCity/origin。預設先跟表單一樣，
-  // 編輯過後才會分家。
-  const initWeatherOrigin = resolveStation(FALLBACK_TRAIN_STATIONS_BY_CITY, undefined, 0);
-  const initWeatherDest = resolveStation(FALLBACK_TRAIN_STATIONS_BY_CITY, undefined, 1);
+  // 選的站——所以用自己獨立的 state，不是直接讀 originCity/origin。天氣是用縣市＋鄉鎮區查，
+  // 跟搜尋表單選的「火車站」是兩套完全不同的清單（行政區不等於車站）。
+  const initWeatherOrigin = resolveStation(DISTRICTS_BY_CITY, undefined, 0);
+  const initWeatherDest = resolveStation(DISTRICTS_BY_CITY, undefined, 1);
   const [weatherOriginCity, setWeatherOriginCity] = useState(initWeatherOrigin.city);
-  const [weatherOriginStation, setWeatherOriginStation] = useState(initWeatherOrigin.station);
+  const [weatherOriginDistrict, setWeatherOriginDistrict] = useState(initWeatherOrigin.station);
   const [weatherDestCity, setWeatherDestCity] = useState(initWeatherDest.city);
-  const [weatherDestStation, setWeatherDestStation] = useState(initWeatherDest.station);
+  const [weatherDestDistrict, setWeatherDestDistrict] = useState(initWeatherDest.station);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const weatherOrigin = useCityWeather(weatherOriginCity);
-  const weatherDest = useCityWeather(weatherDestCity);
+  // 點「編輯」開彈窗那一刻的天氣設定快照，使用者點「取消」時要能還原回這個狀態
+  // （彈窗內改天氣地區會即時套用到首頁，不是等按「儲存」才生效）。
+  const [weatherSnapshot, setWeatherSnapshot] = useState<{
+    weatherOriginCity: string;
+    weatherOriginDistrict: string;
+    weatherDestCity: string;
+    weatherDestDistrict: string;
+  } | null>(null);
+  const weatherOrigin = useCityWeather(weatherOriginCity, weatherOriginDistrict);
+  const weatherDest = useCityWeather(weatherDestCity, weatherDestDistrict);
+
+  // 用 ref 存最新天氣設定，讓下面只跑一次的「掛載編輯按鈕」effect 在使用者點擊當下
+  // 也能讀到最新值，不用把這幾個常變動的 state 加進 effect 的依賴陣列。
+  const weatherStateRef = useRef({ weatherOriginCity, weatherOriginDistrict, weatherDestCity, weatherDestDistrict });
+  weatherStateRef.current = { weatherOriginCity, weatherOriginDistrict, weatherDestCity, weatherDestDistrict };
 
   const citiesForMode = mode === "train" ? trainCities : STATIONS_BY_CITY[mode];
   // 真實清單載入後 key 可能跟墊檔不一樣，保險起見擋一下，避免 undefined.map 當掉。
@@ -164,7 +211,13 @@ export function DreamHomeView() {
   // 編輯的設定只影響首頁：掛載時才把「編輯」按鈕插進外殼的切換鈕旁邊，離開首頁（卸載）
   // 就自動收掉，不會跑到我的行程／我的最愛等其他頁面。
   useEffect(() => {
-    setAction({ label: "編輯", onClick: () => setSettingsOpen(true) });
+    setAction({
+      label: "編輯",
+      onClick: () => {
+        setWeatherSnapshot(weatherStateRef.current);
+        setSettingsOpen(true);
+      },
+    });
     return () => setAction(null);
   }, [setAction]);
 
@@ -174,18 +227,21 @@ export function DreamHomeView() {
     const saved = loadDefaults();
     if (!saved) return;
     // localStorage 是外部、可能被改過或跨版本留下舊格式的資料來源，欄位不能直接信任；
-    // 之前就真的發生過改了欄位名稱、舊資料對不上造成整頁壞掉的狀況（defaultTimeSlot→defaultTime），
-    // 這裡每個欄位都要個別檢查、缺了就退回安全預設值，不要假設存起來的一定是完整、正確的。
+    // 之前就真的發生過改了欄位名稱、舊資料對不上造成整頁壞掉的狀況（defaultTimeSlot→defaultTime）。
+    // city 跟 district 是一組的，不能各自獨立 fallback——不然舊資料裡存的 city 配新預設值的
+    // district，兩個湊起來會變成一個不存在的組合（例如「桃園市」配「宜蘭市」），要整組一起驗證、
+    // 整組一起退回安全預設值。
     const validMode = MODES.some((m) => m.key === saved.defaultMode) ? saved.defaultMode : mode;
+    const originValid = saved.weatherOriginCity && DISTRICTS_BY_CITY[saved.weatherOriginCity]?.includes(saved.weatherOriginDistrict);
+    const destValid = saved.weatherDestCity && DISTRICTS_BY_CITY[saved.weatherDestCity]?.includes(saved.weatherDestDistrict);
     // 這幾個 setState 是故意同步呼叫的：頁面掛載後才讀得到 localStorage，讀到就要立刻套用
     // 這組預設值，不是在訂閱外部事件、也不會連鎖觸發其他 effect，屬於這個規則容許的例外。
     /* eslint-disable react-hooks/set-state-in-effect */
     selectMode(validMode);
-    setTime(saved.defaultTime ?? nowHHMM());
-    setWeatherOriginCity(saved.weatherOriginCity ?? initWeatherOrigin.city);
-    setWeatherOriginStation(saved.weatherOriginStation ?? initWeatherOrigin.station);
-    setWeatherDestCity(saved.weatherDestCity ?? initWeatherDest.city);
-    setWeatherDestStation(saved.weatherDestStation ?? initWeatherDest.station);
+    setWeatherOriginCity(originValid ? saved.weatherOriginCity : initWeatherOrigin.city);
+    setWeatherOriginDistrict(originValid ? saved.weatherOriginDistrict : initWeatherOrigin.station);
+    setWeatherDestCity(destValid ? saved.weatherDestCity : initWeatherDest.city);
+    setWeatherDestDistrict(destValid ? saved.weatherDestDistrict : initWeatherDest.station);
     /* eslint-enable react-hooks/set-state-in-effect */
     // 這個 effect 故意只在掛載時跑一次：mode/selectMode 讀的是掛載當下的值，
     // 不需要、也不該在使用者之後自己切換運輸工具時重新套用存檔的預設值。
@@ -194,18 +250,49 @@ export function DreamHomeView() {
 
   function saveSettings(defaults: HomeDefaults) {
     selectMode(defaults.defaultMode);
-    setTime(defaults.defaultTime);
+    // 天氣地區在彈窗內已經即時套用過了，這裡只是把同一組值連同運輸工具一起寫進 localStorage。
     setWeatherOriginCity(defaults.weatherOriginCity);
-    setWeatherOriginStation(defaults.weatherOriginStation);
+    setWeatherOriginDistrict(defaults.weatherOriginDistrict);
     setWeatherDestCity(defaults.weatherDestCity);
-    setWeatherDestStation(defaults.weatherDestStation);
+    setWeatherDestDistrict(defaults.weatherDestDistrict);
     saveDefaults(defaults);
+    setSettingsOpen(false);
+  }
+
+  // 點「取消」或背景、右上角 ✕ 關閉彈窗：天氣地區要還原回剛打開彈窗那一刻的狀態
+  // （彈窗內改地區是即時套用到首頁的，沒按「儲存」就要能整組復原）。
+  function closeSettings() {
+    if (weatherSnapshot) {
+      setWeatherOriginCity(weatherSnapshot.weatherOriginCity);
+      setWeatherOriginDistrict(weatherSnapshot.weatherOriginDistrict);
+      setWeatherDestCity(weatherSnapshot.weatherDestCity);
+      setWeatherDestDistrict(weatherSnapshot.weatherDestDistrict);
+    }
     setSettingsOpen(false);
   }
 
   function selectMode(key: Mode) {
     if (key === mode) return;
     setMode(key);
+    // 火車模式改用「記住上次查詢」：有存過合法的上次搜尋狀態就直接還原，
+    // 不然才退回該模式清單裡的第一、第二個站當預設。
+    if (key === "train") {
+      const saved = loadTrainSearch();
+      // 這裡故意不檢查站名是否存在於目前的 trainCities——掛載時真實的 ~240 站清單
+      // 可能還沒從 API 載回來（還是 FALLBACK_TRAIN_STATIONS_BY_CITY 那個只有 8 個城市、
+      // 每城 2 站的墊檔清單），存起來的站名幾乎都不在裡面，查這個反而會讓還原失敗。
+      // saved 是自己寫入的本機資料，直接信任；真的對不上時畫面上的 safeOriginCity／
+      // safeDestCity 容錯邏輯會接手，不會整頁壞掉。
+      if (saved) {
+        setOriginCity(saved.originCity);
+        setOrigin(saved.origin);
+        setDestCity(saved.destCity);
+        setDest(saved.dest);
+        setDate(saved.date || todayLocal());
+        setTime(saved.time || nowHHMM());
+        return;
+      }
+    }
     const cities = key === "train" ? trainCities : STATIONS_BY_CITY[key];
     const keys = Object.keys(cities);
     const oCity = keys[0];
@@ -216,15 +303,12 @@ export function DreamHomeView() {
     setDest(cities[dCity][dCity === oCity && cities[dCity].length > 1 ? 1 : 0]);
   }
 
-  function selectOriginCity(city: string) {
-    setOriginCity(city);
-    setOrigin(citiesForMode[city][0]);
-  }
-
-  function selectDestCity(city: string) {
-    setDestCity(city);
-    setDest(citiesForMode[city][0]);
-  }
+  // 火車模式下，出發／抵達站、日期、時間只要變動就存起來，下次切回火車模式會自動還原，
+  // 不用另外在編輯彈窗裡設「預設站牌」。
+  useEffect(() => {
+    if (mode !== "train") return;
+    saveTrainSearch({ originCity, origin, destCity, dest, date, time });
+  }, [mode, originCity, origin, destCity, dest, date, time]);
 
   function swapStations() {
     setOriginCity(destCity);
@@ -260,13 +344,13 @@ export function DreamHomeView() {
       <div className="relative z-10 -mt-16 flex-1 rounded-t-[2rem] bg-white px-5 pb-6 pt-5 shadow-[0_-8px_24px_-8px_rgba(111,95,214,0.2)]">
         <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-[#F3EFFC] p-3">
           {[
-            { station: weatherOriginStation, weather: weatherOrigin },
-            { station: weatherDestStation, weather: weatherDest },
+            { label: `${weatherOriginCity} ${weatherOriginDistrict}`, weather: weatherOrigin },
+            { label: `${weatherDestCity} ${weatherDestDistrict}`, weather: weatherDest },
           ].map((place, i) => (
             <div key={i} className="flex items-center gap-2">
               <IconImg src={place.weather.icon} alt={place.weather.label} size={28} />
               <div className="min-w-0">
-                <p className="truncate text-[11px] text-[#9C94C4]">{place.station}</p>
+                <p className="truncate text-[11px] text-[#9C94C4]">{place.label}</p>
                 <p className="truncate text-sm font-semibold text-[#4A3B7C]">
                   {place.weather.temp}°C・{place.weather.label}
                 </p>
@@ -297,38 +381,15 @@ export function DreamHomeView() {
         <div className="relative mt-5 flex flex-col gap-3">
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-[#9C94C4]">出發{stationLabel}</span>
-            <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => setOriginPickerOpen(true)} className="grid grid-cols-2 gap-2 text-left">
               <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
                 <IconImg src={ICON_PATHS.pin} alt="地點" size={14} />
-                <select
-                  value={safeOriginCity}
-                  onChange={(e) => selectOriginCity(e.target.value)}
-                  className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
-                >
-                  {Object.keys(citiesForMode).map((city) => (
-                    <option key={city} value={city}>
-                      {city}
-                    </option>
-                  ))}
-                </select>
+                <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{safeOriginCity}</span>
               </div>
               <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                <select
-                  value={origin}
-                  onChange={(e) => setOrigin(e.target.value)}
-                  className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
-                >
-                  {citiesForMode[safeOriginCity].map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-                <span aria-hidden className="pointer-events-none text-[#C7BFE6]">
-                  ⌄
-                </span>
+                <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{origin}</span>
               </div>
-            </div>
+            </button>
           </label>
 
           <button
@@ -342,53 +403,58 @@ export function DreamHomeView() {
 
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-[#9C94C4]">抵達{stationLabel}</span>
-            <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => setDestPickerOpen(true)} className="grid grid-cols-2 gap-2 text-left">
               <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
                 <IconImg src={ICON_PATHS.pin} alt="地點" size={14} />
-                <select
-                  value={safeDestCity}
-                  onChange={(e) => selectDestCity(e.target.value)}
-                  className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
-                >
-                  {Object.keys(citiesForMode).map((city) => (
-                    <option key={city} value={city}>
-                      {city}
-                    </option>
-                  ))}
-                </select>
+                <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{safeDestCity}</span>
               </div>
               <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                <select
-                  value={dest}
-                  onChange={(e) => setDest(e.target.value)}
-                  className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
-                >
-                  {citiesForMode[safeDestCity].map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-                <span aria-hidden className="pointer-events-none text-[#C7BFE6]">
-                  ⌄
-                </span>
+                <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{dest}</span>
               </div>
-            </div>
+            </button>
           </label>
         </div>
+
+        <StationPickerModal
+          key={originPickerOpen ? "origin-open" : "origin-closed"}
+          open={originPickerOpen}
+          title={`選擇出發${stationLabel}`}
+          cities={citiesForMode}
+          initialCity={safeOriginCity}
+          initialStation={origin}
+          onClose={() => setOriginPickerOpen(false)}
+          onSave={(city, station) => {
+            setOriginCity(city);
+            setOrigin(station);
+            setOriginPickerOpen(false);
+          }}
+        />
+        <StationPickerModal
+          key={destPickerOpen ? "dest-open" : "dest-closed"}
+          open={destPickerOpen}
+          title={`選擇抵達${stationLabel}`}
+          cities={citiesForMode}
+          initialCity={safeDestCity}
+          initialStation={dest}
+          onClose={() => setDestPickerOpen(false)}
+          onSave={(city, station) => {
+            setDestCity(city);
+            setDest(station);
+            setDestPickerOpen(false);
+          }}
+        />
 
         <div className="mt-3 grid grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-[#9C94C4]">出發日期</span>
-            <div className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-sm text-[#4A3B7C]">
+            <button
+              type="button"
+              onClick={() => setDatePickerOpen(true)}
+              className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-left text-sm text-[#4A3B7C]"
+            >
               <IconImg src={ICON_PATHS.calendar} alt="日期" size={14} />
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => e.target.value && setDate(e.target.value)}
-                className="w-0 flex-1 bg-transparent text-sm font-medium text-[#4A3B7C] outline-none [color-scheme:light] [&::-webkit-calendar-picker-indicator]:hidden"
-              />
-            </div>
+              <span className="flex-1 truncate font-medium">{date.replaceAll("-", "/")}</span>
+            </button>
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-[#9C94C4]">時間</span>
@@ -402,6 +468,17 @@ export function DreamHomeView() {
             </button>
           </label>
         </div>
+
+        <DatePickerModal
+          key={datePickerOpen ? "date-open" : "date-closed"}
+          open={datePickerOpen}
+          initial={date}
+          onClose={() => setDatePickerOpen(false)}
+          onSave={(v) => {
+            setDate(v);
+            setDatePickerOpen(false);
+          }}
+        />
 
         <TimePickerModal
           key={timePickerOpen ? "time-open" : "time-closed"}
@@ -454,17 +531,19 @@ export function DreamHomeView() {
       <HomeSettingsModal
         key={settingsOpen ? "settings-open" : "settings-closed"}
         open={settingsOpen}
-        trainCities={trainCities}
         initial={{
           defaultMode: mode,
-          defaultTime: time,
           weatherOriginCity,
-          weatherOriginStation,
+          weatherOriginDistrict,
           weatherDestCity,
-          weatherDestStation,
+          weatherDestDistrict,
         }}
-        onClose={() => setSettingsOpen(false)}
+        onClose={closeSettings}
         onSave={saveSettings}
+        onPreviewOriginCity={setWeatherOriginCity}
+        onPreviewOriginDistrict={setWeatherOriginDistrict}
+        onPreviewDestCity={setWeatherDestCity}
+        onPreviewDestDistrict={setWeatherDestDistrict}
       />
     </div>
   );

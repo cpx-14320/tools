@@ -11,5 +11,7 @@ export default function ResultsPage() {
   const dest = params.get("dest") ?? "台中站";
   const modeParam = params.get("mode");
   const mode: Mode = VALID_MODES.includes(modeParam as Mode) ? (modeParam as Mode) : "train";
-  return <ResultsView origin={origin} dest={dest} mode={mode} />;
+  const date = params.get("date") ?? "";
+  const time = params.get("time") ?? "";
+  return <ResultsView origin={origin} dest={dest} mode={mode} date={date} time={time} />;
 }

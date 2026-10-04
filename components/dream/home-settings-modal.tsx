@@ -4,6 +4,7 @@ import { useState } from "react";
 import { type Mode } from "./stations-data";
 import { IconImg } from "./icon-img";
 import { ICON_PATHS } from "./icon-paths";
+import { DISTRICTS_BY_CITY } from "@/lib/cwa-districts";
 
 const MODES: { key: Mode; label: string; icon: string }[] = [
   { key: "bus", label: "公車", icon: ICON_PATHS.modeBus },
@@ -14,31 +15,28 @@ const MODES: { key: Mode; label: string; icon: string }[] = [
 
 export interface HomeDefaults {
   defaultMode: Mode;
-  defaultTime: string;
   weatherOriginCity: string;
-  weatherOriginStation: string;
+  weatherOriginDistrict: string;
   weatherDestCity: string;
-  weatherDestStation: string;
+  weatherDestDistrict: string;
 }
 
-/** 城市＋站點兩層下拉選單，city/station 其中一個不在目前清單裡時自動退回清單第一個，
- *  避免天氣縣市清單還沒載入完成時 options 對不起來而整個壞掉。 */
-function CityStationPicker({
-  cities,
+/** 縣市＋鄉鎮區兩層下拉選單，city/district 其中一個不在清單裡時自動退回清單第一個，
+ *  避免存起來的舊資料跟現在的行政區清單對不起來而整個壞掉。 */
+function CityDistrictPicker({
   city,
-  station,
+  district,
   onChangeCity,
-  onChangeStation,
+  onChangeDistrict,
 }: {
-  cities: Record<string, string[]>;
   city: string;
-  station: string;
+  district: string;
   onChangeCity: (city: string) => void;
-  onChangeStation: (station: string) => void;
+  onChangeDistrict: (district: string) => void;
 }) {
-  const safeCity = cities[city] ? city : Object.keys(cities)[0];
-  const stations = cities[safeCity] ?? [];
-  const safeStation = stations.includes(station) ? station : stations[0];
+  const safeCity = DISTRICTS_BY_CITY[city] ? city : Object.keys(DISTRICTS_BY_CITY)[0];
+  const districts = DISTRICTS_BY_CITY[safeCity] ?? [];
+  const safeDistrict = districts.includes(district) ? district : districts[0];
 
   return (
     <div className="grid grid-cols-2 gap-2">
@@ -49,11 +47,11 @@ function CityStationPicker({
           onChange={(e) => {
             const nextCity = e.target.value;
             onChangeCity(nextCity);
-            onChangeStation(cities[nextCity][0]);
+            onChangeDistrict(DISTRICTS_BY_CITY[nextCity][0]);
           }}
           className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
         >
-          {Object.keys(cities).map((c) => (
+          {Object.keys(DISTRICTS_BY_CITY).map((c) => (
             <option key={c} value={c}>
               {c}
             </option>
@@ -62,13 +60,13 @@ function CityStationPicker({
       </div>
       <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] px-3 py-3">
         <select
-          value={safeStation}
-          onChange={(e) => onChangeStation(e.target.value)}
+          value={safeDistrict}
+          onChange={(e) => onChangeDistrict(e.target.value)}
           className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
         >
-          {stations.map((s) => (
-            <option key={s} value={s}>
-              {s}
+          {districts.map((d) => (
+            <option key={d} value={d}>
+              {d}
             </option>
           ))}
         </select>
@@ -83,15 +81,22 @@ function CityStationPicker({
 export function HomeSettingsModal({
   open,
   initial,
-  trainCities,
   onClose,
   onSave,
+  onPreviewOriginCity,
+  onPreviewOriginDistrict,
+  onPreviewDestCity,
+  onPreviewDestDistrict,
 }: {
   open: boolean;
   initial: HomeDefaults;
-  trainCities: Record<string, string[]>;
   onClose: () => void;
   onSave: (defaults: HomeDefaults) => void;
+  /** 天氣地區下拉選單一改，就直接套用到首頁的天氣小卡，不用等按「儲存」。 */
+  onPreviewOriginCity: (city: string) => void;
+  onPreviewOriginDistrict: (district: string) => void;
+  onPreviewDestCity: (city: string) => void;
+  onPreviewDestDistrict: (district: string) => void;
 }) {
   const [draft, setDraft] = useState<HomeDefaults>(initial);
 
@@ -132,38 +137,35 @@ export function HomeSettingsModal({
             </div>
           </label>
 
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-[#9C94C4]">預設時間</span>
-            <div className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] px-4 py-3">
-              <IconImg src={ICON_PATHS.clock} alt="時間" size={14} />
-              <input
-                type="time"
-                value={draft.defaultTime}
-                onChange={(e) => e.target.value && setDraft((d) => ({ ...d, defaultTime: e.target.value }))}
-                className="flex-1 bg-transparent text-sm font-medium text-[#4A3B7C] outline-none [&::-webkit-calendar-picker-indicator]:hidden"
-              />
-            </div>
-          </label>
-
           <div className="border-t border-[#F2EEFA] pt-4">
             <p className="mb-2 text-xs font-medium text-[#9C94C4]">天氣地區（出發）</p>
-            <CityStationPicker
-              cities={trainCities}
+            <CityDistrictPicker
               city={draft.weatherOriginCity}
-              station={draft.weatherOriginStation}
-              onChangeCity={(c) => setDraft((d) => ({ ...d, weatherOriginCity: c }))}
-              onChangeStation={(s) => setDraft((d) => ({ ...d, weatherOriginStation: s }))}
+              district={draft.weatherOriginDistrict}
+              onChangeCity={(c) => {
+                setDraft((d) => ({ ...d, weatherOriginCity: c }));
+                onPreviewOriginCity(c);
+              }}
+              onChangeDistrict={(dist) => {
+                setDraft((d) => ({ ...d, weatherOriginDistrict: dist }));
+                onPreviewOriginDistrict(dist);
+              }}
             />
           </div>
 
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-[#9C94C4]">天氣地區（抵達）</span>
-            <CityStationPicker
-              cities={trainCities}
+            <CityDistrictPicker
               city={draft.weatherDestCity}
-              station={draft.weatherDestStation}
-              onChangeCity={(c) => setDraft((d) => ({ ...d, weatherDestCity: c }))}
-              onChangeStation={(s) => setDraft((d) => ({ ...d, weatherDestStation: s }))}
+              district={draft.weatherDestDistrict}
+              onChangeCity={(c) => {
+                setDraft((d) => ({ ...d, weatherDestCity: c }));
+                onPreviewDestCity(c);
+              }}
+              onChangeDistrict={(dist) => {
+                setDraft((d) => ({ ...d, weatherDestDistrict: dist }));
+                onPreviewDestDistrict(dist);
+              }}
             />
           </label>
         </div>

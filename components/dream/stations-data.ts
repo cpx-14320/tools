@@ -1,6 +1,9 @@
-// 公車／捷運／高鐵目前沒有像台鐵一樣的「全站動態清單」API 可用（高鐵僅 7 站、用固定表；
-// 公車／捷運 TDX 是以路線＋站牌查詢，沒有「起訖站」兩點查詢模型），所以這三種車種先用
-// 靜態縣市清單；火車另外在用到的地方改抓 /api/transit/tra/stations 的真實站名清單。
+import { METRO_STATIONS_BY_LINE } from "@/lib/metro-lines";
+
+// 公車／高鐵目前沒有像台鐵一樣的「全站動態清單」API 可用（高鐵僅 7 站、用固定表；
+// 公車 TDX 是以路線＋站牌查詢，沒有「起訖站」兩點查詢模型），所以這兩種車種先用
+// 靜態縣市清單；火車另外在用到的地方改抓 /api/transit/tra/stations 的真實站名清單；
+// 捷運改用 lib/metro-lines.ts 的真實台北捷運站點（見下方 metro 欄位）。
 export type Mode = "train" | "thsr" | "bus" | "metro";
 
 // 城市/站名用字要跟 lib/tdx-stations.ts 解析真實站名清單時用的字一致（台鐵站名用「臺」不是
@@ -33,10 +36,8 @@ export const STATIONS_BY_CITY: Record<Mode, Record<string, string[]>> = {
     桃園市: ["中壢站", "桃園站"],
     基隆市: ["基隆站"],
   },
-  metro: {
-    台北市: ["台北車站", "動物園站", "南港站"],
-    新北市: ["淡水站"],
-    桃園市: ["機場第一航廈站"],
-    高雄市: ["左營站", "美麗島站"],
-  },
+  // 左欄的 key 本質是「路線」不是縣市，右欄站名也已經帶好站碼（例如「BL07 板橋」），
+  // 兩層選單的 UI 跟火車／公車共用同一套（CityStationPicker／StationPickerModal），
+  // 顯示文字直接就是「路線代碼 路線名稱」＋「站碼 站名」，不用另外改元件。
+  metro: METRO_STATIONS_BY_LINE,
 };
