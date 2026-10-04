@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { IconImg } from "@/components/dream/icon-img";
 import { ICON_PATHS } from "@/components/dream/icon-paths";
+import { scrollContainerToTop, scrollWithin } from "@/lib/scroll-within";
 
 export type Mode = "bus" | "train" | "metro" | "thsr";
 
@@ -159,6 +160,17 @@ export function ResultsView({
   const [typeTab, setTypeTab] = useState("全部");
   const visibleResults = isTrain && typeTab !== "全部" ? results.filter((r) => trainTypeOf(r.code) === typeTab) : results;
 
+  // 錨點效果：列表一出現（或切換車種頁籤）就跳到「還沒過站」的第一筆卡片，不用讓使用者
+  // 自己往下滑過一排已經發車的班次才找到真正有用的那筆。全部都過站了就不特別捲動，
+  // 留在最上面就好（捲到最後一筆past意義不大，使用者自己往下看就知道全部都過了）。
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  useEffect(() => {
+    if (visibleResults.length === 0) return;
+    const firstUpcoming = visibleResults.findIndex((r) => !r.isPast);
+    const target = cardRefs.current[firstUpcoming];
+    if (firstUpcoming > 0 && target) scrollWithin(target, "start");
+  }, [visibleResults]);
+
   return (
     <div className="flex flex-col px-5 pb-6 pt-6">
       <div className="flex items-center gap-3">
@@ -209,6 +221,9 @@ export function ResultsView({
         {visibleResults.map((r, i) => (
           <div
             key={i}
+            ref={(el) => {
+              cardRefs.current[i] = el;
+            }}
             className={`rounded-[1.5rem] bg-white p-4 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.25)] ${r.isPast ? "opacity-50" : ""}`}
           >
             <div className="flex items-start gap-3">
@@ -261,6 +276,26 @@ export function ResultsView({
           </div>
         ))}
       </div>
+
+      {visibleResults.length > 0 && (
+        // 外層跟底部導覽列用同一套定位技巧（fixed inset-x-0 + mx-auto + max-w-430px）：
+        // 寬螢幕時手機外框卡片是置中的，直接 fixed right-* 會貼齊整個瀏覽器視窗右邊、
+        // 跟卡片分家飄走，要先框出跟卡片對齊的寬度，按鈕再相對這個寬度卡右下角。
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto max-w-[430px]">
+          <button
+            type="button"
+            onClick={() => {
+              const main = document.querySelector("main");
+              if (main) scrollContainerToTop(main);
+            }}
+            aria-label="回到頂部"
+            style={{ bottom: "calc(env(safe-area-inset-bottom) + 5.5rem)", background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
+            className="pointer-events-auto absolute right-5 grid size-11 place-items-center rounded-full text-white shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)] transition-opacity hover:opacity-90"
+          >
+            ↑
+          </button>
+        </div>
+      )}
     </div>
   );
 }
