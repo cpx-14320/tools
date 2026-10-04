@@ -382,7 +382,9 @@ export function DreamHomeView() {
             { label: weatherReady ? `${weatherDestCity} ${weatherDestDistrict}` : "載入中…", weather: weatherDest },
           ].map((place, i) => (
             <div key={i} className="flex items-center gap-2">
-              {place.weather && <IconImg src={place.weather.icon} alt={place.weather.label} size={28} />}
+              {/* 跟「週末小旅行」那塊同一種佔位風格（ImageSlot：漸層底＋🖼️），圖還沒上傳時
+                  看起來明顯是「待替換的圖片格」，不是 IconImg 那種看不出來是圖片格的純色方塊。 */}
+              {place.weather && <ImageSlot src={place.weather.icon} alt={place.weather.label} className="size-7 shrink-0 rounded-lg" />}
               <div className="min-w-0">
                 <p className="truncate text-[11px] text-[#9C94C4]">{place.label}</p>
                 <p className="truncate text-sm font-semibold text-[#4A3B7C]">
