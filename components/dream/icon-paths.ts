@@ -2,10 +2,14 @@
 // 之後只要把檔案放到對應路徑，所有用到的地方會一次全部換成真圖，不用逐一改程式碼。
 // 檔案還沒上傳前，ImageSlot／IconImg 會自動用漸層佔位顯示，圖片 404 也不會壞掉。
 export const ICON_PATHS = {
+  // 首頁最上方的大張插畫 Banner。
+  heroMain: "/icons/dream/main.png",
+  // 首頁「週末小旅行」區塊的背景圖（整個卡片背景，不是小圖示）。
+  weekendTripBanner: "/icons/dream/banner.png",
+
   navHome: "/icons/dream/nav-home.png",
   navTrips: "/icons/dream/nav-trips.png",
-  navFavorites: "/icons/dream/nav-favorites.png",
-  navMore: "/icons/dream/nav-more.png",
+  navOther: "/icons/dream/nav-other.png",
 
   modeTrain: "/icons/dream/mode-train.png",
   modeThsr: "/icons/dream/mode-thsr.png",
@@ -26,18 +30,14 @@ export const ICON_PATHS = {
   calendar: "/icons/dream/calendar.png",
   search: "/icons/dream/search.png",
   refresh: "/icons/dream/refresh.png",
-  station: "/icons/dream/station.png",
-  heartFilled: "/icons/dream/heart-filled.png",
-  heartOutline: "/icons/dream/heart-outline.png",
   goTop: "/icons/dream/go-top.png",
   back: "/icons/dream/back.png",
   edit: "/icons/dream/edit.png",
 
   // 備忘錄可選的圖示，key 跟 components/dream/memo-icons.ts 的 MEMO_ICON_OPTIONS 對應。
-  memoCard: "/icons/dream/memo-card.png",
-  memoBill: "/icons/dream/memo-bill.png",
-  memoNote: "/icons/dream/memo-note.png",
-  memoGift: "/icons/dream/memo-gift.png",
+  memoDrinks: "/icons/dream/drinks.png",
+  memoTicket: "/icons/dream/ticket.png",
+  memoWork: "/icons/dream/work.png",
 
   // 常用行程可選的圖示，key 跟 components/dream/frequent-trip-icons.ts 的
   // FREQUENT_TRIP_ICON_OPTIONS 對應。

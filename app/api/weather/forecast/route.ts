@@ -40,6 +40,26 @@ function bucketFromWxCode(code: string): "sunny" | "cloudy" | "rain" {
   return "rain";
 }
 
+// 算「今天／明天」在台灣當地的日期字串，不能依賴伺服器所在時區（Vercel 預設是 UTC）：
+// 直接拿目前 UTC 時間加 8 小時當作台灣當地時間去算年月日。
+function taipeiDateString(offsetDays: number): string {
+  const taipeiMs = Date.now() + 8 * 60 * 60 * 1000;
+  const d = new Date(taipeiMs);
+  d.setUTCDate(d.getUTCDate() + offsetDays);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// 鄉鎮天氣預報的 Time[] 是連續好幾個時段（3 或 12 小時一段，往後蓋約 2～3 天），依
+// StartTime 的日期找出「目標那一天」第一個時段；找不到（例如要求的天數超出預報範圍）
+// 就退回第一筆，至少還能顯示點東西，不要整個壞掉。
+function pickTimeEntry(times: CwaTimeEntry[] | undefined, targetDate: string): CwaTimeEntry | undefined {
+  if (!times || times.length === 0) return undefined;
+  return times.find((t) => (t.StartTime ?? t.DataTime ?? "").slice(0, 10) === targetDate) ?? times[0];
+}
+
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const city = params.get("city") ?? "";
@@ -47,6 +67,10 @@ export async function GET(request: Request) {
   if (!city || !district) {
     return NextResponse.json({ error: "缺少 city 或 district 參數" }, { status: 400 });
   }
+  // dayOffset 0＝今天、1＝明天，讓同一個縣市可以同時存在「今天」「明天」兩筆天氣卡輪播。
+  const dayOffsetParam = Number(params.get("dayOffset") ?? "0");
+  const dayOffset = Number.isFinite(dayOffsetParam) ? Math.max(0, Math.round(dayOffsetParam)) : 0;
+  const targetDate = taipeiDateString(dayOffset);
 
   const datasetId = DISTRICT_DATASET_ID[city];
   if (!datasetId) {
@@ -60,12 +84,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: `查無「${city}${district}」的天氣預報` }, { status: 404 });
     }
 
-    const findFirst = (name: string) => location.WeatherElement.find((e) => e.ElementName === name)?.Time[0]?.ElementValue[0];
-    const temperature = findFirst("溫度");
-    const weather = findFirst("天氣現象");
+    const findSlot = (name: string) => pickTimeEntry(location.WeatherElement.find((e) => e.ElementName === name)?.Time, targetDate)?.ElementValue[0];
+    const temperature = findSlot("溫度");
+    const weather = findSlot("天氣現象");
     // 鄉鎮天氣預報的降雨機率有些資料集是「3小時降雨機率」、有些是「12小時降雨機率」，
     // 兩種都試一次；查不到或當下時段沒有值（CWA 給 "-"）就不回傳這個欄位。
-    const pop = findFirst("3小時降雨機率") ?? findFirst("12小時降雨機率");
+    const pop = findSlot("3小時降雨機率") ?? findSlot("12小時降雨機率");
     const popValue = pop?.ProbabilityOfPrecipitation;
     const popNumber = popValue && popValue !== "-" ? Number(popValue) : undefined;
 

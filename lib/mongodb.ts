@@ -1,4 +1,5 @@
 import { MongoClient, type Db } from "mongodb";
+import { TOOLS_REGISTRY } from "./tools-registry";
 
 const DB_NAME = "Tools";
 
@@ -39,14 +40,10 @@ async function ensureIndexes(db: Db): Promise<void> {
     db.collection("transit.tripGroups").createIndex({ userId: 1, mode: 1, order: 1 }),
   ]);
 
-  // toolsRegistry 是目前工具清單的真實來源，用 upsert 寫入已知的兩個工具，
-  // 之後首頁要依使用者權限動態列出工具時就是讀這個集合。
-  const tools = [
-    { toolId: "expenses", name: "記帳本", description: "計算每月薪水、記錄各類消費，可多人共用一個帳本。", icon: "📒", href: "/tools/expenses" },
-    { toolId: "transit", name: "搭乘車查詢", description: "查固定通勤班次時刻表，誤點或即將到站時推播提醒。", icon: "🚌", href: "/tools/transit" },
-  ];
+  // toolsRegistry 是目前工具清單的真實來源，用 upsert 寫入 lib/tools-registry.ts 裡
+  // 已知的工具，之後首頁要依使用者權限動態列出工具時就是讀這個集合。
   await Promise.all(
-    tools.map((t) => db.collection("toolsRegistry").updateOne({ toolId: t.toolId }, { $set: t }, { upsert: true })),
+    TOOLS_REGISTRY.map((t) => db.collection("toolsRegistry").updateOne({ toolId: t.toolId }, { $set: t }, { upsert: true })),
   );
 }
 

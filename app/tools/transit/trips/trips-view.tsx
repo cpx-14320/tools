@@ -227,7 +227,11 @@ export function TripsView() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => router.push(`/tools/transit/results?origin=${encodeURIComponent(f.origin)}&dest=${encodeURIComponent(f.dest)}&mode=${tab}`)}
+                      onClick={() =>
+                        router.push(
+                          `/tools/transit/results?origin=${encodeURIComponent(f.origin)}&dest=${encodeURIComponent(f.dest)}&mode=${tab}&startTime=${encodeURIComponent(f.startTime)}&endTime=${encodeURIComponent(f.endTime)}`,
+                        )
+                      }
                       className="shrink-0 rounded-full bg-[#F3EFFC] px-3 py-1.5 text-xs font-medium text-[#6F5FD6]"
                     >
                       搜尋班次 →

@@ -5,6 +5,7 @@ import { type Mode } from "./stations-data";
 import { IconImg } from "./icon-img";
 import { ICON_PATHS } from "./icon-paths";
 import { DISTRICTS_BY_CITY } from "@/lib/cwa-districts";
+import type { WeatherBlock } from "./weather-carousel";
 
 const MODES: { key: Mode; label: string; icon: string }[] = [
   { key: "bus", label: "公車", icon: ICON_PATHS.modeBus },
@@ -15,10 +16,13 @@ const MODES: { key: Mode; label: string; icon: string }[] = [
 
 export interface HomeDefaults {
   defaultMode: Mode;
-  weatherOriginCity: string;
-  weatherOriginDistrict: string;
-  weatherDestCity: string;
-  weatherDestDistrict: string;
+  weatherBlocks: WeatherBlock[];
+}
+
+function newWeatherBlock(): WeatherBlock {
+  const keys = Object.keys(DISTRICTS_BY_CITY);
+  const city = keys[0];
+  return { id: crypto.randomUUID(), city, district: DISTRICTS_BY_CITY[city][0] };
 }
 
 /** 縣市＋鄉鎮區兩層下拉選單，city/district 其中一個不在清單裡時自動退回清單第一個，
@@ -70,9 +74,6 @@ function CityDistrictPicker({
             </option>
           ))}
         </select>
-        <span aria-hidden className="pointer-events-none text-[#C7BFE6]">
-          ⌄
-        </span>
       </div>
     </div>
   );
@@ -83,24 +84,23 @@ export function HomeSettingsModal({
   initial,
   onClose,
   onSave,
-  onPreviewOriginCity,
-  onPreviewOriginDistrict,
-  onPreviewDestCity,
-  onPreviewDestDistrict,
 }: {
   open: boolean;
   initial: HomeDefaults;
   onClose: () => void;
   onSave: (defaults: HomeDefaults) => void;
-  /** 天氣地區下拉選單一改，就直接套用到首頁的天氣小卡，不用等按「儲存」。 */
-  onPreviewOriginCity: (city: string) => void;
-  onPreviewOriginDistrict: (district: string) => void;
-  onPreviewDestCity: (city: string) => void;
-  onPreviewDestDistrict: (district: string) => void;
 }) {
   const [draft, setDraft] = useState<HomeDefaults>(initial);
 
   if (!open) return null;
+
+  function updateBlock(index: number, patch: Partial<WeatherBlock>) {
+    setDraft((d) => ({ ...d, weatherBlocks: d.weatherBlocks.map((block, i) => (i === index ? { ...block, ...patch } : block)) }));
+  }
+
+  function removeBlock(index: number) {
+    setDraft((d) => ({ ...d, weatherBlocks: d.weatherBlocks.filter((_, i) => i !== index) }));
+  }
 
   return (
     <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30 sm:items-center" onClick={onClose}>
@@ -131,43 +131,41 @@ export function HomeSettingsModal({
                   </option>
                 ))}
               </select>
-              <span aria-hidden className="pointer-events-none text-[#C7BFE6]">
-                ⌄
-              </span>
             </div>
           </label>
 
-          <div className="border-t border-[#F2EEFA] pt-4">
-            <p className="mb-2 text-xs font-medium text-[#9C94C4]">天氣地區（出發）</p>
-            <CityDistrictPicker
-              city={draft.weatherOriginCity}
-              district={draft.weatherOriginDistrict}
-              onChangeCity={(c) => {
-                setDraft((d) => ({ ...d, weatherOriginCity: c }));
-                onPreviewOriginCity(c);
-              }}
-              onChangeDistrict={(dist) => {
-                setDraft((d) => ({ ...d, weatherOriginDistrict: dist }));
-                onPreviewOriginDistrict(dist);
-              }}
-            />
-          </div>
+          <div className="flex flex-col gap-3 border-t border-[#F2EEFA] pt-4">
+            <p className="text-xs font-medium text-[#9C94C4]">
+              天氣地區（每個區塊會自動展開成「今天」「明天」兩張首頁輪播卡，可新增多個區塊）
+            </p>
+            {draft.weatherBlocks.map((block, i) => (
+              <div key={block.id} className="flex flex-col gap-2.5 rounded-2xl border border-[#F2EEFA] p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-[#9C94C4]">天氣地區 第 {i + 1} 區塊</span>
+                  {draft.weatherBlocks.length > 1 && (
+                    <button type="button" onClick={() => removeBlock(i)} className="text-xs font-medium text-[#D1517E]">
+                      刪除
+                    </button>
+                  )}
+                </div>
 
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-[#9C94C4]">天氣地區（抵達）</span>
-            <CityDistrictPicker
-              city={draft.weatherDestCity}
-              district={draft.weatherDestDistrict}
-              onChangeCity={(c) => {
-                setDraft((d) => ({ ...d, weatherDestCity: c }));
-                onPreviewDestCity(c);
-              }}
-              onChangeDistrict={(dist) => {
-                setDraft((d) => ({ ...d, weatherDestDistrict: dist }));
-                onPreviewDestDistrict(dist);
-              }}
-            />
-          </label>
+                <CityDistrictPicker
+                  city={block.city}
+                  district={block.district}
+                  onChangeCity={(c) => updateBlock(i, { city: c })}
+                  onChangeDistrict={(d) => updateBlock(i, { district: d })}
+                />
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => setDraft((d) => ({ ...d, weatherBlocks: [...d.weatherBlocks, newWeatherBlock()] }))}
+              className="rounded-xl border border-dashed border-[#C7BFE6] py-2.5 text-sm font-medium text-[#6F5FD6]"
+            >
+              ＋ 新增區塊
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t border-[#ECE4FA] px-5 py-4">

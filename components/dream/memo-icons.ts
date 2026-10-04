@@ -5,10 +5,9 @@ import { ICON_PATHS } from "./icon-paths";
  *  icon-paths.ts 裡對應的路徑換成真檔案，所有已經存在資料庫裡的備忘錄會自動套用新圖，
  *  不用跑資料遷移。 */
 export const MEMO_ICON_OPTIONS: { key: string; icon: string }[] = [
-  { key: "card", icon: ICON_PATHS.memoCard },
-  { key: "bill", icon: ICON_PATHS.memoBill },
-  { key: "note", icon: ICON_PATHS.memoNote },
-  { key: "gift", icon: ICON_PATHS.memoGift },
+  { key: "drinks", icon: ICON_PATHS.memoDrinks },
+  { key: "ticket", icon: ICON_PATHS.memoTicket },
+  { key: "work", icon: ICON_PATHS.memoWork },
 ];
 
 export function memoIconPath(key: string): string {

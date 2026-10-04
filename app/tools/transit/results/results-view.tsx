@@ -161,17 +161,25 @@ export function ResultsView({
   mode,
   date,
   time,
+  startTime = "",
+  endTime = "",
 }: {
   origin: string;
   dest: string;
   mode: Mode;
   date: string;
   time: string;
+  /** 從「我的行程」常用行程卡片的時段區間帶進來才會有值——有值時只顯示這個時間區間內
+   *  的班次，不是全部都顯示；首頁搜尋只有單一出發時間，不會帶這兩個參數，所以還是維持
+   *  顯示全部結果（只用卡片本身的 isPast 狀態去標示是否已經過期），不受這段邏輯影響。 */
+  startTime?: string;
+  endTime?: string;
 }) {
   const meta = MODE_META[mode];
   const isTrain = mode === "train";
   const { rows: trainRows, error: trainError } = useTrainResults(origin, dest, date, time);
-  const results: ResultRow[] = isTrain ? trainRows ?? [] : MOCK_RESULTS[mode];
+  const allResults: ResultRow[] = isTrain ? trainRows ?? [] : MOCK_RESULTS[mode];
+  const results = startTime && endTime ? allResults.filter((r) => r.time >= startTime && r.time <= endTime) : allResults;
   const loading = isTrain && trainRows === null && !trainError;
   const [typeTab, setTypeTab] = useState("全部");
   const visibleResults = isTrain && typeTab !== "全部" ? results.filter((r) => trainTypeOf(r.code) === typeTab) : results;

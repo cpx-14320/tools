@@ -8,11 +8,15 @@ export function IconImg({
   alt,
   size = 16,
   className = "",
+  background = true,
 }: {
   src: string;
   alt: string;
   size?: number;
   className?: string;
+  /** 已經有真圖、不需要漸層佔位墊底時關掉（例如底部導覽列）——不然圖片本身透明的地方
+   *  會透出漸層色，看起來像圖示後面多一層顏色底。 */
+  background?: boolean;
 }) {
   return (
     <span
@@ -22,7 +26,7 @@ export function IconImg({
       style={{
         width: size,
         height: size,
-        backgroundImage: `url("${src}"), linear-gradient(to bottom right, #E4DCFB, #F6D9EE)`,
+        backgroundImage: background ? `url("${src}"), linear-gradient(to bottom right, #E4DCFB, #F6D9EE)` : `url("${src}")`,
       }}
     />
   );

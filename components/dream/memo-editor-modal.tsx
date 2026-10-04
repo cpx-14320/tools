@@ -93,7 +93,7 @@ export function MemoEditorModal({
                     aria-label={`選擇圖示 ${option.key}`}
                     className={`rounded-xl p-0.5 ${item.icon === option.key ? "ring-2 ring-[#6F5FD6]" : ""}`}
                   >
-                    <ImageSlot src={option.icon} alt={option.key} className="size-9 rounded-lg" />
+                    <ImageSlot src={option.icon} alt={option.key} className="size-8 rounded-lg" />
                   </button>
                 ))}
               </div>
