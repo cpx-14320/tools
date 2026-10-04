@@ -21,11 +21,13 @@ export function scrollWithin(el: HTMLElement, align: "start" | "center") {
 /**
  * 捲回最頂端，直接傳可捲動容器本身（例如 <main>）就好，不用像 scrollWithin 那樣傳容器內的子元素
  * ——傳容器自己給 scrollWithin 的話，元素跟容器重疊，算出來的偏移量會等於目前捲動位置，變成沒效果。
+ * behavior 預設 "auto"（理由同上），但像 go-top 按鈕這種使用者主動點擊、不是自動觸發的捲動，
+ * 想要補間動畫的話可以自己傳 "smooth" 覆蓋。
  */
-export function scrollContainerToTop(container: HTMLElement) {
+export function scrollContainerToTop(container: HTMLElement, behavior: ScrollBehavior = "auto") {
   if (container.scrollHeight > container.clientHeight + 2) {
-    container.scrollTo({ top: 0, behavior: "auto" });
+    container.scrollTo({ top: 0, behavior });
   } else {
-    container.scrollIntoView({ block: "start", behavior: "auto" });
+    container.scrollIntoView({ block: "start", behavior });
   }
 }

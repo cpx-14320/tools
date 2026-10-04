@@ -239,7 +239,7 @@ export function ResultsView({
                 <p className="truncate text-sm font-semibold text-[#4A3B7C]">
                   {r.time} <span aria-hidden>→</span> {r.arrive}
                 </p>
-                <p className="mt-0.5 text-xs text-[#9C94C4]">{r.duration}</p>
+                <p className="mt-0.5 truncate text-xs text-[#9C94C4]">{isTrain && r.operatingNote ? r.operatingNote : r.duration}</p>
               </div>
 
               <div className="flex shrink-0 flex-col items-end gap-1.5">
@@ -279,8 +279,6 @@ export function ResultsView({
                 </div>
               )}
             </div>
-
-            {isTrain && r.operatingNote && <p className="mt-2 text-[11px] text-[#B3ABD4]">{r.operatingNote}</p>}
           </div>
         ))}
       </div>
@@ -293,7 +291,7 @@ export function ResultsView({
           type="button"
           onClick={() => {
             const main = document.querySelector("main");
-            if (main) scrollContainerToTop(main);
+            if (main) scrollContainerToTop(main, "smooth");
           }}
           aria-label="回到頂部"
           style={{ bottom: "calc(env(safe-area-inset-bottom) + 5.5rem)", background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
