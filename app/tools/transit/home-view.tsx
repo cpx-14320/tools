@@ -14,8 +14,13 @@ import { StationPickerModal } from "@/components/dream/station-picker-modal";
 import { MemoEditorModal, type MemoDraft } from "@/components/dream/memo-editor-modal";
 import { memoIconPath } from "@/components/dream/memo-icons";
 import { WeatherCarousel, WeatherCarouselSkeleton, type WeatherBlock } from "@/components/dream/weather-carousel";
+import { ListRowSkeleton } from "@/components/dream/list-row-skeleton";
+import { loadSkeletonCount, saveSkeletonCount } from "@/components/dream/skeleton-count";
 
 const DEFAULTS_KEY = "cpx-tools:transit:home-defaults";
+// 小小備忘錄是使用者自己增減的清單，筆數會變動，骨架列數用這個 key 記住上次實際筆數；
+// 完全沒存過（第一次使用）時先猜 2 則。
+const MEMOS_COUNT_KEY = "cpx-tools:transit:memos-count";
 
 function loadDefaults(): HomeDefaults | null {
   try {
@@ -184,6 +189,10 @@ export function DreamHomeView() {
   const [time, setTime] = useState(nowHHMM);
   const [timePickerOpen, setTimePickerOpen] = useState(false);
   const [memos, setMemos] = useState<Memo[]>([]);
+  const [memosReady, setMemosReady] = useState(false);
+  // 初始值只能先給固定的 2（伺服器端渲染那一次沒有 localStorage，要跟瀏覽器端算出來的
+  // 結果一致才不會 hydration 不匹配），掛載後才用下面的 effect 翻成真的猜測值。
+  const [memosSkeletonCount, setMemosSkeletonCount] = useState(2);
   const [memoEditorOpen, setMemoEditorOpen] = useState(false);
   const [weekendTrips, setWeekendTrips] = useState<WeekendTrip[]>([]);
   // 每次進頁面／重新整理都要重新抽一則，不是整天固定同一則——跟 weekendTrips 分開存，
@@ -213,15 +222,28 @@ export function DreamHomeView() {
     return () => document.removeEventListener("visibilitychange", syncDateIfStale);
   }, []);
 
+  useEffect(() => {
+    // 跟首頁套用 localStorage 存的預設值同一種例外：掛載後才讀得到 localStorage，讀到就要
+    // 立刻套用這個猜測值，不是在訂閱外部事件、也不會連鎖觸發其他 effect。
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    setMemosSkeletonCount(loadSkeletonCount(MEMOS_COUNT_KEY, 2));
+  }, []);
+
   // 掛載時抓一次使用者自己的備忘錄；儲存後也會用同一份 API 回應直接更新畫面，不用重抓。
   useEffect(() => {
     let cancelled = false;
     fetch("/api/transit/memos")
       .then((res) => res.json())
       .then((data: { memos?: Memo[] }) => {
-        if (!cancelled) setMemos(data.memos ?? []);
+        if (cancelled) return;
+        const items = data.memos ?? [];
+        setMemos(items);
+        setMemosReady(true);
+        saveSkeletonCount(MEMOS_COUNT_KEY, items.length);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setMemosReady(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -284,7 +306,11 @@ export function DreamHomeView() {
       body: JSON.stringify({ items }),
     })
       .then((res) => res.json())
-      .then((data: { memos?: Memo[] }) => setMemos(data.memos ?? []))
+      .then((data: { memos?: Memo[] }) => {
+        const result = data.memos ?? [];
+        setMemos(result);
+        saveSkeletonCount(MEMOS_COUNT_KEY, result.length);
+      })
       .catch(() => {});
     setMemoEditorOpen(false);
   }
@@ -466,7 +492,7 @@ export function DreamHomeView() {
     const searchDate = date < todayLocal() ? todayLocal() : date;
     if (searchDate !== date) setDate(searchDate);
     router.push(
-      `/tools/transit/results?origin=${encodeURIComponent(origin)}&dest=${encodeURIComponent(dest)}&mode=${mode}&date=${searchDate}&time=${encodeURIComponent(time)}`,
+      `/tools/transit/results?origin=${encodeURIComponent(origin)}&dest=${encodeURIComponent(dest)}&mode=${mode}&date=${searchDate}&time=${encodeURIComponent(time)}&from=home`,
     );
   }
 
@@ -490,11 +516,14 @@ export function DreamHomeView() {
             <button
               type="button"
               onClick={openSettings}
-              className="absolute right-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-full border border-[#ECE4FA] bg-white/80 px-3 py-1.5 text-xs font-medium text-[#6F5FD6] shadow-sm backdrop-blur"
+              aria-label="編輯首頁設定"
+              className="absolute right-4 top-4 z-20 grid size-9 place-items-center rounded-full border border-[#ECE4FA] bg-white/80 text-[#6F5FD6] shadow-sm backdrop-blur"
             >
-              編輯
+              <FaIcon icon="pen" size={14} />
             </button>
-            <div className="absolute left-5 top-6 right-5 text-white drop-shadow-sm">
+            {/* 底圖現在是真的插畫照片，不是單純漸層，文字沒有夠深的陰影很容易被底圖的淺色
+                區域吃掉；drop-shadow-sm 太淡，改用自己調的 text-shadow 加深。 */}
+            <div className="absolute left-5 top-6 right-5 text-white" style={{ textShadow: "0 1px 6px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.6)" }}>
               {!heroReady ? (
                 // fetch 還沒回來，先用骨架佔著位置，不要讓使用者先看到寫死的預設文案、
                 // fetch 回來後又突然跳成抽到的那組——避免文字內容中途變來變去。
@@ -557,7 +586,6 @@ export function DreamHomeView() {
             <span className="text-xs font-medium text-[#9C94C4]">出發{stationLabel}</span>
             <button type="button" onClick={() => setOriginPickerOpen(true)} className="grid grid-cols-2 gap-2 text-left">
               <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                <FaIcon icon="location-dot" size={14} />
                 <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{safeOriginCity}</span>
               </div>
               <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
@@ -579,7 +607,6 @@ export function DreamHomeView() {
             <span className="text-xs font-medium text-[#9C94C4]">抵達{stationLabel}</span>
             <button type="button" onClick={() => setDestPickerOpen(true)} className="grid grid-cols-2 gap-2 text-left">
               <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                <FaIcon icon="location-dot" size={14} />
                 <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{safeDestCity}</span>
               </div>
               <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
@@ -634,7 +661,6 @@ export function DreamHomeView() {
               onClick={() => setDatePickerOpen(true)}
               className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-left text-sm text-[#4A3B7C]"
             >
-              <FaIcon icon="calendar" size={14} />
               <span className="flex-1 truncate font-medium">{date.replaceAll("-", "/")}</span>
             </button>
           </label>
@@ -645,7 +671,6 @@ export function DreamHomeView() {
               onClick={() => setTimePickerOpen(true)}
               className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-left text-sm text-[#4A3B7C]"
             >
-              <FaIcon icon="clock" size={14} />
               <span className="flex-1 font-medium">{time}</span>
             </button>
           </label>
@@ -691,7 +716,15 @@ export function DreamHomeView() {
             <FaIcon icon="pen" size={14} />
           </button>
         </p>
-        {memos.length === 0 ? (
+        {!memosReady ? (
+          <div className="mt-2 flex flex-col gap-2.5">
+            {Array.from({ length: memosSkeletonCount }, (_, i) => (
+              <div key={i} className="rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
+                <ListRowSkeleton iconSize={48} />
+              </div>
+            ))}
+          </div>
+        ) : memos.length === 0 ? (
           <p className="mt-2 text-xs text-[#B3ABD4]">還沒有備忘錄，點右上角新增</p>
         ) : (
           <div className="mt-2 flex flex-col gap-2.5">
@@ -738,7 +771,7 @@ export function DreamHomeView() {
                     <div className="mt-2 h-3 w-4/5 rounded-full bg-white/20" />
                   </div>
                 ) : (
-                  <div>
+                  <div style={{ textShadow: "0 1px 6px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.6)" }}>
                     <p className="text-base font-bold text-white">{todayWeekendTrip?.title ?? "週末小旅行"}</p>
                     <p className="mt-0.5 text-xs text-white/85">{todayWeekendTrip?.caption ?? "收藏屬於你的風景 ♡"}</p>
                   </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { DreamMobileNav } from "./dream-mobile-nav";
 
 /** 這個工具不提供電腦版、沒有切換鈕——但寬螢幕瀏覽時仍然維持「手機外觀」：置中、固定最大
@@ -33,7 +33,11 @@ export function DreamMobileShell({ children }: { children: ReactNode }) {
       >
         <main className="min-h-0 flex-1 overflow-y-auto pb-24">{children}</main>
 
-        <DreamMobileNav />
+        {/* DreamMobileNav 用 useSearchParams 判斷搜尋結果頁是從哪個分頁點進來的，Next.js
+            要求用到 useSearchParams 的元件外面要包 Suspense，不然 build 時會報錯。 */}
+        <Suspense fallback={null}>
+          <DreamMobileNav />
+        </Suspense>
       </div>
     </div>
   );

@@ -78,8 +78,9 @@ interface ResultRow {
   code: string;
   duration: string;
   stops: number;
-  price?: string;
   fare?: string;
+  /** 只有高鐵會用到：早鳥票折扣（例如「6.5折」），查得到才會有值。 */
+  earlyBirdDiscount?: string;
   operatingNote?: string;
   delayMinutes?: number;
   isPast?: boolean;
@@ -290,7 +291,8 @@ interface ThsrRow {
   code: string;
   duration: string;
   stops: number;
-  price?: string;
+  fare?: string;
+  earlyBirdDiscount?: string;
   isPast: boolean;
 }
 
@@ -514,13 +516,14 @@ export function ResultsView({
                 <p className="truncate text-sm font-semibold text-[#4A3B7C]">
                   {r.time} <span aria-hidden>→</span> {r.arrive}
                 </p>
-                <p className="mt-0.5 truncate text-xs text-[#9C94C4]">{isTrain && r.operatingNote ? r.operatingNote : r.duration}</p>
+                {/* 高鐵下方格線本來就有「車程時間」那一欄，這裡不用重複顯示一次。 */}
+                {!isThsr && (
+                  <p className="mt-0.5 truncate text-xs text-[#9C94C4]">{isTrain && r.operatingNote ? r.operatingNote : r.duration}</p>
+                )}
               </div>
 
               <div className="flex shrink-0 items-center gap-1.5">
-                {r.price ? (
-                  <span className="rounded-full bg-[#F3EFFC] px-2.5 py-0.5 text-[11px] font-semibold text-[#6F5FD6]">{r.price}</span>
-                ) : r.delayMinutes !== undefined ? (
+                {r.delayMinutes !== undefined ? (
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
                       r.delayMinutes > 0 ? "bg-[#FDE7D8] text-[#D97A3D]" : "bg-[#E3F6EC] text-[#2FAE82]"
@@ -551,7 +554,11 @@ export function ResultsView({
               </div>
             </div>
 
-            <div className={`mt-3 grid gap-2 border-t border-[#F2EEFA] pt-3 text-xs text-center ${isTrain || isMetro ? "grid-cols-3" : "grid-cols-2"}`}>
+            <div
+              className={`mt-3 grid gap-2 border-t border-[#F2EEFA] pt-3 text-xs text-center ${
+                isThsr && r.earlyBirdDiscount ? "grid-cols-4" : isTrain || isMetro || isThsr ? "grid-cols-3" : "grid-cols-2"
+              }`}
+            >
               <div>
                 <p className="text-[#B3ABD4]">車程時間</p>
                 <p className="mt-0.5 font-medium text-[#4A3B7C]">{r.duration}</p>
@@ -560,10 +567,16 @@ export function ResultsView({
                 <p className="text-[#B3ABD4]">停靠站數</p>
                 <p className="mt-0.5 font-medium text-[#4A3B7C]">{r.stops} 站</p>
               </div>
-              {(isTrain || isMetro) && (
+              {(isTrain || isMetro || isThsr) && (
                 <div>
                   <p className="text-[#B3ABD4]">全票</p>
                   <p className="mt-0.5 font-medium text-[#4A3B7C]">{r.fare ?? "—"}</p>
+                </div>
+              )}
+              {isThsr && r.earlyBirdDiscount && (
+                <div>
+                  <p className="text-[#B3ABD4]">早鳥</p>
+                  <p className="mt-0.5 font-medium text-[#4A3B7C]">{r.earlyBirdDiscount}</p>
                 </div>
               )}
             </div>

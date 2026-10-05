@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { IconImg } from "./icon-img";
 import { ICON_PATHS } from "./icon-paths";
 
@@ -11,8 +11,18 @@ const tabs = [
   { href: "/tools/transit/more", label: "其他", icon: ICON_PATHS.navOther },
 ];
 
+// 搜尋結果頁 /tools/transit/results 本身不屬於任何一個分頁，單純比對 pathname 的話
+// 三個分頁都不會亮；從首頁／我的行程搜尋時，網址帶上 from 參數記錄是從哪個分頁點進來
+// 的，導覽列才知道要幫哪個分頁保持亮著，而不是進了搜尋結果頁三個分頁都暗掉。
+const RESULTS_FROM_HREF: Record<string, string> = {
+  home: "/tools/transit",
+  trips: "/tools/transit/trips",
+};
+
 export function DreamMobileNav() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const resultsFrom = pathname.startsWith("/tools/transit/results") ? RESULTS_FROM_HREF[searchParams.get("from") ?? ""] : null;
 
   return (
     // fixed 貼在手機外觀容器（卡片）正下方——DreamMobileShell 的卡片容器本身有
@@ -24,7 +34,7 @@ export function DreamMobileNav() {
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 10px)" }}
       >
         {tabs.map((tab) => {
-          const active = tab.href === "/tools/transit" ? pathname === tab.href : pathname.startsWith(tab.href);
+          const active = resultsFrom ? tab.href === resultsFrom : tab.href === "/tools/transit" ? pathname === tab.href : pathname.startsWith(tab.href);
           return (
             <Link key={tab.href} href={tab.href} className="flex flex-1 flex-col items-center gap-0.5 py-1 text-[11px]">
               <IconImg src={tab.icon} alt={tab.label} size={32} background={false} className={active ? "" : "opacity-50"} />

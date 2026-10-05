@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY, destCitiesFor, type Mode } from "./stations-data";
-import { FaIcon } from "./fa-icon";
 import { ImageSlot } from "./image-slot";
 import { TimePickerModal } from "./time-picker-modal";
 import { FREQUENT_TRIP_ICON_OPTIONS } from "./frequent-trip-icons";
@@ -185,7 +184,7 @@ export function FrequentTripModal({
                 setName(e.target.value);
                 setNameError(false);
               }}
-              placeholder="例如：啟程、返程、假日出去玩"
+              placeholder="例如：上班、下班、出去玩"
               className={`rounded-2xl border bg-white px-4 py-3 text-sm font-medium text-[#4A3B7C] outline-none focus:border-[#6F5FD6] ${
                 nameError ? "border-[#D1517E]" : "border-[#ECE4FA]"
               }`}
@@ -216,7 +215,7 @@ export function FrequentTripModal({
                       type="button"
                       onClick={() => updateItem(i, { icon: option.key })}
                       aria-label={`選擇圖示 ${option.key}`}
-                      className={`rounded-xl p-0.5 ${item.icon === option.key ? "ring-2 ring-[#6F5FD6]" : ""}`}
+                      className={item.icon === option.key ? "" : "opacity-50"}
                     >
                       <ImageSlot src={option.icon} alt={option.key} className="size-9 rounded-lg" />
                     </button>
@@ -228,7 +227,6 @@ export function FrequentTripModal({
                     <span className="text-xs font-medium text-[#9C94C4]">出發{stationLabel}</span>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] px-3 py-3">
-                        <FaIcon icon="location-dot" size={14} />
                         <select
                           value={safeOriginCity}
                           onChange={(e) => selectOriginCity(i, e.target.value, item.destCity)}
@@ -275,7 +273,6 @@ export function FrequentTripModal({
                     <div className={destCityKeys.length > 1 ? "grid grid-cols-2 gap-2" : "grid grid-cols-1 gap-2"}>
                       {destCityKeys.length > 1 && (
                         <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] px-3 py-3">
-                          <FaIcon icon="location-dot" size={14} />
                           <select
                             value={safeDestCity}
                             onChange={(e) => selectDestCity(i, e.target.value)}
@@ -314,7 +311,6 @@ export function FrequentTripModal({
                       onClick={() => setTimeEditTarget({ index: i, field: "startTime" })}
                       className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] px-4 py-3 text-left"
                     >
-                      <FaIcon icon="clock" size={14} />
                       <span className="flex-1 text-sm font-medium text-[#4A3B7C]">{item.startTime}</span>
                     </button>
                     <button
@@ -322,7 +318,6 @@ export function FrequentTripModal({
                       onClick={() => setTimeEditTarget({ index: i, field: "endTime" })}
                       className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] px-4 py-3 text-left"
                     >
-                      <FaIcon icon="clock" size={14} />
                       <span className="flex-1 text-sm font-medium text-[#4A3B7C]">{item.endTime}</span>
                     </button>
                   </div>

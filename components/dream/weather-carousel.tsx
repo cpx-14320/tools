@@ -148,6 +148,13 @@ export function WeatherCarousel({ blocks }: { blocks: WeatherBlock[] }) {
 
   return (
     <div>
+      <div className="mb-1.5 flex items-center justify-center gap-1.5">
+        {DAY_OFFSETS.map((dayOffset, i) => (
+          <span key={dayOffset} className={`text-[10px] font-medium ${i === safeIndex ? "text-[#6F5FD6]" : "text-[#C7BFE6]"}`}>
+            {DAY_LABEL[dayOffset]}
+          </span>
+        ))}
+      </div>
       <div
         ref={containerRef}
         className="touch-pan-y select-none overflow-hidden rounded-2xl"
@@ -172,13 +179,6 @@ export function WeatherCarousel({ blocks }: { blocks: WeatherBlock[] }) {
             </div>
           ))}
         </div>
-      </div>
-      <div className="mt-1.5 flex items-center justify-center gap-1.5">
-        {DAY_OFFSETS.map((dayOffset, i) => (
-          <span key={dayOffset} className={`text-[10px] font-medium ${i === safeIndex ? "text-[#6F5FD6]" : "text-[#C7BFE6]"}`}>
-            {DAY_LABEL[dayOffset]}
-          </span>
-        ))}
       </div>
     </div>
   );

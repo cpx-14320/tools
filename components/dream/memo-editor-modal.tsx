@@ -87,14 +87,14 @@ export function MemoEditorModal({
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {MEMO_ICON_OPTIONS.map((option) => (
                   <button
                     key={option.key}
                     type="button"
                     onClick={() => updateItem(i, { icon: option.key })}
                     aria-label={`選擇圖示 ${option.key}`}
-                    className={`rounded-xl p-0.5 ${item.icon === option.key ? "ring-2 ring-[#6F5FD6]" : ""}`}
+                    className={item.icon === option.key ? "" : "opacity-50"}
                   >
                     <ImageSlot src={option.icon} alt={option.key} className="size-8 rounded-lg" />
                   </button>
@@ -106,7 +106,7 @@ export function MemoEditorModal({
                 value={item.content}
                 onChange={(e) => updateItem(i, { content: e.target.value })}
                 rows={2}
-                className="resize-none rounded-xl border border-[#ECE4FA] bg-white px-3 py-2 text-sm text-[#4A3B7C] outline-none focus:border-[#6F5FD6]"
+                className="resize-none rounded-2xl border border-[#ECE4FA] bg-white px-4 py-3 text-sm font-medium text-[#4A3B7C] outline-none focus:border-[#6F5FD6]"
               />
               <label className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-[#9C94C4]">提醒時間（選填）</span>
@@ -114,7 +114,7 @@ export function MemoEditorModal({
                   type="datetime-local"
                   value={item.remindAt}
                   onChange={(e) => updateItem(i, { remindAt: e.target.value })}
-                  className="w-full rounded-xl border border-[#ECE4FA] bg-white px-3 py-2 text-sm text-[#4A3B7C] outline-none focus:border-[#6F5FD6] [&::-webkit-calendar-picker-indicator]:hidden"
+                  className="w-full rounded-2xl border border-[#ECE4FA] bg-white px-4 py-3 text-sm font-medium text-[#4A3B7C] outline-none focus:border-[#6F5FD6] [&::-webkit-calendar-picker-indicator]:hidden"
                 />
               </label>
             </div>

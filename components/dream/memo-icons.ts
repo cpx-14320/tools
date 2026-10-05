@@ -8,6 +8,11 @@ export const MEMO_ICON_OPTIONS: { key: string; icon: string }[] = [
   { key: "drinks", icon: ICON_PATHS.memoDrinks },
   { key: "ticket", icon: ICON_PATHS.memoTicket },
   { key: "work", icon: ICON_PATHS.memoWork },
+  { key: "shop", icon: ICON_PATHS.memoShop },
+  { key: "bill", icon: ICON_PATHS.memoBill },
+  { key: "time", icon: ICON_PATHS.memoTime },
+  { key: "map", icon: ICON_PATHS.memoMap },
+  { key: "meal", icon: ICON_PATHS.memoMeal },
 ];
 
 export function memoIconPath(key: string): string {

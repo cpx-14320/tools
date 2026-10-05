@@ -2,16 +2,14 @@
 
 import { useState } from "react";
 import { type Mode } from "./stations-data";
-import { FaIcon } from "./fa-icon";
 import { DISTRICTS_BY_CITY } from "@/lib/cwa-districts";
 import type { WeatherBlock } from "./weather-carousel";
 
-const MODES: { key: Mode; label: string; icon: string }[] = [
-  { key: "bus", label: "公車", icon: "bus" },
-  { key: "train", label: "火車", icon: "train" },
-  { key: "metro", label: "捷運", icon: "train-subway" },
-  // Font Awesome 免費版沒有專門的高鐵圖示，先沿用火車圖示代替。
-  { key: "thsr", label: "高鐵", icon: "train" },
+const MODES: { key: Mode; label: string }[] = [
+  { key: "bus", label: "公車" },
+  { key: "train", label: "火車" },
+  { key: "metro", label: "捷運" },
+  { key: "thsr", label: "高鐵" },
 ];
 
 export interface HomeDefaults {
@@ -45,7 +43,6 @@ function CityDistrictPicker({
   return (
     <div className="grid grid-cols-2 gap-2">
       <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] px-3 py-3">
-        <FaIcon icon="location-dot" size={14} />
         <select
           value={safeCity}
           onChange={(e) => {
@@ -122,7 +119,6 @@ export function HomeSettingsModal({
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-[#9C94C4]">預設運輸工具</span>
             <div className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] px-4 py-3">
-              <FaIcon icon={MODES.find((m) => m.key === draft.defaultMode)?.icon ?? "train"} size={16} />
               <select
                 value={draft.defaultMode}
                 onChange={(e) => setDraft((d) => ({ ...d, defaultMode: e.target.value as Mode }))}

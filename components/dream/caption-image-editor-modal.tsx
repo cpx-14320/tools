@@ -26,7 +26,7 @@ export function CaptionImageEditorModal({
   heading,
   description,
   itemLabel,
-  defaultImage,
+  imageOptions,
   defaultDrafts,
   initial,
   onClose,
@@ -39,8 +39,9 @@ export function CaptionImageEditorModal({
   description: string;
   /** 每一組的稱呼，例如「組」。 */
   itemLabel: string;
-  /** 「新增一組」按下去時，新那一組預設用的圖片路徑。 */
-  defaultImage: string;
+  /** 背景圖只能從這幾張裡選，不給使用者自己輸入路徑／上傳——避免存進資料庫的路徑打錯字
+   *  或指到不存在的檔案，跟備忘錄的圖示選擇用同一套做法。 */
+  imageOptions: string[];
   /** 使用者還沒存過任何一組時，先墊著的預設草稿清單。 */
   defaultDrafts: () => CaptionImageDraft[];
   initial: CaptionImageInitial[];
@@ -90,38 +91,40 @@ export function CaptionImageEditorModal({
                 )}
               </div>
 
-              <div className="flex items-center gap-3">
-                <ImageSlot src={item.image} alt={`第 ${i + 1} ${itemLabel}背景`} className="size-14 shrink-0 rounded-xl" />
-                <div className="flex flex-1 flex-col gap-2">
-                  <input
-                    type="text"
-                    placeholder="標題"
-                    value={item.title}
-                    onChange={(e) => updateItem(i, { title: e.target.value })}
-                    className="rounded-xl border border-[#ECE4FA] bg-white px-3 py-2 text-sm font-medium text-[#4A3B7C] outline-none focus:border-[#6F5FD6]"
-                  />
-                  <input
-                    type="text"
-                    placeholder="文案"
-                    value={item.caption}
-                    onChange={(e) => updateItem(i, { caption: e.target.value })}
-                    className="rounded-xl border border-[#ECE4FA] bg-white px-3 py-2 text-sm text-[#4A3B7C] outline-none focus:border-[#6F5FD6]"
-                  />
-                  <input
-                    type="text"
-                    placeholder="圖片路徑，例如：/icons/dream/banner.png"
-                    value={item.image}
-                    onChange={(e) => updateItem(i, { image: e.target.value })}
-                    className="rounded-xl border border-[#ECE4FA] bg-white px-3 py-2 text-xs text-[#9C94C4] outline-none focus:border-[#6F5FD6]"
-                  />
-                </div>
+              <div className="flex items-center gap-2">
+                {imageOptions.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => updateItem(i, { image: option })}
+                    aria-label={`選擇背景圖 ${option}`}
+                    className={item.image === option ? "" : "opacity-50"}
+                  >
+                    <ImageSlot src={option} alt="背景圖選項" className="size-14 rounded-xl" />
+                  </button>
+                ))}
               </div>
+
+              <input
+                type="text"
+                placeholder="標題"
+                value={item.title}
+                onChange={(e) => updateItem(i, { title: e.target.value })}
+                className="rounded-2xl border border-[#ECE4FA] bg-white px-4 py-3 text-sm font-medium text-[#4A3B7C] outline-none focus:border-[#6F5FD6]"
+              />
+              <input
+                type="text"
+                placeholder="文案"
+                value={item.caption}
+                onChange={(e) => updateItem(i, { caption: e.target.value })}
+                className="rounded-2xl border border-[#ECE4FA] bg-white px-4 py-3 text-sm font-medium text-[#4A3B7C] outline-none focus:border-[#6F5FD6]"
+              />
             </div>
           ))}
 
           <button
             type="button"
-            onClick={() => setItems((list) => [...list, { title: "", caption: "", image: defaultImage }])}
+            onClick={() => setItems((list) => [...list, { title: "", caption: "", image: imageOptions[0] ?? "" }])}
             className="rounded-xl border border-dashed border-[#C7BFE6] py-2.5 text-sm font-medium text-[#6F5FD6]"
           >
             ＋ 新增一{itemLabel}
