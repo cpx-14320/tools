@@ -59,7 +59,7 @@ export function CaptionImageEditorModal({
   }
 
   function removeItem(index: number) {
-    setItems((list) => (list.length > 1 ? list.filter((_, i) => i !== index) : list));
+    setItems((list) => list.filter((_, i) => i !== index));
   }
 
   return (
@@ -84,11 +84,9 @@ export function CaptionImageEditorModal({
                 <span className="text-xs font-medium text-[#9C94C4]">
                   第 {i + 1} {itemLabel}
                 </span>
-                {items.length > 1 && (
-                  <button type="button" onClick={() => removeItem(i)} className="text-xs font-medium text-[#D1517E]">
-                    刪除
-                  </button>
-                )}
+                <button type="button" onClick={() => removeItem(i)} className="text-xs font-medium text-[#D1517E]">
+                  刪除
+                </button>
               </div>
 
               <div className="flex items-center gap-2">

@@ -71,11 +71,13 @@ export function TripsView() {
   const [tripGroups, setTripGroups] = useState<TripGroup[]>([]);
   const [frequentTrips, setFrequentTrips] = useState<FrequentTrip[]>([]);
   const [tripsReady, setTripsReady] = useState(false);
-  // 初始值先給固定的 1（伺服器端渲染那一次沒有 localStorage，要跟瀏覽器端算出來的結果
+  // 初始值先給固定的 0（伺服器端渲染那一次沒有 localStorage，要跟瀏覽器端算出來的結果
   // 一致才不會 hydration 不匹配），掛載後、以及切換車種分頁時才用下面的 effect 翻成
-  // 「目前這個車種上次實際筆數」的猜測值。
-  const [groupSkeletonCount, setGroupSkeletonCount] = useState(1);
-  const [tripSkeletonCount, setTripSkeletonCount] = useState(1);
+  // 「目前這個車種上次實際筆數」的猜測值。完全沒存過（包含剛建立的新帳號、從來沒設定
+  // 過分類）才退回 0——不要猜「至少有 1 個分類」，不然新帳號會先閃一塊看起來像有資料
+  // 的骨架，之後才變成「還沒有任何分類」的空狀態，畫面跳動又誤導。
+  const [groupSkeletonCount, setGroupSkeletonCount] = useState(0);
+  const [tripSkeletonCount, setTripSkeletonCount] = useState(0);
   // null＝彈窗關閉；groupId 為 null 代表正在新增一個全新分類，否則是在編輯該 id 的既有分類。
   const [groupModal, setGroupModal] = useState<{ groupId: string | null; name: string } | null>(null);
   const groupsForTab = tripGroups.filter((g) => g.mode === tab);
@@ -94,8 +96,8 @@ export function TripsView() {
     // 跟首頁套用 localStorage 存的預設值同一種例外：掛載後、或 tab 換了才讀得到當下這個
     // 車種上次記住的筆數，不是在訂閱外部事件、也不會連鎖觸發其他 effect。
     /* eslint-disable-next-line react-hooks/set-state-in-effect */
-    setGroupSkeletonCount(loadSkeletonCount(tripGroupsCountKey(tab), 1));
-    setTripSkeletonCount(loadSkeletonCount(tripItemsCountKey(tab), 1));
+    setGroupSkeletonCount(loadSkeletonCount(tripGroupsCountKey(tab), 0));
+    setTripSkeletonCount(loadSkeletonCount(tripItemsCountKey(tab), 0));
   }, [tab]);
 
   useEffect(() => {

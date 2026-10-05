@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY, destCitiesFor, type Mode } from "./stations-data";
 import { ImageSlot } from "./image-slot";
 import { TimePickerModal } from "./time-picker-modal";
+import { StationPickerModal } from "./station-picker-modal";
 import { FREQUENT_TRIP_ICON_OPTIONS } from "./frequent-trip-icons";
 
 export interface FrequentTripDraft {
@@ -107,7 +108,8 @@ export function FrequentTripModal({
 }) {
   const trainCities = useTrainCities(mode === "train");
   // 每種車種的站點資料各自獨立來源，這裡只是依目前是哪個 tab 挑一份要用，不是把它們混成
-  // 同一套邏輯。
+  // 同一套邏輯；跟首頁出發站／抵達站用的是同一份 STATIONS_BY_CITY／destCitiesFor，不同
+  // 車種可選的清單才會跟首頁完全一致。
   const cities = mode === "train" ? trainCities : mode === "bus" ? busCities() : mode === "thsr" ? thsrCities() : metroCities();
 
   // 父層針對每個分類（或新增）都用不同的 key 掛載這個元件，切換分類／開新增時會整個
@@ -119,6 +121,9 @@ export function FrequentTripModal({
   // 每一則都有自己的開始／結束兩個時間欄位，共用一顆彈窗、記住「現在在編哪一則的哪個欄位」
   // 就好，不用每一則各自掛一顆彈窗實例。
   const [timeEditTarget, setTimeEditTarget] = useState<{ index: number; field: "startTime" | "endTime" } | null>(null);
+  // 出發／抵達站改用跟首頁同一顆 StationPickerModal（城市＋站名雙欄選擇），不用瀏覽器
+  // 原生的 <select>；同一套 {index, field} 做法記住現在在編哪一則的出發還是抵達站。
+  const [stationEditTarget, setStationEditTarget] = useState<{ index: number; field: "origin" | "dest" } | null>(null);
 
   // 火車的真實站名清單是非同步載入的：如果編輯清單目前還是「只有一筆、還沒存過（沒有
   // id）」的初始空白墊檔，等真實清單載入後重新產生一次，不然使用者還沒手動選過站的話
@@ -142,21 +147,26 @@ export function FrequentTripModal({
     setItems((list) => (list.length > 1 ? list.filter((_, i) => i !== index) : list));
   }
 
-  function selectOriginCity(index: number, city: string, currentDestCity: string) {
-    // 換了出發站的系統，原本選的抵達站如果在新的出發系統底下已經不能選（不同系統又沒有
-    // 互通），抵達站要跟著重設，不然會卡著一組已經不合法的出發／抵達組合。
+  // 換了出發站的系統，原本選的抵達站如果在新的出發系統底下已經不能選（不同系統又沒有
+  // 互通），抵達站要跟著重設，不然會卡著一組已經不合法的出發／抵達組合——跟首頁
+  // StationPickerModal 的 onSave 同一套邏輯。
+  function selectOrigin(index: number, city: string, station: string) {
     const nextDestCities = destCitiesFor(mode, city, cities);
-    if (nextDestCities[currentDestCity]) {
-      updateItem(index, { originCity: city, origin: cities[city][0] });
+    if (nextDestCities[items[index].destCity]) {
+      updateItem(index, { originCity: city, origin: station });
     } else {
       const firstDestCity = Object.keys(nextDestCities)[0];
-      updateItem(index, { originCity: city, origin: cities[city][0], destCity: firstDestCity, dest: nextDestCities[firstDestCity][0] });
+      updateItem(index, { originCity: city, origin: station, destCity: firstDestCity, dest: nextDestCities[firstDestCity][0] });
     }
   }
 
-  function selectDestCity(index: number, city: string) {
-    updateItem(index, { destCity: city, dest: cities[city][0] });
+  function selectDest(index: number, city: string, station: string) {
+    updateItem(index, { destCity: city, dest: station });
   }
+
+  const stationEditing = stationEditTarget ? items[stationEditTarget.index] : null;
+  const stationEditingSafeOriginCity = stationEditing && cities[stationEditing.originCity] ? stationEditing.originCity : Object.keys(cities)[0];
+  const stationEditingDestCities = stationEditing ? destCitiesFor(mode, stationEditingSafeOriginCity, cities) : {};
 
   return (
     <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30" onClick={onClose}>
@@ -194,9 +204,6 @@ export function FrequentTripModal({
 
           {items.map((item, i) => {
             const safeOriginCity = cities[item.originCity] ? item.originCity : Object.keys(cities)[0];
-            const destCitiesForItem = destCitiesFor(mode, safeOriginCity, cities);
-            const destCityKeys = Object.keys(destCitiesForItem);
-            const safeDestCity = destCitiesForItem[item.destCity] ? item.destCity : destCityKeys[0];
             return (
               <div key={i} className="flex flex-col gap-2.5 rounded-2xl border border-[#F2EEFA] p-3">
                 <div className="flex items-center justify-between">
@@ -225,34 +232,18 @@ export function FrequentTripModal({
                 <div className="relative flex flex-col gap-3">
                   <label className="flex flex-col gap-1.5">
                     <span className="text-xs font-medium text-[#9C94C4]">出發{stationLabel}</span>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] px-3 py-3">
-                        <select
-                          value={safeOriginCity}
-                          onChange={(e) => selectOriginCity(i, e.target.value, item.destCity)}
-                          className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
-                        >
-                          {Object.keys(cities).map((city) => (
-                            <option key={city} value={city}>
-                              {city}
-                            </option>
-                          ))}
-                        </select>
+                    <button
+                      type="button"
+                      onClick={() => setStationEditTarget({ index: i, field: "origin" })}
+                      className="grid grid-cols-2 gap-2 text-left"
+                    >
+                      <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                        <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{safeOriginCity}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] px-3 py-3">
-                        <select
-                          value={item.origin}
-                          onChange={(e) => updateItem(i, { origin: e.target.value })}
-                          className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
-                        >
-                          {cities[safeOriginCity].map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
-                        </select>
+                      <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                        <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{item.origin}</span>
                       </div>
-                    </div>
+                    </button>
                   </label>
 
                   <button
@@ -268,38 +259,18 @@ export function FrequentTripModal({
 
                   <label className="flex flex-col gap-1.5">
                     <span className="text-xs font-medium text-[#9C94C4]">抵達{stationLabel}</span>
-                    {/* 抵達站的系統只有一個可選時（例如捷運出發站選到沒有互通的系統），
-                        系統欄位沒有意義、直接不顯示，站名欄位改滿版。 */}
-                    <div className={destCityKeys.length > 1 ? "grid grid-cols-2 gap-2" : "grid grid-cols-1 gap-2"}>
-                      {destCityKeys.length > 1 && (
-                        <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] px-3 py-3">
-                          <select
-                            value={safeDestCity}
-                            onChange={(e) => selectDestCity(i, e.target.value)}
-                            className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
-                          >
-                            {destCityKeys.map((city) => (
-                              <option key={city} value={city}>
-                                {city}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] px-3 py-3">
-                        <select
-                          value={item.dest}
-                          onChange={(e) => updateItem(i, { dest: e.target.value })}
-                          className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
-                        >
-                          {destCitiesForItem[safeDestCity].map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
-                        </select>
+                    <button
+                      type="button"
+                      onClick={() => setStationEditTarget({ index: i, field: "dest" })}
+                      className="grid grid-cols-2 gap-2 text-left"
+                    >
+                      <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                        <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{item.destCity}</span>
                       </div>
-                    </div>
+                      <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                        <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{item.dest}</span>
+                      </div>
+                    </button>
                   </label>
                 </div>
 
@@ -343,6 +314,23 @@ export function FrequentTripModal({
           onSave={(v) => {
             if (timeEditTarget) updateItem(timeEditTarget.index, { [timeEditTarget.field]: v });
             setTimeEditTarget(null);
+          }}
+        />
+
+        <StationPickerModal
+          key={stationEditTarget ? `station-${stationEditTarget.index}-${stationEditTarget.field}` : "station-closed"}
+          open={stationEditTarget !== null}
+          title={stationEditTarget?.field === "dest" ? `選擇抵達${stationLabel}` : `選擇出發${stationLabel}`}
+          cities={stationEditTarget?.field === "dest" ? stationEditingDestCities : cities}
+          initialCity={stationEditTarget?.field === "dest" ? (stationEditing?.destCity ?? "") : stationEditingSafeOriginCity}
+          initialStation={stationEditTarget?.field === "dest" ? (stationEditing?.dest ?? "") : (stationEditing?.origin ?? "")}
+          onClose={() => setStationEditTarget(null)}
+          onSave={(city, station) => {
+            if (stationEditTarget) {
+              if (stationEditTarget.field === "origin") selectOrigin(stationEditTarget.index, city, station);
+              else selectDest(stationEditTarget.index, city, station);
+            }
+            setStationEditTarget(null);
           }}
         />
 

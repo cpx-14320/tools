@@ -74,7 +74,7 @@ export function MemoEditorModal({
   }
 
   function removeItem(index: number) {
-    setItems((list) => (list.length > 1 ? list.filter((_, i) => i !== index) : list));
+    setItems((list) => list.filter((_, i) => i !== index));
   }
 
   const editing = editTarget ? splitRemindAt(items[editTarget.index].remindAt) : null;
@@ -102,11 +102,9 @@ export function MemoEditorModal({
               <div key={i} className="flex flex-col gap-2.5 rounded-2xl border border-[#F2EEFA] p-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-[#9C94C4]">第 {i + 1} 則</span>
-                  {items.length > 1 && (
-                    <button type="button" onClick={() => removeItem(i)} className="text-xs font-medium text-[#D1517E]">
-                      刪除
-                    </button>
-                  )}
+                  <button type="button" onClick={() => removeItem(i)} className="text-xs font-medium text-[#D1517E]">
+                    刪除
+                  </button>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
