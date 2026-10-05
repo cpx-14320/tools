@@ -58,21 +58,25 @@ export function StationPickerModal({
         </>
       }
     >
-      <div className="w-[38%] shrink-0 overflow-y-auto border-r border-[#F2EEFA] py-2">
-        {cityKeys.map((c) => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => selectCity(c)}
-            className={`flex w-full items-center gap-1.5 px-4 py-2.5 text-left text-sm transition-colors ${
-              c === city ? "bg-[#F3EFFC] font-semibold text-[#6F5FD6]" : "text-[#4A3B7C]"
-            }`}
-          >
-            <FaIcon icon="location-dot" size={12} />
-            <span className="truncate">{c}</span>
-          </button>
-        ))}
-      </div>
+      {/* 只有一個城市／系統可以選時（例如捷運抵達站被鎖定跟出發站同一個系統），這一欄
+          沒有意義、直接不顯示，站名清單改成滿版，少一次多餘的點擊。 */}
+      {cityKeys.length > 1 && (
+        <div className="w-[38%] shrink-0 overflow-y-auto border-r border-[#F2EEFA] py-2">
+          {cityKeys.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => selectCity(c)}
+              className={`flex w-full items-center gap-1.5 px-4 py-2.5 text-left text-sm transition-colors ${
+                c === city ? "bg-[#F3EFFC] font-semibold text-[#6F5FD6]" : "text-[#4A3B7C]"
+              }`}
+            >
+              <FaIcon icon="location-dot" size={12} />
+              <span className="truncate">{c}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto py-2">
         {stations.map((s) => (
           <button

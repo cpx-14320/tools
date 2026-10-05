@@ -72,20 +72,36 @@ function useCityWeather(city: string, district: string, dayOffset: number): Weat
   return info;
 }
 
+/** 查詢中的卡片骨架——連 city/district 那行文字都一起灰掉，不要讓使用者在其他兩行還是
+ *  骨架的時候就先看到這行文字，看起來像只有一部分在載入、一部分已經載入好的不一致狀態。 */
+function WeatherCardSkeleton() {
+  return (
+    <div className="flex min-w-0 items-center gap-2 rounded-2xl bg-[#F3EFFC] p-3">
+      <div className="size-10 shrink-0 animate-pulse rounded-lg bg-[#E4DBF9]" />
+      <div className="min-w-0 flex-1">
+        <div className="h-[11px] w-16 animate-pulse rounded-full bg-[#E4DBF9]" />
+        <div className="mt-1 h-[11px] w-10 animate-pulse rounded-full bg-[#E4DBF9]" />
+        <div className="mt-1 h-[12px] w-16 animate-pulse rounded-full bg-[#E4DBF9]" />
+      </div>
+    </div>
+  );
+}
+
 function WeatherCard({ block, dayOffset }: { block: WeatherBlock; dayOffset: 0 | 1 }) {
   const weather = useCityWeather(block.city, block.district, dayOffset);
 
+  if (!weather) return <WeatherCardSkeleton />;
+
   return (
     <div className="flex min-w-0 items-center gap-2 rounded-2xl bg-[#F3EFFC] p-3">
-      {weather && <ImageSlot src={weather.icon} alt={weather.label} className="size-10 shrink-0 rounded-lg" />}
+      <ImageSlot src={weather.icon} alt={weather.label} className="size-10 shrink-0 rounded-lg" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[11px] text-[#9C94C4]">
           {block.city} {block.district}
         </p>
-        {weather?.pop !== undefined && <p className="truncate text-[11px] text-[#9C94C4]">降雨機率 {weather.pop}%</p>}
+        {weather.pop !== undefined && <p className="truncate text-[11px] text-[#9C94C4]">降雨機率 {weather.pop}%</p>}
         <p className="truncate text-[12px] font-semibold text-[#4A3B7C]">
-          {/* 查詢中先顯示「載入中」，不要先塞假資料再被真資料蓋掉，看起來會像閃一下。 */}
-          {weather ? `${weather.temp}°C・${weather.label}` : "載入中…"}
+          {weather.temp}°C・{weather.label}
         </p>
       </div>
     </div>
@@ -164,6 +180,17 @@ export function WeatherCarousel({ blocks }: { blocks: WeatherBlock[] }) {
           </span>
         ))}
       </div>
+    </div>
+  );
+}
+
+/** 給還沒讀完使用者偏好設定（連要顯示哪些縣市區塊都還不知道）的情況用，跟 WeatherCard
+ *  loading 時的骨架共用同一份 markup。 */
+export function WeatherCarouselSkeleton() {
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      <WeatherCardSkeleton />
+      <WeatherCardSkeleton />
     </div>
   );
 }

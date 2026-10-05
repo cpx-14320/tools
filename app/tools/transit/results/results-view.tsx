@@ -8,6 +8,8 @@ import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY } from "@/components/
 import { TripGroupPickerModal } from "@/components/dream/trip-group-picker-modal";
 import { FREQUENT_TRIP_ICON_OPTIONS } from "@/components/dream/frequent-trip-icons";
 import type { FrequentTripDraft } from "@/components/dream/frequent-trip-modal";
+import { metroSystemOf, findCrossSystemTransferStation } from "@/lib/metro-lines";
+import { formatDuration, todayInTaipei, nowHHmmInTaipei } from "@/lib/tdx-time";
 
 export type Mode = "bus" | "train" | "metro" | "thsr";
 
@@ -81,32 +83,156 @@ interface ResultRow {
   operatingNote?: string;
   delayMinutes?: number;
   isPast?: boolean;
+  /** 只有捷運會用到：中途要不要轉乘、轉乘站名（查得到的話）。 */
+  transfer?: boolean;
+  transferStationName?: string;
 }
 
-// 公車／捷運／高鐵先用假資料墊著畫面，之後依序接上真實 API 時就會跟火車一樣換成 fetch 查詢。
-const MOCK_RESULTS: Record<Exclude<Mode, "train">, ResultRow[]> = {
-  thsr: [
-    { time: "06:30", arrive: "08:06", code: "605", duration: "1 小時 36 分", stops: 4, price: "NT$ 1,490" },
-    { time: "07:30", arrive: "09:00", code: "607", duration: "1 小時 30 分", stops: 3, price: "NT$ 1,490" },
-    { time: "08:30", arrive: "10:12", code: "609", duration: "1 小時 42 分", stops: 5, price: "NT$ 1,490" },
-    { time: "09:30", arrive: "11:00", code: "611", duration: "1 小時 30 分", stops: 3, price: "NT$ 1,490" },
-    { time: "10:30", arrive: "12:06", code: "613", duration: "1 小時 36 分", stops: 4, price: "NT$ 1,490" },
-  ],
-  bus: [
-    { time: "06:00", arrive: "07:10", code: "1861", duration: "1 小時 10 分", stops: 8, price: "NT$ 90" },
-    { time: "07:00", arrive: "08:15", code: "1861", duration: "1 小時 15 分", stops: 8, price: "NT$ 90" },
-    { time: "08:00", arrive: "09:05", code: "9005", duration: "1 小時 5 分", stops: 10, price: "NT$ 110" },
-    { time: "09:00", arrive: "10:10", code: "1861", duration: "1 小時 10 分", stops: 8, price: "NT$ 90" },
-    { time: "10:00", arrive: "11:05", code: "9005", duration: "1 小時 5 分", stops: 10, price: "NT$ 110" },
-  ],
-  metro: [
-    { time: "06:05", arrive: "06:45", code: "淡水信義線", duration: "40 分", stops: 12, price: "NT$ 30" },
-    { time: "06:15", arrive: "06:55", code: "淡水信義線", duration: "40 分", stops: 12, price: "NT$ 30" },
-    { time: "06:25", arrive: "07:05", code: "淡水信義線", duration: "40 分", stops: 12, price: "NT$ 30" },
-    { time: "06:35", arrive: "07:15", code: "淡水信義線", duration: "40 分", stops: 12, price: "NT$ 30" },
-    { time: "06:45", arrive: "07:25", code: "淡水信義線", duration: "40 分", stops: 12, price: "NT$ 30" },
-  ],
-};
+// 捷運從早上 6 點營運到半夜 12 點，班距用 8 分鐘一班的平均值墊著（沒有細分尖峰／離峰，
+// 真正的班距之後接真資料時才會準）——至少不管搜尋時間是幾點，都能看到從那個時間點往後
+// 一整天合理數量的班次，不會像以前固定只給 6 點多那 5 筆、查別的時間就什麼都看不到。
+// 用「從午夜算起的分鐘數」當迴圈邊界，不要用時間字串比較——字串比較在跨過午夜那一圈會出
+// 「00:04」這種開頭回到 0 的字串，字串序永遠小於 "24:00"，迴圈邊界會失效變成無窮迴圈。
+const METRO_SERVICE_START_MIN = 6 * 60;
+const METRO_SERVICE_END_MIN = 24 * 60;
+const METRO_INTERVAL_MIN = 8;
+
+function minutesToHHMM(totalMinutes: number): string {
+  const wrapped = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
+  return `${String(Math.floor(wrapped / 60)).padStart(2, "0")}:${String(wrapped % 60).padStart(2, "0")}`;
+}
+
+function addMinutes(hhmm: string, minutes: number): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  return minutesToHHMM(h * 60 + m + minutes);
+}
+
+function generateMetroRows(date: string, lineCode: string, trip: MetroTripInfo | null): ResultRow[] {
+  const today = todayInTaipei();
+  const nowTime = nowHHmmInTaipei();
+  const durationMin = trip?.durationMin ?? 40;
+  const rows: ResultRow[] = [];
+  for (let totalMin = METRO_SERVICE_START_MIN; totalMin < METRO_SERVICE_END_MIN; totalMin += METRO_INTERVAL_MIN) {
+    const t = minutesToHHMM(totalMin);
+    rows.push({
+      time: t,
+      arrive: addMinutes(t, durationMin),
+      code: lineCode,
+      duration: formatDuration(durationMin),
+      stops: trip?.stops ?? 12,
+      fare: trip ? (trip.fare !== undefined ? `NT$ ${trip.fare}` : "—") : undefined,
+      transfer: trip?.transfer,
+      transferStationName: trip?.transferStationName,
+      isPast: date < today || (date === today && t < nowTime),
+    });
+  }
+  return rows;
+}
+
+// 站名格式是「路線代碼＋站碼」接著站名（例如「BL07板橋」「A1台北車站」），開頭那段
+// 字母就是路線代碼，用來當捷運假資料的車次代碼——至少會跟使用者實際選的出發站對得上，
+// 不會不管選哪個系統都顯示同一條線。
+function metroLineCodeOf(station: string): string {
+  return station.match(/^[A-Za-z]+/)?.[0] ?? "";
+}
+
+interface MetroTripInfo {
+  durationMin: number;
+  stops: number;
+  fare?: number;
+  transfer: boolean;
+  transferStationName?: string;
+}
+
+// 捷運車程時間／停靠站數／票價改成查真實資料（lib/metro-routing.ts），不是固定的墊檔數字
+// ——同系統內打 /api/transit/metro/trip 用 TDX 真實站間行車時間＋票價表算；出發／抵達是
+// 跨系統（只有台北／新北／桃園機場捷運互通那三個會發生）沒有統一的票價／行車時間資料，
+// 只能先用合理的估計值墊著，但轉乘站名是真的比對兩個系統的站名清單查出來的，不是亂猜。
+function useMetroTrip(mode: Mode, origin: string, dest: string): MetroTripInfo | null {
+  const [trip, setTrip] = useState<MetroTripInfo | null>(null);
+
+  useEffect(() => {
+    if (mode !== "metro" || !origin || !dest) return;
+    const originSystem = metroSystemOf(origin);
+    const destSystem = metroSystemOf(dest);
+    if (!originSystem || !destSystem) return;
+
+    if (originSystem !== destSystem) {
+      /* eslint-disable-next-line react-hooks/set-state-in-effect */
+      setTrip({ durationMin: 40, stops: 12, fare: 30, transfer: true, transferStationName: findCrossSystemTransferStation(originSystem, destSystem) });
+      return;
+    }
+
+    let cancelled = false;
+    setTrip(null);
+    const qs = new URLSearchParams({ system: originSystem, origin, dest });
+    fetch(`/api/transit/metro/trip?${qs.toString()}`)
+      .then((res) => res.json())
+      .then((data: { trip?: MetroTripInfo }) => {
+        if (!cancelled && data.trip) setTrip(data.trip);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, origin, dest]);
+
+  return trip;
+}
+
+/** 站名屬於哪個縣市——跟 lib/metro-lines.ts 的 metroSystemOf 同一個做法，反查
+ *  STATIONS_BY_CITY.bus 找哪個城市的清單裡有這個站名。公車查詢要帶縣市代碼給 TDX，
+ *  但首頁／常用行程傳進結果頁的只有站名本身，所以要在這裡反查回去。 */
+function busCityOf(stop: string): string | undefined {
+  return Object.keys(STATIONS_BY_CITY.bus).find((city) => STATIONS_BY_CITY.bus[city].includes(stop));
+}
+
+interface BusRow {
+  time: string;
+  arrive: string;
+  code: string;
+  duration: string;
+  stops: number;
+  isPast: boolean;
+}
+
+// 公車改成真的打 TDX 查「出發站、抵達站之間有哪些共同路線＋即時到站預估」（見
+// lib/bus-routing.ts），不再用固定 5 筆假資料。公車沒有時刻表，只能查「現在」的狀態，
+// 跟火車／高鐵／捷運不同——查到的筆數就是「現在真的有路線、有預估值」的那幾筆，不是
+// 固定 5 筆。
+function useBusResults(mode: Mode, origin: string, dest: string) {
+  const [rows, setRows] = useState<BusRow[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (mode !== "bus" || !origin || !dest) return;
+    const originCity = busCityOf(origin);
+    const destCity = busCityOf(dest);
+    if (!originCity || !destCity) return;
+
+    let cancelled = false;
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setRows(null);
+    setError(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
+    const qs = new URLSearchParams({ originCity, origin, destCity, dest });
+    fetch(`/api/transit/bus/trip?${qs.toString()}`)
+      .then((res) => res.json())
+      .then((data: { rows?: BusRow[]; error?: string }) => {
+        if (cancelled) return;
+        if (data.error) setError(data.error);
+        setRows(data.rows ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setError("公車路線查詢失敗，請稍後再試");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, origin, dest]);
+
+  return { rows, error };
+}
 
 interface TraRow {
   time: string;
@@ -121,11 +247,15 @@ interface TraRow {
 }
 
 // 火車改成真的打台鐵 OD 時刻表 API，查詢中或失敗時分別用 loading/錯誤訊息呈現，不再用假資料墊著。
-function useTrainResults(origin: string, dest: string, date: string, time: string) {
+function useTrainResults(mode: Mode, origin: string, dest: string, date: string, time: string) {
   const [rows, setRows] = useState<TraRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // 不是火車模式就不用打台鐵的 API——這個 hook 之前沒檢查 mode，每次搜尋都會打台鐵
+    // API，捷運／公車／高鐵查出來的站名對台鐵站碼表當然查不到，錯誤訊息（「沒有台鐵站碼
+    // 對照」）跟著就會透過 queryError 顯示在別的車種頁面上，是完全不相關的雜訊。
+    if (mode !== "train") return;
     let cancelled = false;
     // origin/dest/date/time 一變就要重新查詢，故意同步把上一次的結果清掉讓畫面回到
     // 查詢中狀態，不是在訂閱外部事件、也不會連鎖觸發其他 effect，屬於這個規則容許的例外。
@@ -149,7 +279,53 @@ function useTrainResults(origin: string, dest: string, date: string, time: strin
     return () => {
       cancelled = true;
     };
-  }, [origin, dest, date, time]);
+  }, [mode, origin, dest, date, time]);
+
+  return { rows, error };
+}
+
+interface ThsrRow {
+  time: string;
+  arrive: string;
+  code: string;
+  duration: string;
+  stops: number;
+  price?: string;
+  isPast: boolean;
+}
+
+// 高鐵改成真的打 TDX 的每日時刻表＋票價表，不再用固定 5 筆假資料——跟火車同一套做法
+// （useTrainResults），只是高鐵的票價是查到就直接用全票價字串，不用額外算車種對應表
+// （高鐵只有一種車種，不像台鐵自強／區間要分開查）。
+function useThsrResults(mode: Mode, origin: string, dest: string, date: string, time: string) {
+  const [rows, setRows] = useState<ThsrRow[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // 同 useTrainResults：不是高鐵模式就不用打高鐵的 API。
+    if (mode !== "thsr") return;
+    let cancelled = false;
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setRows(null);
+    setError(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
+    const qs = new URLSearchParams({ origin, dest });
+    if (date) qs.set("date", date);
+    if (time) qs.set("time", time);
+    fetch(`/api/transit/thsr/timetable?${qs.toString()}`)
+      .then((res) => res.json())
+      .then((data: { rows?: ThsrRow[]; error?: string }) => {
+        if (cancelled) return;
+        if (data.error) setError(data.error);
+        setRows(data.rows ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setError("高鐵班次查詢失敗，請稍後再試");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, origin, dest, date, time]);
 
   return { rows, error };
 }
@@ -176,10 +352,26 @@ export function ResultsView({
 }) {
   const meta = MODE_META[mode];
   const isTrain = mode === "train";
-  const { rows: trainRows, error: trainError } = useTrainResults(origin, dest, date, time);
-  const allResults: ResultRow[] = isTrain ? trainRows ?? [] : MOCK_RESULTS[mode];
+  const isMetro = mode === "metro";
+  const isThsr = mode === "thsr";
+  const isBus = mode === "bus";
+  const { rows: trainRows, error: trainError } = useTrainResults(mode, origin, dest, date, time);
+  const { rows: thsrRows, error: thsrError } = useThsrResults(mode, origin, dest, date, time);
+  const { rows: busRows, error: busError } = useBusResults(mode, origin, dest);
+  const metroTrip = useMetroTrip(mode, origin, dest);
+  const allResults: ResultRow[] = isTrain
+    ? trainRows ?? []
+    : isThsr
+      ? thsrRows ?? []
+      : isBus
+        ? busRows ?? []
+        : isMetro
+          ? generateMetroRows(date, metroLineCodeOf(origin), metroTrip)
+          : [];
   const results = startTime && endTime ? allResults.filter((r) => r.time >= startTime && r.time <= endTime) : allResults;
-  const loading = isTrain && trainRows === null && !trainError;
+  const loading =
+    (isTrain && trainRows === null && !trainError) || (isThsr && thsrRows === null && !thsrError) || (isBus && busRows === null && !busError);
+  const queryError = trainError || thsrError || busError;
   const [typeTab, setTypeTab] = useState("全部");
   const visibleResults = isTrain && typeTab !== "全部" ? results.filter((r) => trainTypeOf(r.code) === typeTab) : results;
   // 點班次卡片右邊的「加入行程」時記住是哪一筆，選好分類（或新增分類）後才知道要用
@@ -266,8 +458,7 @@ export function ResultsView({
                 {origin} <span aria-hidden>→</span> {dest}
               </span>
               <span className="truncate text-xs text-[#B3ABD4]">
-                {meta.label}・
-                {isTrain ? (loading ? "查詢中…" : `共 ${visibleResults.length} 筆班次`) : `共 ${results.length} 筆班次・之後會接真的即時資料`}
+                {meta.label}・{loading ? "查詢中…" : `共 ${visibleResults.length} 筆班次`}
               </span>
             </p>
           </div>
@@ -303,9 +494,9 @@ export function ResultsView({
         )}
       </div>
 
-      {isTrain && trainError && <p className="mx-5 mt-4 rounded-2xl bg-[#FDEEF0] px-4 py-3 text-xs text-[#D1517E]">{trainError}</p>}
+      {queryError && <p className="mx-5 mt-4 rounded-2xl bg-[#FDEEF0] px-4 py-3 text-xs text-[#D1517E]">{queryError}</p>}
 
-      {!loading && !trainError && visibleResults.length === 0 && (
+      {!loading && !queryError && visibleResults.length === 0 && (
         <p className="mx-5 mt-6 text-left text-xs text-[#B3ABD4]">目前沒有查到任何班次。</p>
       )}
 
@@ -338,6 +529,11 @@ export function ResultsView({
                     {r.delayMinutes > 0 ? `誤點 ${r.delayMinutes} 分` : "準時"}
                   </span>
                 ) : null}
+                {r.transfer && (
+                  <span className="rounded-full bg-[#FDE7D8] px-2.5 py-0.5 text-[11px] font-semibold text-[#D97A3D]">
+                    {r.transferStationName ? `於${r.transferStationName}轉乘` : "需轉乘"}
+                  </span>
+                )}
                 <span className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${badgeClass(mode)}`}>
                   {isTrain ? trainNumberOf(r.code) : r.code}
                   {mode === "bus" ? " 路" : ""}
@@ -355,7 +551,7 @@ export function ResultsView({
               </div>
             </div>
 
-            <div className={`mt-3 grid gap-2 border-t border-[#F2EEFA] pt-3 text-xs text-center ${isTrain ? "grid-cols-3" : "grid-cols-2"}`}>
+            <div className={`mt-3 grid gap-2 border-t border-[#F2EEFA] pt-3 text-xs text-center ${isTrain || isMetro ? "grid-cols-3" : "grid-cols-2"}`}>
               <div>
                 <p className="text-[#B3ABD4]">車程時間</p>
                 <p className="mt-0.5 font-medium text-[#4A3B7C]">{r.duration}</p>
@@ -364,7 +560,7 @@ export function ResultsView({
                 <p className="text-[#B3ABD4]">停靠站數</p>
                 <p className="mt-0.5 font-medium text-[#4A3B7C]">{r.stops} 站</p>
               </div>
-              {isTrain && (
+              {(isTrain || isMetro) && (
                 <div>
                   <p className="text-[#B3ABD4]">全票</p>
                   <p className="mt-0.5 font-medium text-[#4A3B7C]">{r.fare ?? "—"}</p>

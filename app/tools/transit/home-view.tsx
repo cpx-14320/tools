@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ImageSlot } from "@/components/dream/image-slot";
 import { FaIcon } from "@/components/dream/fa-icon";
 import { ICON_PATHS } from "@/components/dream/icon-paths";
-import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY, type Mode } from "@/components/dream/stations-data";
+import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY, destCitiesFor, type Mode } from "@/components/dream/stations-data";
 import { DISTRICTS_BY_CITY } from "@/lib/cwa-districts";
 import { HomeSettingsModal, type HomeDefaults } from "@/components/dream/home-settings-modal";
 import { TimePickerModal } from "@/components/dream/time-picker-modal";
@@ -13,7 +13,7 @@ import { DatePickerModal } from "@/components/dream/date-picker-modal";
 import { StationPickerModal } from "@/components/dream/station-picker-modal";
 import { MemoEditorModal, type MemoDraft } from "@/components/dream/memo-editor-modal";
 import { memoIconPath } from "@/components/dream/memo-icons";
-import { WeatherCarousel, type WeatherBlock } from "@/components/dream/weather-carousel";
+import { WeatherCarousel, WeatherCarouselSkeleton, type WeatherBlock } from "@/components/dream/weather-carousel";
 
 const DEFAULTS_KEY = "cpx-tools:transit:home-defaults";
 
@@ -41,7 +41,6 @@ interface TrainLastSearch {
   origin: string;
   destCity: string;
   dest: string;
-  date: string;
 }
 
 function loadTrainSearch(): TrainLastSearch | null {
@@ -61,6 +60,38 @@ function saveTrainSearch(search: TrainLastSearch) {
   }
 }
 
+// 捷運／高鐵跟火車一樣用「記住上次查詢」：選項不少（捷運 7 個系統、上百個站；高鐵現在
+// 12 站），每次切回來都要重新選很煩，記住上次選的出發／抵達站就好，不像火車還要記日期
+// ——使用者要的是「上次選的站點」，日期／時間本來就是每次查詢當下才決定，沒有需要記上次
+// 選的值。兩個車種的存檔形狀一樣，共用同一組讀寫函式，只是各自存在不同的 key，不用為
+// 高鐵再複製一份幾乎一樣的程式碼。
+const METRO_SEARCH_KEY = "cpx-tools:transit:metro-last-search";
+const THSR_SEARCH_KEY = "cpx-tools:transit:thsr-last-search";
+
+interface StationOnlyLastSearch {
+  originCity: string;
+  origin: string;
+  destCity: string;
+  dest: string;
+}
+
+function loadStationOnlySearch(key: string): StationOnlyLastSearch | null {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as StationOnlyLastSearch) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveStationOnlySearch(key: string, search: StationOnlyLastSearch) {
+  try {
+    localStorage.setItem(key, JSON.stringify(search));
+  } catch {
+    // 同上，存不進去就放著，不影響當下搜尋表單的操作。
+  }
+}
+
 const MODES: { key: Mode; label: string; icon: string }[] = [
   { key: "bus", label: "公車", icon: ICON_PATHS.modeBus },
   { key: "train", label: "火車", icon: ICON_PATHS.modeTrain },
@@ -75,6 +106,23 @@ interface Memo {
   content: string;
   icon: string;
   remindAt: string | null;
+}
+
+// 同上，故意不從 lib/weekend-trips.ts 匯入。
+interface WeekendTrip {
+  id: string;
+  title: string;
+  caption: string;
+  image: string;
+}
+
+// 首頁最上方插畫 Banner 的文案／圖片，邏輯跟 WeekendTrip 一樣，故意不從 lib/hero-banners.ts
+// 匯入。
+interface HeroBanner {
+  id: string;
+  title: string;
+  caption: string;
+  image: string;
 }
 
 type RemindTone = "soon" | "later";
@@ -110,6 +158,7 @@ function todayLocal(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+
 function resolveStation(cities: Record<string, string[]>, preferred: string | undefined, fallbackIndex: number) {
   const keys = Object.keys(cities);
   if (preferred) {
@@ -136,6 +185,33 @@ export function DreamHomeView() {
   const [timePickerOpen, setTimePickerOpen] = useState(false);
   const [memos, setMemos] = useState<Memo[]>([]);
   const [memoEditorOpen, setMemoEditorOpen] = useState(false);
+  const [weekendTrips, setWeekendTrips] = useState<WeekendTrip[]>([]);
+  // 每次進頁面／重新整理都要重新抽一則，不是整天固定同一則——跟 weekendTrips 分開存，
+  // 抽完之後除非重新整理（這個元件重新掛載），不會因為其他跟這個區塊無關的畫面更新
+  // （例如使用者在表單打字）又重新算一次、害顯示的那則一直跳動。
+  const [weekendTripIndex, setWeekendTripIndex] = useState<number | null>(null);
+  // 抓清單那個 fetch 完成前，先不要顯示任何文案——原本掛載時就直接顯示寫死的預設文案，
+  // fetch 回來才切成抽到的那組，使用者會看到文字在載入瞬間「跳一下」；改成空白／骨架，
+  // 等 fetch 真的有結果（不管是抽到自訂的還是退回預設）才一次顯示最終內容。
+  const [weekendReady, setWeekendReady] = useState(false);
+  const [heroBanners, setHeroBanners] = useState<HeroBanner[]>([]);
+  // 跟 weekendTripIndex 同一套做法：抽完之後只要這個元件沒重新掛載就不會再變。
+  const [heroBannerIndex, setHeroBannerIndex] = useState<number | null>(null);
+  const [heroReady, setHeroReady] = useState(false);
+
+  // 日期欄位的初始值只在掛載那一刻算一次，分頁開著跨過半夜沒重新整理的話，日期會一直卡在
+  // 「昨天」——除了搜尋當下會自動校正（見 searchTrains），分頁從背景切回來時也順便校正一次，
+  // 不要讓使用者看到畫面上日期欄位顯示昨天的日期才覺得奇怪。只往前校正：使用者自己選了
+  // 未來日期的話不要動，只有「已經變成過去」才需要糾正。
+  useEffect(() => {
+    function syncDateIfStale() {
+      if (document.visibilityState !== "visible") return;
+      const today = todayLocal();
+      setDate((d) => (d < today ? today : d));
+    }
+    document.addEventListener("visibilitychange", syncDateIfStale);
+    return () => document.removeEventListener("visibilitychange", syncDateIfStale);
+  }, []);
 
   // 掛載時抓一次使用者自己的備忘錄；儲存後也會用同一份 API 回應直接更新畫面，不用重抓。
   useEffect(() => {
@@ -146,6 +222,47 @@ export function DreamHomeView() {
         if (!cancelled) setMemos(data.memos ?? []);
       })
       .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // 「週末小旅行」可選的文案＋背景圖，掛載時抓一次並隨機抽一則；使用者還沒在「其他」頁
+  // 設定過的話會是空陣列，畫面上退回原本寫死的那組（見下面 todayWeekendTrip）。
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/transit/weekend-trips")
+      .then((res) => res.json())
+      .then((data: { items?: WeekendTrip[] }) => {
+        if (cancelled) return;
+        const items = data.items ?? [];
+        setWeekendTrips(items);
+        if (items.length > 0) setWeekendTripIndex(Math.floor(Math.random() * items.length));
+        setWeekendReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) setWeekendReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // 首頁最上方插畫 Banner 可選的文案＋背景圖，邏輯跟上面的週末小旅行完全一樣。
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/transit/hero-banners")
+      .then((res) => res.json())
+      .then((data: { items?: HeroBanner[] }) => {
+        if (cancelled) return;
+        const items = data.items ?? [];
+        setHeroBanners(items);
+        if (items.length > 0) setHeroBannerIndex(Math.floor(Math.random() * items.length));
+        setHeroReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) setHeroReady(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -201,7 +318,8 @@ export function DreamHomeView() {
   const citiesForMode = mode === "train" ? trainCities : STATIONS_BY_CITY[mode];
   // 真實清單載入後 key 可能跟墊檔不一樣，保險起見擋一下，避免 undefined.map 當掉。
   const safeOriginCity = citiesForMode[originCity] ? originCity : Object.keys(citiesForMode)[0];
-  const safeDestCity = citiesForMode[destCity] ? destCity : Object.keys(citiesForMode)[0];
+  const destCitiesForMode = destCitiesFor(mode, safeOriginCity, citiesForMode);
+  const safeDestCity = destCitiesForMode[destCity] ? destCity : Object.keys(destCitiesForMode)[0];
 
   useEffect(() => {
     let cancelled = false;
@@ -286,30 +404,52 @@ export function DreamHomeView() {
         setOrigin(saved.origin);
         setDestCity(saved.destCity);
         setDest(saved.dest);
-        setDate(saved.date || todayLocal());
-        // 時間不記住——每次進來都先用現在的時間頂著，使用者想要別的時間自己調，
-        // 不要讓很久以前選過的一個時間點一直陰魂不散地出現在新的一次查詢裡。
+        // 日期／時間都不記住——每次進來都先用現在的日期、時間頂著，使用者想要別的
+        // 日期／時間自己調。日期要是記了上次存的值，分頁開著跨過半夜沒重新整理再切回
+        // 火車模式，就會還原出一個已經過去的日期，查真實時刻表會直接被 TDX 擋掉。
+        setDate(todayLocal());
         setTime(nowHHMM());
+        return;
+      }
+    }
+    // 捷運／高鐵同一套道理，只是不用記日期（日期本來就是每次查詢當下決定，不用還原成
+    // 上次的）。
+    if (key === "metro" || key === "thsr") {
+      const saved = loadStationOnlySearch(key === "metro" ? METRO_SEARCH_KEY : THSR_SEARCH_KEY);
+      if (saved) {
+        setOriginCity(saved.originCity);
+        setOrigin(saved.origin);
+        setDestCity(saved.destCity);
+        setDest(saved.dest);
         return;
       }
     }
     const cities = key === "train" ? trainCities : STATIONS_BY_CITY[key];
     const keys = Object.keys(cities);
     const oCity = keys[0];
-    const dCity = keys[1] ?? keys[0];
+    // 捷運預設出發／抵達站先給同一個系統：不同系統大多沒有互通，用 keys[1] 當預設抵達站
+    // 系統的話，一切換到捷運模式就直接出現一組選不出合理路線的組合。
+    const dCity = key === "metro" ? oCity : keys[1] ?? keys[0];
     setOriginCity(oCity);
     setOrigin(cities[oCity][0]);
     setDestCity(dCity);
     setDest(cities[dCity][dCity === oCity && cities[dCity].length > 1 ? 1 : 0]);
   }
 
-  // 火車模式下，出發／抵達站、日期只要變動就存起來，下次切回火車模式會自動還原，不用
-  // 另外在編輯彈窗裡設「預設站牌」。時間故意不存——時間欄位永遠先顯示現在的時間，
-  // 使用者想要別的時間自己調（見 selectMode 裡的說明）。
+  // 火車模式下，出發／抵達站只要變動就存起來，下次切回火車模式會自動還原，不用另外在
+  // 編輯彈窗裡設「預設站牌」。日期／時間都故意不存——永遠先用現在的日期、時間頂著，
+  // 使用者想要別的自己調（見 selectMode 裡的說明）。
   useEffect(() => {
     if (mode !== "train") return;
-    saveTrainSearch({ originCity, origin, destCity, dest, date });
-  }, [mode, originCity, origin, destCity, dest, date]);
+    saveTrainSearch({ originCity, origin, destCity, dest });
+  }, [mode, originCity, origin, destCity, dest]);
+
+  // 捷運／高鐵出發／抵達站只要變動就存起來，下次切回同一個車種會自動還原，不用每次都
+  // 重新選一次系統／站點。
+  useEffect(() => {
+    if (mode !== "metro" && mode !== "thsr") return;
+    saveStationOnlySearch(mode === "metro" ? METRO_SEARCH_KEY : THSR_SEARCH_KEY, { originCity, origin, destCity, dest });
+  }, [mode, originCity, origin, destCity, dest]);
 
   function swapStations() {
     setOriginCity(destCity);
@@ -319,40 +459,78 @@ export function DreamHomeView() {
   }
 
   function searchTrains() {
+    // 日期欄位的初始值只在掛載那一刻算一次（useState(todayLocal)），分頁開著跨過半夜
+    // 沒有重新整理的話，日期會一直卡在「昨天」，拿去查台鐵／高鐵的每日時刻表會直接被
+    // TDX 擋掉（只收今天或未來的日期，查過去會 400）。搜尋當下如果發現日期已經過去，
+    // 自動跳回今天，不用使用者自己發現、手動重選。
+    const searchDate = date < todayLocal() ? todayLocal() : date;
+    if (searchDate !== date) setDate(searchDate);
     router.push(
-      `/tools/transit/results?origin=${encodeURIComponent(origin)}&dest=${encodeURIComponent(dest)}&mode=${mode}&date=${date}&time=${encodeURIComponent(time)}`,
+      `/tools/transit/results?origin=${encodeURIComponent(origin)}&dest=${encodeURIComponent(dest)}&mode=${mode}&date=${searchDate}&time=${encodeURIComponent(time)}`,
     );
   }
 
   return (
     <div className="-mb-24 flex min-h-full flex-col bg-white pb-24">
-      <div className="relative h-80 w-full shrink-0 overflow-hidden">
-        <ImageSlot src={ICON_PATHS.heroMain} alt="夢幻紫彩火車旅行插畫" className="absolute inset-0 h-full w-full" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-transparent" />
-        {/* 跟著首頁內容一起捲動，不是外殼層級的 fixed／absolute 覆蓋層，滑動時不會貼著螢幕
-            右上角不動。 */}
-        <button
-          type="button"
-          onClick={openSettings}
-          className="absolute right-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-full border border-[#ECE4FA] bg-white/80 px-3 py-1.5 text-xs font-medium text-[#6F5FD6] shadow-sm backdrop-blur"
-        >
-          編輯
-        </button>
-        <div className="absolute left-5 top-6 right-5 text-white drop-shadow-sm">
-          <p className="text-2xl font-bold leading-snug">
-            下一站， <span aria-hidden>✦</span>
-            <br />
-            去看更大的世界 <span aria-hidden>✦</span>
-          </p>
-          <p className="mt-2 flex items-center gap-1 text-sm opacity-90">
-            <span aria-hidden>✦</span> 一段旅程，都是生活的延伸 <span aria-hidden>✦</span>
-          </p>
-        </div>
-      </div>
+      {(() => {
+        // 跟 todayWeekendTrip 同一套：還沒在「其他」頁設定過（heroBanners 是空陣列）就退回
+        // 原本寫死的那組文案＋圖片，連同原本固定 2 行的排版（<br/> 強制斷行）一起保留；
+        // 使用者自己設定的文案不知道長度，改成不強制斷行的單行文字，讓它自然換行。
+        const todayHeroBanner = heroBannerIndex !== null ? heroBanners[heroBannerIndex] : null;
+        return (
+          <div className="relative h-80 w-full shrink-0 overflow-hidden">
+            <ImageSlot
+              src={todayHeroBanner?.image ?? ICON_PATHS.heroMain}
+              alt={todayHeroBanner?.title ?? "夢幻紫彩火車旅行插畫"}
+              className="absolute inset-0 h-full w-full"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-transparent" />
+            {/* 跟著首頁內容一起捲動，不是外殼層級的 fixed／absolute 覆蓋層，滑動時不會貼著螢幕
+                右上角不動。 */}
+            <button
+              type="button"
+              onClick={openSettings}
+              className="absolute right-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-full border border-[#ECE4FA] bg-white/80 px-3 py-1.5 text-xs font-medium text-[#6F5FD6] shadow-sm backdrop-blur"
+            >
+              編輯
+            </button>
+            <div className="absolute left-5 top-6 right-5 text-white drop-shadow-sm">
+              {!heroReady ? (
+                // fetch 還沒回來，先用骨架佔著位置，不要讓使用者先看到寫死的預設文案、
+                // fetch 回來後又突然跳成抽到的那組——避免文字內容中途變來變去。
+                <div className="animate-pulse">
+                  <div className="h-7 w-3/4 rounded-full bg-white/30" />
+                  <div className="mt-3 h-4 w-1/2 rounded-full bg-white/20" />
+                </div>
+              ) : todayHeroBanner ? (
+                <>
+                  <p className="text-2xl font-bold leading-snug">
+                    <span aria-hidden>✦</span> {todayHeroBanner.title} <span aria-hidden>✦</span>
+                  </p>
+                  <p className="mt-2 flex items-center gap-1 text-sm opacity-90">
+                    <span aria-hidden>✦</span> {todayHeroBanner.caption} <span aria-hidden>✦</span>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-2xl font-bold leading-snug">
+                    下一站， <span aria-hidden>✦</span>
+                    <br />
+                    去看更大的世界 <span aria-hidden>✦</span>
+                  </p>
+                  <p className="mt-2 flex items-center gap-1 text-sm opacity-90">
+                    <span aria-hidden>✦</span> 一段旅程，都是生活的延伸 <span aria-hidden>✦</span>
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="relative z-10 -mt-16 flex-1 rounded-t-[2rem] bg-white px-5 pb-6 pt-5 shadow-[0_-8px_24px_-8px_rgba(111,95,214,0.2)]">
         <div className="mb-4">
-          {weatherReady ? <WeatherCarousel blocks={weatherBlocks} /> : <p className="rounded-2xl bg-[#F3EFFC] px-3 py-4 text-center text-xs text-[#B3ABD4]">載入中…</p>}
+          {weatherReady ? <WeatherCarousel blocks={weatherBlocks} /> : <WeatherCarouselSkeleton />}
         </div>
 
         <div className="flex items-center gap-2">
@@ -422,6 +600,14 @@ export function DreamHomeView() {
           onSave={(city, station) => {
             setOriginCity(city);
             setOrigin(station);
+            // 換了出發站的系統，原本選的抵達站如果在新的出發系統底下已經不能選（不同系統
+            // 又沒有互通），抵達站要跟著重設，不然會卡著一組已經不合法的出發／抵達組合。
+            const nextDestCities = destCitiesFor(mode, city, citiesForMode);
+            if (!nextDestCities[destCity]) {
+              const firstCity = Object.keys(nextDestCities)[0];
+              setDestCity(firstCity);
+              setDest(nextDestCities[firstCity][0]);
+            }
             setOriginPickerOpen(false);
           }}
         />
@@ -429,7 +615,7 @@ export function DreamHomeView() {
           key={destPickerOpen ? "dest-open" : "dest-closed"}
           open={destPickerOpen}
           title={`選擇抵達${stationLabel}`}
-          cities={citiesForMode}
+          cities={destCitiesForMode}
           initialCity={safeDestCity}
           initialStation={dest}
           onClose={() => setDestPickerOpen(false)}
@@ -528,18 +714,39 @@ export function DreamHomeView() {
           </div>
         )}
 
-        <div className="relative mt-6 h-28 overflow-hidden rounded-2xl">
-          {/* 整個卡片背景換成真圖，不是右邊一個小圖示；圖還沒上傳前 ImageSlot 會自動退回
-              漸層佔位，所以這裡不用再額外寫死一層漸層背景。 */}
-          <ImageSlot src={ICON_PATHS.weekendTripBanner} alt="週末小旅行" className="absolute inset-0 h-full w-full" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20" />
-          <div className="relative z-10 flex h-full items-center px-5 py-4">
-            <div>
-              <p className="text-base font-bold text-white">週末小旅行</p>
-              <p className="mt-0.5 text-xs text-white/85">收藏屬於你的風景 ♡</p>
+        {/* 使用者在「其他」頁設定過幾組標題＋文案＋背景圖的話，每次進頁面／重新整理隨機挑
+            一組（見掛載時那個 effect）；還沒設定過（weekendTrips 是空陣列）就退回原本寫死
+            的那組，不影響舊有畫面。 */}
+        {(() => {
+          const todayWeekendTrip = weekendTripIndex !== null ? weekendTrips[weekendTripIndex] : null;
+          return (
+            <div className="relative mt-6 h-28 overflow-hidden rounded-2xl">
+              {/* 整個卡片背景換成真圖，不是右邊一個小圖示；圖還沒上傳前 ImageSlot 會自動退回
+                  漸層佔位，所以這裡不用再額外寫死一層漸層背景。 */}
+              <ImageSlot
+                src={todayWeekendTrip?.image ?? ICON_PATHS.weekendTripBanner}
+                alt={todayWeekendTrip?.title ?? "週末小旅行"}
+                className="absolute inset-0 h-full w-full"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20" />
+              <div className="relative z-10 flex h-full items-center px-5 py-4">
+                {!weekendReady ? (
+                  // 跟首頁最上方 Banner 同一套：fetch 回來前先用骨架佔位，不要先看到寫死的
+                  // 預設文案才又跳成抽到的那組。
+                  <div className="w-2/3 animate-pulse">
+                    <div className="h-4 w-full rounded-full bg-white/30" />
+                    <div className="mt-2 h-3 w-4/5 rounded-full bg-white/20" />
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-base font-bold text-white">{todayWeekendTrip?.title ?? "週末小旅行"}</p>
+                    <p className="mt-0.5 text-xs text-white/85">{todayWeekendTrip?.caption ?? "收藏屬於你的風景 ♡"}</p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
+          );
+        })()}
       </div>
 
       <MemoEditorModal

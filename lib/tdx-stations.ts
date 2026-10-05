@@ -4,6 +4,8 @@ import { tdxGet } from "@/lib/tdx-client";
 // GET /api/basic/v3/Rail/TRA/Station（或 THSR/Metro 對應版本）找 StationID 補進來。
 // 注意：台鐵站名用傳統字「臺」，高鐵站名用「台」，兩邊都收錄「台／臺」兩種寫法方便查表。
 
+// 從 TDX /v2/Rail/THSR/Station 查回來的真實 12 站（苗栗／彰化／雲林是後來通車才加的，
+// 不是最初的 8 站，之前這份表只收錄到左營那 7 站，查得到站碼的站才能查真實時刻表／票價）。
 export const THSR_STATION_ID: Record<string, string> = {
   南港: "0990",
   台北: "1000",
@@ -11,8 +13,14 @@ export const THSR_STATION_ID: Record<string, string> = {
   板橋: "1010",
   桃園: "1020",
   新竹: "1030",
+  苗栗: "1035",
   台中: "1040",
   臺中: "1040",
+  彰化: "1043",
+  雲林: "1047",
+  嘉義: "1050",
+  台南: "1060",
+  臺南: "1060",
   左營: "1070",
 };
 

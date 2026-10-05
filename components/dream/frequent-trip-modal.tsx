@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY, type Mode } from "./stations-data";
+import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY, destCitiesFor, type Mode } from "./stations-data";
 import { FaIcon } from "./fa-icon";
 import { ImageSlot } from "./image-slot";
+import { TimePickerModal } from "./time-picker-modal";
 import { FREQUENT_TRIP_ICON_OPTIONS } from "./frequent-trip-icons";
 
 export interface FrequentTripDraft {
@@ -17,10 +18,12 @@ export interface FrequentTripDraft {
   endTime: string;
 }
 
-function blankDraft(cities: Record<string, string[]>): FrequentTripDraft {
+function blankDraft(mode: Mode, cities: Record<string, string[]>): FrequentTripDraft {
   const keys = Object.keys(cities);
   const originCity = keys[0];
-  const destCity = keys[1] ?? keys[0];
+  // 捷運預設出發／抵達站先給同一個系統：不同系統大多沒有互通，用 keys[1] 當預設抵達站
+  // 系統的話，一開始就會出現一組選不出合理路線的組合。
+  const destCity = mode === "metro" ? originCity : keys[1] ?? keys[0];
   return {
     icon: FREQUENT_TRIP_ICON_OPTIONS[0].key,
     originCity,
@@ -34,7 +37,7 @@ function blankDraft(cities: Record<string, string[]>): FrequentTripDraft {
 
 // 火車目前全台約 240 站，沒辦法像公車／高鐵／捷運一樣用寫死的清單，掛載時才打 TDX 站名
 // API 換成真的站名清單；公車／高鐵／捷運三種車種彼此的站點資料來源跟選擇邏輯完全不同
-// （公車／高鐵是固定縣市清單、捷運是路線＋站點），各自獨立成下面三個函式，不共用一套
+// （公車／高鐵是固定縣市清單、捷運是固定的捷運系統清單），各自獨立成下面三個函式，不共用一套
 // 「假設全部車種都一樣」的通用邏輯——之後要單獨幫某個車種換資料來源或加欄位時，不會
 // 牽動到其他車種。
 function useTrainCities(active: boolean): Record<string, string[]> {
@@ -112,7 +115,11 @@ export function FrequentTripModal({
   // 重新 mount，name／items 的初始值自然就是當下傳入的那一份，不用額外用 effect 同步。
   const [name, setName] = useState(initialName);
   const [nameError, setNameError] = useState(false);
-  const [items, setItems] = useState<FrequentTripDraft[]>(initial.length > 0 ? initial : [blankDraft(cities)]);
+  const [items, setItems] = useState<FrequentTripDraft[]>(initial.length > 0 ? initial : [blankDraft(mode, cities)]);
+  // 時段區間的開始／結束時間改用跟首頁同一顆 TimePickerModal，不用瀏覽器原生的時間選擇器；
+  // 每一則都有自己的開始／結束兩個時間欄位，共用一顆彈窗、記住「現在在編哪一則的哪個欄位」
+  // 就好，不用每一則各自掛一顆彈窗實例。
+  const [timeEditTarget, setTimeEditTarget] = useState<{ index: number; field: "startTime" | "endTime" } | null>(null);
 
   // 火車的真實站名清單是非同步載入的：如果編輯清單目前還是「只有一筆、還沒存過（沒有
   // id）」的初始空白墊檔，等真實清單載入後重新產生一次，不然使用者還沒手動選過站的話
@@ -120,7 +127,7 @@ export function FrequentTripModal({
   useEffect(() => {
     if (mode !== "train") return;
     /* eslint-disable-next-line react-hooks/set-state-in-effect */
-    setItems((list) => (list.length === 1 && !list[0].id ? [blankDraft(trainCities)] : list));
+    setItems((list) => (list.length === 1 && !list[0].id ? [blankDraft(mode, trainCities)] : list));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trainCities]);
 
@@ -136,8 +143,16 @@ export function FrequentTripModal({
     setItems((list) => (list.length > 1 ? list.filter((_, i) => i !== index) : list));
   }
 
-  function selectOriginCity(index: number, city: string) {
-    updateItem(index, { originCity: city, origin: cities[city][0] });
+  function selectOriginCity(index: number, city: string, currentDestCity: string) {
+    // 換了出發站的系統，原本選的抵達站如果在新的出發系統底下已經不能選（不同系統又沒有
+    // 互通），抵達站要跟著重設，不然會卡著一組已經不合法的出發／抵達組合。
+    const nextDestCities = destCitiesFor(mode, city, cities);
+    if (nextDestCities[currentDestCity]) {
+      updateItem(index, { originCity: city, origin: cities[city][0] });
+    } else {
+      const firstDestCity = Object.keys(nextDestCities)[0];
+      updateItem(index, { originCity: city, origin: cities[city][0], destCity: firstDestCity, dest: nextDestCities[firstDestCity][0] });
+    }
   }
 
   function selectDestCity(index: number, city: string) {
@@ -180,7 +195,9 @@ export function FrequentTripModal({
 
           {items.map((item, i) => {
             const safeOriginCity = cities[item.originCity] ? item.originCity : Object.keys(cities)[0];
-            const safeDestCity = cities[item.destCity] ? item.destCity : Object.keys(cities)[0];
+            const destCitiesForItem = destCitiesFor(mode, safeOriginCity, cities);
+            const destCityKeys = Object.keys(destCitiesForItem);
+            const safeDestCity = destCitiesForItem[item.destCity] ? item.destCity : destCityKeys[0];
             return (
               <div key={i} className="flex flex-col gap-2.5 rounded-2xl border border-[#F2EEFA] p-3">
                 <div className="flex items-center justify-between">
@@ -214,7 +231,7 @@ export function FrequentTripModal({
                         <FaIcon icon="location-dot" size={14} />
                         <select
                           value={safeOriginCity}
-                          onChange={(e) => selectOriginCity(i, e.target.value)}
+                          onChange={(e) => selectOriginCity(i, e.target.value, item.destCity)}
                           className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
                         >
                           {Object.keys(cities).map((city) => (
@@ -253,28 +270,32 @@ export function FrequentTripModal({
 
                   <label className="flex flex-col gap-1.5">
                     <span className="text-xs font-medium text-[#9C94C4]">抵達{stationLabel}</span>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] px-3 py-3">
-                        <FaIcon icon="location-dot" size={14} />
-                        <select
-                          value={safeDestCity}
-                          onChange={(e) => selectDestCity(i, e.target.value)}
-                          className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
-                        >
-                          {Object.keys(cities).map((city) => (
-                            <option key={city} value={city}>
-                              {city}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                    {/* 抵達站的系統只有一個可選時（例如捷運出發站選到沒有互通的系統），
+                        系統欄位沒有意義、直接不顯示，站名欄位改滿版。 */}
+                    <div className={destCityKeys.length > 1 ? "grid grid-cols-2 gap-2" : "grid grid-cols-1 gap-2"}>
+                      {destCityKeys.length > 1 && (
+                        <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] px-3 py-3">
+                          <FaIcon icon="location-dot" size={14} />
+                          <select
+                            value={safeDestCity}
+                            onChange={(e) => selectDestCity(i, e.target.value)}
+                            className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
+                          >
+                            {destCityKeys.map((city) => (
+                              <option key={city} value={city}>
+                                {city}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] px-3 py-3">
                         <select
                           value={item.dest}
                           onChange={(e) => updateItem(i, { dest: e.target.value })}
                           className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
                         >
-                          {cities[safeDestCity].map((s) => (
+                          {destCitiesForItem[safeDestCity].map((s) => (
                             <option key={s} value={s}>
                               {s}
                             </option>
@@ -288,24 +309,22 @@ export function FrequentTripModal({
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[#9C94C4]">時段區間</span>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => setTimeEditTarget({ index: i, field: "startTime" })}
+                      className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] px-4 py-3 text-left"
+                    >
                       <FaIcon icon="clock" size={14} />
-                      <input
-                        type="time"
-                        value={item.startTime}
-                        onChange={(e) => updateItem(i, { startTime: e.target.value })}
-                        className="flex-1 bg-transparent text-sm font-medium text-[#4A3B7C] outline-none [&::-webkit-calendar-picker-indicator]:hidden"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] px-4 py-3">
+                      <span className="flex-1 text-sm font-medium text-[#4A3B7C]">{item.startTime}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTimeEditTarget({ index: i, field: "endTime" })}
+                      className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] px-4 py-3 text-left"
+                    >
                       <FaIcon icon="clock" size={14} />
-                      <input
-                        type="time"
-                        value={item.endTime}
-                        onChange={(e) => updateItem(i, { endTime: e.target.value })}
-                        className="flex-1 bg-transparent text-sm font-medium text-[#4A3B7C] outline-none [&::-webkit-calendar-picker-indicator]:hidden"
-                      />
-                    </div>
+                      <span className="flex-1 text-sm font-medium text-[#4A3B7C]">{item.endTime}</span>
+                    </button>
                   </div>
                 </label>
               </div>
@@ -314,12 +333,23 @@ export function FrequentTripModal({
 
           <button
             type="button"
-            onClick={() => setItems((list) => [...list, blankDraft(cities)])}
+            onClick={() => setItems((list) => [...list, blankDraft(mode, cities)])}
             className="rounded-xl border border-dashed border-[#C7BFE6] py-2.5 text-sm font-medium text-[#6F5FD6]"
           >
             ＋ 新增一則
           </button>
         </div>
+
+        <TimePickerModal
+          key={timeEditTarget ? `time-${timeEditTarget.index}-${timeEditTarget.field}` : "time-closed"}
+          open={timeEditTarget !== null}
+          initial={timeEditTarget ? items[timeEditTarget.index][timeEditTarget.field] : "08:00"}
+          onClose={() => setTimeEditTarget(null)}
+          onSave={(v) => {
+            if (timeEditTarget) updateItem(timeEditTarget.index, { [timeEditTarget.field]: v });
+            setTimeEditTarget(null);
+          }}
+        />
 
         <div className="flex items-center justify-between gap-2 border-t border-[#ECE4FA] px-5 py-4">
           {onDelete ? (
