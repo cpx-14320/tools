@@ -5,14 +5,6 @@ import { Card, CardBody, Badge } from "@/components/ui";
 
 const tools = [
   {
-    name: "記帳本",
-    desc: "計算每月薪水、記錄各類消費，可多人共用一個帳本。",
-    icon: "📒",
-    iconBg: "bg-cat-e-bg",
-    href: "/tools/expenses",
-    status: "active" as const,
-  },
-  {
     name: "搭乘車查詢",
     desc: "查固定通勤班次時刻表，誤點或即將到站時推播提醒。",
     icon: "🚌",
