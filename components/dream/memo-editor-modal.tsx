@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { ImageSlot } from "./image-slot";
 import { MEMO_ICON_OPTIONS } from "./memo-icons";
+import { DatePickerModal } from "./date-picker-modal";
+import { TimePickerModal } from "./time-picker-modal";
 
 export interface MemoDraft {
   id?: string;
@@ -28,6 +30,19 @@ function toDatetimeLocal(iso: string | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function todayLocal(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+// remindAt 是 "YYYY-MM-DDTHH:mm" 存成一個字串，但日期／時間要分開兩個彈窗選，這裡拆開來
+// 給每個彈窗自己的 initial 值用；拆不出來（還沒填過）就各自退回「今天」「09:00」。
+function splitRemindAt(value: string): { date: string; time: string } {
+  const [date, time] = value.split("T");
+  return { date: date || todayLocal(), time: time || "09:00" };
+}
+
 function blankDraft(): MemoDraft {
   return { content: "", icon: MEMO_ICON_OPTIONS[0].key, remindAt: "" };
 }
@@ -48,6 +63,9 @@ export function MemoEditorModal({
       ? initial.map((m) => ({ id: m.id, content: m.content, icon: m.icon, remindAt: toDatetimeLocal(m.remindAt) }))
       : [blankDraft()],
   );
+  // 跟首頁「編輯常用行程」的時段區間同一套做法：日期／時間共用同一顆彈窗元件，用
+  // {index, field} 記住現在是在幫第幾則的哪個欄位選值，不用每一則各自配一組彈窗狀態。
+  const [editTarget, setEditTarget] = useState<{ index: number; field: "date" | "time" } | null>(null);
 
   if (!open) return null;
 
@@ -58,6 +76,8 @@ export function MemoEditorModal({
   function removeItem(index: number) {
     setItems((list) => (list.length > 1 ? list.filter((_, i) => i !== index) : list));
   }
+
+  const editing = editTarget ? splitRemindAt(items[editTarget.index].remindAt) : null;
 
   return (
     <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30" onClick={onClose}>
@@ -76,49 +96,70 @@ export function MemoEditorModal({
         </div>
 
         <div className="flex flex-col gap-4 px-5 py-5">
-          {items.map((item, i) => (
-            <div key={i} className="flex flex-col gap-2.5 rounded-2xl border border-[#F2EEFA] p-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-[#9C94C4]">第 {i + 1} 則</span>
-                {items.length > 1 && (
-                  <button type="button" onClick={() => removeItem(i)} className="text-xs font-medium text-[#D1517E]">
-                    刪除
-                  </button>
-                )}
-              </div>
+          {items.map((item, i) => {
+            const { date: pickedDate, time: pickedTime } = splitRemindAt(item.remindAt);
+            return (
+              <div key={i} className="flex flex-col gap-2.5 rounded-2xl border border-[#F2EEFA] p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-[#9C94C4]">第 {i + 1} 則</span>
+                  {items.length > 1 && (
+                    <button type="button" onClick={() => removeItem(i)} className="text-xs font-medium text-[#D1517E]">
+                      刪除
+                    </button>
+                  )}
+                </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                {MEMO_ICON_OPTIONS.map((option) => (
-                  <button
-                    key={option.key}
-                    type="button"
-                    onClick={() => updateItem(i, { icon: option.key })}
-                    aria-label={`選擇圖示 ${option.key}`}
-                    className={item.icon === option.key ? "" : "opacity-50"}
-                  >
-                    <ImageSlot src={option.icon} alt={option.key} className="size-8 rounded-lg" />
-                  </button>
-                ))}
-              </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {MEMO_ICON_OPTIONS.map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => updateItem(i, { icon: option.key })}
+                      aria-label={`選擇圖示 ${option.key}`}
+                      className={item.icon === option.key ? "" : "opacity-50"}
+                    >
+                      <ImageSlot src={option.icon} alt={option.key} className="size-8 rounded-lg" />
+                    </button>
+                  ))}
+                </div>
 
-              <textarea
-                placeholder="內容"
-                value={item.content}
-                onChange={(e) => updateItem(i, { content: e.target.value })}
-                rows={2}
-                className="resize-none rounded-2xl border border-[#ECE4FA] bg-white px-4 py-3 text-sm font-medium text-[#4A3B7C] outline-none focus:border-[#6F5FD6]"
-              />
-              <label className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-[#9C94C4]">提醒時間（選填）</span>
-                <input
-                  type="datetime-local"
-                  value={item.remindAt}
-                  onChange={(e) => updateItem(i, { remindAt: e.target.value })}
-                  className="w-full rounded-2xl border border-[#ECE4FA] bg-white px-4 py-3 text-sm font-medium text-[#4A3B7C] outline-none focus:border-[#6F5FD6] [&::-webkit-calendar-picker-indicator]:hidden"
+                <textarea
+                  placeholder="內容"
+                  value={item.content}
+                  onChange={(e) => updateItem(i, { content: e.target.value })}
+                  rows={2}
+                  className="resize-none rounded-2xl border border-[#ECE4FA] bg-white px-4 py-3 text-sm font-medium text-[#4A3B7C] outline-none focus:border-[#6F5FD6]"
                 />
-              </label>
-            </div>
-          ))}
+
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-[#9C94C4]">提醒時間（選填）</span>
+                    {item.remindAt && (
+                      <button type="button" onClick={() => updateItem(i, { remindAt: "" })} className="text-xs font-medium text-[#D1517E]">
+                        清除
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditTarget({ index: i, field: "date" })}
+                      className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-4 py-3 text-left text-sm font-medium text-[#4A3B7C]"
+                    >
+                      <span className="flex-1 truncate">{item.remindAt ? pickedDate.replaceAll("-", "/") : "選擇日期"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditTarget({ index: i, field: "time" })}
+                      className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-4 py-3 text-left text-sm font-medium text-[#4A3B7C]"
+                    >
+                      <span className="flex-1 truncate">{item.remindAt ? pickedTime : "選擇時間"}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
 
           <button
             type="button"
@@ -143,6 +184,28 @@ export function MemoEditorModal({
           </button>
         </div>
       </div>
+
+      <DatePickerModal
+        key={editTarget?.field === "date" ? `date-${editTarget.index}` : "date-closed"}
+        open={editTarget?.field === "date"}
+        initial={editing?.date ?? todayLocal()}
+        onClose={() => setEditTarget(null)}
+        onSave={(value) => {
+          if (editTarget) updateItem(editTarget.index, { remindAt: `${value}T${splitRemindAt(items[editTarget.index].remindAt).time}` });
+          setEditTarget(null);
+        }}
+      />
+
+      <TimePickerModal
+        key={editTarget?.field === "time" ? `time-${editTarget.index}` : "time-closed"}
+        open={editTarget?.field === "time"}
+        initial={editing?.time ?? "09:00"}
+        onClose={() => setEditTarget(null)}
+        onSave={(value) => {
+          if (editTarget) updateItem(editTarget.index, { remindAt: `${splitRemindAt(items[editTarget.index].remindAt).date}T${value}` });
+          setEditTarget(null);
+        }}
+      />
     </div>
   );
 }

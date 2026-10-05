@@ -773,7 +773,7 @@ export function DreamHomeView() {
                 ) : (
                   <div style={{ textShadow: "0 1px 6px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.6)" }}>
                     <p className="text-base font-bold text-white">{todayWeekendTrip?.title ?? "週末小旅行"}</p>
-                    <p className="mt-0.5 text-xs text-white/85">{todayWeekendTrip?.caption ?? "收藏屬於你的風景 ♡"}</p>
+                    <p className="mt-0.5 text-xs text-white/85">{todayWeekendTrip?.caption ?? "找尋屬於自己的風景"}</p>
                   </div>
                 )}
               </div>
