@@ -5,20 +5,29 @@ import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY, destCitiesFor, type 
 import { ImageSlot } from "./image-slot";
 import { TimePickerModal } from "./time-picker-modal";
 import { StationPickerModal } from "./station-picker-modal";
+import { BusRoutePickerModal, routeBadgeStyle, type BusRouteSelection } from "./bus-route-picker-modal";
 import { FREQUENT_TRIP_ICON_OPTIONS } from "./frequent-trip-icons";
 
 export interface FrequentTripDraft {
   id?: string;
   icon: string;
+  // 公車是「路線優先」（見 bus-route-picker-modal.tsx 的 BusRouteSelection），不是起訖站：
+  // originCity 存縣市、origin 存路線名稱、dest 存站牌名稱、destCity 不使用；busDirection
+  // （0＝去程、1＝返程）只有公車會用到。
   originCity: string;
   origin: string;
   destCity: string;
   dest: string;
+  busDirection?: 0 | 1;
   startTime: string;
   endTime: string;
 }
 
 function blankDraft(mode: Mode, cities: Record<string, string[]>): FrequentTripDraft {
+  // 公車還沒選過路線／站牌時留空，讓按鈕顯示「選擇路線」「選擇站牌」佔位文字。
+  if (mode === "bus") {
+    return { icon: FREQUENT_TRIP_ICON_OPTIONS[0].key, originCity: "", origin: "", destCity: "", dest: "", startTime: "08:00", endTime: "09:00" };
+  }
   const keys = Object.keys(cities);
   const originCity = keys[0];
   // 捷運預設出發／抵達站先給同一個系統：不同系統大多沒有互通，用 keys[1] 當預設抵達站
@@ -124,6 +133,9 @@ export function FrequentTripModal({
   // 出發／抵達站改用跟首頁同一顆 StationPickerModal（城市＋站名雙欄選擇），不用瀏覽器
   // 原生的 <select>；同一套 {index, field} 做法記住現在在編哪一則的出發還是抵達站。
   const [stationEditTarget, setStationEditTarget] = useState<{ index: number; field: "origin" | "dest" } | null>(null);
+  // 公車改成「路線優先」搜尋（UI 階段，見 bus-route-picker-modal.tsx），不是出發／抵達站；
+  // 一樣用「正在編輯第幾則」記住現在開著的是哪一則的公車選擇器，不用每一則各自掛一顆。
+  const [busEditTarget, setBusEditTarget] = useState<number | null>(null);
 
   // 火車的真實站名清單是非同步載入的：如果編輯清單目前還是「只有一筆、還沒存過（沒有
   // id）」的初始空白墊檔，等真實清單載入後重新產生一次，不然使用者還沒手動選過站的話
@@ -229,50 +241,73 @@ export function FrequentTripModal({
                   ))}
                 </div>
 
-                <div className="relative flex flex-col gap-3">
+                {mode === "bus" ? (
                   <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-[#9C94C4]">出發{stationLabel}</span>
-                    <button
-                      type="button"
-                      onClick={() => setStationEditTarget({ index: i, field: "origin" })}
-                      className="grid grid-cols-2 gap-2 text-left"
-                    >
+                    <span className="text-xs font-medium text-[#9C94C4]">公車路線／站牌</span>
+                    <button type="button" onClick={() => setBusEditTarget(i)} className="grid grid-cols-2 gap-2 text-left">
                       <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                        <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{safeOriginCity}</span>
+                        {item.origin ? (
+                          <span className="flex items-center gap-1.5 truncate">
+                            <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${routeBadgeStyle(item.origin)}`}>
+                              {item.origin}
+                            </span>
+                            <span className="truncate text-xs text-[#9C94C4]">{item.busDirection === 1 ? "返程" : "去程"}</span>
+                          </span>
+                        ) : (
+                          <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">選擇路線</span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                        <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{item.origin}</span>
+                        <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{item.dest || "選擇站牌"}</span>
                       </div>
                     </button>
                   </label>
+                ) : (
+                  <div className="relative flex flex-col gap-3">
+                    <label className="flex flex-col gap-1.5">
+                      <span className="text-xs font-medium text-[#9C94C4]">出發{stationLabel}</span>
+                      <button
+                        type="button"
+                        onClick={() => setStationEditTarget({ index: i, field: "origin" })}
+                        className="grid grid-cols-2 gap-2 text-left"
+                      >
+                        <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                          <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{safeOriginCity}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                          <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{item.origin}</span>
+                        </div>
+                      </button>
+                    </label>
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      updateItem(i, { originCity: item.destCity, origin: item.dest, destCity: item.originCity, dest: item.origin })
-                    }
-                    aria-label="交換出發站與抵達站"
-                    className="absolute right-3 top-1/2 z-10 grid size-8 -translate-y-1/2 place-items-center rounded-full border border-[#ECE4FA] bg-white text-[#6F5FD6] shadow-[0_4px_12px_-4px_rgba(111,95,214,0.4)]"
-                  >
-                    ⇄
-                  </button>
-
-                  <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-[#9C94C4]">抵達{stationLabel}</span>
                     <button
                       type="button"
-                      onClick={() => setStationEditTarget({ index: i, field: "dest" })}
-                      className="grid grid-cols-2 gap-2 text-left"
+                      onClick={() =>
+                        updateItem(i, { originCity: item.destCity, origin: item.dest, destCity: item.originCity, dest: item.origin })
+                      }
+                      aria-label="交換出發站與抵達站"
+                      className="absolute right-3 top-1/2 z-10 grid size-8 -translate-y-1/2 place-items-center rounded-full border border-[#ECE4FA] bg-white text-[#6F5FD6] shadow-[0_4px_12px_-4px_rgba(111,95,214,0.4)]"
                     >
-                      <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                        <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{item.destCity}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                        <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{item.dest}</span>
-                      </div>
+                      ⇄
                     </button>
-                  </label>
-                </div>
+
+                    <label className="flex flex-col gap-1.5">
+                      <span className="text-xs font-medium text-[#9C94C4]">抵達{stationLabel}</span>
+                      <button
+                        type="button"
+                        onClick={() => setStationEditTarget({ index: i, field: "dest" })}
+                        className="grid grid-cols-2 gap-2 text-left"
+                      >
+                        <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                          <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{item.destCity}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                          <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{item.dest}</span>
+                        </div>
+                      </button>
+                    </label>
+                  </div>
+                )}
 
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[#9C94C4]">時段區間</span>
@@ -314,6 +349,34 @@ export function FrequentTripModal({
           onSave={(v) => {
             if (timeEditTarget) updateItem(timeEditTarget.index, { [timeEditTarget.field]: v });
             setTimeEditTarget(null);
+          }}
+        />
+
+        <BusRoutePickerModal
+          key={busEditTarget !== null ? `bus-${busEditTarget}` : "bus-closed"}
+          open={busEditTarget !== null}
+          initial={
+            busEditTarget !== null
+              ? {
+                  cityName: items[busEditTarget].originCity,
+                  routeName: items[busEditTarget].origin,
+                  direction: items[busEditTarget].busDirection ?? 0,
+                  stopName: items[busEditTarget].dest,
+                }
+              : undefined
+          }
+          onClose={() => setBusEditTarget(null)}
+          onSave={(selection: BusRouteSelection) => {
+            if (busEditTarget !== null) {
+              updateItem(busEditTarget, {
+                originCity: selection.cityName,
+                origin: selection.routeName,
+                destCity: "",
+                dest: selection.stopName,
+                busDirection: selection.direction,
+              });
+            }
+            setBusEditTarget(null);
           }}
         />
 

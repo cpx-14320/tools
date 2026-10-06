@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { FrequentTripModal, type FrequentTripDraft } from "@/components/dream/frequent-trip-modal";
 import { frequentTripIconPath } from "@/components/dream/frequent-trip-icons";
 import { ImageSlot } from "@/components/dream/image-slot";
+import { routeBadgeStyle } from "@/components/dream/bus-route-picker-modal";
 import { FaIcon } from "@/components/dream/fa-icon";
 import { ListRowSkeleton } from "@/components/dream/list-row-skeleton";
 import { loadSkeletonCount, saveSkeletonCount } from "@/components/dream/skeleton-count";
-import type { HomeDefaults } from "@/components/dream/home-settings-modal";
 
 type Mode = "bus" | "train" | "metro" | "thsr";
 
@@ -34,18 +34,25 @@ const TABS: { key: Mode; label: string }[] = [
   { key: "thsr", label: "高鐵" },
 ];
 
-// 跟首頁的「編輯首頁預設值」彈窗共用同一個 localStorage key，首頁存的預設運輸工具
-// 這裡直接拿來當 tabs 預設選中的車種，不用另外存一份。
-const HOME_DEFAULTS_KEY = "cpx-tools:transit:home-defaults";
+// 記住使用者最後一次停留的分頁（跟首頁 home-view.tsx 的 LAST_MODE_KEY 同一個做法），
+// 不是套用固定的預設值——這樣重新整理才會停在離開前的那個車種，不會每次都跳回某個
+// 設定值。
+const LAST_TAB_KEY = "cpx-tools:transit:trips-last-tab";
 
-function loadDefaultTab(): Mode | null {
+function loadLastTab(): Mode | null {
   try {
-    const raw = localStorage.getItem(HOME_DEFAULTS_KEY);
-    if (!raw) return null;
-    const saved = JSON.parse(raw) as HomeDefaults;
-    return TABS.some((t) => t.key === saved.defaultMode) ? (saved.defaultMode as Mode) : null;
+    const raw = localStorage.getItem(LAST_TAB_KEY);
+    return TABS.some((t) => t.key === raw) ? (raw as Mode) : null;
   } catch {
     return null;
+  }
+}
+
+function saveLastTab(tab: Mode) {
+  try {
+    localStorage.setItem(LAST_TAB_KEY, tab);
+  } catch {
+    // 私密瀏覽模式等情況下 localStorage 可能不可用，失敗就當作這次沒存，不影響當下操作。
   }
 }
 
@@ -82,13 +89,18 @@ export function TripsView() {
   const [groupModal, setGroupModal] = useState<{ groupId: string | null; name: string } | null>(null);
   const groupsForTab = tripGroups.filter((g) => g.mode === tab);
 
-  // 進頁面時套用首頁設定的預設運輸工具，決定 tabs 預設停在哪個車種；跟首頁同一套做法，
-  // 只在掛載時套用一次，之後使用者自己切換 tab 不會被這份預設值蓋回去。
+  function selectTab(key: Mode) {
+    setTab(key);
+    saveLastTab(key);
+  }
+
+  // 進頁面時還原使用者最後一次停留的分頁；只在掛載時套用一次，之後使用者自己切換 tab
+  // 會透過 selectTab 更新記住的值，不會被這個 effect 蓋回去。
   useEffect(() => {
-    const defaultTab = loadDefaultTab();
-    if (defaultTab) {
+    const saved = loadLastTab();
+    if (saved) {
       /* eslint-disable-next-line react-hooks/set-state-in-effect */
-      setTab(defaultTab);
+      setTab(saved);
     }
   }, []);
 
@@ -234,7 +246,7 @@ export function TripsView() {
             <button
               key={t.key}
               type="button"
-              onClick={() => setTab(t.key)}
+              onClick={() => selectTab(t.key)}
               className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
                 active ? "bg-white text-[#6F5FD6] shadow-[0_2px_8px_-2px_rgba(111,95,214,0.4)]" : "text-[#9C94C4]"
               }`}
@@ -283,9 +295,18 @@ export function TripsView() {
                       <div key={f.id} className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
                         <ImageSlot src={frequentTripIconPath(f.icon)} alt={`${f.origin}到${f.dest}`} className="size-12 shrink-0 rounded-xl" />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-[#4A3B7C]">
-                            {f.origin} <span aria-hidden>⇄</span> {f.dest}
-                          </p>
+                          {tab === "bus" ? (
+                            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 truncate text-sm font-semibold text-[#4A3B7C]">
+                              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${routeBadgeStyle(f.origin)}`}>{f.origin}</span>
+                              <span className="text-xs font-normal text-[#9C94C4]">{f.busDirection === 1 ? "返程" : "去程"}</span>
+                              <span aria-hidden>·</span>
+                              {f.dest}
+                            </p>
+                          ) : (
+                            <p className="truncate text-sm font-semibold text-[#4A3B7C]">
+                              {f.origin} <span aria-hidden>⇄</span> {f.dest}
+                            </p>
+                          )}
                           <p className="mt-0.5 text-xs text-[#9C94C4]">
                             {f.startTime}–{f.endTime}
                           </p>
@@ -294,7 +315,9 @@ export function TripsView() {
                           type="button"
                           onClick={() =>
                             router.push(
-                              `/tools/transit/results?origin=${encodeURIComponent(f.origin)}&dest=${encodeURIComponent(f.dest)}&mode=${tab}&startTime=${encodeURIComponent(f.startTime)}&endTime=${encodeURIComponent(f.endTime)}&from=trips`,
+                              tab === "bus"
+                                ? `/tools/transit/results?mode=bus&busCity=${encodeURIComponent(f.originCity)}&busRoute=${encodeURIComponent(f.origin)}&busDirection=${f.busDirection ?? 0}&busStop=${encodeURIComponent(f.dest)}&from=trips`
+                                : `/tools/transit/results?origin=${encodeURIComponent(f.origin)}&dest=${encodeURIComponent(f.dest)}&mode=${tab}&startTime=${encodeURIComponent(f.startTime)}&endTime=${encodeURIComponent(f.endTime)}&from=trips`,
                             )
                           }
                           className="shrink-0 rounded-full bg-[#F3EFFC] px-3 py-1.5 text-xs font-medium text-[#6F5FD6]"

@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
  *  路徑先指定好、檔案還沒上傳（404）時也會自動退回佔位，不會顯示壞掉的圖示。瀏覽器真的
  *  在下載／解碼這張圖的期間（尤其是第一次沒有快取時），img 標籤本身在載完之前是空的，
  *  這裡額外疊一層骨架佔住版面，load 完才讓圖片淡入，不會讓使用者看到一塊空白。 */
-export function ImageSlot({ src, alt, label, className = "" }: { src?: string; alt: string; label?: string; className?: string }) {
+export function ImageSlot({ src, alt, className = "" }: { src?: string; alt: string; className?: string }) {
   const [errored, setErrored] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -43,14 +43,5 @@ export function ImageSlot({ src, alt, label, className = "" }: { src?: string; a
       </div>
     );
   }
-  return (
-    <div
-      className={`flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-[#E4DCFB] to-[#F6D9EE] text-[#9B8FD9] ${className}`}
-    >
-      <span aria-hidden className="text-lg">
-        🖼️
-      </span>
-      {label && <span className="text-[10px] font-medium">{label}</span>}
-    </div>
-  );
+  return <div aria-label={alt} className={`bg-gradient-to-br from-[#E4DCFB] to-[#F6D9EE] ${className}`} />;
 }

@@ -24,11 +24,6 @@ export const THSR_STATION_ID: Record<string, string> = {
   左營: "1070",
 };
 
-/** 公車站牌常用路線預設值：UI 目前只讓選站牌，這裡對應回該站牌主要查的路線名稱。 */
-export const BUS_ROUTE_BY_STOP: Record<string, { city: string; routeName: string }> = {
-  捷運象山站: { city: "Taipei", routeName: "信義幹線" },
-};
-
 export interface TraStation {
   id: string;
   name: string;

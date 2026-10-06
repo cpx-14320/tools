@@ -11,6 +11,7 @@ import { HomeSettingsModal, type HomeDefaults } from "@/components/dream/home-se
 import { TimePickerModal } from "@/components/dream/time-picker-modal";
 import { DatePickerModal } from "@/components/dream/date-picker-modal";
 import { StationPickerModal } from "@/components/dream/station-picker-modal";
+import { BusRoutePickerModal, routeBadgeStyle, type BusRouteSelection } from "@/components/dream/bus-route-picker-modal";
 import { MemoEditorModal, type MemoDraft } from "@/components/dream/memo-editor-modal";
 import { memoIconPath } from "@/components/dream/memo-icons";
 import { WeatherCarousel, WeatherCarouselSkeleton, type WeatherBlock } from "@/components/dream/weather-carousel";
@@ -36,6 +37,29 @@ function saveDefaults(defaults: HomeDefaults) {
     localStorage.setItem(DEFAULTS_KEY, JSON.stringify(defaults));
   } catch {
     // 私密瀏覽模式等情況下 localStorage 可能不可用，失敗就當作這次沒存，不影響當下操作。
+  }
+}
+
+// 不再用「編輯首頁預設值」裡設定的固定預設運輸工具——那個值只有使用者自己回來改設定
+// 才會變，跟使用者實際常切換的分頁容易對不起來，每次重新整理都跳回設定值會讓人覺得
+// 「怎麼又切換了」。改成單純記住使用者最後一次停留的分頁，每次切換分頁就更新，重新
+// 整理後直接還原到離開前的狀態。
+const LAST_MODE_KEY = "cpx-tools:transit:last-mode";
+
+function loadLastMode(): Mode | null {
+  try {
+    const raw = localStorage.getItem(LAST_MODE_KEY);
+    return MODES.some((m) => m.key === raw) ? (raw as Mode) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveLastMode(mode: Mode) {
+  try {
+    localStorage.setItem(LAST_MODE_KEY, mode);
+  } catch {
+    // 同上，私密瀏覽模式等情況下存不了就算了。
   }
 }
 
@@ -318,6 +342,10 @@ export function DreamHomeView() {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [originPickerOpen, setOriginPickerOpen] = useState(false);
   const [destPickerOpen, setDestPickerOpen] = useState(false);
+  // 公車改成「路線優先」搜尋（UI 階段，見 bus-route-picker-modal.tsx），不是出發／抵達站
+  // 兩個下拉選單，所以另外用一組獨立的 state，不跟 origin/dest 共用。
+  const [busSelection, setBusSelection] = useState<BusRouteSelection | null>(null);
+  const [busPickerOpen, setBusPickerOpen] = useState(false);
 
   // 天氣卡改成使用者自訂、可新增任意多個「區塊」的清單（像「我的行程」的分類一樣），
   // 不是寫死出發／抵達兩個固定欄位；每個區塊是一個縣市＋行政區，會自動展開成「今天」
@@ -367,8 +395,8 @@ export function DreamHomeView() {
     setSettingsOpen(true);
   }
 
-  // 進頁面時套用使用者上次存的預設值（本機瀏覽器儲存，純前端偏好值，之後接資料庫/API
-  // 時這裡會換成真的使用者設定讀取）。
+  // 進頁面時套用使用者上次存的天氣地區設定（本機瀏覽器儲存，純前端偏好值，之後接
+  // 資料庫/API 時這裡會換成真的使用者設定讀取）。
   useEffect(() => {
     const saved = loadDefaults();
     if (!saved) {
@@ -381,7 +409,6 @@ export function DreamHomeView() {
     // 之前就真的發生過改了欄位名稱、舊資料對不上造成整頁壞掉的狀況（defaultTimeSlot→defaultTime）。
     // 每個區塊的 city/district 也是一組的，不能各自獨立 fallback，要整個區塊一起驗證，
     // 驗證不過的整個丟掉；驗證完一個都不剩才退回預設的兩個區塊。
-    const validMode = MODES.some((m) => m.key === saved.defaultMode) ? saved.defaultMode : mode;
     const validBlocks = Array.isArray(saved.weatherBlocks)
       ? saved.weatherBlocks.filter(
           (b): b is WeatherBlock =>
@@ -392,18 +419,23 @@ export function DreamHomeView() {
             !!DISTRICTS_BY_CITY[b.city]?.includes(b.district),
         )
       : [];
-    // 這幾個 setState 是故意同步呼叫的：頁面掛載後才讀得到 localStorage，讀到就要立刻套用
+    // 這個 setState 是故意同步呼叫的：頁面掛載後才讀得到 localStorage，讀到就要立刻套用
     // 這組預設值，不是在訂閱外部事件、也不會連鎖觸發其他 effect，屬於這個規則容許的例外。
-    selectMode(validMode);
     setWeatherBlocks(validBlocks.length > 0 ? validBlocks : defaultWeatherBlocks());
     setWeatherReady(true);
-    // 這個 effect 故意只在掛載時跑一次：mode/selectMode 讀的是掛載當下的值，
-    // 不需要、也不該在使用者之後自己切換運輸工具時重新套用存檔的預設值。
+  }, []);
+
+  // 進頁面時還原使用者最後一次停留的運輸工具分頁，不是套用「編輯首頁預設值」裡的固定
+  // 設定——理由見 loadLastMode 旁的註解。跟上面天氣地區那個 effect 分開寫，因為這個只
+  // 在掛載時跑一次、讀的是掛載當下的 mode 比對是否要切換，兩者各自獨立的初始化，合在
+  // 一起反而容易互相牽扯。
+  useEffect(() => {
+    const saved = loadLastMode();
+    if (saved) selectMode(saved);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function saveSettings(defaults: HomeDefaults) {
-    selectMode(defaults.defaultMode);
     setWeatherBlocks(defaults.weatherBlocks);
     saveDefaults(defaults);
     setSettingsOpen(false);
@@ -416,6 +448,7 @@ export function DreamHomeView() {
   function selectMode(key: Mode) {
     if (key === mode) return;
     setMode(key);
+    saveLastMode(key);
     // 火車模式改用「記住上次查詢」：有存過合法的上次搜尋狀態就直接還原，
     // 不然才退回該模式清單裡的第一、第二個站當預設。
     if (key === "train") {
@@ -491,6 +524,20 @@ export function DreamHomeView() {
     // 自動跳回今天，不用使用者自己發現、手動重選。
     const searchDate = date < todayLocal() ? todayLocal() : date;
     if (searchDate !== date) setDate(searchDate);
+    // 公車是路線＋方向＋站牌（不是起訖站），結果頁要帶這三個參數加縣市，不是 origin/dest。
+    if (mode === "bus") {
+      if (!busSelection) return;
+      const qs = new URLSearchParams({
+        mode,
+        busCity: busSelection.cityName,
+        busRoute: busSelection.routeName,
+        busDirection: String(busSelection.direction),
+        busStop: busSelection.stopName,
+        from: "home",
+      });
+      router.push(`/tools/transit/results?${qs.toString()}`);
+      return;
+    }
     router.push(
       `/tools/transit/results?origin=${encodeURIComponent(origin)}&dest=${encodeURIComponent(dest)}&mode=${mode}&date=${searchDate}&time=${encodeURIComponent(time)}&from=home`,
     );
@@ -585,77 +632,111 @@ export function DreamHomeView() {
           })}
         </div>
 
-        <div className="relative mt-5 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-[#9C94C4]">出發{stationLabel}</span>
-            <button type="button" onClick={() => setOriginPickerOpen(true)} className="grid grid-cols-2 gap-2 text-left">
-              <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{safeOriginCity}</span>
-              </div>
-              <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{origin}</span>
-              </div>
+        {mode === "bus" ? (
+          <div className="mt-5 flex flex-col gap-3">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-[#9C94C4]">公車路線／站牌</span>
+              <button type="button" onClick={() => setBusPickerOpen(true)} className="grid grid-cols-2 gap-2 text-left">
+                <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                  {busSelection ? (
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${routeBadgeStyle(busSelection.routeName)}`}>
+                      {busSelection.routeName}
+                    </span>
+                  ) : (
+                    <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">選擇路線</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                  <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{busSelection?.stopName ?? "選擇站牌"}</span>
+                </div>
+              </button>
+            </label>
+          </div>
+        ) : (
+          <div className="relative mt-5 flex flex-col gap-3">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-[#9C94C4]">出發{stationLabel}</span>
+              <button type="button" onClick={() => setOriginPickerOpen(true)} className="grid grid-cols-2 gap-2 text-left">
+                <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                  <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{safeOriginCity}</span>
+                </div>
+                <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                  <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{origin}</span>
+                </div>
+              </button>
+            </label>
+
+            <button
+              type="button"
+              onClick={swapStations}
+              aria-label="交換出發站與抵達站"
+              className="absolute right-4 top-1/2 z-10 grid size-9 -translate-y-1/2 place-items-center rounded-full border border-[#ECE4FA] bg-white text-[#6F5FD6] shadow-[0_4px_12px_-4px_rgba(111,95,214,0.4)]"
+            >
+              ⇄
             </button>
-          </label>
 
-          <button
-            type="button"
-            onClick={swapStations}
-            aria-label="交換出發站與抵達站"
-            className="absolute right-4 top-1/2 z-10 grid size-9 -translate-y-1/2 place-items-center rounded-full border border-[#ECE4FA] bg-white text-[#6F5FD6] shadow-[0_4px_12px_-4px_rgba(111,95,214,0.4)]"
-          >
-            ⇄
-          </button>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-[#9C94C4]">抵達{stationLabel}</span>
+              <button type="button" onClick={() => setDestPickerOpen(true)} className="grid grid-cols-2 gap-2 text-left">
+                <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                  <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{safeDestCity}</span>
+                </div>
+                <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                  <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{dest}</span>
+                </div>
+              </button>
+            </label>
+          </div>
+        )}
 
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-[#9C94C4]">抵達{stationLabel}</span>
-            <button type="button" onClick={() => setDestPickerOpen(true)} className="grid grid-cols-2 gap-2 text-left">
-              <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{safeDestCity}</span>
-              </div>
-              <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{dest}</span>
-              </div>
-            </button>
-          </label>
-        </div>
-
-        <StationPickerModal
-          key={originPickerOpen ? "origin-open" : "origin-closed"}
-          open={originPickerOpen}
-          title={`選擇出發${stationLabel}`}
-          cities={citiesForMode}
-          initialCity={safeOriginCity}
-          initialStation={origin}
-          onClose={() => setOriginPickerOpen(false)}
-          onSave={(city, station) => {
-            setOriginCity(city);
-            setOrigin(station);
-            // 換了出發站的系統，原本選的抵達站如果在新的出發系統底下已經不能選（不同系統
-            // 又沒有互通），抵達站要跟著重設，不然會卡著一組已經不合法的出發／抵達組合。
-            const nextDestCities = destCitiesFor(mode, city, citiesForMode);
-            if (!nextDestCities[destCity]) {
-              const firstCity = Object.keys(nextDestCities)[0];
-              setDestCity(firstCity);
-              setDest(nextDestCities[firstCity][0]);
-            }
-            setOriginPickerOpen(false);
-          }}
+        <BusRoutePickerModal
+          key={busPickerOpen ? "bus-open" : "bus-closed"}
+          open={busPickerOpen}
+          initial={busSelection ?? undefined}
+          onClose={() => setBusPickerOpen(false)}
+          onSave={(selection) => setBusSelection(selection)}
         />
-        <StationPickerModal
-          key={destPickerOpen ? "dest-open" : "dest-closed"}
-          open={destPickerOpen}
-          title={`選擇抵達${stationLabel}`}
-          cities={destCitiesForMode}
-          initialCity={safeDestCity}
-          initialStation={dest}
-          onClose={() => setDestPickerOpen(false)}
-          onSave={(city, station) => {
-            setDestCity(city);
-            setDest(station);
-            setDestPickerOpen(false);
-          }}
-        />
+
+        {mode !== "bus" && (
+          <>
+            <StationPickerModal
+              key={originPickerOpen ? "origin-open" : "origin-closed"}
+              open={originPickerOpen}
+              title={`選擇出發${stationLabel}`}
+              cities={citiesForMode}
+              initialCity={safeOriginCity}
+              initialStation={origin}
+              onClose={() => setOriginPickerOpen(false)}
+              onSave={(city, station) => {
+                setOriginCity(city);
+                setOrigin(station);
+                // 換了出發站的系統，原本選的抵達站如果在新的出發系統底下已經不能選（不同系統
+                // 又沒有互通），抵達站要跟著重設，不然會卡著一組已經不合法的出發／抵達組合。
+                const nextDestCities = destCitiesFor(mode, city, citiesForMode);
+                if (!nextDestCities[destCity]) {
+                  const firstCity = Object.keys(nextDestCities)[0];
+                  setDestCity(firstCity);
+                  setDest(nextDestCities[firstCity][0]);
+                }
+                setOriginPickerOpen(false);
+              }}
+            />
+            <StationPickerModal
+              key={destPickerOpen ? "dest-open" : "dest-closed"}
+              open={destPickerOpen}
+              title={`選擇抵達${stationLabel}`}
+              cities={destCitiesForMode}
+              initialCity={safeDestCity}
+              initialStation={dest}
+              onClose={() => setDestPickerOpen(false)}
+              onSave={(city, station) => {
+                setDestCity(city);
+                setDest(station);
+                setDestPickerOpen(false);
+              }}
+            />
+          </>
+        )}
 
         <div className="mt-3 grid grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
@@ -705,7 +786,8 @@ export function DreamHomeView() {
         <button
           type="button"
           onClick={searchTrains}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)]"
+          disabled={mode === "bus" && !busSelection}
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)] disabled:opacity-50"
           style={{ background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
         >
           <FaIcon icon="magnifying-glass" size={14} className="text-white" /> 搜尋{MODES.find((m) => m.key === mode)?.label}班次 <span aria-hidden>→</span>
@@ -799,7 +881,7 @@ export function DreamHomeView() {
       <HomeSettingsModal
         key={settingsOpen ? "settings-open" : "settings-closed"}
         open={settingsOpen}
-        initial={{ defaultMode: mode, weatherBlocks }}
+        initial={{ weatherBlocks }}
         onClose={closeSettings}
         onSave={saveSettings}
       />

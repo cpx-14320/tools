@@ -8,10 +8,14 @@ interface FrequentTripDoc {
   // 使用者自訂分類（見 lib/trip-groups.ts）的 id，取代原本寫死的「啟程／返程」兩種。
   groupId: string;
   icon: string;
+  // 公車是「路線優先」（見 components/dream/bus-route-picker-modal.tsx），不是起訖站：
+  // originCity 存縣市、origin 存路線名稱、dest 存站牌名稱、destCity 不使用；busDirection
+  // （0＝去程、1＝返程）只有公車會用到，其他車種維持 undefined。
   originCity: string;
   origin: string;
   destCity: string;
   dest: string;
+  busDirection?: 0 | 1;
   startTime: string;
   endTime: string;
   order: number;
@@ -28,6 +32,7 @@ export interface FrequentTripDTO {
   origin: string;
   destCity: string;
   dest: string;
+  busDirection?: 0 | 1;
   startTime: string;
   endTime: string;
 }
@@ -39,6 +44,7 @@ export interface FrequentTripInput {
   origin: string;
   destCity: string;
   dest: string;
+  busDirection?: 0 | 1;
   startTime: string;
   endTime: string;
 }
@@ -53,6 +59,7 @@ function toDTO(doc: FrequentTripDoc): FrequentTripDTO {
     origin: doc.origin,
     destCity: doc.destCity,
     dest: doc.dest,
+    busDirection: doc.busDirection,
     startTime: doc.startTime,
     endTime: doc.endTime,
   };
@@ -96,6 +103,7 @@ export async function syncFrequentTrips(userId: ObjectId, mode: string, groupId:
             origin: item.origin,
             destCity: item.destCity,
             dest: item.dest,
+            busDirection: item.busDirection,
             startTime: item.startTime,
             endTime: item.endTime,
             order: i,
@@ -114,6 +122,7 @@ export async function syncFrequentTrips(userId: ObjectId, mode: string, groupId:
         origin: item.origin,
         destCity: item.destCity,
         dest: item.dest,
+        busDirection: item.busDirection,
         startTime: item.startTime,
         endTime: item.endTime,
         order: i,

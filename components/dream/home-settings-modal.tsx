@@ -1,20 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { type Mode } from "./stations-data";
 import { DISTRICTS_BY_CITY } from "@/lib/cwa-districts";
 import { StationPickerModal } from "./station-picker-modal";
 import type { WeatherBlock } from "./weather-carousel";
 
-const MODES: { key: Mode; label: string }[] = [
-  { key: "bus", label: "公車" },
-  { key: "train", label: "火車" },
-  { key: "metro", label: "捷運" },
-  { key: "thsr", label: "高鐵" },
-];
-
 export interface HomeDefaults {
-  defaultMode: Mode;
   weatherBlocks: WeatherBlock[];
 }
 
@@ -71,24 +62,7 @@ export function HomeSettingsModal({
         </div>
 
         <div className="flex flex-col gap-4 px-5 py-5">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-[#9C94C4]">預設運輸工具</span>
-            <div className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] px-4 py-3">
-              <select
-                value={draft.defaultMode}
-                onChange={(e) => setDraft((d) => ({ ...d, defaultMode: e.target.value as Mode }))}
-                className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
-              >
-                {MODES.map((m) => (
-                  <option key={m.key} value={m.key}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </label>
-
-          <div className="flex flex-col gap-3 border-t border-[#F2EEFA] pt-4">
+          <div className="flex flex-col gap-3">
             <p className="text-xs font-medium text-[#9C94C4]">
               天氣地區（每個區塊會自動展開成「今天」「明天」兩張首頁輪播卡，可新增多個區塊）
             </p>

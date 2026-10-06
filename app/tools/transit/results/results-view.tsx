@@ -10,6 +10,7 @@ import { FREQUENT_TRIP_ICON_OPTIONS } from "@/components/dream/frequent-trip-ico
 import type { FrequentTripDraft } from "@/components/dream/frequent-trip-modal";
 import { metroSystemOf, findCrossSystemTransferStation } from "@/lib/metro-lines";
 import { formatDuration, todayInTaipei, nowHHmmInTaipei } from "@/lib/tdx-time";
+import { routeBadgeStyle, etaLabel, etaToneStyle } from "@/components/dream/bus-route-picker-modal";
 
 export type Mode = "bus" | "train" | "metro" | "thsr";
 
@@ -202,58 +203,46 @@ function useMetroTrip(mode: Mode, origin: string, dest: string): MetroTripInfo |
   return trip;
 }
 
-/** 站名屬於哪個縣市——跟 lib/metro-lines.ts 的 metroSystemOf 同一個做法，反查
- *  STATIONS_BY_CITY.bus 找哪個城市的清單裡有這個站名。公車查詢要帶縣市代碼給 TDX，
- *  但首頁／常用行程傳進結果頁的只有站名本身，所以要在這裡反查回去。 */
-function busCityOf(stop: string): string | undefined {
-  return Object.keys(STATIONS_BY_CITY.bus).find((city) => STATIONS_BY_CITY.bus[city].includes(stop));
+// 公車是「路線優先」（見 components/dream/bus-route-picker-modal.tsx），結果頁拿到的是
+// 選好的縣市＋路線＋方向＋站牌，不是起訖站——查的是這條路線＋這個方向的完整真實站序，
+// 每一站都帶即時到站狀態（lib/bus-routing.ts），不是像火車／高鐵／捷運那樣查「一整天的
+// 班次清單」：公車沒有時刻表，只能查「現在」。
+type BusEtaStatus = "ok" | "arriving" | "notStarted" | "pastLast" | "unavailable";
+
+interface BusStopEta {
+  name: string;
+  status: BusEtaStatus;
+  etaMinutes: number | null;
 }
 
-interface BusRow {
-  time: string;
-  arrive: string;
-  code: string;
-  duration: string;
-  stops: number;
-  isPast: boolean;
-}
-
-// 公車改成真的打 TDX 查「出發站、抵達站之間有哪些共同路線＋即時到站預估」（見
-// lib/bus-routing.ts），不再用固定 5 筆假資料。公車沒有時刻表，只能查「現在」的狀態，
-// 跟火車／高鐵／捷運不同——查到的筆數就是「現在真的有路線、有預估值」的那幾筆，不是
-// 固定 5 筆。
-function useBusResults(mode: Mode, origin: string, dest: string) {
-  const [rows, setRows] = useState<BusRow[] | null>(null);
+function useBusRouteStops(mode: Mode, city: string, route: string, direction: 0 | 1) {
+  const [stops, setStops] = useState<BusStopEta[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (mode !== "bus" || !origin || !dest) return;
-    const originCity = busCityOf(origin);
-    const destCity = busCityOf(dest);
-    if (!originCity || !destCity) return;
-
+    if (mode !== "bus" || !city || !route) return;
     let cancelled = false;
     /* eslint-disable react-hooks/set-state-in-effect */
-    setRows(null);
+    setStops(null);
     setError(null);
     /* eslint-enable react-hooks/set-state-in-effect */
-    const qs = new URLSearchParams({ originCity, origin, destCity, dest });
-    fetch(`/api/transit/bus/trip?${qs.toString()}`)
+    const qs = new URLSearchParams({ city, route, direction: String(direction) });
+    fetch(`/api/transit/bus/route-stops?${qs.toString()}`)
       .then((res) => res.json())
-      .then((data: { rows?: BusRow[]; error?: string }) => {
+      .then((data: { stops?: BusStopEta[]; error?: string }) => {
         if (cancelled) return;
         if (data.error) setError(data.error);
-        setRows(data.rows ?? []);
+        setStops(data.stops ?? []);
       })
       .catch(() => {
-        if (!cancelled) setError("公車路線查詢失敗，請稍後再試");
+        if (!cancelled) setError("公車站序查詢失敗，請稍後再試");
       });
     return () => {
       cancelled = true;
     };
-  }, [mode, origin, dest]);
+  }, [mode, city, route, direction]);
 
-  return { rows, error };
+  return { stops, error };
 }
 
 interface TraRow {
@@ -361,6 +350,10 @@ export function ResultsView({
   time,
   startTime = "",
   endTime = "",
+  busCity = "",
+  busRoute = "",
+  busDirection = 0,
+  busStop = "",
 }: {
   origin: string;
   dest: string;
@@ -372,6 +365,12 @@ export function ResultsView({
    *  顯示全部結果（只用卡片本身的 isPast 狀態去標示是否已經過期），不受這段邏輯影響。 */
   startTime?: string;
   endTime?: string;
+  /** 只有公車會用到：選好的縣市／路線／方向／站牌（見 bus-route-picker-modal.tsx），
+   *  公車不是起訖站模式，不用上面的 origin/dest。 */
+  busCity?: string;
+  busRoute?: string;
+  busDirection?: 0 | 1;
+  busStop?: string;
 }) {
   const isTrain = mode === "train";
   const isMetro = mode === "metro";
@@ -379,29 +378,29 @@ export function ResultsView({
   const isBus = mode === "bus";
   const { rows: trainRows, error: trainError } = useTrainResults(mode, origin, dest, date, time);
   const { rows: thsrRows, error: thsrError } = useThsrResults(mode, origin, dest, date, time);
-  const { rows: busRows, error: busError } = useBusResults(mode, origin, dest);
+  const { stops: busStops, error: busError } = useBusRouteStops(mode, busCity, busRoute, busDirection);
   const metroTrip = useMetroTrip(mode, origin, dest);
   const allResults: ResultRow[] = isTrain
     ? trainRows ?? []
     : isThsr
       ? thsrRows ?? []
-      : isBus
-        ? busRows ?? []
-        : isMetro
-          ? generateMetroRows(date, metroLineCodeOf(origin), metroTrip)
-          : [];
+      : isMetro
+        ? generateMetroRows(date, metroLineCodeOf(origin), metroTrip)
+        : [];
   const results = startTime && endTime ? allResults.filter((r) => r.time >= startTime && r.time <= endTime) : allResults;
   const loading =
     (isTrain && trainRows === null && !trainError) ||
     (isThsr && thsrRows === null && !thsrError) ||
-    (isBus && busRows === null && !busError) ||
+    (isBus && busStops === null && !busError) ||
     (isMetro && metroTrip === null);
   const queryError = trainError || thsrError || busError;
   const [typeTab, setTypeTab] = useState("全部");
   const visibleResults = isTrain && typeTab !== "全部" ? results.filter((r) => trainTypeOf(r.code) === typeTab) : results;
   // 點班次卡片右邊的「加入行程」時記住是哪一筆，選好分類（或新增分類）後才知道要用
-  // 哪一筆的時間／站名組出常用行程的資料。
+  // 哪一筆的時間／站名組出常用行程的資料。公車不是逐筆班次、是單一路線＋方向＋站牌的
+  // 選擇，另外用 busAddOpen 這個布林值開同一顆 TripGroupPickerModal。
   const [pickerTarget, setPickerTarget] = useState<ResultRow | null>(null);
+  const [busAddOpen, setBusAddOpen] = useState(false);
 
   async function addPickerTargetToGroup(groupId: string) {
     const target = pickerTarget;
@@ -457,6 +456,52 @@ export function ResultsView({
     }).catch(() => {});
   }
 
+  // 公車把目前選好的縣市／路線／方向／站牌整組加入分類（不是逐筆班次），時段先給預設值，
+  // 使用者之後可以在「我的行程」編輯彈窗自己改——跟台鐵/高鐵/捷運那兩個函式的差異只在
+  // FrequentTripDraft 要填的欄位形狀不同（見 lib/frequent-trips.ts 的欄位註解）。
+  function busDraft(): FrequentTripDraft {
+    return {
+      icon: FREQUENT_TRIP_ICON_OPTIONS[0].key,
+      originCity: busCity,
+      origin: busRoute,
+      destCity: "",
+      dest: busStop,
+      busDirection,
+      startTime: "08:00",
+      endTime: "09:00",
+    };
+  }
+
+  async function addBusToGroup(groupId: string) {
+    setBusAddOpen(false);
+    const existing: FrequentTripDraft[] = await fetch("/api/transit/frequent-trips")
+      .then((res) => res.json())
+      .then((data: { trips?: (FrequentTripDraft & { groupId: string })[] }) => (data.trips ?? []).filter((t) => t.groupId === groupId))
+      .catch(() => []);
+    await fetch("/api/transit/frequent-trips", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode, groupId, items: [...existing, busDraft()] }),
+    }).catch(() => {});
+  }
+
+  async function createGroupAndAddBus(name: string) {
+    setBusAddOpen(false);
+    const createData: { group?: { id: string } } = await fetch("/api/transit/trip-groups", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode, name }),
+    })
+      .then((res) => res.json())
+      .catch(() => ({}));
+    if (!createData.group) return;
+    await fetch("/api/transit/frequent-trips", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode, groupId: createData.group.id, items: [busDraft()] }),
+    }).catch(() => {});
+  }
+
   // 錨點效果：列表一出現（或切換車種頁籤）就跳到「最後一筆已過站」的卡片，讓使用者一眼
   // 看到「剛好錯過的那班」再往下接著看還沒過站的班次，不用自己往下滑過一排已發車的班次。
   // 沒有任何一筆過站（第一筆就是還沒過站）或全部都過站了，都不特別捲動，留在最上面就好。
@@ -478,20 +523,40 @@ export function ResultsView({
       <div className="sticky top-0 z-10 bg-[#F3EFFC] px-5 pb-4 pt-6">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="flex items-center gap-3 truncate">
-              <span className="text-base font-bold text-[#4A3B7C]">
-                {origin} <span aria-hidden>→</span> {dest}
-              </span>
-              <span className="truncate text-xs text-[#B3ABD4]">{loading ? "查詢中…" : `共 ${visibleResults.length} 筆班次`}</span>
-            </p>
+            {isBus ? (
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${routeBadgeStyle(busRoute)}`}>{busRoute}</span>
+                <span className="text-xs text-[#9C94C4]">{busDirection === 1 ? "返程" : "去程"}</span>
+                <span className="truncate text-base font-bold text-[#4A3B7C]">{busStop}</span>
+              </p>
+            ) : (
+              <p className="flex items-center gap-3 truncate">
+                <span className="text-base font-bold text-[#4A3B7C]">
+                  {origin} <span aria-hidden>→</span> {dest}
+                </span>
+                <span className="truncate text-xs text-[#B3ABD4]">{loading ? "查詢中…" : `共 ${visibleResults.length} 筆班次`}</span>
+              </p>
+            )}
           </div>
-          <Link
-            href="/tools/transit"
-            aria-label="返回首頁"
-            className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-[#6F5FD6]"
-          >
-            <FaIcon icon="arrow-left" size={16} />
-          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            {isBus && (
+              <button
+                type="button"
+                onClick={() => setBusAddOpen(true)}
+                aria-label="加入行程"
+                className="grid size-8 place-items-center rounded-full bg-white text-sm font-bold leading-none text-[#6F5FD6]"
+              >
+                ＋
+              </button>
+            )}
+            <Link
+              href="/tools/transit"
+              aria-label="返回首頁"
+              className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-[#6F5FD6]"
+            >
+              <FaIcon icon="arrow-left" size={16} />
+            </Link>
+          </div>
         </div>
 
         {isTrain && (
@@ -519,10 +584,31 @@ export function ResultsView({
 
       {queryError && <p className="mx-5 mt-4 rounded-2xl bg-[#FDEEF0] px-4 py-3 text-xs text-[#D1517E]">{queryError}</p>}
 
-      {!loading && !queryError && visibleResults.length === 0 && (
+      {!isBus && !loading && !queryError && visibleResults.length === 0 && (
         <p className="mx-5 mt-6 text-left text-xs text-[#B3ABD4]">目前沒有查到任何班次。</p>
       )}
 
+      {isBus && !loading && !queryError && (busStops?.length ?? 0) === 0 && (
+        <p className="mx-5 mt-6 text-left text-xs text-[#B3ABD4]">目前查不到這條路線這個方向的站序資料。</p>
+      )}
+
+      {isBus && (
+        <div className="mt-4 flex flex-col gap-2.5 px-5 pb-6">
+          {(busStops ?? []).map((s) => (
+            <div
+              key={s.name}
+              className={`flex items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.25)] ${
+                s.name === busStop ? "ring-2 ring-[#6F5FD6]" : ""
+              }`}
+            >
+              <span className="truncate text-sm font-medium text-[#4A3B7C]">{s.name}</span>
+              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${etaToneStyle(s)}`}>{etaLabel(s)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!isBus && (
       <div className="mt-4 flex flex-col gap-2.5 px-5 pb-6">
         {visibleResults.map((r, i) => (
           <div
@@ -575,7 +661,6 @@ export function ResultsView({
                 ) : null}
                 <span className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${badgeClass(mode)}`}>
                   {isTrain ? trainNumberOf(r.code) : r.code}
-                  {mode === "bus" ? " 路" : ""}
                 </span>
                 {/* 用「加入」而不是收藏愛心：單純是一次性加入分類的動作，不是可切換的收藏
                     狀態，不用額外判斷、呈現「是否已收藏」。 */}
@@ -619,8 +704,9 @@ export function ResultsView({
           </div>
         ))}
       </div>
+      )}
 
-      {visibleResults.length > 0 && (
+      {(visibleResults.length > 0 || (isBus && (busStops?.length ?? 0) > 0)) && (
         // DreamMobileShell 的卡片容器本身有 transform，是這個 fixed 按鈕的定位基準
         // （不是整個瀏覽器視窗），right-5／bottom 直接貼齊卡片邊界，不用再額外包一層
         // mx-auto + max-w-[430px] 去手動對齊寬度。
@@ -639,11 +725,14 @@ export function ResultsView({
       )}
 
       <TripGroupPickerModal
-        open={pickerTarget !== null}
+        open={pickerTarget !== null || busAddOpen}
         mode={mode}
-        onClose={() => setPickerTarget(null)}
-        onSelectGroup={addPickerTargetToGroup}
-        onCreateGroup={createGroupAndAddPickerTarget}
+        onClose={() => {
+          setPickerTarget(null);
+          setBusAddOpen(false);
+        }}
+        onSelectGroup={isBus ? addBusToGroup : addPickerTargetToGroup}
+        onCreateGroup={isBus ? createGroupAndAddBus : createGroupAndAddPickerTarget}
       />
     </div>
   );
