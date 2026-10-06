@@ -505,8 +505,12 @@ export function DreamHomeView() {
         const todayHeroBanner = heroBannerIndex !== null ? heroBanners[heroBannerIndex] : null;
         return (
           <div className="relative h-80 w-full shrink-0 overflow-hidden">
+            {/* src 要等 heroReady 才給值：一開始就先放預設圖，等資料回來發現抽到別組又要
+                換一張，使用者會看到背景圖先顯示預設圖、閃一下才換成抽到的那張。沒有 src
+                的這段時間 ImageSlot 會顯示漸層佔位，資料回來後只會載入一次最終真的要顯示
+                的那張圖，不會先載一張錯的。 */}
             <ImageSlot
-              src={todayHeroBanner?.image ?? ICON_PATHS.heroMain}
+              src={heroReady ? (todayHeroBanner?.image ?? ICON_PATHS.heroMain) : undefined}
               alt={todayHeroBanner?.title ?? "夢幻紫彩火車旅行插畫"}
               className="absolute inset-0 h-full w-full"
             />
@@ -755,9 +759,11 @@ export function DreamHomeView() {
           return (
             <div className="relative mt-6 h-28 overflow-hidden rounded-2xl">
               {/* 整個卡片背景換成真圖，不是右邊一個小圖示；圖還沒上傳前 ImageSlot 會自動退回
-                  漸層佔位，所以這裡不用再額外寫死一層漸層背景。 */}
+                  漸層佔位，所以這裡不用再額外寫死一層漸層背景。src 要等 weekendReady 才給
+                  值，理由跟上面首頁主視覺那段一樣：避免先顯示預設圖、資料回來才又換成抽到
+                  的那張，使用者會看到背景圖切換的瞬間。 */}
               <ImageSlot
-                src={todayWeekendTrip?.image ?? ICON_PATHS.weekendTripBanner}
+                src={weekendReady ? (todayWeekendTrip?.image ?? ICON_PATHS.weekendTripBanner) : undefined}
                 alt={todayWeekendTrip?.title ?? "週末小旅行"}
                 className="absolute inset-0 h-full w-full"
               />

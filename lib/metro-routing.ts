@@ -25,10 +25,27 @@ interface OdFareEntry {
   TravelDistance: number;
 }
 
+interface LineEntry {
+  LineNo: string;
+  /** 官方訂的路線顏色（例如板南線 "#0a59ae"），轉乘提示的線別代碼標籤直接用這個顏色，
+   *  不用自己另外配色——跟捷運圖上看到的顏色一致，使用者才認得出來是哪條線。 */
+  LineColor: string;
+}
+
 // 同一條線常常不只一個 entry（去＋返程、或區段車），每個 entry 只列出「這一班實際停靠」的
 // 站，不保證包含整條線全部站——所以找路徑要把每個 entry 都試過一次，不能只看第一個。
 async function getTravelTimeEntries(systemCode: string): Promise<TravelTimeEntry[]> {
   return tdxGet<TravelTimeEntry[]>(`/v2/Rail/Metro/S2STravelTime/${systemCode}`, DAY_MS);
+}
+
+// S2STravelTime 的站碼開頭字母就是這個站所屬的線別代碼（例如 BL14、O07），跟這支 /Line
+// 端點回傳的 LineNo 是同一套代碼，用來查「轉乘到哪個代碼」對應的官方路線顏色。
+async function getLines(systemCode: string): Promise<LineEntry[]> {
+  return tdxGet<LineEntry[]>(`/v2/Rail/Metro/Line/${systemCode}`, DAY_MS);
+}
+
+function lineNoOfStationId(id: string): string {
+  return id.match(/^[A-Za-z]+/)?.[0] ?? id;
 }
 
 // TicketType 1＝單程票、FareClass 1＝普通票（全票）。
@@ -98,19 +115,36 @@ function buildGraph(entries: TravelTimeEntry[]): { graph: Map<string, GraphEdge[
   return { graph, nameOf };
 }
 
+export interface TransferStep {
+  /** 要在哪一站轉乘。 */
+  stationName: string;
+  /** 轉乘之後改搭哪條線的代碼（例如 "R"、"O"），畫面上用這個代碼配官方顏色做成小標籤，
+   *  不顯示完整線名——轉乘句子本來就不短，用代碼比較不會太長。查不到才會是 undefined，
+   *  這種情況畫面上只顯示站名、不顯示線別標籤。 */
+  lineNo?: string;
+  /** lineNo 對應的官方路線顏色（例如 "#0a59ae"），查不到也會是 undefined。 */
+  lineColor?: string;
+}
+
 export interface GraphRoute {
   seconds: number;
   stops: number;
-  transferStationNames: string[];
+  transferSteps: TransferStep[];
 }
 
 // 最短路徑（Dijkstra）：圖的節點數最多幾百個，用最簡單的「每次線性掃描找最小值」就夠快，
 // 不需要另外實作優先佇列。
-function shortestPath(graph: Map<string, GraphEdge[]>, nameOf: Map<string, string>, originId: string, destId: string): GraphRoute | null {
+function shortestPath(
+  graph: Map<string, GraphEdge[]>,
+  nameOf: Map<string, string>,
+  lineColorOf: Map<string, string>,
+  originId: string,
+  destId: string,
+): GraphRoute | null {
   if (!graph.has(originId)) return null;
   const dist = new Map<string, number>([[originId, 0]]);
   const stops = new Map<string, number>([[originId, 0]]);
-  const transfers = new Map<string, string[]>([[originId, []]]);
+  const transfers = new Map<string, TransferStep[]>([[originId, []]]);
   const visited = new Set<string>();
 
   while (true) {
@@ -132,13 +166,27 @@ function shortestPath(graph: Map<string, GraphEdge[]>, nameOf: Map<string, strin
         dist.set(edge.to, candidate);
         stops.set(edge.to, (stops.get(currentId) ?? 0) + (edge.transfer ? 0 : 1));
         const priorTransfers = transfers.get(currentId) ?? [];
-        transfers.set(edge.to, edge.transfer ? [...priorTransfers, nameOf.get(currentId) ?? ""] : priorTransfers);
+        // 轉乘邊走到的那一站（edge.to）就是換上新線之後的第一站，站碼開頭字母對應的
+        // 線別就是「轉乘之後要搭的線」，不是轉乘之前那條線。
+        transfers.set(
+          edge.to,
+          edge.transfer
+            ? [
+                ...priorTransfers,
+                {
+                  stationName: nameOf.get(currentId) ?? "",
+                  lineNo: lineNoOfStationId(edge.to),
+                  lineColor: lineColorOf.get(lineNoOfStationId(edge.to)),
+                },
+              ]
+            : priorTransfers,
+        );
       }
     }
   }
 
   if (!dist.has(destId)) return null;
-  return { seconds: dist.get(destId)!, stops: (stops.get(destId) ?? 0) + 1, transferStationNames: transfers.get(destId) ?? [] };
+  return { seconds: dist.get(destId)!, stops: (stops.get(destId) ?? 0) + 1, transferSteps: transfers.get(destId) ?? [] };
 }
 
 export interface MetroTripResult {
@@ -147,8 +195,9 @@ export interface MetroTripResult {
   /** undefined 代表查不到真實票價，前端要退回顯示「—」，不要憑空編一個數字。 */
   fare?: number;
   transfer: boolean;
-  /** 需要轉乘時的轉乘站名，可能轉好幾次車就有好幾個，用「、」接起來顯示。 */
-  transferStationName?: string;
+  /** 需要轉乘時每一段轉乘的明細（在哪一站、換成哪條線），可能轉好幾次車就有好幾筆；
+   *  畫面上怎麼組字串、要不要加線別顏色標籤交給前端決定，這裡只給結構化資料。 */
+  transferSteps?: TransferStep[];
 }
 
 const AVERAGE_SPEED_KM_PER_MIN = 35 / 60; // 捷運含停站平均營運速度，查不到真實行車時間時的保險估算
@@ -158,13 +207,15 @@ export async function computeMetroTrip(systemCode: string, originDisplay: string
   const originId = stationIdOf(originDisplay);
   const destId = stationIdOf(destDisplay);
 
-  const [entries, fareEntry] = await Promise.all([
+  const [entries, fareEntry, lines] = await Promise.all([
     getTravelTimeEntries(systemCode),
     getOdFare(systemCode, originId, destId).catch(() => undefined),
+    getLines(systemCode).catch(() => []),
   ]);
 
+  const lineColorOf = new Map(lines.map((l) => [l.LineNo, l.LineColor]));
   const { graph, nameOf } = buildGraph(entries);
-  const route = shortestPath(graph, nameOf, originId, destId);
+  const route = shortestPath(graph, nameOf, lineColorOf, originId, destId);
   const fare = fareEntry ? fullFareOf(fareEntry) : undefined;
 
   if (route) {
@@ -172,8 +223,8 @@ export async function computeMetroTrip(systemCode: string, originDisplay: string
       durationMin: Math.max(1, Math.round(route.seconds / 60)),
       stops: route.stops,
       fare,
-      transfer: route.transferStationNames.length > 0,
-      transferStationName: route.transferStationNames.length > 0 ? route.transferStationNames.join("、") : undefined,
+      transfer: route.transferSteps.length > 0,
+      transferSteps: route.transferSteps.length > 0 ? route.transferSteps : undefined,
     };
   }
 

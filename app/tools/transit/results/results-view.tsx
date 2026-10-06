@@ -13,13 +13,6 @@ import { formatDuration, todayInTaipei, nowHHmmInTaipei } from "@/lib/tdx-time";
 
 export type Mode = "bus" | "train" | "metro" | "thsr";
 
-const MODE_META: Record<Mode, { label: string }> = {
-  train: { label: "火車" },
-  thsr: { label: "高鐵" },
-  bus: { label: "公車" },
-  metro: { label: "捷運" },
-};
-
 // TDX 回傳的車種名稱其實很雜（自強號依車型/有無自行車車廂細分成好幾種寫法，例如
 // 「自強(3000)(EMU3000 型電車) 161 次」「自強(推拉式自強號且有自行車車廂) ...」，雖然
 // API 那邊已經先簡化過一次，這裡還是用「開頭是不是這個車種」判斷比較保險）。
@@ -72,6 +65,15 @@ async function resolveCityFor(mode: Mode, stationName: string): Promise<string> 
   return found ?? Object.keys(cities)[0];
 }
 
+/** 捷運轉乘其中一段的明細，跟 lib/metro-routing.ts 的 TransferStep 同一個形狀——這個檔案
+ *  是 "use client"，不能直接 import 那邊（會把伺服器端的 TDX 金鑰牽連進前端 bundle），
+ *  所以在這裡另外宣告一份一樣的形狀，不是真的共用同一個型別。 */
+interface TransferStep {
+  stationName: string;
+  lineNo?: string;
+  lineColor?: string;
+}
+
 interface ResultRow {
   time: string;
   arrive: string;
@@ -84,9 +86,9 @@ interface ResultRow {
   operatingNote?: string;
   delayMinutes?: number;
   isPast?: boolean;
-  /** 只有捷運會用到：中途要不要轉乘、轉乘站名（查得到的話）。 */
+  /** 只有捷運會用到：中途要不要轉乘、每一段轉乘的明細（查得到的話）。 */
   transfer?: boolean;
-  transferStationName?: string;
+  transferSteps?: TransferStep[];
 }
 
 // 捷運從早上 6 點營運到半夜 12 點，班距用 8 分鐘一班的平均值墊著（沒有細分尖峰／離峰，
@@ -110,6 +112,11 @@ function addMinutes(hhmm: string, minutes: number): string {
 
 function generateMetroRows(date: string, lineCode: string, trip: MetroTripInfo | null): ResultRow[] {
   const today = todayInTaipei();
+  // 從「我的行程」常用行程卡片點「搜尋班次」進來時網址不會帶 date 參數（見 page.tsx），
+  // date 會是空字串；空字串在字串比較裡永遠小於任何日期字串，下面的 isPast 判斷會整批
+  // 誤判成「已經過期」，所有班次卡片都灰掉——火車／高鐵是在各自的 API route 那邊用
+  // `date || today` 擋掉同樣的狀況，捷運這裡是純前端算的，要自己補這個預設值。
+  const effectiveDate = date || today;
   const nowTime = nowHHmmInTaipei();
   const durationMin = trip?.durationMin ?? 40;
   const rows: ResultRow[] = [];
@@ -123,8 +130,8 @@ function generateMetroRows(date: string, lineCode: string, trip: MetroTripInfo |
       stops: trip?.stops ?? 12,
       fare: trip ? (trip.fare !== undefined ? `NT$ ${trip.fare}` : "—") : undefined,
       transfer: trip?.transfer,
-      transferStationName: trip?.transferStationName,
-      isPast: date < today || (date === today && t < nowTime),
+      transferSteps: trip?.transferSteps,
+      isPast: effectiveDate < today || (effectiveDate === today && t < nowTime),
     });
   }
   return rows;
@@ -142,7 +149,7 @@ interface MetroTripInfo {
   stops: number;
   fare?: number;
   transfer: boolean;
-  transferStationName?: string;
+  transferSteps?: TransferStep[];
 }
 
 // 捷運車程時間／停靠站數／票價改成查真實資料（lib/metro-routing.ts），不是固定的墊檔數字
@@ -159,8 +166,17 @@ function useMetroTrip(mode: Mode, origin: string, dest: string): MetroTripInfo |
     if (!originSystem || !destSystem) return;
 
     if (originSystem !== destSystem) {
+      // 跨系統沒有統一的站間行車時間資料查不出「轉乘之後要搭哪條線」，轉乘提示只能先
+      // 顯示到站名這一層，不像同系統那樣能附上線別代碼標籤。
+      const transferStation = findCrossSystemTransferStation(originSystem, destSystem);
       /* eslint-disable-next-line react-hooks/set-state-in-effect */
-      setTrip({ durationMin: 40, stops: 12, fare: 30, transfer: true, transferStationName: findCrossSystemTransferStation(originSystem, destSystem) });
+      setTrip({
+        durationMin: 40,
+        stops: 12,
+        fare: 30,
+        transfer: true,
+        transferSteps: transferStation ? [{ stationName: transferStation }] : undefined,
+      });
       return;
     }
 
@@ -352,7 +368,6 @@ export function ResultsView({
   startTime?: string;
   endTime?: string;
 }) {
-  const meta = MODE_META[mode];
   const isTrain = mode === "train";
   const isMetro = mode === "metro";
   const isThsr = mode === "thsr";
@@ -459,9 +474,7 @@ export function ResultsView({
               <span className="text-base font-bold text-[#4A3B7C]">
                 {origin} <span aria-hidden>→</span> {dest}
               </span>
-              <span className="truncate text-xs text-[#B3ABD4]">
-                {meta.label}・{loading ? "查詢中…" : `共 ${visibleResults.length} 筆班次`}
-              </span>
+              <span className="truncate text-xs text-[#B3ABD4]">{loading ? "查詢中…" : `共 ${visibleResults.length} 筆班次`}</span>
             </p>
           </div>
           <Link
@@ -516,10 +529,30 @@ export function ResultsView({
                 <p className="truncate text-sm font-semibold text-[#4A3B7C]">
                   {r.time} <span aria-hidden>→</span> {r.arrive}
                 </p>
-                {/* 高鐵下方格線本來就有「車程時間」那一欄，這裡不用重複顯示一次。 */}
-                {!isThsr && (
-                  <p className="mt-0.5 truncate text-xs text-[#9C94C4]">{isTrain && r.operatingNote ? r.operatingNote : r.duration}</p>
-                )}
+                {/* 高鐵下方格線本來就有「車程時間」那一欄，這裡不用重複顯示一次；捷運如果
+                    需要轉乘，這裡改顯示轉乘明細（哪一站、轉哪條線），車程時間一樣看下面
+                    格線那欄就好，不用在這裡重複、也不用犧牲轉乘資訊的版面。 */}
+                {!isThsr &&
+                  (isMetro && r.transfer && r.transferSteps && r.transferSteps.length > 0 ? (
+                    <p className="mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-1 text-xs text-[#9C94C4]">
+                      {r.transferSteps.map((step, idx, arr) => (
+                        <span key={idx} className="inline-flex items-center gap-1">
+                          於{step.stationName}轉乘
+                          {step.lineNo && (
+                            <span
+                              className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+                              style={{ backgroundColor: step.lineColor ? `${step.lineColor}1F` : "#E6EEFC", color: step.lineColor ?? "#4E7FE0" }}
+                            >
+                              {step.lineNo}
+                            </span>
+                          )}
+                          {idx < arr.length - 1 && "、"}
+                        </span>
+                      ))}
+                    </p>
+                  ) : (
+                    <p className="mt-0.5 truncate text-xs text-[#9C94C4]">{isTrain && r.operatingNote ? r.operatingNote : r.duration}</p>
+                  ))}
               </div>
 
               <div className="flex shrink-0 items-center gap-1.5">
@@ -532,11 +565,6 @@ export function ResultsView({
                     {r.delayMinutes > 0 ? `誤點 ${r.delayMinutes} 分` : "準時"}
                   </span>
                 ) : null}
-                {r.transfer && (
-                  <span className="rounded-full bg-[#FDE7D8] px-2.5 py-0.5 text-[11px] font-semibold text-[#D97A3D]">
-                    {r.transferStationName ? `於${r.transferStationName}轉乘` : "需轉乘"}
-                  </span>
-                )}
                 <span className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${badgeClass(mode)}`}>
                   {isTrain ? trainNumberOf(r.code) : r.code}
                   {mode === "bus" ? " 路" : ""}
