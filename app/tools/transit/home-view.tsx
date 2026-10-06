@@ -584,23 +584,13 @@ export function DreamHomeView() {
                 </div>
               ) : todayHeroBanner ? (
                 <>
-                  <p className="text-2xl font-bold leading-snug">
-                    <span aria-hidden>✦</span> {todayHeroBanner.title} <span aria-hidden>✦</span>
-                  </p>
-                  <p className="mt-2 flex items-center gap-1 text-sm opacity-90">
-                    <span aria-hidden>✦</span> {todayHeroBanner.caption} <span aria-hidden>✦</span>
-                  </p>
+                  <p className="text-2xl font-bold leading-snug">{todayHeroBanner.title}</p>
+                  <p className="mt-2 text-sm opacity-90">{todayHeroBanner.caption}</p>
                 </>
               ) : (
                 <>
-                  <p className="text-2xl font-bold leading-snug">
-                    下一站， <span aria-hidden>✦</span>
-                    <br />
-                    去看更大的世界 <span aria-hidden>✦</span>
-                  </p>
-                  <p className="mt-2 flex items-center gap-1 text-sm opacity-90">
-                    <span aria-hidden>✦</span> 一段旅程，都是生活的延伸 <span aria-hidden>✦</span>
-                  </p>
+                  <p className="text-2xl font-bold leading-snug">下一站，去看更大的世界</p>
+                  <p className="mt-2 text-sm opacity-90">一段旅程，都是生活的延伸</p>
                 </>
               )}
             </div>

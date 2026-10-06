@@ -23,6 +23,10 @@ export default function ResultsPage() {
   const busRoute = params.get("busRoute") ?? "";
   const busDirection = params.get("busDirection") === "1" ? 1 : 0;
   const busStop = params.get("busStop") ?? "";
+  // 從「我的行程」點「搜尋班次」進來時，返回按鈕要回到我的行程（而且會自動停在使用者
+  // 離開前的那個分頁，見 trips-view.tsx 的 LAST_TAB_KEY），不是回到首頁；首頁搜尋進來的
+  // 話維持原本回首頁的行為。
+  const from = params.get("from") === "trips" ? "trips" : "home";
   return (
     <ResultsView
       origin={origin}
@@ -36,6 +40,7 @@ export default function ResultsPage() {
       busRoute={busRoute}
       busDirection={busDirection}
       busStop={busStop}
+      from={from}
     />
   );
 }

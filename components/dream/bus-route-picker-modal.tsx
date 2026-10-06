@@ -112,6 +112,40 @@ const KEYPAD_ROWS: { label: string; insert: string; tone?: keyof typeof ROUTE_CO
 
 type Step = { kind: "search" } | { kind: "routeDetail"; routeName: string } | { kind: "stopDetail"; stopName: string };
 
+// 路線詳情、站牌詳情兩個 step 都需要「去程／返程切換 tabs」＋「重新搜尋」並排在同一行，
+// 重新搜尋固定靠右——抽成共用小元件，不要兩處各寫一份幾乎一樣的 JSX。
+function DirectionTabsRow({
+  direction,
+  onChangeDirection,
+  onBack,
+}: {
+  direction: 0 | 1;
+  onChangeDirection: (d: 0 | 1) => void;
+  onBack: () => void;
+}) {
+  return (
+    <div className="mb-1 flex items-center justify-between gap-2">
+      <div className="inline-flex items-center gap-1 rounded-full bg-[#F3EFFC] p-1">
+        {([0, 1] as const).map((d) => (
+          <button
+            key={d}
+            type="button"
+            onClick={() => onChangeDirection(d)}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+              direction === d ? "bg-white text-[#6F5FD6] shadow-[0_2px_8px_-2px_rgba(111,95,214,0.4)]" : "text-[#9C94C4]"
+            }`}
+          >
+            {d === 0 ? "去程" : "返程"}
+          </button>
+        ))}
+      </div>
+      <button type="button" onClick={onBack} className="shrink-0 text-xs font-medium text-[#6F5FD6]">
+        ‹ 重新搜尋
+      </button>
+    </div>
+  );
+}
+
 export function BusRoutePickerModal({
   open,
   initial,
@@ -224,6 +258,10 @@ export function BusRoutePickerModal({
     };
   }, [stopNameForDetail, cityName]);
 
+  // 站牌詳情也要能用去程／返程 tabs 切換：查回來的清單本來就每筆各自帶真實方向，這裡只是
+  // 依目前選的方向過濾顯示，不用另外多打一次 API。
+  const stopRoutesForDirection = (stopRoutes ?? []).filter((r) => r.direction === direction);
+
   if (!open) return null;
 
   function close() {
@@ -253,16 +291,6 @@ export function BusRoutePickerModal({
       onClose={close}
       bodyClassName={step.kind === "search" ? "flex flex-col gap-3 px-5 py-5" : "flex flex-col gap-2 px-5 py-5"}
     >
-      {step.kind !== "search" && (
-        <button
-          type="button"
-          onClick={() => setStep({ kind: "search" })}
-          className="mb-1 flex w-fit items-center gap-1 text-xs font-medium text-[#6F5FD6]"
-        >
-          ‹ 重新搜尋
-        </button>
-      )}
-
       {step.kind === "search" && (
         <>
           <div className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-0.5">
@@ -376,20 +404,7 @@ export function BusRoutePickerModal({
 
       {step.kind === "routeDetail" && (
         <>
-          <div className="mb-1 inline-flex w-fit items-center gap-1 self-start rounded-full bg-[#F3EFFC] p-1">
-            {([0, 1] as const).map((d) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => setDirection(d)}
-                className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
-                  direction === d ? "bg-white text-[#6F5FD6] shadow-[0_2px_8px_-2px_rgba(111,95,214,0.4)]" : "text-[#9C94C4]"
-                }`}
-              >
-                {d === 0 ? "去程" : "返程"}
-              </button>
-            ))}
-          </div>
+          <DirectionTabsRow direction={direction} onChangeDirection={setDirection} onBack={() => setStep({ kind: "search" })} />
           <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#F2EEFA]">
             {routeStops === null ? (
               <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">查詢中…</p>
@@ -415,30 +430,32 @@ export function BusRoutePickerModal({
       )}
 
       {step.kind === "stopDetail" && (
-        <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#F2EEFA]">
-          {stopRoutes === null ? (
-            <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">查詢中…</p>
-          ) : stopRoutesError ? (
-            <p className="px-4 py-3 text-center text-xs text-[#D1517E]">{stopRoutesError}</p>
-          ) : stopRoutes.length === 0 ? (
-            <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">目前沒有路線經過這一站</p>
-          ) : (
-            stopRoutes.map((r) => (
-              <button
-                key={`${r.routeName}-${r.direction}`}
-                type="button"
-                onClick={() => pickFromStopDetail(r.routeName, r.direction, step.stopName)}
-                className="flex items-center justify-between gap-2 px-4 py-3 text-left transition-colors hover:bg-[#F8F6FD]"
-              >
-                <span className="flex items-center gap-1.5">
+        <>
+          <DirectionTabsRow direction={direction} onChangeDirection={setDirection} onBack={() => setStep({ kind: "search" })} />
+          <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#F2EEFA]">
+            {stopRoutes === null ? (
+              <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">查詢中…</p>
+            ) : stopRoutesError ? (
+              <p className="px-4 py-3 text-center text-xs text-[#D1517E]">{stopRoutesError}</p>
+            ) : stopRoutes.length === 0 ? (
+              <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">目前沒有路線經過這一站</p>
+            ) : stopRoutesForDirection.length === 0 ? (
+              <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">這個方向目前沒有路線經過這一站</p>
+            ) : (
+              stopRoutesForDirection.map((r) => (
+                <button
+                  key={r.routeName}
+                  type="button"
+                  onClick={() => pickFromStopDetail(r.routeName, r.direction, step.stopName)}
+                  className="flex items-center justify-between gap-2 px-4 py-3 text-left transition-colors hover:bg-[#F8F6FD]"
+                >
                   <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${routeBadgeStyle(r.routeName)}`}>{r.routeName}</span>
-                  <span className="text-[11px] text-[#B3ABD4]">{r.direction === 0 ? "去程" : "返程"}</span>
-                </span>
-                <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${etaToneStyle(r)}`}>{etaLabel(r)}</span>
-              </button>
-            ))
-          )}
-        </div>
+                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${etaToneStyle(r)}`}>{etaLabel(r)}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </>
       )}
     </BottomSheetModal>
   );

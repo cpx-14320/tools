@@ -27,7 +27,6 @@ export function CaptionImageEditorModal({
   description,
   itemLabel,
   imageOptions,
-  defaultDrafts,
   initial,
   onClose,
   onSave,
@@ -42,14 +41,15 @@ export function CaptionImageEditorModal({
   /** 背景圖只能從這幾張裡選，不給使用者自己輸入路徑／上傳——避免存進資料庫的路徑打錯字
    *  或指到不存在的檔案，跟備忘錄的圖示選擇用同一套做法。 */
   imageOptions: string[];
-  /** 使用者還沒存過任何一組時，先墊著的預設草稿清單。 */
-  defaultDrafts: () => CaptionImageDraft[];
   initial: CaptionImageInitial[];
   onClose: () => void;
   onSave: (items: CaptionImageDraft[]) => void;
 }) {
+  // 使用者還沒存過任何一組時，清單就是空的，不要先塞一批假資料讓使用者自己刪——首頁那邊
+  // 本來就有「還沒設定時顯示預設文案」的退回邏輯（見 home-view.tsx／more-view.tsx），
+  // 不需要在編輯彈窗裡重複一份。
   const [items, setItems] = useState<CaptionImageDraft[]>(
-    initial.length > 0 ? initial.map((t) => ({ id: t.id, title: t.title, caption: t.caption, image: t.image })) : defaultDrafts(),
+    initial.map((t) => ({ id: t.id, title: t.title, caption: t.caption, image: t.image })),
   );
 
   if (!open) return null;

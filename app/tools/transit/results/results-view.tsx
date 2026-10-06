@@ -354,6 +354,7 @@ export function ResultsView({
   busRoute = "",
   busDirection = 0,
   busStop = "",
+  from = "home",
 }: {
   origin: string;
   dest: string;
@@ -371,6 +372,9 @@ export function ResultsView({
   busRoute?: string;
   busDirection?: 0 | 1;
   busStop?: string;
+  /** "trips"＝從「我的行程」點「搜尋班次」進來，返回按鈕要回我的行程（會自動停在離開
+   *  前的分頁，見 trips-view.tsx 的 LAST_TAB_KEY）；"home"＝從首頁搜尋進來，回首頁。 */
+  from?: "home" | "trips";
 }) {
   const isTrain = mode === "train";
   const isMetro = mode === "metro";
@@ -550,8 +554,8 @@ export function ResultsView({
               </button>
             )}
             <Link
-              href="/tools/transit"
-              aria-label="返回首頁"
+              href={from === "trips" ? "/tools/transit/trips" : "/tools/transit"}
+              aria-label={from === "trips" ? "返回我的行程" : "返回首頁"}
               className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-[#6F5FD6]"
             >
               <FaIcon icon="arrow-left" size={16} />

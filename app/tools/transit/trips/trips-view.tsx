@@ -304,12 +304,14 @@ export function TripsView() {
                         <ImageSlot src={frequentTripIconPath(f.icon)} alt={`${f.origin}到${f.dest}`} className="size-12 shrink-0 rounded-xl" />
                         <div className="min-w-0 flex-1">
                           {tab === "bus" ? (
-                            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 truncate text-sm font-semibold text-[#4A3B7C]">
+                            <>
                               <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${routeBadgeStyle(f.origin)}`}>{f.origin}</span>
-                              <span className="text-xs font-normal text-[#9C94C4]">{f.busDirection === 1 ? "返程" : "去程"}</span>
-                              <span aria-hidden>·</span>
-                              {f.dest}
-                            </p>
+                              <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 truncate text-sm font-semibold text-[#4A3B7C]">
+                                <span className="text-xs font-normal text-[#9C94C4]">{f.busDirection === 1 ? "返程" : "去程"}</span>
+                                <span aria-hidden>·</span>
+                                {f.dest}
+                              </p>
+                            </>
                           ) : (
                             <p className="truncate text-sm font-semibold text-[#4A3B7C]">
                               {f.origin} <span aria-hidden>⇄</span> {f.dest}
