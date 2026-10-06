@@ -258,18 +258,26 @@ export function TripsView() {
       </div>
 
       {!tripsReady ? (
-        // 骨架列數跟著目前車種上次記住的分類數／行程數猜，不是固定寫死——分類跟底下的
-        // 行程筆數把它平均分配到每個分類骨架下面，湊不滿一個分類至少顯示一列。
-        Array.from({ length: groupSkeletonCount }, (_, groupIndex) => (
-          <div key={groupIndex} className="mt-5 flex flex-col gap-2.5">
-            <div className="h-4 w-24 animate-pulse rounded-full bg-[#E4DBF9]" />
-            {Array.from({ length: Math.max(1, Math.round(tripSkeletonCount / groupSkeletonCount)) }, (_, i) => (
-              <div key={i} className="rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
-                <ListRowSkeleton iconSize={48} />
-              </div>
-            ))}
-          </div>
-        ))
+        groupSkeletonCount === 0 ? (
+          // 沒有上次記住的筆數可以猜（新帳號、或這個車種從來沒存過分類）時，骨架列數會是
+          // 0，Array.from 出來是空陣列、畫面上什麼都不會顯示——在真正查完之前會有一段空白，
+          // 容易讓人誤會頁面卡住，所以這裡額外補一個「載入中」文字，跟 trip-group-picker-modal
+          // 的清單載入中同一套文字樣式。
+          <p className="mt-5 text-xs text-[#B3ABD4]">載入中…</p>
+        ) : (
+          // 骨架列數跟著目前車種上次記住的分類數／行程數猜，不是固定寫死——分類跟底下的
+          // 行程筆數把它平均分配到每個分類骨架下面，湊不滿一個分類至少顯示一列。
+          Array.from({ length: groupSkeletonCount }, (_, groupIndex) => (
+            <div key={groupIndex} className="mt-5 flex flex-col gap-2.5">
+              <div className="h-4 w-24 animate-pulse rounded-full bg-[#E4DBF9]" />
+              {Array.from({ length: Math.max(1, Math.round(tripSkeletonCount / groupSkeletonCount)) }, (_, i) => (
+                <div key={i} className="rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
+                  <ListRowSkeleton iconSize={48} />
+                </div>
+              ))}
+            </div>
+          ))
+        )
       ) : (
         <>
           {groupsForTab.map((g) => {

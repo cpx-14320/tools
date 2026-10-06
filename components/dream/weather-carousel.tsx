@@ -14,6 +14,11 @@ export interface WeatherBlock {
   district: string;
 }
 
+// 今天／明天兩張輪播卡中間的間距（px）——拖曳切換時中間會露出這段背景，不會兩張卡
+// 緊貼在一起；平移距離要連這段間距一起算進去（見下面 translateX 的 calc），不然卡片會
+// 疊到彼此身上或切換後對不齊視窗邊緣。
+const CARD_GAP_PX = 8;
+
 const DAY_OFFSETS = [0, 1] as const;
 const DAY_LABEL: Record<(typeof DAY_OFFSETS)[number], string> = { 0: "今天", 1: "明天" };
 
@@ -165,9 +170,9 @@ export function WeatherCarousel({ blocks }: { blocks: WeatherBlock[] }) {
         onPointerCancel={endDrag}
       >
         <div
-          className="flex"
+          className="flex gap-2"
           style={{
-            transform: `translateX(calc(${-safeIndex * 100}% + ${dragOffset}px))`,
+            transform: `translateX(calc(${-safeIndex * 100}% + ${-safeIndex * CARD_GAP_PX}px + ${dragOffset}px))`,
             transition: dragging ? "none" : "transform 280ms ease",
           }}
         >
