@@ -111,6 +111,12 @@ function addMinutes(hhmm: string, minutes: number): string {
 }
 
 function generateMetroRows(date: string, lineCode: string, trip: MetroTripInfo | null): ResultRow[] {
+  // trip 還是 null 代表真實資料（車程時間／站數／票價／轉乘）還沒查回來，不能先用假的
+  // 預設值（車程 40 分、12 站…）產生一整天的班次，不然使用者會先看到這組錯的資料，
+  // 等 API 回來又整批跳成正確的、等於閃一下——這裡改成直接回傳空陣列，讓外層的
+  // loading 狀態接手顯示「查詢中…」，跟火車／高鐵／公車同一套做法。
+  if (!trip) return [];
+
   const today = todayInTaipei();
   // 從「我的行程」常用行程卡片點「搜尋班次」進來時網址不會帶 date 參數（見 page.tsx），
   // date 會是空字串；空字串在字串比較裡永遠小於任何日期字串，下面的 isPast 判斷會整批
@@ -118,19 +124,18 @@ function generateMetroRows(date: string, lineCode: string, trip: MetroTripInfo |
   // `date || today` 擋掉同樣的狀況，捷運這裡是純前端算的，要自己補這個預設值。
   const effectiveDate = date || today;
   const nowTime = nowHHmmInTaipei();
-  const durationMin = trip?.durationMin ?? 40;
   const rows: ResultRow[] = [];
   for (let totalMin = METRO_SERVICE_START_MIN; totalMin < METRO_SERVICE_END_MIN; totalMin += METRO_INTERVAL_MIN) {
     const t = minutesToHHMM(totalMin);
     rows.push({
       time: t,
-      arrive: addMinutes(t, durationMin),
+      arrive: addMinutes(t, trip.durationMin),
       code: lineCode,
-      duration: formatDuration(durationMin),
-      stops: trip?.stops ?? 12,
-      fare: trip ? (trip.fare !== undefined ? `NT$ ${trip.fare}` : "—") : undefined,
-      transfer: trip?.transfer,
-      transferSteps: trip?.transferSteps,
+      duration: formatDuration(trip.durationMin),
+      stops: trip.stops,
+      fare: trip.fare !== undefined ? `NT$ ${trip.fare}` : "—",
+      transfer: trip.transfer,
+      transferSteps: trip.transferSteps,
       isPast: effectiveDate < today || (effectiveDate === today && t < nowTime),
     });
   }
@@ -387,7 +392,10 @@ export function ResultsView({
           : [];
   const results = startTime && endTime ? allResults.filter((r) => r.time >= startTime && r.time <= endTime) : allResults;
   const loading =
-    (isTrain && trainRows === null && !trainError) || (isThsr && thsrRows === null && !thsrError) || (isBus && busRows === null && !busError);
+    (isTrain && trainRows === null && !trainError) ||
+    (isThsr && thsrRows === null && !thsrError) ||
+    (isBus && busRows === null && !busError) ||
+    (isMetro && metroTrip === null);
   const queryError = trainError || thsrError || busError;
   const [typeTab, setTypeTab] = useState("全部");
   const visibleResults = isTrain && typeTab !== "全部" ? results.filter((r) => trainTypeOf(r.code) === typeTab) : results;

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { type Mode } from "./stations-data";
 import { DISTRICTS_BY_CITY } from "@/lib/cwa-districts";
+import { StationPickerModal } from "./station-picker-modal";
 import type { WeatherBlock } from "./weather-carousel";
 
 const MODES: { key: Mode; label: string }[] = [
@@ -23,59 +24,6 @@ function newWeatherBlock(): WeatherBlock {
   return { id: crypto.randomUUID(), city, district: DISTRICTS_BY_CITY[city][0] };
 }
 
-/** 縣市＋鄉鎮區兩層下拉選單，city/district 其中一個不在清單裡時自動退回清單第一個，
- *  避免存起來的舊資料跟現在的行政區清單對不起來而整個壞掉。 */
-function CityDistrictPicker({
-  city,
-  district,
-  onChangeCity,
-  onChangeDistrict,
-}: {
-  city: string;
-  district: string;
-  onChangeCity: (city: string) => void;
-  onChangeDistrict: (district: string) => void;
-}) {
-  const safeCity = DISTRICTS_BY_CITY[city] ? city : Object.keys(DISTRICTS_BY_CITY)[0];
-  const districts = DISTRICTS_BY_CITY[safeCity] ?? [];
-  const safeDistrict = districts.includes(district) ? district : districts[0];
-
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] px-3 py-3">
-        <select
-          value={safeCity}
-          onChange={(e) => {
-            const nextCity = e.target.value;
-            onChangeCity(nextCity);
-            onChangeDistrict(DISTRICTS_BY_CITY[nextCity][0]);
-          }}
-          className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
-        >
-          {Object.keys(DISTRICTS_BY_CITY).map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] px-3 py-3">
-        <select
-          value={safeDistrict}
-          onChange={(e) => onChangeDistrict(e.target.value)}
-          className="flex-1 appearance-none bg-transparent text-sm font-medium text-[#4A3B7C] outline-none"
-        >
-          {districts.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-      </div>
-    </div>
-  );
-}
-
 export function HomeSettingsModal({
   open,
   initial,
@@ -88,6 +36,10 @@ export function HomeSettingsModal({
   onSave: (defaults: HomeDefaults) => void;
 }) {
   const [draft, setDraft] = useState<HomeDefaults>(initial);
+  // 天氣地區改用跟首頁出發站／抵達站同一顆 StationPickerModal（城市＋鄉鎮區雙欄彈窗），
+  // 不用瀏覽器原生的 <select>；好幾個區塊共用同一顆彈窗實例，用這個 index 記住現在在editing
+  // 哪一個區塊，不用每個區塊各自掛一顆。
+  const [blockEditIndex, setBlockEditIndex] = useState<number | null>(null);
 
   if (!open) return null;
 
@@ -98,6 +50,9 @@ export function HomeSettingsModal({
   function removeBlock(index: number) {
     setDraft((d) => ({ ...d, weatherBlocks: d.weatherBlocks.filter((_, i) => i !== index) }));
   }
+
+  const editingBlock = blockEditIndex !== null ? draft.weatherBlocks[blockEditIndex] : null;
+  const editingSafeCity = editingBlock && DISTRICTS_BY_CITY[editingBlock.city] ? editingBlock.city : Object.keys(DISTRICTS_BY_CITY)[0];
 
   return (
     <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30" onClick={onClose}>
@@ -137,25 +92,32 @@ export function HomeSettingsModal({
             <p className="text-xs font-medium text-[#9C94C4]">
               天氣地區（每個區塊會自動展開成「今天」「明天」兩張首頁輪播卡，可新增多個區塊）
             </p>
-            {draft.weatherBlocks.map((block, i) => (
-              <div key={block.id} className="flex flex-col gap-2.5 rounded-2xl border border-[#F2EEFA] p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-[#9C94C4]">天氣地區 第 {i + 1} 區塊</span>
-                  {draft.weatherBlocks.length > 1 && (
-                    <button type="button" onClick={() => removeBlock(i)} className="text-xs font-medium text-[#D1517E]">
-                      刪除
-                    </button>
-                  )}
-                </div>
+            {draft.weatherBlocks.map((block, i) => {
+              const safeCity = DISTRICTS_BY_CITY[block.city] ? block.city : Object.keys(DISTRICTS_BY_CITY)[0];
+              const districts = DISTRICTS_BY_CITY[safeCity] ?? [];
+              const safeDistrict = districts.includes(block.district) ? block.district : districts[0];
+              return (
+                <div key={block.id} className="flex flex-col gap-2.5 rounded-2xl border border-[#F2EEFA] p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-[#9C94C4]">天氣地區 第 {i + 1} 區塊</span>
+                    {draft.weatherBlocks.length > 1 && (
+                      <button type="button" onClick={() => removeBlock(i)} className="text-xs font-medium text-[#D1517E]">
+                        刪除
+                      </button>
+                    )}
+                  </div>
 
-                <CityDistrictPicker
-                  city={block.city}
-                  district={block.district}
-                  onChangeCity={(c) => updateBlock(i, { city: c })}
-                  onChangeDistrict={(d) => updateBlock(i, { district: d })}
-                />
-              </div>
-            ))}
+                  <button type="button" onClick={() => setBlockEditIndex(i)} className="grid grid-cols-2 gap-2 text-left">
+                    <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                      <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{safeCity}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                      <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{safeDistrict}</span>
+                    </div>
+                  </button>
+                </div>
+              );
+            })}
 
             <button
               type="button"
@@ -166,6 +128,20 @@ export function HomeSettingsModal({
             </button>
           </div>
         </div>
+
+        <StationPickerModal
+          key={blockEditIndex !== null ? `block-${blockEditIndex}` : "block-closed"}
+          open={blockEditIndex !== null}
+          title="選擇天氣地區"
+          cities={DISTRICTS_BY_CITY}
+          initialCity={editingSafeCity}
+          initialStation={editingBlock?.district ?? ""}
+          onClose={() => setBlockEditIndex(null)}
+          onSave={(city, district) => {
+            if (blockEditIndex !== null) updateBlock(blockEditIndex, { city, district });
+            setBlockEditIndex(null);
+          }}
+        />
 
         <div className="flex items-center justify-end gap-2 border-t border-[#ECE4FA] px-5 py-4">
           <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-[#9C94C4] hover:text-[#6F5FD6]">
