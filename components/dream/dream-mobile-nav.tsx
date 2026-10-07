@@ -8,7 +8,7 @@ import { ICON_PATHS } from "./icon-paths";
 const tabs = [
   { href: "/tools/transit", label: "首頁", icon: ICON_PATHS.navHome },
   { href: "/tools/transit/trips", label: "我的行程", icon: ICON_PATHS.navTrips },
-  { href: "/tools/transit/more", label: "其他", icon: ICON_PATHS.navOther },
+  { href: "/tools/transit/more", label: "設定", icon: ICON_PATHS.navOther },
 ];
 
 // 搜尋結果頁 /tools/transit/results 本身不屬於任何一個分頁，單純比對 pathname 的話

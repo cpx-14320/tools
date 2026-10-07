@@ -142,7 +142,7 @@ export function MoreView() {
 
   return (
     <div className="flex flex-col px-5 pb-6 pt-6">
-      <h1 className="text-xl font-bold text-[#4A3B7C]">其他</h1>
+      <h1 className="text-xl font-bold text-[#4A3B7C]">設定</h1>
 
       <div className="mt-5 flex flex-col gap-5">
         <div>

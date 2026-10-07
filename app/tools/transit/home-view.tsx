@@ -307,7 +307,7 @@ export function DreamHomeView() {
         setMemos(result);
         saveSkeletonCount(MEMOS_COUNT_KEY, result.length);
       })
-      .catch(() => {});
+      .catch(() => { });
     setMemoEditorOpen(false);
   }
   const stationLabel = "站";
@@ -354,7 +354,7 @@ export function DreamHomeView() {
         for (const c of data.cities) map[c.city] = c.stations.map((s) => s.name);
         setTrainCities(map);
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       cancelled = true;
     };
@@ -378,13 +378,13 @@ export function DreamHomeView() {
     // 驗證不過的整個丟掉；驗證完一個都不剩才退回預設的兩個區塊。
     const validBlocks = Array.isArray(saved.weatherBlocks)
       ? saved.weatherBlocks.filter(
-          (b): b is WeatherBlock =>
-            !!b &&
-            typeof b.id === "string" &&
-            typeof b.city === "string" &&
-            typeof b.district === "string" &&
-            !!DISTRICTS_BY_CITY[b.city]?.includes(b.district),
-        )
+        (b): b is WeatherBlock =>
+          !!b &&
+          typeof b.id === "string" &&
+          typeof b.city === "string" &&
+          typeof b.district === "string" &&
+          !!DISTRICTS_BY_CITY[b.city]?.includes(b.district),
+      )
       : [];
     // 這個 setState 是故意同步呼叫的：頁面掛載後才讀得到 localStorage，讀到就要立刻套用
     // 這組預設值，不是在訂閱外部事件、也不會連鎖觸發其他 effect，屬於這個規則容許的例外。
@@ -560,7 +560,7 @@ export function DreamHomeView() {
         );
       })()}
       <div className="relative z-10 -mt-16 flex-1 rounded-t-[2rem] bg-white px-5 pb-6 pt-5 shadow-[0_-8px_24px_-8px_rgba(111,95,214,0.2)]">
-        <div className="mb-4">
+        <div className="mb-2">
           {weatherReady ? <WeatherCarousel blocks={weatherBlocks} /> : <WeatherCarouselSkeleton />}
         </div>
         <div className="flex items-center gap-2">
@@ -573,9 +573,8 @@ export function DreamHomeView() {
                 key={m.key}
                 type="button"
                 onClick={() => selectMode(m.key)}
-                className={`flex h-[80px] flex-1 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2.5 text-xs transition-colors ${
-                  active ? "bg-[#EFEAFC] font-semibold text-[#6F5FD6]" : "text-[#9C94C4]"
-                }`}
+                className={`flex h-[80px] flex-1 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2.5 text-xs transition-colors ${active ? "bg-[#EFEAFC] font-semibold text-[#6F5FD6]" : "text-[#9C94C4]"
+                  }`}
               >
                 <ImageSlot src={m.icon} alt={`${m.label}圖示`} className="size-10 rounded-lg" />
                 {m.label}
@@ -604,7 +603,7 @@ export function DreamHomeView() {
             </label>
           </div>
         ) : (
-          <div className="relative mt-5 flex flex-col gap-3">
+          <div className="relative mt-4 flex flex-col gap-3">
             <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-[#9C94C4]">出發{stationLabel}</span>
               <button type="button" onClick={() => setOriginPickerOpen(true)} className="grid grid-cols-2 gap-2 text-left">
@@ -730,10 +729,12 @@ export function DreamHomeView() {
           type="button"
           onClick={searchTrains}
           disabled={mode === "bus" && !busSelection}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)] disabled:opacity-50"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)] disabled:opacity-50"
           style={{ background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
         >
-          <FaIcon icon="magnifying-glass" size={14} className="text-white" /> 搜尋{MODES.find((m) => m.key === mode)?.label}班次 <span aria-hidden>→</span>
+          <FaIcon icon="magnifying-glass" size={14} className="text-white" /> {mode === "bus"
+            ? "查詢即時到站"
+            : `搜尋${MODES.find((m) => m.key === mode)?.label}班次`} <span aria-hidden>→</span>
         </button>
         <p className="mt-6 flex items-center gap-1.5 text-sm font-semibold text-[#4A3B7C]">
           <span aria-hidden className="text-[#C9A6F2]">
