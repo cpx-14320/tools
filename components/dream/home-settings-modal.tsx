@@ -9,6 +9,14 @@ export interface HomeDefaults {
   weatherBlocks: WeatherBlock[];
 }
 
+// 跟首頁 home-view.tsx 的 defaultWeatherBlocks() 同一組預設地區（桃園市中壢區、臺北市
+// 南港區）——剛註冊、還沒設定過天氣地區的使用者打開這個彈窗時，直接看到這兩個區塊，
+// 不要是空的；這個元件自己保底一份，不管呼叫端傳進來的 initial 是不是真的有兩組。
+const DEFAULT_WEATHER_BLOCKS: WeatherBlock[] = [
+  { id: "default-origin", city: "桃園市", district: "中壢區" },
+  { id: "default-dest", city: "臺北市", district: "南港區" },
+];
+
 function newWeatherBlock(): WeatherBlock {
   const keys = Object.keys(DISTRICTS_BY_CITY);
   const city = keys[0];
@@ -26,7 +34,9 @@ export function HomeSettingsModal({
   onClose: () => void;
   onSave: (defaults: HomeDefaults) => void;
 }) {
-  const [draft, setDraft] = useState<HomeDefaults>(initial);
+  const [draft, setDraft] = useState<HomeDefaults>(
+    initial.weatherBlocks.length > 0 ? initial : { weatherBlocks: DEFAULT_WEATHER_BLOCKS },
+  );
   // 天氣地區改用跟首頁出發站／抵達站同一顆 StationPickerModal（城市＋鄉鎮區雙欄彈窗），
   // 不用瀏覽器原生的 <select>；好幾個區塊共用同一顆彈窗實例，用這個 index 記住現在在editing
   // 哪一個區塊，不用每個區塊各自掛一顆。

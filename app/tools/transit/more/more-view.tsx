@@ -20,6 +20,10 @@ const CURRENT_TOOL_ID = "transit";
 // 文字頂著，不要誤猜成「至少有 2 組」害畫面跳動。
 const HERO_COUNT_KEY = "cpx-tools:transit:hero-banners-count";
 const WEEKEND_COUNT_KEY = "cpx-tools:transit:weekend-trips-count";
+// 「其他小工具」雖然不是使用者自己增減、是依帳號權限決定的清單，但一樣可能最後只有
+// 「目前沒有其他小工具的使用權限」這一段文字，不是真的清單——同一套骨架筆數猜測機制，
+// 不要在權限還沒讀出來前先顯示一排看起來「有東西」的假骨架。
+const OTHER_TOOLS_COUNT_KEY = "cpx-tools:transit:other-tools-count";
 
 export function MoreView() {
   const router = useRouter();
@@ -27,6 +31,7 @@ export function MoreView() {
 
   // 「其他小工具」只列使用者真的有權限、而且不是目前這個工具（搭乘車查詢）的項目。
   const otherTools = TOOLS_REGISTRY.filter((t) => t.toolId !== CURRENT_TOOL_ID && (user?.tools ?? []).includes(t.toolId));
+  const [otherToolsSkeletonCount, setOtherToolsSkeletonCount] = useState(0);
 
   // 首頁「橫幅」每次進頁面隨機顯示的那幾組文案＋背景圖，在這頁統一編輯。
   const [weekendTrips, setWeekendTrips] = useState<CaptionImageInitial[]>([]);
@@ -49,8 +54,16 @@ export function MoreView() {
     /* eslint-disable react-hooks/set-state-in-effect */
     setHeroSkeletonCount(loadSkeletonCount(HERO_COUNT_KEY, 0));
     setWeekendSkeletonCount(loadSkeletonCount(WEEKEND_COUNT_KEY, 0));
+    setOtherToolsSkeletonCount(loadSkeletonCount(OTHER_TOOLS_COUNT_KEY, 0));
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
+
+  // useAuth() 的 user/loading 不是這個元件自己發的 fetch，沒有地方可以在「拿到結果那一刻」
+  // 順手存筆數，只能用 effect 盯著 loading 變成 false 那一刻存一次。
+  useEffect(() => {
+    if (!loading) saveSkeletonCount(OTHER_TOOLS_COUNT_KEY, otherTools.length);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   useEffect(() => {
     let cancelled = false;
@@ -206,9 +219,15 @@ export function MoreView() {
           <p className="mb-2 px-1 text-xs font-medium text-[#9C94C4]">其他小工具</p>
           <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl bg-white shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
             {loading ? (
-              <div className="px-4 py-3">
-                <ListRowSkeleton iconSize={40} lines={1} />
-              </div>
+              otherToolsSkeletonCount === 0 ? (
+                <p className="px-4 py-3 text-sm text-[#B3ABD4]">載入中…</p>
+              ) : (
+                Array.from({ length: otherToolsSkeletonCount }, (_, i) => (
+                  <div key={i} className="px-4 py-3">
+                    <ListRowSkeleton iconSize={40} lines={1} />
+                  </div>
+                ))
+              )
             ) : otherTools.length === 0 ? (
               <p className="px-4 py-3 text-sm text-[#B3ABD4]">目前沒有其他小工具的使用權限</p>
             ) : (

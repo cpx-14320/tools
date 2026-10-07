@@ -214,9 +214,11 @@ export function DreamHomeView() {
   const [timePickerOpen, setTimePickerOpen] = useState(false);
   const [memos, setMemos] = useState<Memo[]>([]);
   const [memosReady, setMemosReady] = useState(false);
-  // 初始值只能先給固定的 2（伺服器端渲染那一次沒有 localStorage，要跟瀏覽器端算出來的
-  // 結果一致才不會 hydration 不匹配），掛載後才用下面的 effect 翻成真的猜測值。
-  const [memosSkeletonCount, setMemosSkeletonCount] = useState(2);
+  // 初始值只能先給固定的 0（伺服器端渲染那一次沒有 localStorage，要跟瀏覽器端算出來的
+  // 結果一致才不會 hydration 不匹配），掛載後才用下面的 effect 翻成真的猜測值；退回 0
+  // 時畫面上顯示「載入中」文字，不要誤猜一個固定數字的骨架——新帳號根本還沒有備忘錄，
+  // 最後只會顯示一段「還沒有備忘錄」文字，載入中卻先看到幾排骨架會很奇怪。
+  const [memosSkeletonCount, setMemosSkeletonCount] = useState(0);
   const [memoEditorOpen, setMemoEditorOpen] = useState(false);
   const [weekendTrips, setWeekendTrips] = useState<WeekendTrip[]>([]);
   // 每次進頁面／重新整理都要重新抽一則，不是整天固定同一則——跟 weekendTrips 分開存，
@@ -250,7 +252,7 @@ export function DreamHomeView() {
     // 跟首頁套用 localStorage 存的預設值同一種例外：掛載後才讀得到 localStorage，讀到就要
     // 立刻套用這個猜測值，不是在訂閱外部事件、也不會連鎖觸發其他 effect。
     /* eslint-disable-next-line react-hooks/set-state-in-effect */
-    setMemosSkeletonCount(loadSkeletonCount(MEMOS_COUNT_KEY, 2));
+    setMemosSkeletonCount(loadSkeletonCount(MEMOS_COUNT_KEY, 0));
   }, []);
 
   // 掛載時抓一次使用者自己的備忘錄；儲存後也會用同一份 API 回應直接更新畫面，不用重抓。
@@ -793,13 +795,17 @@ export function DreamHomeView() {
           </button>
         </p>
         {!memosReady ? (
-          <div className="mt-2 flex flex-col gap-2.5">
-            {Array.from({ length: memosSkeletonCount }, (_, i) => (
-              <div key={i} className="rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
-                <ListRowSkeleton iconSize={48} />
-              </div>
-            ))}
-          </div>
+          memosSkeletonCount === 0 ? (
+            <p className="mt-2 text-xs text-[#B3ABD4]">載入中…</p>
+          ) : (
+            <div className="mt-2 flex flex-col gap-2.5">
+              {Array.from({ length: memosSkeletonCount }, (_, i) => (
+                <div key={i} className="rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
+                  <ListRowSkeleton iconSize={48} />
+                </div>
+              ))}
+            </div>
+          )
         ) : memos.length === 0 ? (
           <p className="mt-2 text-xs text-[#B3ABD4]">還沒有備忘錄，點右上角新增</p>
         ) : (
