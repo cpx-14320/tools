@@ -1,4 +1,5 @@
 import { tdxGet } from "@/lib/tdx-client";
+import { METRO_CROSS_CITY_GROUP, METRO_SYSTEM_CODE, METRO_TRANSFER_HUBS } from "@/lib/metro-lines";
 
 // 捷運路線站序、票價幾乎不會變，快取 24 小時，跟台鐵站名清單同一套做法，不要每次搜尋
 // 都去打一次 TDX（每分鐘只有 5 次額度）。
@@ -71,7 +72,7 @@ const TRANSFER_PENALTY_SECONDS = 180;
 interface GraphEdge {
   to: string;
   seconds: number;
-  /** true＝同名不同代碼之間的轉乘邊，不是真的坐車前進一站，算站數時不能計入。 */
+  /** true＝明確定義的轉乘邊，不是真的坐車前進一站，算站數時不能計入。 */
   transfer: boolean;
 }
 
@@ -87,32 +88,90 @@ function buildGraph(entries: TravelTimeEntry[]): { graph: Map<string, GraphEdge[
     graph.get(a)!.push({ to: b, seconds, transfer });
   };
 
+  // 1. TDX 提供的實際站間行車邊。
   for (const entry of entries) {
     for (const seg of entry.TravelTimes) {
       nameOf.set(seg.FromStationID, seg.FromStationName.Zh_tw);
       nameOf.set(seg.ToStationID, seg.ToStationName.Zh_tw);
+
       const seconds = seg.RunTime + seg.StopTime;
       addEdge(seg.FromStationID, seg.ToStationID, seconds, false);
       addEdge(seg.ToStationID, seg.FromStationID, seconds, false);
     }
   }
 
-  const idsByName = new Map<string, Set<string>>();
-  for (const [id, name] of nameOf) {
-    if (!idsByName.has(name)) idsByName.set(name, new Set());
-    idsByName.get(name)!.add(id);
-  }
-  for (const ids of idsByName.values()) {
-    const list = [...ids];
-    for (let i = 0; i < list.length; i++) {
-      for (let j = i + 1; j < list.length; j++) {
-        addEdge(list[i], list[j], TRANSFER_PENALTY_SECONDS, true);
-        addEdge(list[j], list[i], TRANSFER_PENALTY_SECONDS, true);
+  // 2. 轉乘邊只從 METRO_TRANSFER_HUBS 建立。
+  //    不再用「站名相同」自動推導，避免未經確認的同名站被誤判為轉乘點。
+  const stationIdsInGraph = new Set(nameOf.keys());
+
+  for (const hub of METRO_TRANSFER_HUBS) {
+    const stationIds = hub.stations
+      .map((station) => stationIdOf(station))
+      .filter((id) => stationIdsInGraph.has(id));
+
+    for (let i = 0; i < stationIds.length; i++) {
+      for (let j = i + 1; j < stationIds.length; j++) {
+        const a = stationIds[i];
+        const b = stationIds[j];
+
+        addEdge(a, b, TRANSFER_PENALTY_SECONDS, true);
+        addEdge(b, a, TRANSFER_PENALTY_SECONDS, true);
       }
     }
   }
 
   return { graph, nameOf };
+}
+
+/** 將多個捷運系統的單系統圖合併成一張路網圖。 */
+function mergeGraphs(
+  systemGraphs: Array<{ graph: Map<string, GraphEdge[]>; nameOf: Map<string, string> }>,
+): { graph: Map<string, GraphEdge[]>; nameOf: Map<string, string> } {
+  const graph = new Map<string, GraphEdge[]>();
+  const nameOf = new Map<string, string>();
+
+  for (const systemGraph of systemGraphs) {
+    for (const [id, edges] of systemGraph.graph) {
+      if (!graph.has(id)) graph.set(id, []);
+      graph.get(id)!.push(...edges);
+    }
+    for (const [id, name] of systemGraph.nameOf) {
+      nameOf.set(id, name);
+    }
+  }
+
+  return { graph, nameOf };
+}
+
+/**
+ * 在合併後的多系統路網中加入跨系統轉乘邊。
+ * 轉乘關係完全依照 METRO_TRANSFER_HUBS，不使用站名猜測。
+ */
+function addCrossSystemTransferEdges(
+  graph: Map<string, GraphEdge[]>,
+  nameOf: Map<string, string>,
+): void {
+  const addEdge = (a: string, b: string, seconds: number, transfer: boolean) => {
+    if (!graph.has(a)) graph.set(a, []);
+    graph.get(a)!.push({ to: b, seconds, transfer });
+  };
+
+  const stationIdsInGraph = new Set(nameOf.keys());
+
+  for (const hub of METRO_TRANSFER_HUBS) {
+    const stationIds = hub.stations
+      .map((station) => stationIdOf(station))
+      .filter((id) => stationIdsInGraph.has(id));
+
+    for (let i = 0; i < stationIds.length; i++) {
+      for (let j = i + 1; j < stationIds.length; j++) {
+        const a = stationIds[i];
+        const b = stationIds[j];
+        addEdge(a, b, TRANSFER_PENALTY_SECONDS, true);
+        addEdge(b, a, TRANSFER_PENALTY_SECONDS, true);
+      }
+    }
+  }
 }
 
 export interface TransferStep {
@@ -213,7 +272,9 @@ export async function computeMetroTrip(systemCode: string, originDisplay: string
     getLines(systemCode).catch(() => []),
   ]);
 
-  const lineColorOf = new Map(lines.map((l) => [l.LineNo, l.LineColor]));
+  const lineColorOf = new Map<string, string>(lines.map((l) => [l.LineNo, l.LineColor] as const));
+  const originLineNo = lineNoOfStationId(originId);
+  const originLineColor = lineColorOf.get(originLineNo);
   const { graph, nameOf } = buildGraph(entries);
   const route = shortestPath(graph, nameOf, lineColorOf, originId, destId);
   const fare = fareEntry ? fullFareOf(fareEntry) : undefined;
@@ -225,6 +286,7 @@ export async function computeMetroTrip(systemCode: string, originDisplay: string
       fare,
       transfer: route.transferSteps.length > 0,
       transferSteps: route.transferSteps.length > 0 ? route.transferSteps : undefined,
+      lineColor: originLineColor,
     };
   }
 
@@ -236,5 +298,76 @@ export async function computeMetroTrip(systemCode: string, originDisplay: string
     stops: 1,
     fare,
     transfer: false,
+    lineColor: originLineColor,
+  };
+}
+
+
+/**
+ * 北北基桃可互通捷運／輕軌的跨系統路由。
+ *
+ * 只抓「目前可互通群組」的 S2STravelTime 與 Line metadata；
+ * TDX cache 會避免同一日重複呼叫，Line metadata 同時用於主要搭乘線與轉乘提示的顏色。
+ * 票價也不自行把不同營運系統的票價相加，因此 fare 保持 undefined。
+ */
+export async function computeCrossSystemMetroTrip(
+  originSystem: string,
+  destSystem: string,
+  originDisplay: string,
+  destDisplay: string,
+): Promise<MetroTripResult> {
+  if (originSystem === destSystem) {
+    const systemCode = METRO_SYSTEM_CODE[originSystem];
+    if (!systemCode) throw new Error("不支援的捷運系統");
+    return computeMetroTrip(systemCode, originDisplay, destDisplay);
+  }
+
+  const allowedSystems = new Set(METRO_CROSS_CITY_GROUP);
+  if (!allowedSystems.has(originSystem) || !allowedSystems.has(destSystem)) {
+    throw new Error("這兩個捷運系統目前不在可跨系統查詢範圍");
+  }
+
+  const systemNames = [...METRO_CROSS_CITY_GROUP];
+  const systemData = await Promise.all(
+    systemNames.map(async (system) => {
+      const systemCode = METRO_SYSTEM_CODE[system];
+      const [entries, lines] = await Promise.all([
+        getTravelTimeEntries(systemCode),
+        getLines(systemCode).catch(() => []),
+      ]);
+      return { system, systemCode, entries, lines };
+    }),
+  );
+
+  const systemGraphs = systemData
+    .filter((item) => Boolean(item.systemCode))
+    .map((item) => buildGraph(item.entries));
+
+  const { graph, nameOf } = mergeGraphs(systemGraphs);
+  addCrossSystemTransferEdges(graph, nameOf);
+
+  // 北北基桃可互通群組中的 LineNo 不重複（台北 G/R/O/BL/BR、新北 Y/LB、機捷 A），
+  // 因此可合併成同一張顏色表，讓跨系統轉乘標籤與主要搭乘線都沿用 TDX 官方顏色。
+  const lineColorOf = new Map<string, string>(
+    systemData.flatMap((item) => item.lines.map((line) => [line.LineNo, line.LineColor] as const)),
+  );
+  const originId = stationIdOf(originDisplay);
+  const destId = stationIdOf(destDisplay);
+  const originLineNo = lineNoOfStationId(originId);
+  const originLineColor = lineColorOf.get(originLineNo);
+  const route = shortestPath(graph, nameOf, lineColorOf, originId, destId);
+
+  if (!route) {
+    throw new Error("找不到跨系統捷運路徑，請確認站點與轉乘關係");
+  }
+
+  return {
+    durationMin: Math.max(1, Math.round(route.seconds / 60)),
+    stops: route.stops,
+    // 不同營運系統的跨系統票價不能用單一系統 ODFare 直接推導，因此不猜。
+    fare: undefined,
+    transfer: true,
+    transferSteps: route.transferSteps.length > 0 ? route.transferSteps : undefined,
+    lineColor: originLineColor,
   };
 }

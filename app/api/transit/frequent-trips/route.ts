@@ -22,16 +22,32 @@ export async function PUT(request: Request) {
 
   const rawItems = Array.isArray(body?.items) ? body.items : [];
   const items: FrequentTripInput[] = rawItems
-    .map((item: { id?: unknown; icon?: unknown; originCity?: unknown; origin?: unknown; destCity?: unknown; dest?: unknown; startTime?: unknown; endTime?: unknown }) => ({
-      id: typeof item?.id === "string" ? item.id : undefined,
-      icon: typeof item?.icon === "string" ? item.icon : "",
-      originCity: typeof item?.originCity === "string" ? item.originCity : "",
-      origin: typeof item?.origin === "string" ? item.origin : "",
-      destCity: typeof item?.destCity === "string" ? item.destCity : "",
-      dest: typeof item?.dest === "string" ? item.dest : "",
-      startTime: typeof item?.startTime === "string" ? item.startTime : "",
-      endTime: typeof item?.endTime === "string" ? item.endTime : "",
-    }))
+    .map(
+      (item: {
+        id?: unknown;
+        icon?: unknown;
+        originCity?: unknown;
+        origin?: unknown;
+        destCity?: unknown;
+        dest?: unknown;
+        busDirection?: unknown;
+        startTime?: unknown;
+        endTime?: unknown;
+      }) => ({
+        id: typeof item?.id === "string" ? item.id : undefined,
+        icon: typeof item?.icon === "string" ? item.icon : "",
+        originCity: typeof item?.originCity === "string" ? item.originCity : "",
+        origin: typeof item?.origin === "string" ? item.origin : "",
+        destCity: typeof item?.destCity === "string" ? item.destCity : "",
+        dest: typeof item?.dest === "string" ? item.dest : "",
+        busDirection:
+          item?.busDirection === 0 || item?.busDirection === 1
+            ? item.busDirection
+            : undefined,
+        startTime: typeof item?.startTime === "string" ? item.startTime : "",
+        endTime: typeof item?.endTime === "string" ? item.endTime : "",
+      }),
+    )
     .filter((item: FrequentTripInput) => item.origin && item.dest);
 
   const trips = await syncFrequentTrips(new ObjectId(user.id), mode, groupId, items);

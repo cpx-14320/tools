@@ -5,11 +5,10 @@
 // 車站一路經新北市才到桃園市），硬塞成單一縣市反而不準確；系統名稱＋站名前綴（路線代碼＋站碼）
 // 已經足夠讓使用者分辨站點所在區域，兩層選單沿用跟火車／公車一樣的 CityStationPicker／
 // StationPickerModal，不用為捷運另外做一套 UI。
-// 出發站／抵達站可以跨系統選的範圍：台北捷運／新北捷運／桃園機場捷運這三個系統實際有互通
-// 轉乘站（例如紅樹林、台北車站），搭捷運真的可以從其中一個系統直接轉乘到另一個系統，所以
-// 允許出發、抵達選不同系統；其他系統（淡海輕軌／台中捷運／高雄捷運／高雄輕軌）各自獨立，
-// 沒有互通，抵達站只能跟出發站選同一個系統。
-export const METRO_CROSS_CITY_GROUP = ["台北捷運", "新北捷運", "桃園機場捷運"];
+// 出發站／抵達站可以跨系統選的範圍：北北基桃目前可互通的捷運／輕軌系統，並包含淡海輕軌與
+// 台北捷運紅樹林站的轉乘關係。真正哪些站可以轉乘，統一由 METRO_TRANSFER_HUBS 管理；
+// 其他系統（台中捷運／高雄捷運／高雄輕軌）維持只能查同系統。
+export const METRO_CROSS_CITY_GROUP = ["台北捷運", "新北捷運", "桃園機場捷運", "淡海輕軌"];
 
 // 系統名稱對應 TDX 的 RouteSystemID，查真實票價／站間行車時間（lib/metro-routing.ts）要用
 // 這個代碼打 /v2/Rail/Metro/ODFare、/v2/Rail/Metro/S2STravelTime。
@@ -90,19 +89,74 @@ export const METRO_STATIONS_BY_CITY: Record<string, string[]> = {
   ],
 };
 
-// 跨系統（只有 METRO_CROSS_CITY_GROUP 裡那三個系統會用到）找共同轉乘站：比對兩個系統的
+/**
+ * 明確定義的實體捷運轉乘節點。
+ *
+ * 每個 Station ID 仍然是獨立站點；只有列在同一個 hub 裡的站，
+ * 才允許建立 transfer edge。不要再用「站名相同」自動推導跨系統轉乘。
+ */
+export interface MetroTransferHub {
+  id: string;
+  name: string;
+  stations: string[];
+}
+
+export const METRO_TRANSFER_HUBS: MetroTransferHub[] = [
+  // 台北捷運內部轉乘
+  { id: "XI_MEN", name: "西門", stations: ["BL11西門", "G12西門"] },
+  { id: "TAIPEI_MAIN", name: "台北車站", stations: ["BL12台北車站", "R10台北車站", "A1台北車站"] },
+  { id: "ZHONGXIAO_XINSHENG", name: "忠孝新生", stations: ["BL14忠孝新生", "O07忠孝新生"] },
+  { id: "ZHONGXIAO_FUXING", name: "忠孝復興", stations: ["BL15忠孝復興", "BR10忠孝復興"] },
+  { id: "NANGANG_EXHIBITION", name: "南港展覽館", stations: ["BL23南港展覽館", "BR24南港展覽館"] },
+  { id: "DAAN", name: "大安", stations: ["BR09大安", "R05大安"] },
+  { id: "NANJING_FUXING", name: "南京復興", stations: ["BR11南京復興", "G16南京復興"] },
+  { id: "GUTING", name: "古亭", stations: ["G09古亭", "O05古亭"] },
+  { id: "ZHONGZHENG_MEMORIAL", name: "中正紀念堂", stations: ["G10中正紀念堂", "R08中正紀念堂"] },
+  { id: "ZHONGSHAN", name: "中山", stations: ["G14中山", "R11中山"] },
+  { id: "SONGJIANG_NANJING", name: "松江南京", stations: ["G15松江南京", "O08松江南京"] },
+  { id: "DONGMEN", name: "東門", stations: ["O06東門", "R07東門"] },
+  { id: "MINQUAN_WEST", name: "民權西路", stations: ["O11民權西路", "R13民權西路"] },
+
+  // 台北捷運 ↔ 新北捷運
+  { id: "DAPINGLIN", name: "大坪林", stations: ["G04大坪林", "Y07大坪林"] },
+  { id: "JINGAN", name: "景安", stations: ["O02景安", "Y11景安"] },
+  { id: "BANQIAO", name: "板橋", stations: ["BL07板橋", "Y16板橋"] },
+  { id: "TOUQIANZHUANG", name: "頭前庄", stations: ["O17頭前庄", "Y18頭前庄"] },
+  { id: "DINGPU", name: "頂埔", stations: ["BL01頂埔", "LB01頂埔"] },
+
+  // 台北捷運 ↔ 桃園機場捷運
+  { id: "SANCHONG", name: "三重", stations: ["O15三重", "A2三重站"] },
+
+  // 新北捷運 ↔ 桃園機場捷運
+  { id: "NEW_TAIPEI_INDUSTRIAL", name: "新北產業園區", stations: ["Y20新北產業園區", "A3新北產業園區站"] },
+
+  // 台北捷運 ↔ 淡海輕軌
+  { id: "HONGSHULIN", name: "紅樹林", stations: ["R27紅樹林", "V01紅樹林"] },
+];
+
+// 跨系統只使用上面的明確轉乘 Hub，不再用「同名站」猜測。
+// 例如「三重」與「三重站」、「新北產業園區」與「新北產業園區站」也能正確對應。
+
 // 站名（去掉開頭的路線代碼＋站碼），有同名站就是轉乘點（例如紅樹林同時是台北捷運 R27 跟
 // 淡海輕軌... 這裡實際上是新北捷運／桃園機場捷運那幾個系統）。純字串比對，不用打 TDX，
 // 前端（首頁／常用行程）就能直接顯示「需在◯◯轉乘」，不用等後端算完整條路徑。
-/** 站點顯示字串（例如「BL07板橋」）屬於哪個捷運系統——用來判斷出發／抵達站是不是同一個
- *  系統，決定要打真實查詢 API 還是用跨系統的轉乘站名比對。 */
+/** 站點顯示字串（例如「BL07板橋」）屬於哪個捷運系統。 */
 export function metroSystemOf(station: string): string | undefined {
   return Object.keys(METRO_STATIONS_BY_CITY).find((system) => METRO_STATIONS_BY_CITY[system].includes(station));
 }
 
 export function findCrossSystemTransferStation(originSystem: string, destSystem: string): string | undefined {
   if (originSystem === destSystem) return undefined;
-  const bareName = (station: string) => station.replace(/^[A-Za-z]+\d+[A-Za-z]?/, "");
-  const originNames = new Set((METRO_STATIONS_BY_CITY[originSystem] ?? []).map(bareName));
-  return (METRO_STATIONS_BY_CITY[destSystem] ?? []).map(bareName).find((name) => originNames.has(name));
+
+  const hub = METRO_TRANSFER_HUBS.find((candidate) => {
+    const systems = new Set(
+      candidate.stations
+        .map((station) => metroSystemOf(station))
+        .filter((system): system is string => Boolean(system)),
+    );
+
+    return systems.has(originSystem) && systems.has(destSystem);
+  });
+
+  return hub?.name;
 }
