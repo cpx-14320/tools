@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImageSlot } from "@/components/dream/image-slot";
@@ -17,12 +16,10 @@ import { memoIconPath } from "@/components/dream/memo-icons";
 import { WeatherCarousel, WeatherCarouselSkeleton, type WeatherBlock } from "@/components/dream/weather-carousel";
 import { ListRowSkeleton } from "@/components/dream/list-row-skeleton";
 import { loadSkeletonCount, saveSkeletonCount } from "@/components/dream/skeleton-count";
-
 const DEFAULTS_KEY = "cpx-tools:transit:home-defaults";
 // 小小備忘錄是使用者自己增減的清單，筆數會變動，骨架列數用這個 key 記住上次實際筆數；
 // 完全沒存過（第一次使用）時先猜 2 則。
 const MEMOS_COUNT_KEY = "cpx-tools:transit:memos-count";
-
 function loadDefaults(): HomeDefaults | null {
   try {
     const raw = localStorage.getItem(DEFAULTS_KEY);
@@ -31,7 +28,6 @@ function loadDefaults(): HomeDefaults | null {
     return null;
   }
 }
-
 function saveDefaults(defaults: HomeDefaults) {
   try {
     localStorage.setItem(DEFAULTS_KEY, JSON.stringify(defaults));
@@ -39,13 +35,11 @@ function saveDefaults(defaults: HomeDefaults) {
     // 私密瀏覽模式等情況下 localStorage 可能不可用，失敗就當作這次沒存，不影響當下操作。
   }
 }
-
 // 不再用「編輯首頁預設值」裡設定的固定預設運輸工具——那個值只有使用者自己回來改設定
 // 才會變，跟使用者實際常切換的分頁容易對不起來，每次重新整理都跳回設定值會讓人覺得
 // 「怎麼又切換了」。改成單純記住使用者最後一次停留的分頁，每次切換分頁就更新，重新
 // 整理後直接還原到離開前的狀態。
 const LAST_MODE_KEY = "cpx-tools:transit:last-mode";
-
 function loadLastMode(): Mode | null {
   try {
     const raw = localStorage.getItem(LAST_MODE_KEY);
@@ -54,7 +48,6 @@ function loadLastMode(): Mode | null {
     return null;
   }
 }
-
 function saveLastMode(mode: Mode) {
   try {
     localStorage.setItem(LAST_MODE_KEY, mode);
@@ -62,16 +55,13 @@ function saveLastMode(mode: Mode) {
     // 同上，私密瀏覽模式等情況下存不了就算了。
   }
 }
-
 const TRAIN_SEARCH_KEY = "cpx-tools:transit:train-last-search";
-
 interface TrainLastSearch {
   originCity: string;
   origin: string;
   destCity: string;
   dest: string;
 }
-
 function loadTrainSearch(): TrainLastSearch | null {
   try {
     const raw = localStorage.getItem(TRAIN_SEARCH_KEY);
@@ -80,7 +70,6 @@ function loadTrainSearch(): TrainLastSearch | null {
     return null;
   }
 }
-
 function saveTrainSearch(search: TrainLastSearch) {
   try {
     localStorage.setItem(TRAIN_SEARCH_KEY, JSON.stringify(search));
@@ -88,7 +77,6 @@ function saveTrainSearch(search: TrainLastSearch) {
     // 同上，存不進去就放著，不影響當下搜尋表單的操作。
   }
 }
-
 // 捷運／高鐵跟火車一樣用「記住上次查詢」：選項不少（捷運 7 個系統、上百個站；高鐵現在
 // 12 站），每次切回來都要重新選很煩，記住上次選的出發／抵達站就好，不像火車還要記日期
 // ——使用者要的是「上次選的站點」，日期／時間本來就是每次查詢當下才決定，沒有需要記上次
@@ -96,14 +84,12 @@ function saveTrainSearch(search: TrainLastSearch) {
 // 高鐵再複製一份幾乎一樣的程式碼。
 const METRO_SEARCH_KEY = "cpx-tools:transit:metro-last-search";
 const THSR_SEARCH_KEY = "cpx-tools:transit:thsr-last-search";
-
 interface StationOnlyLastSearch {
   originCity: string;
   origin: string;
   destCity: string;
   dest: string;
 }
-
 function loadStationOnlySearch(key: string): StationOnlyLastSearch | null {
   try {
     const raw = localStorage.getItem(key);
@@ -112,7 +98,6 @@ function loadStationOnlySearch(key: string): StationOnlyLastSearch | null {
     return null;
   }
 }
-
 function saveStationOnlySearch(key: string, search: StationOnlyLastSearch) {
   try {
     localStorage.setItem(key, JSON.stringify(search));
@@ -120,14 +105,12 @@ function saveStationOnlySearch(key: string, search: StationOnlyLastSearch) {
     // 同上，存不進去就放著，不影響當下搜尋表單的操作。
   }
 }
-
 const MODES: { key: Mode; label: string; icon: string }[] = [
   { key: "bus", label: "公車", icon: ICON_PATHS.modeBus },
   { key: "train", label: "火車", icon: ICON_PATHS.modeTrain },
   { key: "metro", label: "捷運", icon: ICON_PATHS.modeMetro },
   { key: "thsr", label: "高鐵", icon: ICON_PATHS.modeThsr },
 ];
-
 // 前端用的輕量備忘錄型別，故意不從 lib/memos.ts 匯入——那個檔案會連到 mongodb 驅動程式，
 // 絕不能進到 "use client" 檔案（會把伺服器端套件打包進前端 bundle）。
 interface Memo {
@@ -136,7 +119,6 @@ interface Memo {
   icon: string;
   remindAt: string | null;
 }
-
 // 同上，故意不從 lib/weekend-trips.ts 匯入。
 interface WeekendTrip {
   id: string;
@@ -144,7 +126,6 @@ interface WeekendTrip {
   caption: string;
   image: string;
 }
-
 // 首頁最上方插畫 Banner 的文案／圖片，邏輯跟 WeekendTrip 一樣，故意不從 lib/hero-banners.ts
 // 匯入。
 interface HeroBanner {
@@ -153,16 +134,13 @@ interface HeroBanner {
   caption: string;
   image: string;
 }
-
 type RemindTone = "soon" | "later";
-
 // 跟我的行程頁面卡片徽章同一種「圓角淡色底」視覺語言，這裡獨立定義一份，不直接
 // import 那個檔案裡的常數（兩邊是不同頁面，不應該互相耦合）。
 const REMIND_TONE_STYLE: Record<RemindTone, string> = {
   soon: "bg-[#DFF4EB] text-[#2FAE82]",
   later: "bg-[#F3EFFC] text-[#9C94C4]",
 };
-
 // remindAt 已經過去就算「soon」（用同一個醒目色調提示使用者已經逾期），24 小時內也算
 // soon，再久一點才轉成 later 那種比較不急迫的淡色。
 function formatRemindCountdown(remindAtIso: string): { text: string; tone: RemindTone } {
@@ -174,20 +152,16 @@ function formatRemindCountdown(remindAtIso: string): { text: string; tone: Remin
   const text = days > 0 ? `還有 ${days} 天 ${hours} 小時` : `還有 ${hours} 小時`;
   return { text, tone: days === 0 ? "soon" : "later" };
 }
-
 function nowHHMM(): string {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
-
 // 不能用 toISOString().slice(0,10)：那個是 UTC 日期，台灣是 UTC+8，半夜 0 點到早上 8 點之間
 // UTC 還停在前一天，會讓「今天」的日期錯誤地往前跳一天。要跟 nowHHMM() 一樣用本地時間欄位組。
 function todayLocal(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
-
-
 function resolveStation(cities: Record<string, string[]>, preferred: string | undefined, fallbackIndex: number) {
   const keys = Object.keys(cities);
   if (preferred) {
@@ -197,10 +171,12 @@ function resolveStation(cities: Record<string, string[]>, preferred: string | un
   const city = keys[Math.min(fallbackIndex, keys.length - 1)];
   return { city, station: cities[city][0] };
 }
-
 export function DreamHomeView() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("bus");
+  // 初次 render 先讓內容照常顯示，不隱藏整個模式區塊。
+  // 只有在確認 localStorage 裡使用者最後停留的模式後，才顯示選中背景色。
+  const [modeReady, setModeReady] = useState(false);
   // 火車先用靜態清單墊著畫面，掛載後換成 /api/transit/tra/stations 抓回來的真實 ~240 站清單。
   const [trainCities, setTrainCities] = useState<Record<string, string[]>>(FALLBACK_TRAIN_STATIONS_BY_CITY);
   const initOrigin = resolveStation(STATIONS_BY_CITY.bus, undefined, 0);
@@ -233,7 +209,6 @@ export function DreamHomeView() {
   // 跟 weekendTripIndex 同一套做法：抽完之後只要這個元件沒重新掛載就不會再變。
   const [heroBannerIndex, setHeroBannerIndex] = useState<number | null>(null);
   const [heroReady, setHeroReady] = useState(false);
-
   // 日期欄位的初始值只在掛載那一刻算一次，分頁開著跨過半夜沒重新整理的話，日期會一直卡在
   // 「昨天」——除了搜尋當下會自動校正（見 searchTrains），分頁從背景切回來時也順便校正一次，
   // 不要讓使用者看到畫面上日期欄位顯示昨天的日期才覺得奇怪。只往前校正：使用者自己選了
@@ -247,14 +222,12 @@ export function DreamHomeView() {
     document.addEventListener("visibilitychange", syncDateIfStale);
     return () => document.removeEventListener("visibilitychange", syncDateIfStale);
   }, []);
-
   useEffect(() => {
     // 跟首頁套用 localStorage 存的預設值同一種例外：掛載後才讀得到 localStorage，讀到就要
     // 立刻套用這個猜測值，不是在訂閱外部事件、也不會連鎖觸發其他 effect。
     /* eslint-disable-next-line react-hooks/set-state-in-effect */
     setMemosSkeletonCount(loadSkeletonCount(MEMOS_COUNT_KEY, 0));
   }, []);
-
   // 掛載時抓一次使用者自己的備忘錄；儲存後也會用同一份 API 回應直接更新畫面，不用重抓。
   useEffect(() => {
     let cancelled = false;
@@ -274,7 +247,6 @@ export function DreamHomeView() {
       cancelled = true;
     };
   }, []);
-
   // 「週末小旅行」可選的文案＋背景圖，掛載時抓一次並隨機抽一則；使用者還沒在「其他」頁
   // 設定過的話會是空陣列，畫面上退回原本寫死的那組（見下面 todayWeekendTrip）。
   useEffect(() => {
@@ -295,7 +267,6 @@ export function DreamHomeView() {
       cancelled = true;
     };
   }, []);
-
   // 首頁最上方插畫 Banner 可選的文案＋背景圖，邏輯跟上面的週末小旅行完全一樣。
   useEffect(() => {
     let cancelled = false;
@@ -315,7 +286,6 @@ export function DreamHomeView() {
       cancelled = true;
     };
   }, []);
-
   // datetime-local 的值是瀏覽器所在時區的本地時間字串，沒有填就是空字串；送去 API 前
   // 轉成帶時區資訊的 ISO 字串（.toISOString()），這一步要在瀏覽器端做——伺服器收到裸的
   // "YYYY-MM-DDTHH:mm" 字串時是用伺服器自己的時區去解讀，跟使用者選的時間可能會對不上。
@@ -348,7 +318,6 @@ export function DreamHomeView() {
   // 兩個下拉選單，所以另外用一組獨立的 state，不跟 origin/dest 共用。
   const [busSelection, setBusSelection] = useState<BusRouteSelection | null>(null);
   const [busPickerOpen, setBusPickerOpen] = useState(false);
-
   // 天氣卡改成使用者自訂、可新增任意多個「區塊」的清單（像「我的行程」的分類一樣），
   // 不是寫死出發／抵達兩個固定欄位；每個區塊是一個縣市＋行政區，會自動展開成「今天」
   // 「明天」兩張首頁輪播卡，不用另外選日期。剛創帳號、還沒存過任何偏好值時，預設兩個
@@ -370,13 +339,11 @@ export function DreamHomeView() {
   // hydration 無關，比較安全。
   const [weatherReady, setWeatherReady] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-
   const citiesForMode = mode === "train" ? trainCities : STATIONS_BY_CITY[mode];
   // 真實清單載入後 key 可能跟墊檔不一樣，保險起見擋一下，避免 undefined.map 當掉。
   const safeOriginCity = citiesForMode[originCity] ? originCity : Object.keys(citiesForMode)[0];
   const destCitiesForMode = destCitiesFor(mode, safeOriginCity, citiesForMode);
   const safeDestCity = destCitiesForMode[destCity] ? destCity : Object.keys(destCitiesForMode)[0];
-
   useEffect(() => {
     let cancelled = false;
     fetch("/api/transit/tra/stations")
@@ -392,11 +359,9 @@ export function DreamHomeView() {
       cancelled = true;
     };
   }, []);
-
   function openSettings() {
     setSettingsOpen(true);
   }
-
   // 進頁面時套用使用者上次存的天氣地區設定（本機瀏覽器儲存，純前端偏好值，之後接
   // 資料庫/API 時這裡會換成真的使用者設定讀取）。
   useEffect(() => {
@@ -426,7 +391,6 @@ export function DreamHomeView() {
     setWeatherBlocks(validBlocks.length > 0 ? validBlocks : defaultWeatherBlocks());
     setWeatherReady(true);
   }, []);
-
   // 進頁面時還原使用者最後一次停留的運輸工具分頁，不是套用「編輯首頁預設值」裡的固定
   // 設定——理由見 loadLastMode 旁的註解。跟上面天氣地區那個 effect 分開寫，因為這個只
   // 在掛載時跑一次、讀的是掛載當下的 mode 比對是否要切換，兩者各自獨立的初始化，合在
@@ -434,19 +398,20 @@ export function DreamHomeView() {
   useEffect(() => {
     const saved = loadLastMode();
     if (saved) selectMode(saved);
+    // 讀取完成前，所有模式都不顯示選中背景；
+    // 沒有紀錄的新使用者則維持 bus，這裡完成後才讓 bus 顯示選中。
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setModeReady(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
   function saveSettings(defaults: HomeDefaults) {
     setWeatherBlocks(defaults.weatherBlocks);
     saveDefaults(defaults);
     setSettingsOpen(false);
   }
-
   function closeSettings() {
     setSettingsOpen(false);
   }
-
   function selectMode(key: Mode) {
     if (key === mode) return;
     setMode(key);
@@ -496,7 +461,6 @@ export function DreamHomeView() {
     setDestCity(dCity);
     setDest(cities[dCity][dCity === oCity && cities[dCity].length > 1 ? 1 : 0]);
   }
-
   // 火車模式下，出發／抵達站只要變動就存起來，下次切回火車模式會自動還原，不用另外在
   // 編輯彈窗裡設「預設站牌」。日期／時間都故意不存——永遠先用現在的日期、時間頂著，
   // 使用者想要別的自己調（見 selectMode 裡的說明）。
@@ -504,21 +468,18 @@ export function DreamHomeView() {
     if (mode !== "train") return;
     saveTrainSearch({ originCity, origin, destCity, dest });
   }, [mode, originCity, origin, destCity, dest]);
-
   // 捷運／高鐵出發／抵達站只要變動就存起來，下次切回同一個車種會自動還原，不用每次都
   // 重新選一次系統／站點。
   useEffect(() => {
     if (mode !== "metro" && mode !== "thsr") return;
     saveStationOnlySearch(mode === "metro" ? METRO_SEARCH_KEY : THSR_SEARCH_KEY, { originCity, origin, destCity, dest });
   }, [mode, originCity, origin, destCity, dest]);
-
   function swapStations() {
     setOriginCity(destCity);
     setOrigin(dest);
     setDestCity(originCity);
     setDest(origin);
   }
-
   function searchTrains() {
     // 日期欄位的初始值只在掛載那一刻算一次（useState(todayLocal)），分頁開著跨過半夜
     // 沒有重新整理的話，日期會一直卡在「昨天」，拿去查台鐵／高鐵的每日時刻表會直接被
@@ -544,7 +505,6 @@ export function DreamHomeView() {
       `/tools/transit/results?origin=${encodeURIComponent(origin)}&dest=${encodeURIComponent(dest)}&mode=${mode}&date=${searchDate}&time=${encodeURIComponent(time)}&from=home`,
     );
   }
-
   return (
     <div className="-mb-24 flex min-h-full flex-col bg-white pb-24">
       {(() => {
@@ -599,21 +559,21 @@ export function DreamHomeView() {
           </div>
         );
       })()}
-
       <div className="relative z-10 -mt-16 flex-1 rounded-t-[2rem] bg-white px-5 pb-6 pt-5 shadow-[0_-8px_24px_-8px_rgba(111,95,214,0.2)]">
         <div className="mb-4">
           {weatherReady ? <WeatherCarousel blocks={weatherBlocks} /> : <WeatherCarouselSkeleton />}
         </div>
-
         <div className="flex items-center gap-2">
           {MODES.map((m) => {
-            const active = mode === m.key;
+            // modeReady 前不顯示任何 active 背景；
+            // 確認使用者最後停留的車種後，才只替該按鈕加上 bg-[#EFEAFC]。
+            const active = modeReady && mode === m.key;
             return (
               <button
                 key={m.key}
                 type="button"
                 onClick={() => selectMode(m.key)}
-                className={`flex flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2.5 text-xs transition-colors ${
+                className={`flex h-[80px] flex-1 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2.5 text-xs transition-colors ${
                   active ? "bg-[#EFEAFC] font-semibold text-[#6F5FD6]" : "text-[#9C94C4]"
                 }`}
               >
@@ -623,7 +583,6 @@ export function DreamHomeView() {
             );
           })}
         </div>
-
         {mode === "bus" ? (
           <div className="mt-5 flex flex-col gap-3">
             <label className="flex flex-col gap-1.5">
@@ -657,7 +616,6 @@ export function DreamHomeView() {
                 </div>
               </button>
             </label>
-
             <button
               type="button"
               onClick={swapStations}
@@ -666,7 +624,6 @@ export function DreamHomeView() {
             >
               ⇄
             </button>
-
             <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-[#9C94C4]">抵達{stationLabel}</span>
               <button type="button" onClick={() => setDestPickerOpen(true)} className="grid grid-cols-2 gap-2 text-left">
@@ -680,7 +637,6 @@ export function DreamHomeView() {
             </label>
           </div>
         )}
-
         <BusRoutePickerModal
           key={busPickerOpen ? "bus-open" : "bus-closed"}
           open={busPickerOpen}
@@ -688,7 +644,6 @@ export function DreamHomeView() {
           onClose={() => setBusPickerOpen(false)}
           onSave={(selection) => setBusSelection(selection)}
         />
-
         {mode !== "bus" && (
           <>
             <StationPickerModal
@@ -729,7 +684,6 @@ export function DreamHomeView() {
             />
           </>
         )}
-
         <div className="mt-3 grid grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-[#9C94C4]">日期</span>
@@ -752,7 +706,6 @@ export function DreamHomeView() {
             </button>
           </label>
         </div>
-
         <DatePickerModal
           key={datePickerOpen ? "date-open" : "date-closed"}
           open={datePickerOpen}
@@ -763,7 +716,6 @@ export function DreamHomeView() {
             setDatePickerOpen(false);
           }}
         />
-
         <TimePickerModal
           key={timePickerOpen ? "time-open" : "time-closed"}
           open={timePickerOpen}
@@ -774,7 +726,6 @@ export function DreamHomeView() {
             setTimePickerOpen(false);
           }}
         />
-
         <button
           type="button"
           onClick={searchTrains}
@@ -784,7 +735,6 @@ export function DreamHomeView() {
         >
           <FaIcon icon="magnifying-glass" size={14} className="text-white" /> 搜尋{MODES.find((m) => m.key === mode)?.label}班次 <span aria-hidden>→</span>
         </button>
-
         <p className="mt-6 flex items-center gap-1.5 text-sm font-semibold text-[#4A3B7C]">
           <span aria-hidden className="text-[#C9A6F2]">
             ♦
@@ -828,7 +778,6 @@ export function DreamHomeView() {
             })}
           </div>
         )}
-
         {/* 使用者在「其他」頁設定過幾組標題＋文案＋背景圖的話，每次進頁面／重新整理隨機挑
             一組（見掛載時那個 effect）；還沒設定過（weekendTrips 是空陣列）就退回原本寫死
             的那組，不影響舊有畫面。 */}
@@ -865,7 +814,6 @@ export function DreamHomeView() {
           );
         })()}
       </div>
-
       <MemoEditorModal
         key={memoEditorOpen ? "memo-open" : "memo-closed"}
         open={memoEditorOpen}
@@ -873,7 +821,6 @@ export function DreamHomeView() {
         onClose={() => setMemoEditorOpen(false)}
         onSave={saveMemos}
       />
-
       <HomeSettingsModal
         key={settingsOpen ? "settings-open" : "settings-closed"}
         open={settingsOpen}

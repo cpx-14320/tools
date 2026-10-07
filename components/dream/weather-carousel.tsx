@@ -193,9 +193,17 @@ export function WeatherCarousel({ blocks }: { blocks: WeatherBlock[] }) {
  *  loading 時的骨架共用同一份 markup。 */
 export function WeatherCarouselSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-2">
-      <WeatherCardSkeleton />
-      <WeatherCardSkeleton />
+    <div>
+      {/* 「今天／明天」是固定的輪播 UI，不等天氣資料或使用者偏好載入才顯示。
+          這樣 skeleton 切換成正式資料時，上方標題不會跟著消失／重新出現，版面高度也比較穩定。 */}
+      <div className="mb-1.5 flex items-center justify-center gap-1.5">
+        <span className="text-[10px] font-medium text-[#6F5FD6]">今天</span>
+        <span className="text-[10px] font-medium text-[#C7BFE6]">明天</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <WeatherCardSkeleton />
+        <WeatherCardSkeleton />
+      </div>
     </div>
   );
 }
