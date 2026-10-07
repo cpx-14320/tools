@@ -273,8 +273,6 @@ export async function computeMetroTrip(systemCode: string, originDisplay: string
   ]);
 
   const lineColorOf = new Map<string, string>(lines.map((l) => [l.LineNo, l.LineColor] as const));
-  const originLineNo = lineNoOfStationId(originId);
-  const originLineColor = lineColorOf.get(originLineNo);
   const { graph, nameOf } = buildGraph(entries);
   const route = shortestPath(graph, nameOf, lineColorOf, originId, destId);
   const fare = fareEntry ? fullFareOf(fareEntry) : undefined;
@@ -286,7 +284,6 @@ export async function computeMetroTrip(systemCode: string, originDisplay: string
       fare,
       transfer: route.transferSteps.length > 0,
       transferSteps: route.transferSteps.length > 0 ? route.transferSteps : undefined,
-      lineColor: originLineColor,
     };
   }
 
@@ -298,7 +295,6 @@ export async function computeMetroTrip(systemCode: string, originDisplay: string
     stops: 1,
     fare,
     transfer: false,
-    lineColor: originLineColor,
   };
 }
 
@@ -353,8 +349,6 @@ export async function computeCrossSystemMetroTrip(
   );
   const originId = stationIdOf(originDisplay);
   const destId = stationIdOf(destDisplay);
-  const originLineNo = lineNoOfStationId(originId);
-  const originLineColor = lineColorOf.get(originLineNo);
   const route = shortestPath(graph, nameOf, lineColorOf, originId, destId);
 
   if (!route) {
@@ -368,6 +362,5 @@ export async function computeCrossSystemMetroTrip(
     fare: undefined,
     transfer: true,
     transferSteps: route.transferSteps.length > 0 ? route.transferSteps : undefined,
-    lineColor: originLineColor,
   };
 }
