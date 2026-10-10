@@ -245,19 +245,25 @@ export function UbikeView() {
             </label>
           </div>
 
-          <div className="mt-4 flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl bg-white shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
-            {stations === null ? (
-              <p className="px-4 py-6 text-center text-sm text-[#B3ABD4]">載入中…</p>
-            ) : error ? (
-              <p className="px-4 py-6 text-center text-sm text-[#D1517E]">{error}</p>
-            ) : !cityName ? (
-              <p className="px-4 py-6 text-center text-sm text-[#B3ABD4]">還沒有任何資料</p>
-            ) : stations.length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm text-[#B3ABD4]">沒有符合的站點</p>
-            ) : (
-              stations.map((s) => <StationRow key={s.id} station={s} />)
-            )}
-          </div>
+          {/* 還沒選縣市、或選了縣市但查詢還沒回來，都不要用跟搜尋結果一樣的白底卡片包著——
+              那樣看起來像是「查過了、但是空的」，容易被誤會成查詢結果；單純文字置左、不加
+              卡片外框，才看得出來是「根本還沒開始查」或「正在查」。真的有東西要顯示（錯誤
+              訊息、查無結果、或站點清單）才用原本的卡片樣式。 */}
+          {!cityName ? (
+            <p className="mt-4 text-sm text-[#B3ABD4]">還沒有任何資料</p>
+          ) : stations === null ? (
+            <p className="mt-4 text-sm text-[#B3ABD4]">載入中…</p>
+          ) : (
+            <div className="mt-4 flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl bg-white shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
+              {error ? (
+                <p className="px-4 py-6 text-center text-sm text-[#D1517E]">{error}</p>
+              ) : stations.length === 0 ? (
+                <p className="px-4 py-6 text-center text-sm text-[#B3ABD4]">沒有符合的站點</p>
+              ) : (
+                stations.map((s) => <StationRow key={s.id} station={s} />)
+              )}
+            </div>
+          )}
         </>
       )}
 
