@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { computeMetroTrip } from "@/lib/metro-routing";
-import { METRO_SYSTEM_CODE } from "@/lib/metro-lines";
+import { computeMetroTrip } from "@/lib/transit/metro-routing";
+import { METRO_SYSTEM_CODE } from "@/lib/transit/metro-lines";
 
 // 只處理「出發、抵達在同一個捷運系統」的查詢——跨系統（台北／新北／桃園機場捷運互通的
 // 那三個）沒有統一的票價／行車時間資料，前端改用 findCrossSystemTransferStation 純比對

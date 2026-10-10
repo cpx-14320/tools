@@ -1,9 +1,9 @@
 "use client";
 
 import { PageHeader, Button, Card, CardBody, Badge, DeltaBadge } from "@/components/ui";
-import { DateFilterPicker } from "@/components/date-filter-picker";
-import { useDateFilter } from "@/components/date-filter-context";
-import { SalaryTrendChart, type TrendSeries } from "@/components/salary-trend-chart";
+import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
+import { useDateFilter } from "@/components/expenses/date-filter-context";
+import { SalaryTrendChart, type TrendSeries } from "@/components/expenses/salary-trend-chart";
 import {
   salaryItemTypeById,
   memberName,
@@ -14,8 +14,8 @@ import {
   dateFilterRange,
   referenceYearMonth,
   salaryRecordsInDateRange,
-  formatCurrency,
-} from "@/lib/mock-data";
+} from "@/lib/expenses/mock-data";
+import { formatCurrency } from "@/lib/format";
 
 const MEMBER_SERIES: TrendSeries[] = [
   { id: "m1", name: memberName("m1"), color: "var(--cat-c-fg)" },

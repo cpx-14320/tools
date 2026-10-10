@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader, Button } from "@/components/ui";
-import { topLevelCategories, subCategoriesOf, categoryColorClass, transactions } from "@/lib/mock-data";
+import { topLevelCategories, subCategoriesOf, categoryColorClass, transactions } from "@/lib/expenses/mock-data";
 
 export const metadata: Metadata = { title: "消費分類" };
 

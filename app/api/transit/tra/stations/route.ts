@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { groupTraStationsByCity } from "@/lib/tdx-stations";
+import { groupTraStationsByCity } from "@/lib/transit/tdx-stations";
 
 export async function GET() {
   try {

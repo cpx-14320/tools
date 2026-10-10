@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { tdxGet } from "@/lib/tdx-client";
-import { getTraStations } from "@/lib/tdx-stations";
-import { todayInTaipei, nowHHmmInTaipei, minutesBetween, formatDuration } from "@/lib/tdx-time";
+import { tdxGet } from "@/lib/transit/tdx-client";
+import { getTraStations } from "@/lib/transit/tdx-stations";
+import { todayInTaipei, nowHHmmInTaipei, minutesBetween, formatDuration } from "@/lib/transit/tdx-time";
 
 interface StopTime {
   StationID: string;

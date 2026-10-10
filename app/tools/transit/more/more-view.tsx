@@ -5,12 +5,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { TOOLS_REGISTRY } from "@/lib/tools-registry";
-import { ImageSlot } from "@/components/dream/image-slot";
-import { FaIcon } from "@/components/dream/fa-icon";
-import { ListRowSkeleton } from "@/components/dream/list-row-skeleton";
-import { loadSkeletonCount, saveSkeletonCount } from "@/components/dream/skeleton-count";
-import { HERO_BANNER_IMAGE_OPTIONS, WEEKEND_TRIP_IMAGE_OPTIONS } from "@/components/dream/caption-image-options";
-import { CaptionImageEditorModal, type CaptionImageDraft, type CaptionImageInitial } from "@/components/dream/caption-image-editor-modal";
+import { ImageSlot } from "@/components/transit/image-slot";
+import { FaIcon } from "@/components/transit/fa-icon";
+import { ListRowSkeleton } from "@/components/transit/list-row-skeleton";
+import { loadSkeletonCount, saveSkeletonCount } from "@/components/transit/skeleton-count";
+import { HERO_BANNER_IMAGE_OPTIONS, WEEKEND_TRIP_IMAGE_OPTIONS } from "@/components/transit/caption-image-options";
+import { CaptionImageEditorModal, type CaptionImageDraft, type CaptionImageInitial } from "@/components/transit/caption-image-editor-modal";
 
 const CURRENT_TOOL_ID = "transit";
 

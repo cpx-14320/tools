@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader, Card, CardBody, Badge, Button } from "@/components/ui";
-import { ledger, members } from "@/lib/mock-data";
+import { ledger, members } from "@/lib/expenses/mock-data";
 
 export const metadata: Metadata = { title: "成員" };
 

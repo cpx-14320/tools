@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getStopRoutes, BUS_CITY_CODE } from "@/lib/bus-routing";
+import { getStopRoutes, BUS_CITY_CODE } from "@/lib/transit/bus-routing";
 
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardBody, Button } from "@/components/ui";
-import { LedgerIllustration } from "@/components/illustrations";
+import { LedgerIllustration } from "@/components/expenses/illustrations";
 
 export const metadata: Metadata = { title: "選擇帳本" };
 

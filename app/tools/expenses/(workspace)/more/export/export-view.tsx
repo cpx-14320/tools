@@ -7,8 +7,8 @@ import {
   transactionDateRange,
   transactionsInRange,
   transactionsToCSV,
-  formatCurrency,
-} from "@/lib/mock-data";
+} from "@/lib/expenses/mock-data";
+import { formatCurrency } from "@/lib/format";
 
 export function ExportView() {
   const range = transactionDateRange();

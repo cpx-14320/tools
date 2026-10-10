@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { FaIcon } from "@/components/dream/fa-icon";
+import { FaIcon } from "@/components/transit/fa-icon";
 import { scrollContainerToTop, scrollWithin } from "@/lib/scroll-within";
-import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY } from "@/components/dream/stations-data";
-import { TripGroupPickerModal } from "@/components/dream/trip-group-picker-modal";
-import { FREQUENT_TRIP_ICON_OPTIONS } from "@/components/dream/frequent-trip-icons";
-import type { FrequentTripDraft } from "@/components/dream/frequent-trip-modal";
-import { metroSystemOf, findCrossSystemTransferStation } from "@/lib/metro-lines";
-import { formatDuration, todayInTaipei, nowHHmmInTaipei } from "@/lib/tdx-time";
-import { routeBadgeStyle, etaLabel, etaToneStyle } from "@/components/dream/bus-route-picker-modal";
+import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY } from "@/components/transit/stations-data";
+import { TripGroupPickerModal } from "@/components/transit/trip-group-picker-modal";
+import { FREQUENT_TRIP_ICON_OPTIONS } from "@/components/transit/frequent-trip-icons";
+import type { FrequentTripDraft } from "@/components/transit/frequent-trip-modal";
+import { metroSystemOf, findCrossSystemTransferStation } from "@/lib/transit/metro-lines";
+import { formatDuration, todayInTaipei, nowHHmmInTaipei } from "@/lib/transit/tdx-time";
+import { routeBadgeStyle, etaLabel, etaToneStyle } from "@/components/transit/bus-route-picker-modal";
 
 export type Mode = "bus" | "train" | "metro" | "thsr";
 
@@ -203,7 +203,7 @@ function useMetroTrip(mode: Mode, origin: string, dest: string): MetroTripInfo |
   return trip;
 }
 
-// 公車是「路線優先」（見 components/dream/bus-route-picker-modal.tsx），結果頁拿到的是
+// 公車是「路線優先」（見 components/transit/bus-route-picker-modal.tsx），結果頁拿到的是
 // 選好的縣市＋路線＋方向＋站牌，不是起訖站——查的是這條路線＋這個方向的完整真實站序，
 // 每一站都帶即時到站狀態（lib/bus-routing.ts），不是像火車／高鐵／捷運那樣查「一整天的
 // 班次清單」：公車沒有時刻表，只能查「現在」。
@@ -711,7 +711,7 @@ export function ResultsView({
       )}
 
       {(visibleResults.length > 0 || (isBus && (busStops?.length ?? 0) > 0)) && (
-        // DreamMobileShell 的卡片容器本身有 transform，是這個 fixed 按鈕的定位基準
+        // TransitMobileShell 的卡片容器本身有 transform，是這個 fixed 按鈕的定位基準
         // （不是整個瀏覽器視窗），right-5／bottom 直接貼齊卡片邊界，不用再額外包一層
         // mx-auto + max-w-[430px] 去手動對齊寬度。
         <button

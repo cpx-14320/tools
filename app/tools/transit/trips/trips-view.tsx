@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FrequentTripModal, type FrequentTripDraft } from "@/components/dream/frequent-trip-modal";
-import { frequentTripIconPath } from "@/components/dream/frequent-trip-icons";
-import { ImageSlot } from "@/components/dream/image-slot";
-import { routeBadgeStyle } from "@/components/dream/bus-route-picker-modal";
-import { FaIcon } from "@/components/dream/fa-icon";
-import { ListRowSkeleton } from "@/components/dream/list-row-skeleton";
-import { loadSkeletonCount, saveSkeletonCount } from "@/components/dream/skeleton-count";
+import { FrequentTripModal, type FrequentTripDraft } from "@/components/transit/frequent-trip-modal";
+import { frequentTripIconPath } from "@/components/transit/frequent-trip-icons";
+import { ImageSlot } from "@/components/transit/image-slot";
+import { routeBadgeStyle } from "@/components/transit/bus-route-picker-modal";
+import { FaIcon } from "@/components/transit/fa-icon";
+import { ListRowSkeleton } from "@/components/transit/list-row-skeleton";
+import { loadSkeletonCount, saveSkeletonCount } from "@/components/transit/skeleton-count";
 
 type Mode = "bus" | "train" | "metro" | "thsr";
 

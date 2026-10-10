@@ -1,9 +1,9 @@
 "use client";
 
 import { Card, CardBody, DeltaBadge } from "@/components/ui";
-import { DashboardIllustration } from "@/components/illustrations";
-import { DateFilterPicker } from "@/components/date-filter-picker";
-import { useDateFilter } from "@/components/date-filter-context";
+import { DashboardIllustration } from "@/components/expenses/illustrations";
+import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
+import { useDateFilter } from "@/components/expenses/date-filter-context";
 import {
   categoryBreakdown,
   incomeBreakdown,
@@ -16,9 +16,9 @@ import {
   rangeDelta,
   budgetForMonth,
   totalsForRange,
-  formatCurrency,
   memberName,
-} from "@/lib/mock-data";
+} from "@/lib/expenses/mock-data";
+import { formatCurrency } from "@/lib/format";
 
 export function DashboardView() {
   const { filter } = useDateFilter();

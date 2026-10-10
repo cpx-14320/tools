@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getSessionUser } from "@/lib/auth";
-import { listTripGroups, createTripGroup, renameTripGroup, deleteTripGroup } from "@/lib/trip-groups";
-import { listFrequentTrips } from "@/lib/frequent-trips";
+import { listTripGroups, createTripGroup, renameTripGroup, deleteTripGroup } from "@/lib/transit/trip-groups";
+import { listFrequentTrips } from "@/lib/transit/frequent-trips";
 
 export async function GET() {
   const user = await getSessionUser();

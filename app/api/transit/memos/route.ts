@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getSessionUser } from "@/lib/auth";
-import { listMemos, syncMemos, type MemoInput } from "@/lib/memos";
+import { listMemos, syncMemos, type MemoInput } from "@/lib/transit/memos";
 
 export async function GET() {
   const user = await getSessionUser();

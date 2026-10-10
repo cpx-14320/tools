@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getSessionUser } from "@/lib/auth";
-import { listWeekendTrips, syncWeekendTrips, type WeekendTripInput } from "@/lib/weekend-trips";
+import { listWeekendTrips, syncWeekendTrips, type WeekendTripInput } from "@/lib/transit/weekend-trips";
 
 export async function GET() {
   const user = await getSessionUser();

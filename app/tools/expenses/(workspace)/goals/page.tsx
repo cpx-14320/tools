@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader, Card, CardBody, Button, Badge } from "@/components/ui";
-import { savingsGoals, goalProgress, memberName, formatCurrency } from "@/lib/mock-data";
+import { savingsGoals, goalProgress, memberName } from "@/lib/expenses/mock-data";
+import { formatCurrency } from "@/lib/format";
 
 export const metadata: Metadata = { title: "存錢目標" };
 

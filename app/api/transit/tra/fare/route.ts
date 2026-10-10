@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { tdxGet } from "@/lib/tdx-client";
-import { getTraStations } from "@/lib/tdx-stations";
+import { tdxGet } from "@/lib/transit/tdx-client";
+import { getTraStations } from "@/lib/transit/tdx-stations";
 
 interface FareEntry {
   Direction: number;

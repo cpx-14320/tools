@@ -17,7 +17,7 @@ export default function ResultsPage() {
   // 時段區間）；首頁搜尋只有單一出發時間，不會帶這兩個參數，維持顯示全部結果的行為。
   const startTime = params.get("startTime") ?? "";
   const endTime = params.get("endTime") ?? "";
-  // 公車是路線優先（見 components/dream/bus-route-picker-modal.tsx），不是起訖站，網址帶的
+  // 公車是路線優先（見 components/transit/bus-route-picker-modal.tsx），不是起訖站，網址帶的
   // 是縣市／路線／方向／站牌這四個參數，不是 origin/dest。
   const busCity = params.get("busCity") ?? "";
   const busRoute = params.get("busRoute") ?? "";

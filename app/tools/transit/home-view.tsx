@@ -1,21 +1,21 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ImageSlot } from "@/components/dream/image-slot";
-import { FaIcon } from "@/components/dream/fa-icon";
-import { ICON_PATHS } from "@/components/dream/icon-paths";
-import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY, destCitiesFor, type Mode } from "@/components/dream/stations-data";
-import { DISTRICTS_BY_CITY } from "@/lib/cwa-districts";
-import { HomeSettingsModal, type HomeDefaults } from "@/components/dream/home-settings-modal";
-import { TimePickerModal } from "@/components/dream/time-picker-modal";
-import { DatePickerModal } from "@/components/dream/date-picker-modal";
-import { StationPickerModal } from "@/components/dream/station-picker-modal";
-import { BusRoutePickerModal, routeBadgeStyle, type BusRouteSelection } from "@/components/dream/bus-route-picker-modal";
-import { MemoEditorModal, type MemoDraft } from "@/components/dream/memo-editor-modal";
-import { memoIconPath } from "@/components/dream/memo-icons";
-import { WeatherCarousel, WeatherCarouselSkeleton, type WeatherBlock } from "@/components/dream/weather-carousel";
-import { ListRowSkeleton } from "@/components/dream/list-row-skeleton";
-import { loadSkeletonCount, saveSkeletonCount } from "@/components/dream/skeleton-count";
+import { ImageSlot } from "@/components/transit/image-slot";
+import { FaIcon } from "@/components/transit/fa-icon";
+import { ICON_PATHS } from "@/components/transit/icon-paths";
+import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY, destCitiesFor, type Mode } from "@/components/transit/stations-data";
+import { DISTRICTS_BY_CITY } from "@/lib/transit/cwa-districts";
+import { HomeSettingsModal, type HomeDefaults } from "@/components/transit/home-settings-modal";
+import { TimePickerModal } from "@/components/transit/time-picker-modal";
+import { DatePickerModal } from "@/components/transit/date-picker-modal";
+import { StationPickerModal } from "@/components/transit/station-picker-modal";
+import { BusRoutePickerModal, routeBadgeStyle, type BusRouteSelection } from "@/components/transit/bus-route-picker-modal";
+import { MemoEditorModal, type MemoDraft } from "@/components/transit/memo-editor-modal";
+import { memoIconPath } from "@/components/transit/memo-icons";
+import { WeatherCarousel, WeatherCarouselSkeleton, type WeatherBlock } from "@/components/transit/weather-carousel";
+import { ListRowSkeleton } from "@/components/transit/list-row-skeleton";
+import { loadSkeletonCount, saveSkeletonCount } from "@/components/transit/skeleton-count";
 const DEFAULTS_KEY = "cpx-tools:transit:home-defaults";
 // 小小備忘錄是使用者自己增減的清單，筆數會變動，骨架列數用這個 key 記住上次實際筆數；
 // 完全沒存過（第一次使用）時先猜 2 則。
@@ -171,7 +171,7 @@ function resolveStation(cities: Record<string, string[]>, preferred: string | un
   const city = keys[Math.min(fallbackIndex, keys.length - 1)];
   return { city, station: cities[city][0] };
 }
-export function DreamHomeView() {
+export function TransitHomeView() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("bus");
   // 初次 render 先讓內容照常顯示，不隱藏整個模式區塊。

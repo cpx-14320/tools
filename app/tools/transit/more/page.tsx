@@ -1,5 +1,5 @@
 import { MoreView } from "./more-view";
 
-export default function DreamMorePage() {
+export default function TransitMorePage() {
   return <MoreView />;
 }

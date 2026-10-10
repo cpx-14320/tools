@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getSessionUser } from "@/lib/auth";
-import { listHeroBanners, syncHeroBanners, type HeroBannerInput } from "@/lib/hero-banners";
+import { listHeroBanners, syncHeroBanners, type HeroBannerInput } from "@/lib/transit/hero-banners";
 
 export async function GET() {
   const user = await getSessionUser();

@@ -7,7 +7,7 @@ import {
   parseTransactionsCSV,
   commitImportedTransactions,
   type ImportRowResult,
-} from "@/lib/mock-data";
+} from "@/lib/expenses/mock-data";
 
 type Stage = "pick" | "preview" | "done";
 

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Button, Card, CardBody, DeltaBadge } from "@/components/ui";
-import { DateFilterPicker } from "@/components/date-filter-picker";
-import { useDateFilter } from "@/components/date-filter-context";
+import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
+import { useDateFilter } from "@/components/expenses/date-filter-context";
 import {
   transactions,
   categoryById,
@@ -11,14 +11,14 @@ import {
   categoryPath,
   memberName,
   members,
-  formatCurrency,
   dateFilterRange,
   previousPeriodSuffix,
   rangeDelta,
   totalsForRange,
   type Transaction,
   type CategoryKind,
-} from "@/lib/mock-data";
+} from "@/lib/expenses/mock-data";
+import { formatCurrency } from "@/lib/format";
 
 function matchesQuery(t: Transaction, query: string): boolean {
   const q = query.trim().toLowerCase();

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader, Button, Badge } from "@/components/ui";
-import { salaryItemTypes } from "@/lib/mock-data";
+import { salaryItemTypes } from "@/lib/expenses/mock-data";
 
 export const metadata: Metadata = { title: "薪資明細類型" };
 

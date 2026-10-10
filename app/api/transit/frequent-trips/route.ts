@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getSessionUser } from "@/lib/auth";
-import { listFrequentTrips, syncFrequentTrips, type FrequentTripInput } from "@/lib/frequent-trips";
+import { listFrequentTrips, syncFrequentTrips, type FrequentTripInput } from "@/lib/transit/frequent-trips";
 
 export async function GET() {
   const user = await getSessionUser();
