@@ -12,6 +12,7 @@ export function RegisterView() {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -23,7 +24,7 @@ export function RegisterView() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, username, password }),
+        body: JSON.stringify({ name, username, password, referralCode }),
       });
       const data: { error?: string } = await res.json();
       if (!res.ok) {
@@ -84,6 +85,16 @@ export function RegisterView() {
                 className="rounded-xl border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand"
               />
               <span className="text-xs text-muted">至少 8 個字元</span>
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-muted">推薦碼（選填）</span>
+              <input
+                type="text"
+                autoComplete="off"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value)}
+                className="rounded-xl border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand"
+              />
             </label>
 
             {error && <p className="text-xs text-negative">{error}</p>}

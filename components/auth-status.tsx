@@ -21,6 +21,11 @@ export function AuthStatus() {
   return (
     <div className="flex items-center gap-2">
       <span className="truncate text-xs font-medium text-muted">{user.name}</span>
+      {user.isAdmin && (
+        <Link href="/admin" className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium hover:bg-surface-2">
+          管理後台
+        </Link>
+      )}
       <button
         type="button"
         onClick={() => logout()}

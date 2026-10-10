@@ -7,11 +7,16 @@ import { getDb } from "./mongodb";
 export const SESSION_COOKIE = "cpx_session";
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 天
 
+// 註冊時輸入這個推薦碼，帳號會直接拿到管理者權限——目前朋友圈在用，先用這個簡單的
+// 共用碼頂著，還沒有「申請後人工審核」那套流程。
+export const ADMIN_REFERRAL_CODE = "SW01256";
+
 export interface SessionUser {
   id: string;
   username: string;
   name: string;
   tools: string[];
+  isAdmin: boolean;
 }
 
 export interface UserDoc {
@@ -20,6 +25,7 @@ export interface UserDoc {
   passwordHash: string;
   name: string;
   tools: string[];
+  isAdmin: boolean;
 }
 
 interface SessionDoc {
@@ -37,7 +43,7 @@ export function verifyPassword(password: string, hash: string): Promise<boolean>
 }
 
 export function toSessionUser(user: UserDoc): SessionUser {
-  return { id: user._id.toHexString(), username: user.username, name: user.name, tools: user.tools };
+  return { id: user._id.toHexString(), username: user.username, name: user.name, tools: user.tools, isAdmin: !!user.isAdmin };
 }
 
 /** 建立一筆 session 資料並把對應的 cookie 寫進回應裡，session token 是隨機字串，
@@ -92,11 +98,12 @@ export async function findUserByUsername(username: string) {
 }
 
 /** 新註冊的使用者預設拿到目前 toolsRegistry 裡所有工具的權限——這個小工具包目前
- *  是朋友／自己人在用，還沒有「申請權限才能用」的審核流程，先用這個簡單預設值。 */
-export async function createUser(username: string, password: string, name: string): Promise<SessionUser> {
+ *  是朋友／自己人在用，還沒有「申請權限才能用」的審核流程，先用這個簡單預設值。
+ *  isAdmin 由註冊表單是否填對推薦碼（ADMIN_REFERRAL_CODE）決定，不是這裡自己判斷。 */
+export async function createUser(username: string, password: string, name: string, isAdmin: boolean): Promise<SessionUser> {
   const db = await getDb();
   const tools = await db.collection("toolsRegistry").find().map((t) => t.toolId as string).toArray();
   const passwordHash = await hashPassword(password);
-  const result = await db.collection<UserDoc>("users").insertOne({ username, passwordHash, name, tools } as UserDoc);
-  return { id: result.insertedId.toHexString(), username, name, tools };
+  const result = await db.collection<UserDoc>("users").insertOne({ username, passwordHash, name, tools, isAdmin } as UserDoc);
+  return { id: result.insertedId.toHexString(), username, name, tools, isAdmin };
 }
