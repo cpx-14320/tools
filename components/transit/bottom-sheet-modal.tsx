@@ -57,7 +57,7 @@ export function BottomSheetModal({
       <div className="relative flex h-full w-full justify-center px-0 py-0 sm:px-4 sm:py-6">
         <div className="flex h-dvh w-full max-w-[430px] items-end sm:h-[850px]">
           <div
-            className={`flex max-h-[70%] w-full ${maxWidthClassName} flex-col overflow-y-auto rounded-t-[1.75rem] bg-white`}
+            className={`flex max-h-[80%] w-full ${maxWidthClassName} flex-col overflow-y-auto rounded-t-[1.75rem] bg-white`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-[#ECE4FA] px-5 py-4">
