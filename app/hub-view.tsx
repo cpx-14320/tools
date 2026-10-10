@@ -12,6 +12,14 @@ const tools = [
     href: "/tools/transit",
     status: "active" as const,
   },
+  {
+    name: "記帳本",
+    desc: "記錄家庭收支、拆分帳本成員，追蹤每月預算跟存錢目標。",
+    icon: "💰",
+    iconBg: "bg-cat-e-bg",
+    href: "/tools/expenses",
+    status: "active" as const,
+  },
 ];
 
 export function HubView() {
