@@ -663,6 +663,11 @@ export function ResultsView({
                     {r.delayMinutes > 0 ? `誤點 ${r.delayMinutes} 分` : "準時"}
                   </span>
                 ) : null}
+                {/* 「全部」頁籤混雜各種車種，班次號前面補一個車種標籤方便分辨；切到區間／區間快／
+                    自強／普悠瑪這些已經篩過的頁籤，車種從頁籤本身就看得出來，標籤是多餘資訊，不顯示。 */}
+                {isTrain && typeTab === "全部" && (
+                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${badgeClass(mode)}`}>{trainTypeOf(r.code)}</span>
+                )}
                 <span className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${badgeClass(mode)}`}>
                   {isTrain ? trainNumberOf(r.code) : r.code}
                 </span>
