@@ -8,6 +8,7 @@ import { ICON_PATHS } from "./icon-paths";
 const tabs = [
   { href: "/tools/transit", label: "首頁", icon: ICON_PATHS.navHome },
   { href: "/tools/transit/trips", label: "我的行程", icon: ICON_PATHS.navTrips },
+  { href: "/tools/transit/youbike", label: "YouBike", icon: ICON_PATHS.navYoubike },
   { href: "/tools/transit/more", label: "設定", icon: ICON_PATHS.navOther },
 ];
 

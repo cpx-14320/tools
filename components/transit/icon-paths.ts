@@ -19,6 +19,7 @@ export const ICON_PATHS = {
 
   navHome: "/transit/nav-home.png",
   navTrips: "/transit/nav-trips.png",
+  navYoubike: "/transit/nav-youbike.png",
   navOther: "/transit/nav-other.png",
 
   modeTrain: "/transit/mode-train.png",
