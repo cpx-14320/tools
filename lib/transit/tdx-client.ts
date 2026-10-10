@@ -1,6 +1,8 @@
 // 伺服器端專用：只能從 app/api/** 的 route handler 匯入，絕不能進到 "use client" 檔案，
 // 否則 TDX_CLIENT_SECRET 會被打包進前端 bundle。
 
+import { getDb } from "../mongodb";
+
 const TOKEN_URL = "https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token";
 const BASE_URL = "https://tdx.transportdata.tw/api/basic";
 
@@ -70,19 +72,43 @@ async function getAccessToken(): Promise<string> {
 // 所以快取時間設得跟額度重置週期（60 秒）一樣長，同一個 path 一分鐘內最多只會打一次。
 // 不快取失敗結果，失敗就從快取移除，下次重新打。
 const CACHE_TTL_MS = 60_000;
-const cache = new Map<string, { promise: Promise<unknown>; expiresAt: number }>();
+
+// 這一層是 process 記憶體內的第一層快取，同一個還熱著的 function instance 連續打同個
+// path 時完全不用等 Mongo 往返；它也靠「存 promise 不是存值」順便處理同一 instance 內
+// 多個併發請求打同個 path 的情況，大家等同一個 promise，不會真的各自打一次 TDX。
+const memCache = new Map<string, { promise: Promise<unknown>; expiresAt: number }>();
+
+interface TdxCacheDoc {
+  _id: string; // path
+  data: unknown;
+  expiresAt: Date;
+}
 
 /**
  * 呼叫 TDX 資料 API，path 例如 "/v3/Rail/TRA/StationLiveBoard/Station/1100"（不含 /api/basic 前綴）。
  * ttlMs 可覆寫快取時間——車站清單這種幾乎不會變的靜態資料可以傳更長的 TTL，不要每次都占掉額度。
+ *
+ * 快取分兩層：process 記憶體（上面的 memCache）＋ MongoDB 的 transit.tdxCache。正式環境是
+ * Vercel serverless，function instance 會被回收、記憶體快取說沒就沒，光靠記憶體快取在冷啟動
+ * 後形同沒快取，很容易把每分鐘 5 次的額度打滿。Mongo 這層在冷啟動後還在，可以省下重打 TDX。
+ * 注意：這不是跨 instance 的鎖，兩個 instance 真的同時冷啟動、同時查同個 path，還是可能各自
+ * 打一次 TDX——這個情境很少見，不特別處理。
  */
 export function tdxGet<T>(path: string, ttlMs: number = CACHE_TTL_MS): Promise<T> {
-  const cached = cache.get(path);
+  const cached = memCache.get(path);
   if (cached && cached.expiresAt > Date.now()) {
     return cached.promise as Promise<T>;
   }
 
   const promise = (async () => {
+    const db = await getDb();
+    const cacheColl = db.collection<TdxCacheDoc>("transit.tdxCache");
+
+    const cachedDoc = await cacheColl.findOne({ _id: path });
+    if (cachedDoc && cachedDoc.expiresAt.getTime() > Date.now()) {
+      return cachedDoc.data as T;
+    }
+
     const token = await getAccessToken();
     const url = `${BASE_URL}${path}${path.includes("?") ? "&" : "?"}$format=JSON`;
 
@@ -100,16 +126,24 @@ export function tdxGet<T>(path: string, ttlMs: number = CACHE_TTL_MS): Promise<T
       );
     }
 
-    return (await res.json()) as T;
+    const data = (await res.json()) as T;
+
+    // 快取寫入失敗不該讓這次查詢跟著失敗（使用者已經拿到資料了），吞掉錯誤就好；
+    // 下一次請求頂多就是沒快取可用、重新打一次 TDX，不是什麼嚴重後果。
+    await cacheColl
+      .updateOne({ _id: path }, { $set: { data, expiresAt: new Date(Date.now() + ttlMs) } }, { upsert: true })
+      .catch(() => {});
+
+    return data;
   })();
 
-  cache.set(path, {
+  memCache.set(path, {
     promise,
     expiresAt: Date.now() + ttlMs,
   });
 
   // 失敗不留快取，下一次請求可以重新嘗試。
-  promise.catch(() => cache.delete(path));
+  promise.catch(() => memCache.delete(path));
 
   return promise;
 }

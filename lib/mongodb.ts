@@ -38,6 +38,9 @@ async function ensureIndexes(db: Db): Promise<void> {
     db.collection("transit.memos").createIndex({ userId: 1, order: 1 }),
     db.collection("transit.frequentTrips").createIndex({ userId: 1, mode: 1, groupId: 1, order: 1 }),
     db.collection("transit.tripGroups").createIndex({ userId: 1, mode: 1, order: 1 }),
+    // tdxGet 的持久化快取（見 lib/transit/tdx-client.ts）——TTL index 負責把過期的
+    // 快取文件自動清掉，不用另外寫排程清理。
+    db.collection("transit.tdxCache").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
   ]);
 
   // toolsRegistry 是目前工具清單的真實來源，用 upsert 寫入 lib/tools-registry.ts 裡

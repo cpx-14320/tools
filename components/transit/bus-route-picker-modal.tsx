@@ -110,6 +110,32 @@ const KEYPAD_ROWS: { label: string; insert: string; tone?: keyof typeof ROUTE_CO
   ],
 ];
 
+// 彈窗用 key={...} 強制每次開關整個 remount（見 home-view.tsx），元件內的 useState 不會
+// 留著——這幾個快取放在元件外面（模組層級），關掉再打開同一個 city/路線/站牌不用重打 API，
+// 直到分頁關掉才會消失。路線／站牌「名稱」清單幾乎不會變，快取久一點；查詢結果裡帶即時到站
+// 時間的（路線詳情、站牌詳情）要新鮮一點，比照伺服器端 ETA 快取的新鮮度（60 秒）抓短一點。
+const SEARCH_CACHE_TTL_MS = 5 * 60_000;
+const ETA_CACHE_TTL_MS = 30_000;
+
+interface ClientCacheEntry<T> {
+  data: T;
+  expiresAt: number;
+}
+
+function getCached<T>(cache: Map<string, ClientCacheEntry<T>>, key: string): T | undefined {
+  const hit = cache.get(key);
+  return hit && hit.expiresAt > Date.now() ? hit.data : undefined;
+}
+
+function setCached<T>(cache: Map<string, ClientCacheEntry<T>>, key: string, data: T, ttlMs: number): void {
+  cache.set(key, { data, expiresAt: Date.now() + ttlMs });
+}
+
+const routeSearchCache = new Map<string, ClientCacheEntry<string[]>>();
+const stopSearchCache = new Map<string, ClientCacheEntry<string[]>>();
+const routeStopsCache = new Map<string, ClientCacheEntry<BusStopEta[]>>();
+const stopRoutesCache = new Map<string, ClientCacheEntry<StopRouteEta[]>>();
+
 type Step = { kind: "search" } | { kind: "routeDetail"; routeName: string } | { kind: "stopDetail"; stopName: string };
 
 // 路線詳情、站牌詳情兩個 step 都需要「去程／返程切換 tabs」＋「重新搜尋」並排在同一行，
@@ -170,24 +196,51 @@ export function BusRoutePickerModal({
 
   // 搜尋路線／站牌：依目前選的縣市＋輸入字即時查真實 TDX 資料，不是前端自己過濾假清單。
   // 小鍵盤／文字框每打一個字就會變動查詢字，debounce 200ms 再查，不用每個按鍵都打一次。
+  // 還沒輸入任何字就不查——彈窗一打開 query 是空字串，不應該平白無故先打一次 API。
   useEffect(() => {
     if (step.kind !== "search") return;
+
+    const trimmed = query.trim();
+    const cache = searchMode === "route" ? routeSearchCache : stopSearchCache;
+
+    if (!trimmed) {
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setSearchLoading(false);
+      setSearchError(null);
+      if (searchMode === "route") setRouteResults([]);
+      else setStopResults([]);
+      /* eslint-enable react-hooks/set-state-in-effect */
+      return;
+    }
+
+    const cacheKey = `${cityName}|${trimmed}`;
+    const cached = getCached(cache, cacheKey);
+    if (cached) {
+      setSearchLoading(false);
+      setSearchError(null);
+      if (searchMode === "route") setRouteResults(cached);
+      else setStopResults(cached);
+      return;
+    }
+
     let cancelled = false;
-    /* eslint-disable react-hooks/set-state-in-effect */
     setSearchLoading(true);
     setSearchError(null);
-    /* eslint-enable react-hooks/set-state-in-effect */
     const timer = setTimeout(() => {
       const endpoint = searchMode === "route" ? "routes" : "stops";
-      const key = searchMode === "route" ? "routes" : "stops";
-      const qs = new URLSearchParams({ city: cityName, q: query });
+      const qs = new URLSearchParams({ city: cityName, q: trimmed });
       fetch(`/api/transit/bus/${endpoint}?${qs.toString()}`)
         .then((res) => res.json())
         .then((data: { routes?: string[]; stops?: string[]; error?: string }) => {
           if (cancelled) return;
-          if (data.error) setSearchError(data.error);
-          if (key === "routes") setRouteResults(data.routes ?? []);
-          else setStopResults(data.stops ?? []);
+          if (data.error) {
+            setSearchError(data.error);
+            return;
+          }
+          const results = (searchMode === "route" ? data.routes : data.stops) ?? [];
+          setCached(cache, cacheKey, results, SEARCH_CACHE_TTL_MS);
+          if (searchMode === "route") setRouteResults(results);
+          else setStopResults(results);
         })
         .catch(() => {
           if (!cancelled) setSearchError("查詢失敗，請稍後再試");
@@ -209,18 +262,32 @@ export function BusRoutePickerModal({
   // 路線詳情：某條路線＋某個方向的真實站序，每一站都帶即時到站狀態。
   useEffect(() => {
     if (!routeNameForDetail) return;
+
+    const cacheKey = `${cityName}|${routeNameForDetail}|${direction}`;
+    const cached = getCached(routeStopsCache, cacheKey);
+    if (cached) {
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setRouteStops(cached);
+      setRouteStopsError(null);
+      /* eslint-enable react-hooks/set-state-in-effect */
+      return;
+    }
+
     let cancelled = false;
-    /* eslint-disable react-hooks/set-state-in-effect */
     setRouteStops(null);
     setRouteStopsError(null);
-    /* eslint-enable react-hooks/set-state-in-effect */
     const qs = new URLSearchParams({ city: cityName, route: routeNameForDetail, direction: String(direction) });
     fetch(`/api/transit/bus/route-stops?${qs.toString()}`)
       .then((res) => res.json())
       .then((data: { stops?: BusStopEta[]; error?: string }) => {
         if (cancelled) return;
-        if (data.error) setRouteStopsError(data.error);
-        setRouteStops(data.stops ?? []);
+        if (data.error) {
+          setRouteStopsError(data.error);
+          return;
+        }
+        const stops = data.stops ?? [];
+        setCached(routeStopsCache, cacheKey, stops, ETA_CACHE_TTL_MS);
+        setRouteStops(stops);
       })
       .catch(() => {
         if (!cancelled) setRouteStopsError("查詢失敗，請稍後再試");
@@ -237,18 +304,32 @@ export function BusRoutePickerModal({
   // 站牌詳情：目前有停靠這個站牌的所有路線（去程／返程分開），各自帶即時到站狀態。
   useEffect(() => {
     if (!stopNameForDetail) return;
+
+    const cacheKey = `${cityName}|${stopNameForDetail}`;
+    const cached = getCached(stopRoutesCache, cacheKey);
+    if (cached) {
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setStopRoutes(cached);
+      setStopRoutesError(null);
+      /* eslint-enable react-hooks/set-state-in-effect */
+      return;
+    }
+
     let cancelled = false;
-    /* eslint-disable react-hooks/set-state-in-effect */
     setStopRoutes(null);
     setStopRoutesError(null);
-    /* eslint-enable react-hooks/set-state-in-effect */
     const qs = new URLSearchParams({ city: cityName, stop: stopNameForDetail });
     fetch(`/api/transit/bus/stop-routes?${qs.toString()}`)
       .then((res) => res.json())
       .then((data: { routes?: StopRouteEta[]; error?: string }) => {
         if (cancelled) return;
-        if (data.error) setStopRoutesError(data.error);
-        setStopRoutes(data.routes ?? []);
+        if (data.error) {
+          setStopRoutesError(data.error);
+          return;
+        }
+        const routes = data.routes ?? [];
+        setCached(stopRoutesCache, cacheKey, routes, ETA_CACHE_TTL_MS);
+        setStopRoutes(routes);
       })
       .catch(() => {
         if (!cancelled) setStopRoutesError("查詢失敗，請稍後再試");
@@ -337,6 +418,8 @@ export function BusRoutePickerModal({
                   <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">搜尋中…</p>
                 ) : searchError ? (
                   <p className="px-4 py-3 text-center text-xs text-[#D1517E]">{searchError}</p>
+                ) : !query.trim() ? (
+                  <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">輸入路線編號開始查詢</p>
                 ) : routeResults.length === 0 ? (
                   <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">沒有符合的路線</p>
                 ) : (
@@ -382,6 +465,8 @@ export function BusRoutePickerModal({
                   <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">搜尋中…</p>
                 ) : searchError ? (
                   <p className="px-4 py-3 text-center text-xs text-[#D1517E]">{searchError}</p>
+                ) : !query.trim() ? (
+                  <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">輸入站牌名稱開始查詢</p>
                 ) : stopResults.length === 0 ? (
                   <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">沒有符合的站牌</p>
                 ) : (
