@@ -2,18 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { FaIcon } from "@/components/transit/fa-icon";
-import { YOUBIKE_CITIES } from "@/components/transit/youbike-cities";
+import { BottomSheetModal } from "@/components/transit/bottom-sheet-modal";
+import { UBIKE_CITIES } from "@/components/transit/ubike-cities";
+import { scrollContainerToTop } from "@/lib/scroll-within";
 
-const CITIES = YOUBIKE_CITIES;
+const CITIES = UBIKE_CITIES;
 
-interface YouBikeStation {
+interface UbikeStation {
   id: string;
   name: string;
   lat: number;
   lng: number;
 }
 
-interface NearbyStation extends YouBikeStation {
+interface NearbyStation extends UbikeStation {
   distanceMeters: number;
 }
 
@@ -44,7 +46,7 @@ function googleMapsHref(lat: number, lng: number): string {
 }
 
 /** 站點清單的單一列，附近站點／依縣市瀏覽兩種模式共用同一份外觀，只差要不要顯示距離。 */
-function StationRow({ station, distance }: { station: YouBikeStation; distance?: string }) {
+function StationRow({ station, distance }: { station: UbikeStation; distance?: string }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3">
       <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#F3EFFC]">
@@ -69,10 +71,11 @@ function StationRow({ station, distance }: { station: YouBikeStation; distance?:
   );
 }
 
-export function YouBikeView() {
-  const [cityName, setCityName] = useState(CITIES[0]);
+export function UbikeView() {
+  const [cityName, setCityName] = useState("");
+  const [cityPickerOpen, setCityPickerOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [stations, setStations] = useState<YouBikeStation[] | null>(null);
+  const [stations, setStations] = useState<UbikeStation[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // 附近站點：GPS 定位會改變畫面顯示的資料，所以不在進頁面時自動要求權限，要使用者自己
@@ -119,9 +122,9 @@ export function YouBikeView() {
     setNearbyStations(null);
     Promise.all(
       CITIES.map((city) =>
-        fetch(`/api/transit/youbike/stations?city=${encodeURIComponent(city)}`)
+        fetch(`/api/transit/ubike/stations?city=${encodeURIComponent(city)}`)
           .then((res) => res.json())
-          .then((data: { stations?: YouBikeStation[] }) => data.stations ?? [])
+          .then((data: { stations?: UbikeStation[] }) => data.stations ?? [])
           .catch(() => []),
       ),
     ).then((lists) => {
@@ -140,28 +143,27 @@ export function YouBikeView() {
 
   // 依縣市瀏覽：切縣市／打字都重新查，debounce 200ms 跟公車站牌搜尋同一套做法，不用每個
   // 按鍵都打一次。附近站點開啟時這個查詢沒有意義（畫面改顯示附近清單），略過不打。
-  // 還沒輸入站名就不查——一個縣市動輒幾百個站點，整包列出來資料量太多，使用者實際上只
-  // 會待在其中一小塊區域；要嘛打站名篩，要嘛用上面的「附近站點」依位置篩，兩種都比
-  // 「列出整個縣市」更貼近使用者真正想找的範圍。
+  // 還沒選縣市就不查（API 需要 city 參數）；選了縣市但還沒打字，就列出整個縣市——平常不騎
+  // Ubike 的人選了縣市通常也答不出要打什麼站名，search-only 反而讓這種「純瀏覽」的人
+  // 什麼都看不到，而且也不是人人都是「人在現場、可以用附近站點」這種情境。
   useEffect(() => {
     if (nearbyActive) return;
-
-    const trimmed = query.trim();
-    if (!trimmed) {
+    if (!cityName) {
       /* eslint-disable-next-line react-hooks/set-state-in-effect */
       setStations([]);
       setError(null);
       return;
     }
 
+    const trimmed = query.trim();
     let cancelled = false;
     setStations(null);
     setError(null);
     const timer = setTimeout(() => {
       const qs = new URLSearchParams({ city: cityName, q: trimmed });
-      fetch(`/api/transit/youbike/stations?${qs.toString()}`)
+      fetch(`/api/transit/ubike/stations?${qs.toString()}`)
         .then((res) => res.json())
-        .then((data: { stations?: YouBikeStation[]; error?: string }) => {
+        .then((data: { stations?: UbikeStation[]; error?: string }) => {
           if (cancelled) return;
           if (data.error) {
             setError(data.error);
@@ -181,20 +183,23 @@ export function YouBikeView() {
 
   return (
     <div className="flex flex-col px-5 pb-6 pt-6">
-      <h1 className="text-xl font-bold text-[#4A3B7C]">YouBike</h1>
-      <p className="mt-1 text-xs text-[#9C94C4]">查詢站點位置，不含即時可借還車輛數。</p>
-
-      <button
-        type="button"
-        onClick={nearbyActive ? cancelNearby : requestNearby}
-        disabled={locating}
-        className={`mt-4 flex items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-60 ${
-          nearbyActive ? "bg-[#F3EFFC] text-[#6F5FD6]" : "bg-[#6F5FD6] text-white"
-        }`}
-      >
-        <FaIcon icon={nearbyActive ? "xmark" : "location-dot"} className={nearbyActive ? "text-[#6F5FD6]" : "text-white"} />
-        {locating ? "定位中…" : nearbyActive ? "取消定位" : "附近站點"}
-      </button>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-[#4A3B7C]">Ubike</h1>
+          <p className="mt-1 text-xs text-[#9C94C4]">查詢站點位置，不含即時可借還車輛數。</p>
+        </div>
+        <button
+          type="button"
+          onClick={nearbyActive ? cancelNearby : requestNearby}
+          disabled={locating}
+          className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+            nearbyActive ? "bg-[#F3EFFC] text-[#6F5FD6]" : "bg-[#6F5FD6] text-white"
+          }`}
+        >
+          <FaIcon icon={nearbyActive ? "xmark" : "location-dot"} className={nearbyActive ? "text-[#6F5FD6]" : "text-white"} />
+          {locating ? "定位中…" : nearbyActive ? "取消定位" : "附近站點"}
+        </button>
+      </div>
       {nearbyError && <p className="mt-2 text-center text-xs text-[#D1517E]">{nearbyError}</p>}
 
       {nearbyActive ? (
@@ -209,39 +214,44 @@ export function YouBikeView() {
         </div>
       ) : (
         <>
-          <div className="-mx-5 mt-4 flex gap-1.5 overflow-x-auto px-5 pb-0.5">
-            {CITIES.map((city) => (
+          {/* 11 個縣市橫向捲動要滑很長，而且不容易注意到還能往右滑；改成跟首頁日期／時間
+              同一套「標籤＋按鈕開彈窗」寫法，點了跳出跟其他選擇器一樣的 BottomSheetModal，
+              不用瀏覽器原生 <select>（展開樣式是系統內建的，跟這個 App 的視覺對不起來）。
+              跟搜尋框並排成一排，兩個框線／圓角用同一套樣式，看起來是同一組篩選條件。 */}
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-[#9C94C4]">縣市</span>
               <button
-                key={city}
                 type="button"
-                onClick={() => setCityName(city)}
-                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                  cityName === city ? "bg-[#6F5FD6] text-white" : "bg-[#F3EFFC] text-[#9C94C4]"
-                }`}
+                onClick={() => setCityPickerOpen(true)}
+                className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-left text-sm text-[#4A3B7C]"
               >
-                {city}
+                <span className={`flex-1 truncate ${cityName ? "font-medium" : "text-[#C7BFE6]"}`}>{cityName || "請選擇"}</span>
+                <FaIcon icon="chevron-down" size={12} className="text-[#C7BFE6]" />
               </button>
-            ))}
-          </div>
+            </label>
 
-          <label className="mt-3 flex items-center gap-2 rounded-full border border-[#ECE4FA] bg-white px-4 py-2.5">
-            <FaIcon icon="magnifying-glass" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="搜尋站名"
-              className="w-full bg-transparent text-sm outline-none placeholder:text-[#C7BFE6]"
-            />
-          </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-[#9C94C4]">站名</span>
+              <div className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="搜尋站名"
+                  className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-[#C7BFE6]"
+                />
+              </div>
+            </label>
+          </div>
 
           <div className="mt-4 flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl bg-white shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
             {stations === null ? (
               <p className="px-4 py-6 text-center text-sm text-[#B3ABD4]">載入中…</p>
             ) : error ? (
               <p className="px-4 py-6 text-center text-sm text-[#D1517E]">{error}</p>
-            ) : !query.trim() ? (
-              <p className="px-4 py-6 text-center text-sm text-[#B3ABD4]">輸入站名開始查詢，或用上面的「附近站點」依位置篩選</p>
+            ) : !cityName ? (
+              <p className="px-4 py-6 text-center text-sm text-[#B3ABD4]">還沒有任何資料</p>
             ) : stations.length === 0 ? (
               <p className="px-4 py-6 text-center text-sm text-[#B3ABD4]">沒有符合的站點</p>
             ) : (
@@ -250,6 +260,42 @@ export function YouBikeView() {
           </div>
         </>
       )}
+
+      {((nearbyActive && (nearbyStations?.length ?? 0) > 0) || (!nearbyActive && (stations?.length ?? 0) > 0)) && (
+        // 跟搜尋結果頁「回到頂部」同一顆按鈕：TransitMobileShell 卡片容器本身有 transform，
+        // 是這個 fixed 按鈕的定位基準（不是整個瀏覽器視窗），right-5／bottom 直接貼齊卡片
+        // 邊界。一個縣市動輒上百筆站點，捲到底下想回頂端重選縣市／搜尋時很需要這顆按鈕。
+        <button
+          type="button"
+          onClick={() => {
+            const main = document.querySelector("main");
+            if (main) scrollContainerToTop(main, "smooth");
+          }}
+          aria-label="回到頂部"
+          style={{ bottom: "calc(env(safe-area-inset-bottom) + 5.5rem)", background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
+          className="fixed right-5 z-20 grid size-11 place-items-center rounded-full shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)] transition-opacity hover:opacity-90"
+        >
+          <FaIcon icon="arrow-up" size={18} className="text-white" />
+        </button>
+      )}
+
+      <BottomSheetModal open={cityPickerOpen} title="選擇縣市" onClose={() => setCityPickerOpen(false)} bodyClassName="flex flex-col gap-2 px-5 py-4">
+        {CITIES.map((city) => (
+          <button
+            key={city}
+            type="button"
+            onClick={() => {
+              setCityName(city);
+              setCityPickerOpen(false);
+            }}
+            className={`rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-colors ${
+              city === cityName ? "border-[#6F5FD6] bg-[#F3EFFC] text-[#6F5FD6]" : "border-[#ECE4FA] text-[#4A3B7C] hover:bg-[#F3EFFC]"
+            }`}
+          >
+            {city}
+          </button>
+        ))}
+      </BottomSheetModal>
     </div>
   );
 }
