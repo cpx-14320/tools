@@ -1,13 +1,20 @@
 import { tdxGet } from "./tdx-client";
 
 // 跟 lib/metro-lines.ts 的 METRO_SYSTEM_CODE 同一個概念：畫面上顯示用中文縣市名，打 TDX
-// 要用英文城市代碼，跟 components/transit/stations-data.ts 的 STATIONS_BY_CITY.bus 的 key
-// 一起維護。
+// 要用英文城市代碼，跟 components/transit/bus-cities.ts 的 BUS_CITIES 一起維護。這份縣市
+// 清單是逐一打過 /v2/Bus/StopOfRoute/City/{code} 確認過真的有實際路線資料才列進來——
+// 苗栗縣雖然 YouBike 有站點，但公車只查得到 1 條路線，等於沒有真的公車資料，所以不收。
 export const BUS_CITY_CODE: Record<string, string> = {
   台北市: "Taipei",
   新北市: "NewTaipei",
   桃園市: "Taoyuan",
   基隆市: "Keelung",
+  新竹市: "Hsinchu",
+  新竹縣: "HsinchuCounty",
+  台中市: "Taichung",
+  彰化縣: "ChanghuaCounty",
+  台南市: "Tainan",
+  高雄市: "Kaohsiung",
 };
 
 // 公車站序幾乎不會變，快取 24 小時；即時到站預估時間本來就會變，用 tdxGet 預設的 60 秒
@@ -72,6 +79,18 @@ export async function searchBusRoutes(cityName: string, query: string): Promise<
   const q = query.trim();
   const filtered = q ? [...names].filter((n) => n.includes(q)) : [...names];
   return filtered.sort((a, b) => a.localeCompare(b, "zh-Hant")).slice(0, SUGGESTION_LIMIT);
+}
+
+// 名稱裡完全沒有數字的路線（例如台南「東山咖啡線」、新竹「先導公車」）——這種路線沒有
+// 數字可以靠縣市快速鍵／數字鍵盤打出來，查詢框完全打不出這幾個字，只能用瀏覽的方式選。
+// 故意不套用 SUGGESTION_LIMIT 那個 30 筆上限：這份清單本來就很短（通常個位數到十幾筆），
+// 而且是給「瀏覽」用的完整清單，不是打字篩選的建議清單，裁掉反而會漏掉一些路線。
+export async function getNamedBusRoutes(cityName: string): Promise<string[]> {
+  const cityCode = BUS_CITY_CODE[cityName];
+  if (!cityCode) return [];
+  const entries = await getStopOfRouteList(cityCode);
+  const names = new Set(entries.map((e) => e.RouteName.Zh_tw));
+  return [...names].filter((n) => !/\d/.test(n)).sort((a, b) => a.localeCompare(b, "zh-Hant"));
 }
 
 export async function searchBusStops(cityName: string, query: string): Promise<string[]> {

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { BottomSheetModal } from "./bottom-sheet-modal";
-import { STATIONS_BY_CITY } from "./stations-data";
+import { FaIcon } from "./fa-icon";
+import { BUS_CITIES } from "./bus-cities";
 import type { BusEtaStatus } from "@/lib/transit/bus-routing";
 
 export interface BusRouteSelection {
@@ -12,10 +13,6 @@ export interface BusRouteSelection {
   direction: 0 | 1;
   stopName: string;
 }
-
-// 公車路線是分縣市查的（TDX 沒有「全國一張表」），跟首頁原本公車站牌選擇器共用同一份
-// 縣市清單（lib/bus-routing.ts 的 BUS_CITY_CODE 也是同一組 key）。
-const BUS_CITIES = Object.keys(STATIONS_BY_CITY.bus);
 
 interface BusStopEta {
   name: string;
@@ -74,41 +71,101 @@ export function routeBadgeStyle(routeName: string): string {
 }
 
 // 自訂數字／色塊鍵盤，不用瀏覽器原生的文字鍵盤——路線編號常常是「數字＋顏色字」組合
-// （例如「紅29」），色塊鍵直接插入對應的字，比切輸入法打字快很多。4 欄 5 列排版，目前
-// 4 個縣市共用同一組按鍵（之前分析過台北／新北的真實路線前綴不完全一樣，但查詢本身已經
-// 是依選定縣市查真實資料，按到不存在的前綴就是「沒有符合的路線」，不會查錯）。
-const KEYPAD_ROWS: { label: string; insert: string; tone?: keyof typeof ROUTE_COLOR_PREFIX_STYLE }[][] = [
-  [
-    { label: "1", insert: "1" },
-    { label: "2", insert: "2" },
-    { label: "3", insert: "3" },
+// （例如「紅29」），色塊鍵直接插入對應的字，比切輸入法打字快很多。
+//
+// 快速鍵依縣市不同：直接拿 TDX 真實路線資料逐一驗證過每個縣市的命名習慣（不是憑印象
+// 配色）——台北／新北市真的是「顏色＋數字」這種組合（約 2~4 成路線是這樣命名）；桃園市
+// 的顏色字是「紅線／黃線／綠線」整條線名稱，不是前綴，另外 F 開頭的路線也不少；基隆市
+// 85 條路線完全沒有顏色開頭的，色塊鍵對它來說全部是廢的，所以乾脆不給，只留數字鍵。
+type KeypadKey = { label: string; insert: string; tone?: keyof typeof ROUTE_COLOR_PREFIX_STYLE };
+
+const DIGIT_KEYS: KeypadKey[] = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"].map((d) => ({ label: d, insert: d }));
+const BACKSPACE_KEY: KeypadKey = { label: "⌫", insert: "" };
+
+const KEYPAD_BY_CITY: Record<string, KeypadKey[]> = {
+  台北市: [
     { label: "紅", insert: "紅", tone: "紅" },
-  ],
-  [
-    { label: "4", insert: "4" },
-    { label: "5", insert: "5" },
-    { label: "6", insert: "6" },
     { label: "藍", insert: "藍", tone: "藍" },
-  ],
-  [
-    { label: "7", insert: "7" },
-    { label: "8", insert: "8" },
-    { label: "9", insert: "9" },
     { label: "綠", insert: "綠", tone: "綠" },
-  ],
-  [
-    { label: "F", insert: "F", tone: "F" },
-    { label: "0", insert: "0" },
-    { label: "小", insert: "小", tone: "小" },
     { label: "棕", insert: "棕", tone: "棕" },
-  ],
-  [
     { label: "橘", insert: "橘", tone: "橘" },
     { label: "黃", insert: "黃", tone: "黃" },
+    { label: "F", insert: "F", tone: "F" },
+    { label: "小", insert: "小", tone: "小" },
     { label: "幹線", insert: "幹線", tone: "幹" },
-    { label: "⌫", insert: "" },
   ],
-];
+  新北市: [
+    { label: "紅", insert: "紅", tone: "紅" },
+    { label: "藍", insert: "藍", tone: "藍" },
+    { label: "綠", insert: "綠", tone: "綠" },
+    { label: "棕", insert: "棕", tone: "棕" },
+    { label: "橘", insert: "橘", tone: "橘" },
+    { label: "黃", insert: "黃", tone: "黃" },
+    { label: "F", insert: "F", tone: "F" },
+    { label: "小", insert: "小", tone: "小" },
+    { label: "幹線", insert: "幹線", tone: "幹" },
+  ],
+  桃園市: [
+    { label: "F", insert: "F", tone: "F" },
+    { label: "紅線", insert: "紅線", tone: "紅" },
+    { label: "黃線", insert: "黃線", tone: "黃" },
+    { label: "綠線", insert: "綠線", tone: "綠" },
+  ],
+  基隆市: [],
+  // 新竹市：有「藍線」「綠線1區」這種整條線名稱（跟桃園一樣是線名不是前綴），也有
+  // 「11甲」這種數字＋甲的組合；藍／綠套用現成色票，甲／線沒有對應顏色，用預設灰底。
+  新竹市: [
+    { label: "藍", insert: "藍", tone: "藍" },
+    { label: "綠", insert: "綠", tone: "綠" },
+    { label: "甲", insert: "甲" },
+    { label: "線", insert: "線" },
+  ],
+  // 新竹縣：路線名稱很雜（4 位數代碼、「路」後綴、純文字命名都有），沒有明顯能歸納成
+  // 幾顆按鍵的規律，給純數字鍵盤就好，複雜的名稱交給搜尋框打字或之後的文字路線清單。
+  新竹縣: [],
+  // 台中市：「105延」「14副」「152區1」這種數字＋後綴字很常見，三顆後綴字沒有對應顏色。
+  台中市: [
+    { label: "延", insert: "延" },
+    { label: "副", insert: "副" },
+    { label: "區", insert: "區" },
+  ],
+  // 彰化縣：目前查到的路線資料很少（17 條），大多是「N路」這種簡單數字命名，純數字鍵盤
+  // 就夠用，不特別加「路」鍵。
+  彰化縣: [],
+  // 台南市：「紅1」~「紅15」真的存在，沿用紅色鍵；「0左」「0右」是方向後綴。
+  台南市: [
+    { label: "紅", insert: "紅", tone: "紅" },
+    { label: "左", insert: "左" },
+    { label: "右", insert: "右" },
+  ],
+  // 高雄市：「16A」「217D」這種數字＋英文字母後綴很常見，字母沒有對應顏色。
+  高雄市: [
+    { label: "A", insert: "A" },
+    { label: "B", insert: "B" },
+    { label: "D", insert: "D" },
+    { label: "E", insert: "E" },
+  ],
+};
+
+/** 查不到對應縣市的快速鍵清單時退回空陣列（純數字鍵盤），不會整個壞掉。 */
+function keypadForCity(city: string): KeypadKey[] {
+  return [...DIGIT_KEYS, ...(KEYPAD_BY_CITY[city] ?? []), BACKSPACE_KEY];
+}
+
+// 路線查詢框的提示範例也依縣市換，不然基隆市這種沒有顏色字的縣市，看到「例如紅29」反而
+// 誤導使用者去按根本不存在的紅色鍵。
+const ROUTE_QUERY_EXAMPLE_BY_CITY: Record<string, string> = {
+  台北市: "紅29",
+  新北市: "紅29",
+  桃園市: "F901",
+  基隆市: "105",
+  新竹市: "11甲",
+  新竹縣: "106",
+  台中市: "105延",
+  彰化縣: "10",
+  台南市: "紅1",
+  高雄市: "16A",
+};
 
 // 彈窗用 key={...} 強制每次開關整個 remount（見 home-view.tsx），元件內的 useState 不會
 // 留著——這幾個快取放在元件外面（模組層級），關掉再打開同一個 city/路線/站牌不用重打 API，
@@ -184,15 +241,47 @@ export function BusRoutePickerModal({
   onSave: (selection: BusRouteSelection) => void;
 }) {
   const [step, setStep] = useState<Step>({ kind: "search" });
-  const [searchMode, setSearchMode] = useState<"route" | "stop">("route");
+  const [searchMode, setSearchMode] = useState<"route" | "stop">("stop");
   const [query, setQuery] = useState("");
   const [cityName, setCityName] = useState(initial?.cityName && BUS_CITIES.includes(initial.cityName) ? initial.cityName : BUS_CITIES[0]);
+  const [cityPickerOpen, setCityPickerOpen] = useState(false);
   const [direction, setDirection] = useState<0 | 1>(initial?.direction ?? 0);
 
   const [routeResults, setRouteResults] = useState<string[]>([]);
   const [stopResults, setStopResults] = useState<string[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+
+  // 純文字命名的路線（例如「東山咖啡線」）名稱裡沒有數字，縣市快速鍵／數字鍵盤完全打不出
+  // 這幾個字，查詢框也查不到——改用瀏覽的方式選，點開才查（不是一進彈窗就打，省一次
+  // 不一定用得到的請求），查回來的清單通常很短，不用像一般搜尋結果那樣裁 30 筆。
+  const [namedRoutesOpen, setNamedRoutesOpen] = useState(false);
+  const [namedRoutes, setNamedRoutes] = useState<string[] | null>(null);
+  const [namedRoutesError, setNamedRoutesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!namedRoutesOpen) return;
+    let cancelled = false;
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    setNamedRoutes(null);
+    setNamedRoutesError(null);
+    fetch(`/api/transit/bus/named-routes?city=${encodeURIComponent(cityName)}`)
+      .then((res) => res.json())
+      .then((data: { routes?: string[]; error?: string }) => {
+        if (cancelled) return;
+        if (data.error) {
+          setNamedRoutesError(data.error);
+          return;
+        }
+        setNamedRoutes(data.routes ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setNamedRoutesError("查詢失敗，請稍後再試");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [namedRoutesOpen, cityName]);
 
   // 搜尋路線／站牌：依目前選的縣市＋輸入字即時查真實 TDX 資料，不是前端自己過濾假清單。
   // 小鍵盤／文字框每打一個字就會變動查詢字，debounce 200ms 再查，不用每個按鍵都打一次。
@@ -347,7 +436,7 @@ export function BusRoutePickerModal({
 
   function close() {
     setStep({ kind: "search" });
-    setSearchMode("route");
+    setSearchMode("stop");
     setQuery("");
     setDirection(0);
     onClose();
@@ -363,9 +452,15 @@ export function BusRoutePickerModal({
     close();
   }
 
+  function pickNamedRoute(routeName: string) {
+    setNamedRoutesOpen(false);
+    setStep({ kind: "routeDetail", routeName });
+  }
+
   const title = step.kind === "search" ? "選擇公車路線或站牌" : step.kind === "routeDetail" ? step.routeName : step.kind === "stopDetail" ? step.stopName : "";
 
   return (
+    <>
     <BottomSheetModal
       open={open}
       title={title}
@@ -374,23 +469,8 @@ export function BusRoutePickerModal({
     >
       {step.kind === "search" && (
         <>
-          <div className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-0.5">
-            {BUS_CITIES.map((city) => (
-              <button
-                key={city}
-                type="button"
-                onClick={() => setCityName(city)}
-                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                  cityName === city ? "bg-[#6F5FD6] text-white" : "bg-[#F3EFFC] text-[#9C94C4]"
-                }`}
-              >
-                {city}
-              </button>
-            ))}
-          </div>
-
           <div className="inline-flex w-fit items-center gap-1 self-start rounded-full bg-[#F3EFFC] p-1">
-            {(["route", "stop"] as const).map((m) => (
+            {(["stop", "route"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
@@ -407,12 +487,50 @@ export function BusRoutePickerModal({
             ))}
           </div>
 
+          {/* 縣市一多（例如之後要加更多縣市）橫向捲動清單會變得很長，改成跟 Ubike 同一套
+              「標籤＋按鈕開彈窗」寫法，點了跳出另一個 BottomSheetModal 選縣市——這個彈窗
+              本身也是 BottomSheetModal，等於是疊兩層，疊起來的堆疊順序看 DOM 掛載順序，
+              後開的（縣市選單）本來就會疊在先開的（這個彈窗）上面，不用特別處理 z-index。
+              縣市跟目前這個模式要打的那個欄位（路線編號／站牌名稱）並排成一排，兩欄高度、
+              padding 對齊，看起來是同一組查詢條件。 */}
+          <div className="grid grid-cols-2 gap-3">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-[#9C94C4]">縣市</span>
+              <button
+                type="button"
+                onClick={() => setCityPickerOpen(true)}
+                className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-left text-sm text-[#4A3B7C]"
+              >
+                <span className="flex-1 truncate font-medium">{cityName}</span>
+                <FaIcon icon="chevron-down" size={12} className="text-[#C7BFE6]" />
+              </button>
+            </label>
+
+            {searchMode === "route" ? (
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-[#9C94C4]">路線編號</span>
+                <div className="flex items-center rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-sm font-medium text-[#4A3B7C]">
+                  {query || (
+                    <span className="truncate text-[#C7BFE6]">例如「{ROUTE_QUERY_EXAMPLE_BY_CITY[cityName] ?? "105"}」</span>
+                  )}
+                </div>
+              </label>
+            ) : (
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-[#9C94C4]">站牌名稱</span>
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="輸入站牌名稱"
+                  className="rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-sm font-medium text-[#4A3B7C] outline-none focus:border-[#6F5FD6]"
+                />
+              </label>
+            )}
+          </div>
+
           {searchMode === "route" ? (
             <>
-              <div className="flex min-h-11 items-center rounded-2xl border border-[#ECE4FA] bg-white px-4 py-2.5 text-sm font-medium text-[#4A3B7C]">
-                {query || <span className="text-[#C7BFE6]">輸入路線編號，例如「紅29」</span>}
-              </div>
-
               <div className="flex max-h-32 flex-col overflow-y-auto rounded-2xl border border-[#F2EEFA]">
                 {searchLoading ? (
                   <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">搜尋中…</p>
@@ -437,7 +555,7 @@ export function BusRoutePickerModal({
               </div>
 
               <div className="grid grid-cols-4 gap-2">
-                {KEYPAD_ROWS.flat().map((key, i) => (
+                {keypadForCity(cityName).map((key, i) => (
                   <button
                     key={i}
                     type="button"
@@ -450,39 +568,36 @@ export function BusRoutePickerModal({
                   </button>
                 ))}
               </div>
+
+              {/* 「東山咖啡線」「先導公車」這種名稱裡完全沒有數字的路線，上面的鍵盤（數字＋
+                  縣市快速鍵）打不出這幾個字，查詢框也查不到，只能靠瀏覽的方式選。 */}
+              <button type="button" onClick={() => setNamedRoutesOpen(true)} className="self-start text-xs font-medium text-[#6F5FD6]">
+                找不到？瀏覽文字命名路線 →
+              </button>
             </>
           ) : (
-            <>
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="輸入站牌名稱"
-                className="rounded-2xl border border-[#ECE4FA] bg-white px-4 py-3 text-sm font-medium text-[#4A3B7C] outline-none focus:border-[#6F5FD6]"
-              />
-              <div className="flex max-h-72 flex-col overflow-y-auto rounded-2xl border border-[#F2EEFA]">
-                {searchLoading ? (
-                  <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">搜尋中…</p>
-                ) : searchError ? (
-                  <p className="px-4 py-3 text-center text-xs text-[#D1517E]">{searchError}</p>
-                ) : !query.trim() ? (
-                  <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">輸入站牌名稱開始查詢</p>
-                ) : stopResults.length === 0 ? (
-                  <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">沒有符合的站牌</p>
-                ) : (
-                  stopResults.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => setStep({ kind: "stopDetail", stopName: s })}
-                      className="px-4 py-2.5 text-left text-sm font-medium text-[#4A3B7C] transition-colors hover:bg-[#F8F6FD]"
-                    >
-                      {s}
-                    </button>
-                  ))
-                )}
-              </div>
-            </>
+            <div className="flex max-h-72 flex-col overflow-y-auto rounded-2xl border border-[#F2EEFA]">
+              {searchLoading ? (
+                <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">搜尋中…</p>
+              ) : searchError ? (
+                <p className="px-4 py-3 text-center text-xs text-[#D1517E]">{searchError}</p>
+              ) : !query.trim() ? (
+                <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">輸入站牌名稱開始查詢</p>
+              ) : stopResults.length === 0 ? (
+                <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">沒有符合的站牌</p>
+              ) : (
+                stopResults.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setStep({ kind: "stopDetail", stopName: s })}
+                    className="px-4 py-2.5 text-left text-sm font-medium text-[#4A3B7C] transition-colors hover:bg-[#F8F6FD]"
+                  >
+                    {s}
+                  </button>
+                ))
+              )}
+            </div>
           )}
         </>
       )}
@@ -491,10 +606,10 @@ export function BusRoutePickerModal({
         <>
           <DirectionTabsRow direction={direction} onChangeDirection={setDirection} onBack={() => setStep({ kind: "search" })} />
           <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#F2EEFA]">
-            {routeStops === null ? (
-              <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">查詢中…</p>
-            ) : routeStopsError ? (
+            {routeStopsError ? (
               <p className="px-4 py-3 text-center text-xs text-[#D1517E]">{routeStopsError}</p>
+            ) : routeStops === null ? (
+              <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">查詢中…</p>
             ) : routeStops.length === 0 ? (
               <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">查不到這個方向的站序</p>
             ) : (
@@ -518,10 +633,10 @@ export function BusRoutePickerModal({
         <>
           <DirectionTabsRow direction={direction} onChangeDirection={setDirection} onBack={() => setStep({ kind: "search" })} />
           <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#F2EEFA]">
-            {stopRoutes === null ? (
-              <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">查詢中…</p>
-            ) : stopRoutesError ? (
+            {stopRoutesError ? (
               <p className="px-4 py-3 text-center text-xs text-[#D1517E]">{stopRoutesError}</p>
+            ) : stopRoutes === null ? (
+              <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">查詢中…</p>
             ) : stopRoutes.length === 0 ? (
               <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">目前沒有路線經過這一站</p>
             ) : stopRoutesForDirection.length === 0 ? (
@@ -543,5 +658,55 @@ export function BusRoutePickerModal({
         </>
       )}
     </BottomSheetModal>
+
+    <BottomSheetModal
+      open={cityPickerOpen}
+      title="選擇縣市"
+      onClose={() => setCityPickerOpen(false)}
+      bodyClassName="flex flex-col gap-2 px-5 py-4"
+    >
+      {BUS_CITIES.map((city) => (
+        <button
+          key={city}
+          type="button"
+          onClick={() => {
+            setCityName(city);
+            setCityPickerOpen(false);
+          }}
+          className={`rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-colors ${
+            city === cityName ? "border-[#6F5FD6] bg-[#F3EFFC] text-[#6F5FD6]" : "border-[#ECE4FA] text-[#4A3B7C] hover:bg-[#F3EFFC]"
+          }`}
+        >
+          {city}
+        </button>
+      ))}
+    </BottomSheetModal>
+
+    <BottomSheetModal
+      open={namedRoutesOpen}
+      title="文字命名路線"
+      onClose={() => setNamedRoutesOpen(false)}
+      bodyClassName="flex flex-col gap-2 px-5 py-4"
+    >
+      {namedRoutesError ? (
+        <p className="px-1 py-3 text-center text-xs text-[#D1517E]">{namedRoutesError}</p>
+      ) : namedRoutes === null ? (
+        <p className="px-1 py-3 text-center text-xs text-[#B3ABD4]">查詢中…</p>
+      ) : namedRoutes.length === 0 ? (
+        <p className="px-1 py-3 text-center text-xs text-[#B3ABD4]">這個縣市沒有純文字命名的路線</p>
+      ) : (
+        namedRoutes.map((r) => (
+          <button
+            key={r}
+            type="button"
+            onClick={() => pickNamedRoute(r)}
+            className="rounded-2xl border border-[#ECE4FA] px-4 py-3 text-left text-sm font-medium text-[#4A3B7C] transition-colors hover:bg-[#F3EFFC]"
+          >
+            {r}
+          </button>
+        ))
+      )}
+    </BottomSheetModal>
+    </>
   );
 }
