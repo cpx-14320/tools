@@ -624,13 +624,19 @@ export function TransitHomeView() {
               <button type="button" onClick={() => setBusPickerOpen(true)} className="flex flex-col gap-1.5 text-left">
                 <span className="text-xs font-medium text-[#9C94C4]">縣市</span>
                 <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                  <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{busCityPreview ?? busSelection?.cityName ?? "選擇縣市"}</span>
+                  {/* 還沒選的時候跟彈窗裡路線編號框的提示字同一個顏色（text-[#C7BFE6]），
+                      一眼就看得出這是提示文字、不是已經選好的值。 */}
+                  <span className={`flex-1 truncate text-sm ${busCityPreview ?? busSelection?.cityName ? "font-medium text-[#4A3B7C]" : "text-[#C7BFE6]"}`}>
+                    {busCityPreview ?? busSelection?.cityName ?? "選擇縣市"}
+                  </span>
                 </div>
               </button>
               <button type="button" onClick={() => setBusPickerOpen(true)} className="flex flex-col gap-1.5 text-left">
                 <span className="text-xs font-medium text-[#9C94C4]">站牌/路線編號</span>
                 <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                  <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{busSelection?.stopName ?? "輸入站牌名稱"}</span>
+                  <span className={`flex-1 truncate text-sm ${busSelection?.stopName ? "font-medium text-[#4A3B7C]" : "text-[#C7BFE6]"}`}>
+                    {busSelection?.stopName ?? "輸入站牌名稱"}
+                  </span>
                 </div>
               </button>
             </div>
