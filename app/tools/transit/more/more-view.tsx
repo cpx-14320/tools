@@ -11,6 +11,7 @@ import { ListRowSkeleton } from "@/components/transit/list-row-skeleton";
 import { loadSkeletonCount, saveSkeletonCount } from "@/components/transit/skeleton-count";
 import { HERO_BANNER_IMAGE_OPTIONS, WEEKEND_TRIP_IMAGE_OPTIONS } from "@/components/transit/caption-image-options";
 import { CaptionImageEditorModal, type CaptionImageDraft, type CaptionImageInitial } from "@/components/transit/caption-image-editor-modal";
+import { CenterToast } from "@/components/transit/center-toast";
 
 const CURRENT_TOOL_ID = "transit";
 
@@ -47,6 +48,8 @@ export function MoreView() {
   const [heroReady, setHeroReady] = useState(false);
   const [heroEditorOpen, setHeroEditorOpen] = useState(false);
   const [heroSkeletonCount, setHeroSkeletonCount] = useState(0);
+
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     // 跟首頁套用 localStorage 存的預設值同一種例外：掛載後才讀得到 localStorage，讀到就要
@@ -114,6 +117,7 @@ export function MoreView() {
         const items = data.items ?? [];
         setWeekendTrips(items);
         saveSkeletonCount(WEEKEND_COUNT_KEY, items.length);
+        setToast("儲存成功");
       })
       .catch(() => {});
     setWeekendEditorOpen(false);
@@ -130,6 +134,7 @@ export function MoreView() {
         const items = data.items ?? [];
         setHeroBanners(items);
         saveSkeletonCount(HERO_COUNT_KEY, items.length);
+        setToast("儲存成功");
       })
       .catch(() => {});
     setHeroEditorOpen(false);
@@ -281,6 +286,8 @@ export function MoreView() {
         onClose={() => setWeekendEditorOpen(false)}
         onSave={saveWeekendTrips}
       />
+
+      {toast && <CenterToast message={toast} onDone={() => setToast(null)} />}
     </div>
   );
 }
