@@ -6,6 +6,7 @@ import { FaIcon } from "@/components/transit/fa-icon";
 import { scrollContainerToTop, scrollWithin } from "@/lib/scroll-within";
 import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY } from "@/components/transit/stations-data";
 import { TripGroupPickerModal } from "@/components/transit/trip-group-picker-modal";
+import { CenterToast } from "@/components/transit/center-toast";
 import { FREQUENT_TRIP_ICON_OPTIONS } from "@/components/transit/frequent-trip-icons";
 import type { FrequentTripDraft } from "@/components/transit/frequent-trip-modal";
 import { metroSystemOf, findCrossSystemTransferStation } from "@/lib/transit/metro-lines";
@@ -407,6 +408,9 @@ export function ResultsView({
   // 選擇，另外用 busAddOpen 這個布林值開同一顆 TripGroupPickerModal。
   const [pickerTarget, setPickerTarget] = useState<ResultRow | null>(null);
   const [busAddOpen, setBusAddOpen] = useState(false);
+  // 加入行程成功後的提示文字——null 代表不顯示；有值才掛載 CenterToast，掛載時機就是
+  // 「剛好成功了」那一刻，不需要另外一個布林值來控制顯示與否。
+  const [toast, setToast] = useState<string | null>(null);
 
   async function addPickerTargetToGroup(groupId: string) {
     const target = pickerTarget;
@@ -426,11 +430,12 @@ export function ResultsView({
       startTime: target.time,
       endTime: target.arrive,
     };
-    await fetch("/api/transit/frequent-trips", {
+    const res = await fetch("/api/transit/frequent-trips", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mode, groupId, items: [...existing, newItem] }),
-    }).catch(() => {});
+    }).catch(() => null);
+    if (res?.ok) setToast("已加入行程");
   }
 
   async function createGroupAndAddPickerTarget(name: string) {
@@ -455,11 +460,12 @@ export function ResultsView({
       startTime: target.time,
       endTime: target.arrive,
     };
-    await fetch("/api/transit/frequent-trips", {
+    const res = await fetch("/api/transit/frequent-trips", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mode, groupId: createData.group.id, items: [newItem] }),
-    }).catch(() => {});
+    }).catch(() => null);
+    if (res?.ok) setToast("已加入行程");
   }
 
   // 公車把目前選好的縣市／路線／方向／站牌整組加入分類（不是逐筆班次），時段先給預設值，
@@ -484,11 +490,12 @@ export function ResultsView({
       .then((res) => res.json())
       .then((data: { trips?: (FrequentTripDraft & { groupId: string })[] }) => (data.trips ?? []).filter((t) => t.groupId === groupId))
       .catch(() => []);
-    await fetch("/api/transit/frequent-trips", {
+    const res = await fetch("/api/transit/frequent-trips", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mode, groupId, items: [...existing, busDraft()] }),
-    }).catch(() => {});
+    }).catch(() => null);
+    if (res?.ok) setToast("已加入行程");
   }
 
   async function createGroupAndAddBus(name: string) {
@@ -501,11 +508,12 @@ export function ResultsView({
       .then((res) => res.json())
       .catch(() => ({}));
     if (!createData.group) return;
-    await fetch("/api/transit/frequent-trips", {
+    const res = await fetch("/api/transit/frequent-trips", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mode, groupId: createData.group.id, items: [busDraft()] }),
-    }).catch(() => {});
+    }).catch(() => null);
+    if (res?.ok) setToast("已加入行程");
   }
 
   // 錨點效果：列表一出現（或切換車種頁籤）就跳到「最後一筆已過站」的卡片，讓使用者一眼
@@ -748,6 +756,7 @@ export function ResultsView({
         onSelectGroup={isBus ? addBusToGroup : addPickerTargetToGroup}
         onCreateGroup={isBus ? createGroupAndAddBus : createGroupAndAddPickerTarget}
       />
+      {toast && <CenterToast message={toast} onDone={() => setToast(null)} />}
     </div>
   );
 }

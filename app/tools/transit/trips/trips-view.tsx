@@ -9,6 +9,7 @@ import { routeBadgeStyle } from "@/components/transit/bus-route-picker-modal";
 import { FaIcon } from "@/components/transit/fa-icon";
 import { ListRowSkeleton } from "@/components/transit/list-row-skeleton";
 import { loadSkeletonCount, saveSkeletonCount } from "@/components/transit/skeleton-count";
+import { CenterToast } from "@/components/transit/center-toast";
 
 type Mode = "bus" | "train" | "metro" | "thsr";
 
@@ -87,6 +88,8 @@ export function TripsView() {
   const [tripSkeletonCount, setTripSkeletonCount] = useState(0);
   // null＝彈窗關閉；groupId 為 null 代表正在新增一個全新分類，否則是在編輯該 id 的既有分類。
   const [groupModal, setGroupModal] = useState<{ groupId: string | null; name: string } | null>(null);
+  // 新增／儲存分類成功後的提示文字，跟結果頁「加入行程」同一個 CenterToast 元件。
+  const [toast, setToast] = useState<string | null>(null);
   const groupsForTab = tripGroups.filter((g) => g.mode === tab);
 
   function selectTab(key: Mode) {
@@ -139,6 +142,10 @@ export function TripsView() {
   // 再用這個 id 把填好的行程存進去；編輯既有分類則是改名＋同步清單兩件事一起做。
   async function saveGroup(name: string, items: FrequentTripDraft[]) {
     if (!groupModal) return;
+    // groupModal.groupId 是 null 代表這次是新增一個全新分類，不是在編輯既有分類——兩種
+    // 情況成功後要顯示的提示文字不一樣（新增成功／儲存成功），要在下面清掉 groupModal
+    // 之前先記住，不然等做完這個判斷式就沒意義了。
+    const isNewGroup = !groupModal.groupId;
     // 畫面上現有的 tripGroups／frequentTrips state 是「這次操作開始前」的舊值，這個函式
     // 執行過程中會呼叫好幾次 setState，state 要等重新渲染才會更新，不能拿來組最後要存進
     // localStorage 的筆數；用這兩個本地變數追蹤「這次操作做完後」的最終清單才會準。
@@ -201,6 +208,7 @@ export function TripsView() {
     }
     saveTripSkeletonCounts(finalGroups, finalTrips);
     setGroupModal(null);
+    setToast(isNewGroup ? "新增成功" : "儲存成功");
   }
 
   async function deleteGroup(groupId: string) {
@@ -215,6 +223,7 @@ export function TripsView() {
     if (data.trips) setFrequentTrips(finalTrips);
     saveTripSkeletonCounts(finalGroups, finalTrips);
     setGroupModal(null);
+    if (data.groups) setToast("刪除成功");
   }
 
   return (
@@ -353,6 +362,8 @@ export function TripsView() {
       >
         ＋ 新增分類
       </button>
+
+      {toast && <CenterToast message={toast} onDone={() => setToast(null)} />}
     </div>
   );
 }

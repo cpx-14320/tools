@@ -245,12 +245,16 @@ function DirectionTabsRow({
 export function BusRoutePickerModal({
   open,
   initial,
+  openNearby,
   onClose,
   onSave,
   onCityChange,
 }: {
   open: boolean;
   initial?: Partial<BusRouteSelection>;
+  /** 從首頁「附近站牌」捷徑進來時，彈窗一開就直接停在附近分頁並立刻觸發定位，不用
+      使用者自己先開彈窗、再點一次附近站牌。 */
+  openNearby?: boolean;
   onClose: () => void;
   onSave: (selection: BusRouteSelection) => void;
   /** 選了縣市那一刻就通知首頁——縣市不用等整個選完（路線＋站牌）才回填，彈窗後面的
@@ -258,7 +262,7 @@ export function BusRoutePickerModal({
   onCityChange?: (city: string) => void;
 }) {
   const [step, setStep] = useState<Step>({ kind: "search" });
-  const [searchMode, setSearchMode] = useState<"route" | "stop" | "nearby">("stop");
+  const [searchMode, setSearchMode] = useState<"route" | "stop" | "nearby">(openNearby ? "nearby" : "stop");
   const [query, setQuery] = useState("");
   const [cityName, setCityName] = useState(initial?.cityName && BUS_CITIES.includes(initial.cityName) ? initial.cityName : BUS_CITIES[0]);
   const [cityPickerOpen, setCityPickerOpen] = useState(false);
@@ -302,6 +306,16 @@ export function BusRoutePickerModal({
     setNearbyStops(null);
     setNearbyError(null);
   }
+
+  // 從首頁「附近站牌」捷徑進來時，searchMode 初始值已經是 "nearby"，這裡只差「定位」
+  // 這個動作本身要自動觸發——彈窗本來就是使用者主動點「附近站牌」按鈕才打開的，不是
+  // 莫名其妙跳出來，所以這個情境不違反「要使用者自己點按鈕才定位」那個理由。彈窗用
+  // key remount，這個效果只會在每次新開的彈窗實例上跑一次。
+  useEffect(() => {
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    if (openNearby) requestNearby();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 拿到座標後查全部縣市的站牌（不是只查目前選的那個縣市）再依距離排序——理由跟 Ubike
   // 附近站點一樣：使用者的位置可能剛好在兩個縣市交界，只查單一縣市會漏掉其實比較近的

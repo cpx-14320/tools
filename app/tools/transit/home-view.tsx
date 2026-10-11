@@ -173,6 +173,14 @@ function formatRemindCountdown(remindAtIso: string): { text: string; tone: Remin
   const text = days > 0 ? `還有 ${days} 天 ${hours} 小時` : `還有 ${hours} 小時`;
   return { text, tone: days === 0 ? "soon" : "later" };
 }
+// 年月日格式跟 memo-editor-modal.tsx 選日期時顯示的 pickedDate.replaceAll("-", "/") 同一套
+// 斜線分隔慣例，不要另外發明一種格式；remindAt 存的是 UTC ISO 字串，直接餵進 Date 物件會
+// 自動轉成使用者瀏覽器的本地時間，不用自己處理時區換算。
+function formatRemindDateTime(remindAtIso: string): string {
+  const d = new Date(remindAtIso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 function nowHHMM(): string {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -339,6 +347,9 @@ export function TransitHomeView() {
   // 兩個下拉選單，所以另外用一組獨立的 state，不跟 origin/dest 共用。
   const [busSelection, setBusSelection] = useState<BusRouteSelection | null>(null);
   const [busPickerOpen, setBusPickerOpen] = useState(false);
+  // 首頁「附近站牌」捷徑：點了直接開彈窗、停在附近分頁並立刻定位，不用先開彈窗選完
+  // 縣市/站牌模式再自己點一次附近站牌，對「不熟悉地方」這個情境更直接。
+  const [busPickerOpenNearby, setBusPickerOpenNearby] = useState(false);
   // 身兼兩個用途：(1) 彈窗裡選了縣市、路線／站牌還沒選完時，首頁縣市欄位要能馬上同步
   // 顯示剛選的縣市，不用等整個流程走完才回填；(2) 掛載時從 localStorage 還原上次用過的
   // 縣市（見 loadBusCity），讓首頁、彈窗都直接帶出使用者上次選的縣市，不用每次都挑一次。
@@ -621,7 +632,14 @@ export function TransitHomeView() {
                 縣市、站牌/路線編號兩個欄位都開同一個彈窗、停在同一個搜尋畫面——縣市不用
                 另外跳一層專屬的選單，彈窗裡本來就有縣市下拉可以選。 */}
             <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => setBusPickerOpen(true)} className="flex flex-col gap-1.5 text-left">
+              <button
+                type="button"
+                onClick={() => {
+                  setBusPickerOpenNearby(false);
+                  setBusPickerOpen(true);
+                }}
+                className="flex flex-col gap-1.5 text-left"
+              >
                 <span className="text-xs font-medium text-[#9C94C4]">縣市</span>
                 <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
                   {/* 跟彈窗內 cityName 的退回邏輯一致（見 bus-route-picker-modal.tsx 的
@@ -634,7 +652,14 @@ export function TransitHomeView() {
                   </span>
                 </div>
               </button>
-              <button type="button" onClick={() => setBusPickerOpen(true)} className="flex flex-col gap-1.5 text-left">
+              <button
+                type="button"
+                onClick={() => {
+                  setBusPickerOpenNearby(false);
+                  setBusPickerOpen(true);
+                }}
+                className="flex flex-col gap-1.5 text-left"
+              >
                 <span className="text-xs font-medium text-[#9C94C4]">站牌/路線編號</span>
                 <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
                   <span className={`flex-1 truncate text-sm ${busSelection?.stopName ? "font-medium text-[#4A3B7C]" : "text-[#C7BFE6]"}`}>
@@ -643,6 +668,22 @@ export function TransitHomeView() {
                 </div>
               </button>
             </div>
+
+            {/* 其他車種這個位置都有一顆「搜尋OO班次」按鈕，公車選完站就自動導頁、沒有查詢
+                按鈕可以放，版面看起來會少一塊——用「附近站牌」這個捷徑補上，不是重複功能：
+                彈窗裡雖然也有附近站牌，但要先開彈窗、再點一次，這顆直接一步到位。樣式跟
+                火車/捷運/高鐵那顆「搜尋OO班次」同一套實心漸層＋箭頭，版面風格統一。 */}
+            <button
+              type="button"
+              onClick={() => {
+                setBusPickerOpenNearby(true);
+                setBusPickerOpen(true);
+              }}
+              className="mt-1 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)]"
+              style={{ background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
+            >
+              <FaIcon icon="location-dot" size={14} className="text-white" /> 搜尋附近站牌 <span aria-hidden>→</span>
+            </button>
           </div>
         ) : (
           <div className="mt-4 flex flex-col gap-3">
@@ -682,6 +723,7 @@ export function TransitHomeView() {
           key={busPickerOpen ? "bus-open" : "bus-closed"}
           open={busPickerOpen}
           initial={{ ...busSelection, cityName: busCityPreview ?? busSelection?.cityName }}
+          openNearby={busPickerOpenNearby}
           onClose={() => setBusPickerOpen(false)}
           onCityChange={(city) => {
             setBusCityPreview(city);
@@ -823,10 +865,13 @@ export function TransitHomeView() {
                   <ImageSlot src={memoIconPath(m.icon)} alt="備忘錄" className="size-12 shrink-0 rounded-xl" />
                   <div className="min-w-0 flex-1">
                     <p className="mt-0.5 truncate text-xs text-[#9C94C4]">{m.content}</p>
-                    {countdown && (
-                      <span className={`mt-1.5 inline-block w-fit shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${REMIND_TONE_STYLE[countdown.tone]}`}>
-                        {countdown.text}
-                      </span>
+                    {m.remindAt && countdown && (
+                      <div className="mt-1.5 flex items-center justify-between gap-2">
+                        <span className={`inline-block w-fit shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${REMIND_TONE_STYLE[countdown.tone]}`}>
+                          {countdown.text}
+                        </span>
+                        <span className="truncate text-[10px] text-[#B3ABD4]">{formatRemindDateTime(m.remindAt)}</span>
+                      </div>
                     )}
                   </div>
                 </div>
