@@ -534,6 +534,9 @@ export function ResultsView({
                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${routeBadgeStyle(busRoute)}`}>{busRoute}</span>
                 <span className="text-xs text-[#9C94C4]">{busDirection === 1 ? "返程" : "去程"}</span>
                 <span className="truncate text-base font-bold text-[#4A3B7C]">{busStop}</span>
+                {/* 跟火車/高鐵的「查詢中…」「共 N 筆班次」同一個位置、同一套樣式——緊接在
+                    站名右邊，不要另外開一行，查詢狀態的呈現位置跟文案在車種間保持一致。 */}
+                <span className="truncate text-xs text-[#B3ABD4]">{loading ? "查詢中…" : `共 ${(busStops ?? []).length} 站`}</span>
               </p>
             ) : (
               <p className="flex items-center gap-3 truncate">
