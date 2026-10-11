@@ -322,11 +322,24 @@ export function BusRoutePickerModal({
       ),
     ).then((lists) => {
       if (cancelled) return;
-      const merged = lists
+      const sorted = lists
         .flat()
         .map((s) => ({ ...s, distanceMeters: distanceMeters(nearbyCoords.lat, nearbyCoords.lng, s.lat, s.lng) }))
-        .sort((a, b) => a.distanceMeters - b.distanceMeters)
-        .slice(0, NEARBY_LIMIT);
+        .sort((a, b) => a.distanceMeters - b.distanceMeters);
+
+      // 同一個站名常常掛著好幾支不同 StopUID 的牌子（路口兩側、不同路線各立一支），選哪一支
+      // 都是用站名去查「這個站有哪些路線經過」（見 pickNearbyStop／getStopRoutes），點進去
+      // 結果完全一樣——同縣市同站名在清單裡只留距離最近的那一筆，不要讓使用者看到一排
+      // 內容相同、只有公尺數有差的重複項目。
+      const seen = new Set<string>();
+      const merged: typeof sorted = [];
+      for (const s of sorted) {
+        const key = `${s.cityName}|${s.name}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        merged.push(s);
+        if (merged.length >= NEARBY_LIMIT) break;
+      }
       setNearbyStops(merged);
     });
     return () => {
