@@ -12,6 +12,20 @@ export interface ToolMeta {
 }
 
 export const TOOLS_REGISTRY: ToolMeta[] = [
-  { toolId: "transit", name: "搭乘車查詢", description: "查固定通勤班次時刻表，誤點或即將到站時推播提醒。", icon: "🚌", href: "/tools/transit" },
-  { toolId: "expenses", name: "記帳本", description: "記錄家庭收支、拆分帳本成員，追蹤每月預算跟存錢目標。", icon: "💰", href: "/tools/expenses" },
+  {
+    toolId: "transit",
+    name: "搭乘車查詢",
+    description: "查固定通勤班次時刻表，誤點或即將到站時推播提醒。",
+    icon: "🚌",
+    iconImage: "/hub/transit.png",
+    href: "/tools/transit",
+  },
+  {
+    toolId: "expenses",
+    name: "記帳本",
+    description: "記錄家庭收支、拆分帳本成員，追蹤每月預算跟存錢目標。",
+    icon: "💰",
+    iconImage: "/hub/expenses.png",
+    href: "/tools/expenses",
+  },
 ];
