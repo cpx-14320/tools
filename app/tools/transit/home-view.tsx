@@ -624,10 +624,13 @@ export function TransitHomeView() {
               <button type="button" onClick={() => setBusPickerOpen(true)} className="flex flex-col gap-1.5 text-left">
                 <span className="text-xs font-medium text-[#9C94C4]">縣市</span>
                 <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                  {/* 還沒選的時候跟彈窗裡路線編號框的提示字同一個顏色（text-[#C7BFE6]），
-                      一眼就看得出這是提示文字、不是已經選好的值。 */}
-                  <span className={`flex-1 truncate text-sm ${busCityPreview ?? busSelection?.cityName ? "font-medium text-[#4A3B7C]" : "text-[#C7BFE6]"}`}>
-                    {busCityPreview ?? busSelection?.cityName ?? "選擇縣市"}
+                  {/* 跟彈窗內 cityName 的退回邏輯一致（見 bus-route-picker-modal.tsx 的
+                      initial?.cityName ?? BUS_CITIES[0]）：沒記住的值就退回第一個縣市，
+                      不要顯示「選擇縣市」——彈窗其實一直都有一個實際在運作的縣市，首頁
+                      顯示「還沒選」反而不準確，點進去才發現其實已經選好了。這裡只是顯示
+                      用的退回值，不會寫進 localStorage，縣市清單之後調整順序也不會卡住。 */}
+                  <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">
+                    {busCityPreview ?? busSelection?.cityName ?? BUS_CITIES[0]}
                   </span>
                 </div>
               </button>
