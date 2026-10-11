@@ -10,7 +10,8 @@ import { HomeSettingsModal, type HomeDefaults } from "@/components/transit/home-
 import { TimePickerModal } from "@/components/transit/time-picker-modal";
 import { DatePickerModal } from "@/components/transit/date-picker-modal";
 import { StationPickerModal } from "@/components/transit/station-picker-modal";
-import { BusRoutePickerModal, routeBadgeStyle, type BusRouteSelection } from "@/components/transit/bus-route-picker-modal";
+import { BusRoutePickerModal, type BusRouteSelection } from "@/components/transit/bus-route-picker-modal";
+import { BUS_CITIES } from "@/components/transit/bus-cities";
 import { MemoEditorModal, type MemoDraft } from "@/components/transit/memo-editor-modal";
 import { memoIconPath } from "@/components/transit/memo-icons";
 import { WeatherCarousel, WeatherCarouselSkeleton, type WeatherBlock } from "@/components/transit/weather-carousel";
@@ -53,6 +54,26 @@ function saveLastMode(mode: Mode) {
     localStorage.setItem(LAST_MODE_KEY, mode);
   } catch {
     // 同上，私密瀏覽模式等情況下存不了就算了。
+  }
+}
+// 公車彈窗的縣市預設值改成記住使用者上次選的縣市，不是永遠固定台北市——這個 app 是
+// 固定幾個人在用，猜得準的話每次都少選一次；猜錯了也只有第一次用會遇到，用過一次之後
+// 就再也不會錯。只記縣市，不記路線／站牌：那兩個本來就是每次查詢當下才決定的東西，
+// 跟火車模式故意不記日期時間是同一個道理。
+const BUS_CITY_KEY = "cpx-tools:transit:bus-last-city";
+function loadBusCity(): string | null {
+  try {
+    const raw = localStorage.getItem(BUS_CITY_KEY);
+    return raw && BUS_CITIES.includes(raw) ? raw : null;
+  } catch {
+    return null;
+  }
+}
+function saveBusCity(city: string) {
+  try {
+    localStorage.setItem(BUS_CITY_KEY, city);
+  } catch {
+    // 同上，存不進去就放著，不影響當下操作。
   }
 }
 const TRAIN_SEARCH_KEY = "cpx-tools:transit:train-last-search";
@@ -318,6 +339,10 @@ export function TransitHomeView() {
   // 兩個下拉選單，所以另外用一組獨立的 state，不跟 origin/dest 共用。
   const [busSelection, setBusSelection] = useState<BusRouteSelection | null>(null);
   const [busPickerOpen, setBusPickerOpen] = useState(false);
+  // 身兼兩個用途：(1) 彈窗裡選了縣市、路線／站牌還沒選完時，首頁縣市欄位要能馬上同步
+  // 顯示剛選的縣市，不用等整個流程走完才回填；(2) 掛載時從 localStorage 還原上次用過的
+  // 縣市（見 loadBusCity），讓首頁、彈窗都直接帶出使用者上次選的縣市，不用每次都挑一次。
+  const [busCityPreview, setBusCityPreview] = useState<string | null>(null);
   // 天氣卡改成使用者自訂、可新增任意多個「區塊」的清單（像「我的行程」的分類一樣），
   // 不是寫死出發／抵達兩個固定欄位；每個區塊是一個縣市＋行政區，會自動展開成「今天」
   // 「明天」兩張首頁輪播卡，不用另外選日期。剛創帳號、還沒存過任何偏好值時，預設兩個
@@ -404,6 +429,13 @@ export function TransitHomeView() {
     setModeReady(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // 公車縣市預設值還原：跟上面 mode 的還原分開寫，同一個理由——各自獨立的初始化，合在
+  // 一起反而容易互相牽扯。
+  useEffect(() => {
+    const saved = loadBusCity();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (saved) setBusCityPreview(saved);
+  }, []);
   function saveSettings(defaults: HomeDefaults) {
     setWeatherBlocks(defaults.weatherBlocks);
     saveDefaults(defaults);
@@ -487,23 +519,22 @@ export function TransitHomeView() {
     // 自動跳回今天，不用使用者自己發現、手動重選。
     const searchDate = date < todayLocal() ? todayLocal() : date;
     if (searchDate !== date) setDate(searchDate);
-    // 公車是路線＋方向＋站牌（不是起訖站），結果頁要帶這三個參數加縣市，不是 origin/dest。
-    if (mode === "bus") {
-      if (!busSelection) return;
-      const qs = new URLSearchParams({
-        mode,
-        busCity: busSelection.cityName,
-        busRoute: busSelection.routeName,
-        busDirection: String(busSelection.direction),
-        busStop: busSelection.stopName,
-        from: "home",
-      });
-      router.push(`/tools/transit/results?${qs.toString()}`);
-      return;
-    }
     router.push(
       `/tools/transit/results?origin=${encodeURIComponent(origin)}&dest=${encodeURIComponent(dest)}&mode=${mode}&date=${searchDate}&time=${encodeURIComponent(time)}&from=home`,
     );
+  }
+  // 公車選到站牌那一刻（彈窗的 onSave）就已經是完整的查詢條件了——不像火車/捷運/高鐵
+  // 選完站還要再決定日期時間，公車沒有東西需要回首頁再按一次按鈕才能決定，選完直接導頁。
+  function goToBusResults(selection: BusRouteSelection) {
+    const qs = new URLSearchParams({
+      mode: "bus",
+      busCity: selection.cityName,
+      busRoute: selection.routeName,
+      busDirection: String(selection.direction),
+      busStop: selection.stopName,
+      from: "home",
+    });
+    router.push(`/tools/transit/results?${qs.toString()}`);
   }
   return (
     <div className="-mb-24 flex min-h-full flex-col bg-white pb-24">
@@ -583,27 +614,29 @@ export function TransitHomeView() {
           })}
         </div>
         {mode === "bus" ? (
-          <div className="mt-5 flex flex-col gap-3">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-[#9C94C4]">公車路線／站牌</span>
-              <button type="button" onClick={() => setBusPickerOpen(true)} className="grid grid-cols-2 gap-2 text-left">
+          <div className="mt-4 flex flex-col gap-3">
+            {/* 彈窗預設就是「站牌」優先（見 bus-route-picker-modal.tsx），首頁這塊預覽
+                跟著改成縣市＋站牌名稱這兩個使用者看得懂的欄位，不再秀路線色塊——選好的
+                路線本身還是存在 busSelection 裡，只是不在首頁這塊摘要上特別標出來。
+                縣市、站牌/路線編號兩個欄位都開同一個彈窗、停在同一個搜尋畫面——縣市不用
+                另外跳一層專屬的選單，彈窗裡本來就有縣市下拉可以選。 */}
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => setBusPickerOpen(true)} className="flex flex-col gap-1.5 text-left">
+                <span className="text-xs font-medium text-[#9C94C4]">縣市</span>
                 <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                  {busSelection ? (
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${routeBadgeStyle(busSelection.routeName)}`}>
-                      {busSelection.routeName}
-                    </span>
-                  ) : (
-                    <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">選擇路線</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                  <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{busSelection?.stopName ?? "選擇站牌"}</span>
+                  <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{busCityPreview ?? busSelection?.cityName ?? "選擇縣市"}</span>
                 </div>
               </button>
-            </label>
+              <button type="button" onClick={() => setBusPickerOpen(true)} className="flex flex-col gap-1.5 text-left">
+                <span className="text-xs font-medium text-[#9C94C4]">站牌/路線編號</span>
+                <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
+                  <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{busSelection?.stopName ?? "輸入站牌名稱"}</span>
+                </div>
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="relative mt-4 flex flex-col gap-3">
+          <div className="mt-4 flex flex-col gap-3">
             <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-[#9C94C4]">出發{stationLabel}</span>
               <button type="button" onClick={() => setOriginPickerOpen(true)} className="grid grid-cols-2 gap-2 text-left">
@@ -639,9 +672,18 @@ export function TransitHomeView() {
         <BusRoutePickerModal
           key={busPickerOpen ? "bus-open" : "bus-closed"}
           open={busPickerOpen}
-          initial={busSelection ?? undefined}
+          initial={{ ...busSelection, cityName: busCityPreview ?? busSelection?.cityName }}
           onClose={() => setBusPickerOpen(false)}
-          onSave={(selection) => setBusSelection(selection)}
+          onCityChange={(city) => {
+            setBusCityPreview(city);
+            saveBusCity(city);
+          }}
+          onSave={(selection) => {
+            setBusSelection(selection);
+            setBusCityPreview(null);
+            saveBusCity(selection.cityName);
+            goToBusResults(selection);
+          }}
         />
         {mode !== "bus" && (
           <>
@@ -683,59 +725,63 @@ export function TransitHomeView() {
             />
           </>
         )}
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-[#9C94C4]">日期</span>
-            <button
-              type="button"
-              onClick={() => setDatePickerOpen(true)}
-              className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-left text-sm text-[#4A3B7C]"
-            >
-              <span className="flex-1 truncate font-medium">{date.replaceAll("-", "/")}</span>
-            </button>
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-[#9C94C4]">時間</span>
-            <button
-              type="button"
-              onClick={() => setTimePickerOpen(true)}
-              className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-left text-sm text-[#4A3B7C]"
-            >
-              <span className="flex-1 font-medium">{time}</span>
-            </button>
-          </label>
-        </div>
-        <DatePickerModal
-          key={datePickerOpen ? "date-open" : "date-closed"}
-          open={datePickerOpen}
-          initial={date}
-          onClose={() => setDatePickerOpen(false)}
-          onSave={(v) => {
-            setDate(v);
-            setDatePickerOpen(false);
-          }}
-        />
-        <TimePickerModal
-          key={timePickerOpen ? "time-open" : "time-closed"}
-          open={timePickerOpen}
-          initial={time}
-          onClose={() => setTimePickerOpen(false)}
-          onSave={(v) => {
-            setTime(v);
-            setTimePickerOpen(false);
-          }}
-        />
-        <button
-          type="button"
-          onClick={searchTrains}
-          disabled={mode === "bus" && !busSelection}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)] disabled:opacity-50"
-          style={{ background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
-        >
-          <FaIcon icon="magnifying-glass" size={14} className="text-white" /> {mode === "bus"
-            ? "查詢即時到站"
-            : `搜尋${MODES.find((m) => m.key === mode)?.label}班次`} <span aria-hidden>→</span>
-        </button>
+        {mode !== "bus" && (
+          <>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-[#9C94C4]">日期</span>
+                <button
+                  type="button"
+                  onClick={() => setDatePickerOpen(true)}
+                  className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-left text-sm text-[#4A3B7C]"
+                >
+                  <span className="flex-1 truncate font-medium">{date.replaceAll("-", "/")}</span>
+                </button>
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-[#9C94C4]">時間</span>
+                <button
+                  type="button"
+                  onClick={() => setTimePickerOpen(true)}
+                  className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-left text-sm text-[#4A3B7C]"
+                >
+                  <span className="flex-1 font-medium">{time}</span>
+                </button>
+              </label>
+            </div>
+            <DatePickerModal
+              key={datePickerOpen ? "date-open" : "date-closed"}
+              open={datePickerOpen}
+              initial={date}
+              onClose={() => setDatePickerOpen(false)}
+              onSave={(v) => {
+                setDate(v);
+                setDatePickerOpen(false);
+              }}
+            />
+            <TimePickerModal
+              key={timePickerOpen ? "time-open" : "time-closed"}
+              open={timePickerOpen}
+              initial={time}
+              onClose={() => setTimePickerOpen(false)}
+              onSave={(v) => {
+                setTime(v);
+                setTimePickerOpen(false);
+              }}
+            />
+          </>
+        )}
+        {mode !== "bus" && (
+          <button
+            type="button"
+            onClick={searchTrains}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)]"
+            style={{ background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
+          >
+            <FaIcon icon="magnifying-glass" size={14} className="text-white" /> {`搜尋${MODES.find((m) => m.key === mode)?.label}班次`}{" "}
+            <span aria-hidden>→</span>
+          </button>
+        )}
         <p className="mt-6 flex items-center gap-1.5 text-sm font-semibold text-[#4A3B7C]">
           <span aria-hidden className="text-[#C9A6F2]">
             ♦

@@ -25,7 +25,12 @@ interface StopOfRouteEntry {
   RouteUID: string;
   RouteName: { Zh_tw: string };
   Direction: number;
-  Stops: { StopUID: string; StopName: { Zh_tw: string }; StopSequence: number }[];
+  Stops: {
+    StopUID: string;
+    StopName: { Zh_tw: string };
+    StopSequence: number;
+    StopPosition: { PositionLat: number; PositionLon: number };
+  }[];
 }
 
 async function getStopOfRouteList(cityCode: string): Promise<StopOfRouteEntry[]> {
@@ -110,19 +115,26 @@ export interface BusStopEta {
   etaMinutes: number | null;
 }
 
-/** 某條路線＋某個方向的完整真實站序，每一站都帶上當下的即時到站狀態。 */
-export async function getRouteStops(cityName: string, routeName: string, direction: 0 | 1): Promise<BusStopEta[]> {
+// 某條路線的完整真實站序——去程、返程一次抓回來，各自帶上當下的即時到站狀態。兩個方向
+// 一次查完是因為使用者在路線詳情畫面切換去程/返程很常見，而即時到站端點本來就是整個
+// 城市一次撈回來，兩個方向的資料原本就在同一筆回應裡，沒必要切換方向就重打一次 TDX。
+export async function getRouteStops(cityName: string, routeName: string): Promise<Record<0 | 1, BusStopEta[]>> {
   const cityCode = BUS_CITY_CODE[cityName];
-  if (!cityCode) return [];
+  if (!cityCode) return { 0: [], 1: [] };
   const [entries, etaList] = await Promise.all([getStopOfRouteList(cityCode), getEtaList(cityCode)]);
-  const entry = entries.find((e) => e.RouteName.Zh_tw === routeName && e.Direction === direction);
-  if (!entry) return [];
-  const etaByStopUID = new Map(
-    etaList.filter((r) => r.RouteName.Zh_tw === routeName && r.Direction === direction).map((r) => [r.StopUID, r]),
-  );
-  return [...entry.Stops]
-    .sort((a, b) => a.StopSequence - b.StopSequence)
-    .map((s) => ({ name: s.StopName.Zh_tw, ...classifyEta(etaByStopUID.get(s.StopUID)) }));
+
+  function stopsForDirection(direction: 0 | 1): BusStopEta[] {
+    const entry = entries.find((e) => e.RouteName.Zh_tw === routeName && e.Direction === direction);
+    if (!entry) return [];
+    const etaByStopUID = new Map(
+      etaList.filter((r) => r.RouteName.Zh_tw === routeName && r.Direction === direction).map((r) => [r.StopUID, r]),
+    );
+    return [...entry.Stops]
+      .sort((a, b) => a.StopSequence - b.StopSequence)
+      .map((s) => ({ name: s.StopName.Zh_tw, ...classifyEta(etaByStopUID.get(s.StopUID)) }));
+  }
+
+  return { 0: stopsForDirection(0), 1: stopsForDirection(1) };
 }
 
 export interface StopRouteEta {
@@ -152,4 +164,29 @@ export async function getStopRoutes(cityName: string, stopName: string): Promise
   }
 
   return results.sort((a, b) => (a.etaMinutes ?? 9999) - (b.etaMinutes ?? 9999));
+}
+
+export interface BusStopLocation {
+  stopUID: string;
+  name: string;
+  lat: number;
+  lng: number;
+}
+
+// 附近站牌：單一縣市內所有「實體站牌」的名稱＋座標，不含路線／方向／即時到站——附近
+// 站點本來就是用距離排序，不需要到站資訊。StopOfRoute 回傳的是「每條路線底下的站序」，
+// 同一個實體站牌會被好幾十條路線重複列出，這裡用 StopUID（不是站名）去重，同名但不同
+// 位置的站牌（例如雙向各一個牌子）StopUID 不同，不會被誤合併成一筆。
+export async function getCityBusStopLocations(cityName: string): Promise<BusStopLocation[]> {
+  const cityCode = BUS_CITY_CODE[cityName];
+  if (!cityCode) return [];
+  const entries = await getStopOfRouteList(cityCode);
+  const byUID = new Map<string, BusStopLocation>();
+  for (const entry of entries) {
+    for (const s of entry.Stops) {
+      if (byUID.has(s.StopUID)) continue;
+      byUID.set(s.StopUID, { stopUID: s.StopUID, name: s.StopName.Zh_tw, lat: s.StopPosition.PositionLat, lng: s.StopPosition.PositionLon });
+    }
+  }
+  return [...byUID.values()];
 }

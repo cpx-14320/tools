@@ -226,13 +226,15 @@ function useBusRouteStops(mode: Mode, city: string, route: string, direction: 0 
     setStops(null);
     setError(null);
     /* eslint-enable react-hooks/set-state-in-effect */
-    const qs = new URLSearchParams({ city, route, direction: String(direction) });
+    // /api/transit/bus/route-stops 回傳的是去程／返程兩個方向一次給（見
+    // bus-route-picker-modal.tsx 的同一套快取邏輯），這裡只要當下這個方向的那一份。
+    const qs = new URLSearchParams({ city, route });
     fetch(`/api/transit/bus/route-stops?${qs.toString()}`)
       .then((res) => res.json())
-      .then((data: { stops?: BusStopEta[]; error?: string }) => {
+      .then((data: { stops?: Record<0 | 1, BusStopEta[]>; error?: string }) => {
         if (cancelled) return;
         if (data.error) setError(data.error);
-        setStops(data.stops ?? []);
+        setStops(data.stops?.[direction] ?? []);
       })
       .catch(() => {
         if (!cancelled) setError("公車站序查詢失敗，請稍後再試");

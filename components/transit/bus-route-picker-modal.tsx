@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { BottomSheetModal } from "./bottom-sheet-modal";
 import { FaIcon } from "./fa-icon";
 import { BUS_CITIES } from "./bus-cities";
+import { NearbyButton } from "./nearby-button";
+import { distanceMeters, formatDistance } from "@/lib/geo";
 import type { BusEtaStatus } from "@/lib/transit/bus-routing";
 
 export interface BusRouteSelection {
@@ -26,6 +28,17 @@ interface StopRouteEta {
   status: BusEtaStatus;
   etaMinutes: number | null;
 }
+
+interface NearbyBusStop {
+  stopUID: string;
+  name: string;
+  cityName: string;
+  distanceMeters: number;
+}
+
+// 附近站牌顯示的筆數上限，跟 Ubike 附近站點同一個邏輯：定位一次之後附近的站牌就夠用，
+// 不用把全部縣市排序完的清單都塞進畫面。
+const NEARBY_LIMIT = 20;
 
 // 文字說明照 lib/bus-routing.ts 的分類：ok 才有倒數分鐘可以顯示，其他狀態只顯示文字。
 const STATUS_LABEL: Record<BusEtaStatus, string> = {
@@ -190,7 +203,7 @@ function setCached<T>(cache: Map<string, ClientCacheEntry<T>>, key: string, data
 
 const routeSearchCache = new Map<string, ClientCacheEntry<string[]>>();
 const stopSearchCache = new Map<string, ClientCacheEntry<string[]>>();
-const routeStopsCache = new Map<string, ClientCacheEntry<BusStopEta[]>>();
+const routeStopsCache = new Map<string, ClientCacheEntry<Record<0 | 1, BusStopEta[]>>>();
 const stopRoutesCache = new Map<string, ClientCacheEntry<StopRouteEta[]>>();
 
 type Step = { kind: "search" } | { kind: "routeDetail"; routeName: string } | { kind: "stopDetail"; stopName: string };
@@ -234,14 +247,18 @@ export function BusRoutePickerModal({
   initial,
   onClose,
   onSave,
+  onCityChange,
 }: {
   open: boolean;
   initial?: Partial<BusRouteSelection>;
   onClose: () => void;
   onSave: (selection: BusRouteSelection) => void;
+  /** 選了縣市那一刻就通知首頁——縣市不用等整個選完（路線＋站牌）才回填，彈窗後面的
+      首頁縣市欄位要能馬上同步看到剛選的縣市，不然選完縣市使用者會覺得畫面後面沒反應。 */
+  onCityChange?: (city: string) => void;
 }) {
   const [step, setStep] = useState<Step>({ kind: "search" });
-  const [searchMode, setSearchMode] = useState<"route" | "stop">("stop");
+  const [searchMode, setSearchMode] = useState<"route" | "stop" | "nearby">("stop");
   const [query, setQuery] = useState("");
   const [cityName, setCityName] = useState(initial?.cityName && BUS_CITIES.includes(initial.cityName) ? initial.cityName : BUS_CITIES[0]);
   const [cityPickerOpen, setCityPickerOpen] = useState(false);
@@ -251,6 +268,71 @@ export function BusRoutePickerModal({
   const [stopResults, setStopResults] = useState<string[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+
+  // 附近站牌：不熟悉的地方不知道站名也不知道路線編號，靠 GPS 直接找最近的真實站牌——
+  // 跟 Ubike 附近站點同一套做法。定位會改變畫面顯示的資料，所以不在切到這個分頁時自動
+  // 要求權限，要使用者自己點按鈕才觸發，瀏覽器的定位權限彈窗跳出來時才不會讓人覺得莫名其妙。
+  const [locating, setLocating] = useState(false);
+  const [nearbyCoords, setNearbyCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [nearbyStops, setNearbyStops] = useState<NearbyBusStop[] | null>(null);
+  const [nearbyError, setNearbyError] = useState<string | null>(null);
+
+  function requestNearby() {
+    if (!navigator.geolocation) {
+      setNearbyError("這個瀏覽器不支援定位功能");
+      return;
+    }
+    setLocating(true);
+    setNearbyError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(false);
+        setNearbyCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
+      (err) => {
+        setLocating(false);
+        setNearbyError(err.code === err.PERMISSION_DENIED ? "請到瀏覽器設定開啟定位權限" : "定位失敗，請稍後再試");
+      },
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+  }
+
+  function cancelNearby() {
+    setNearbyCoords(null);
+    setNearbyStops(null);
+    setNearbyError(null);
+  }
+
+  // 拿到座標後查全部縣市的站牌（不是只查目前選的那個縣市）再依距離排序——理由跟 Ubike
+  // 附近站點一樣：使用者的位置可能剛好在兩個縣市交界，只查單一縣市會漏掉其實比較近的
+  // 另一邊站牌。
+  useEffect(() => {
+    if (!nearbyCoords) return;
+    let cancelled = false;
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    setNearbyStops(null);
+    Promise.all(
+      BUS_CITIES.map((city) =>
+        fetch(`/api/transit/bus/stop-locations?city=${encodeURIComponent(city)}`)
+          .then((res) => res.json())
+          .then((data: { stops?: { stopUID: string; name: string; lat: number; lng: number }[] }) =>
+            (data.stops ?? []).map((s) => ({ ...s, cityName: city })),
+          )
+          .catch(() => []),
+      ),
+    ).then((lists) => {
+      if (cancelled) return;
+      const merged = lists
+        .flat()
+        .map((s) => ({ ...s, distanceMeters: distanceMeters(nearbyCoords.lat, nearbyCoords.lng, s.lat, s.lng) }))
+        .sort((a, b) => a.distanceMeters - b.distanceMeters)
+        .slice(0, NEARBY_LIMIT);
+      setNearbyStops(merged);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [nearbyCoords]);
 
   // 純文字命名的路線（例如「東山咖啡線」）名稱裡沒有數字，縣市快速鍵／數字鍵盤完全打不出
   // 這幾個字，查詢框也查不到——改用瀏覽的方式選，點開才查（不是一進彈窗就打，省一次
@@ -287,7 +369,7 @@ export function BusRoutePickerModal({
   // 小鍵盤／文字框每打一個字就會變動查詢字，debounce 200ms 再查，不用每個按鍵都打一次。
   // 還沒輸入任何字就不查——彈窗一打開 query 是空字串，不應該平白無故先打一次 API。
   useEffect(() => {
-    if (step.kind !== "search") return;
+    if (step.kind !== "search" || searchMode === "nearby") return;
 
     const trimmed = query.trim();
     const cache = searchMode === "route" ? routeSearchCache : stopSearchCache;
@@ -345,38 +427,39 @@ export function BusRoutePickerModal({
   }, [step.kind, searchMode, query, cityName]);
 
   const routeNameForDetail = step.kind === "routeDetail" ? step.routeName : null;
-  const [routeStops, setRouteStops] = useState<BusStopEta[] | null>(null);
+  const [routeStopsByDirection, setRouteStopsByDirection] = useState<Record<0 | 1, BusStopEta[]> | null>(null);
   const [routeStopsError, setRouteStopsError] = useState<string | null>(null);
 
-  // 路線詳情：某條路線＋某個方向的真實站序，每一站都帶即時到站狀態。
+  // 路線詳情：去程、返程的真實站序一次抓回來存同一個快取 key，切換方向純粹換畫面，
+  // 不用再打一次 API（跟下面站牌詳情的 stopRoutes 是同一套做法）。
   useEffect(() => {
     if (!routeNameForDetail) return;
 
-    const cacheKey = `${cityName}|${routeNameForDetail}|${direction}`;
+    const cacheKey = `${cityName}|${routeNameForDetail}`;
     const cached = getCached(routeStopsCache, cacheKey);
     if (cached) {
       /* eslint-disable react-hooks/set-state-in-effect */
-      setRouteStops(cached);
+      setRouteStopsByDirection(cached);
       setRouteStopsError(null);
       /* eslint-enable react-hooks/set-state-in-effect */
       return;
     }
 
     let cancelled = false;
-    setRouteStops(null);
+    setRouteStopsByDirection(null);
     setRouteStopsError(null);
-    const qs = new URLSearchParams({ city: cityName, route: routeNameForDetail, direction: String(direction) });
+    const qs = new URLSearchParams({ city: cityName, route: routeNameForDetail });
     fetch(`/api/transit/bus/route-stops?${qs.toString()}`)
       .then((res) => res.json())
-      .then((data: { stops?: BusStopEta[]; error?: string }) => {
+      .then((data: { stops?: Record<0 | 1, BusStopEta[]>; error?: string }) => {
         if (cancelled) return;
         if (data.error) {
           setRouteStopsError(data.error);
           return;
         }
-        const stops = data.stops ?? [];
+        const stops = data.stops ?? { 0: [], 1: [] };
         setCached(routeStopsCache, cacheKey, stops, ETA_CACHE_TTL_MS);
-        setRouteStops(stops);
+        setRouteStopsByDirection(stops);
       })
       .catch(() => {
         if (!cancelled) setRouteStopsError("查詢失敗，請稍後再試");
@@ -384,7 +467,9 @@ export function BusRoutePickerModal({
     return () => {
       cancelled = true;
     };
-  }, [routeNameForDetail, direction, cityName]);
+  }, [routeNameForDetail, cityName]);
+
+  const routeStopsForDirection = routeStopsByDirection ? routeStopsByDirection[direction] : null;
 
   const stopNameForDetail = step.kind === "stopDetail" ? step.stopName : null;
   const [stopRoutes, setStopRoutes] = useState<StopRouteEta[] | null>(null);
@@ -439,6 +524,9 @@ export function BusRoutePickerModal({
     setSearchMode("stop");
     setQuery("");
     setDirection(0);
+    setNearbyCoords(null);
+    setNearbyStops(null);
+    setNearbyError(null);
     onClose();
   }
 
@@ -450,6 +538,15 @@ export function BusRoutePickerModal({
   function pickFromStopDetail(routeName: string, routeDirection: 0 | 1, stopName: string) {
     onSave({ cityName, routeName, direction: routeDirection, stopName });
     close();
+  }
+
+  // 附近站牌點了之後，直接沿用現有的「站牌詳情」畫面（去程／返程 tabs、這個站有哪些
+  // 路線經過＋即時到站）——不用另外刻一套，只是站牌可能來自跟目前選的 cityName 不同的
+  // 縣市，要先把 cityName 切過去，後面站牌詳情的查詢才會打對縣市。
+  function pickNearbyStop(stop: NearbyBusStop) {
+    setCityName(stop.cityName);
+    onCityChange?.(stop.cityName);
+    setStep({ kind: "stopDetail", stopName: stop.name });
   }
 
   function pickNamedRoute(routeName: string) {
@@ -469,135 +566,189 @@ export function BusRoutePickerModal({
     >
       {step.kind === "search" && (
         <>
-          <div className="inline-flex w-fit items-center gap-1 self-start rounded-full bg-[#F3EFFC] p-1">
-            {(["stop", "route"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => {
-                  setSearchMode(m);
+          <div className="flex items-center justify-between gap-2">
+            <div className="inline-flex items-center gap-1 rounded-full bg-[#F3EFFC] p-1">
+              {(["stop", "route"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => {
+                    setSearchMode(m);
+                    setQuery("");
+                  }}
+                  className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+                    searchMode === m ? "bg-white text-[#6F5FD6] shadow-[0_2px_8px_-2px_rgba(111,95,214,0.4)]" : "text-[#9C94C4]"
+                  }`}
+                >
+                  {m === "route" ? "路線" : "站牌"}
+                </button>
+              ))}
+            </div>
+
+            {/* 不熟悉的地方不知道站名也不知道路線編號——跟站牌／路線切換並排的獨立按鈕，
+                點了直接定位＋查詢，不用先切到一個分頁再按一次才開始定位。跟 Ubike 附近
+                站點共用同一個按鈕元件（見 nearby-button.tsx），間距、字體統一。 */}
+            <NearbyButton
+              active={searchMode === "nearby"}
+              locating={locating}
+              label="附近站牌"
+              onClick={() => {
+                if (searchMode === "nearby") {
+                  setSearchMode("stop");
+                  cancelNearby();
+                } else {
+                  setSearchMode("nearby");
                   setQuery("");
-                }}
-                className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
-                  searchMode === m ? "bg-white text-[#6F5FD6] shadow-[0_2px_8px_-2px_rgba(111,95,214,0.4)]" : "text-[#9C94C4]"
-                }`}
-              >
-                {m === "route" ? "路線" : "站牌"}
-              </button>
-            ))}
+                  requestNearby();
+                }
+              }}
+            />
           </div>
 
-          {/* 縣市一多（例如之後要加更多縣市）橫向捲動清單會變得很長，改成跟 Ubike 同一套
-              「標籤＋按鈕開彈窗」寫法，點了跳出另一個 BottomSheetModal 選縣市——這個彈窗
-              本身也是 BottomSheetModal，等於是疊兩層，疊起來的堆疊順序看 DOM 掛載順序，
-              後開的（縣市選單）本來就會疊在先開的（這個彈窗）上面，不用特別處理 z-index。
-              縣市跟目前這個模式要打的那個欄位（路線編號／站牌名稱）並排成一排，兩欄高度、
-              padding 對齊，看起來是同一組查詢條件。 */}
-          <div className="grid grid-cols-2 gap-3">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-[#9C94C4]">縣市</span>
-              <button
-                type="button"
-                onClick={() => setCityPickerOpen(true)}
-                className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-left text-sm text-[#4A3B7C]"
-              >
-                <span className="flex-1 truncate font-medium">{cityName}</span>
-                <FaIcon icon="chevron-down" size={12} className="text-[#C7BFE6]" />
-              </button>
-            </label>
-
-            {searchMode === "route" ? (
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-[#9C94C4]">路線編號</span>
-                <div className="flex items-center rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-sm font-medium text-[#4A3B7C]">
-                  {query || (
-                    <span className="truncate text-[#C7BFE6]">例如「{ROUTE_QUERY_EXAMPLE_BY_CITY[cityName] ?? "105"}」</span>
+          {searchMode === "nearby" ? (
+            <>
+              {nearbyError && <p className="text-center text-xs text-[#D1517E]">{nearbyError}</p>}
+              {!nearbyError && (
+                <div className="flex max-h-72 flex-col overflow-y-auto rounded-2xl border border-[#F2EEFA]">
+                  {!nearbyCoords ? (
+                    <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">定位中…</p>
+                  ) : nearbyStops === null ? (
+                    <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">查詢附近站牌中…</p>
+                  ) : nearbyStops.length === 0 ? (
+                    <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">附近沒有查到站牌</p>
+                  ) : (
+                    nearbyStops.map((s) => (
+                      <button
+                        key={s.stopUID}
+                        type="button"
+                        onClick={() => pickNearbyStop(s)}
+                        className="flex items-center justify-between gap-2 px-4 py-2.5 text-left transition-colors hover:bg-[#F8F6FD]"
+                      >
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#4A3B7C]">{s.name}</span>
+                        <span className="shrink-0 text-xs text-[#9C94C4]">
+                          {s.cityName} · {formatDistance(s.distanceMeters)}
+                        </span>
+                      </button>
+                    ))
                   )}
                 </div>
-              </label>
-            ) : (
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-[#9C94C4]">站牌名稱</span>
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="輸入站牌名稱"
-                  className="rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-sm font-medium text-[#4A3B7C] outline-none focus:border-[#6F5FD6]"
-                />
-              </label>
-            )}
-          </div>
-
-          {searchMode === "route" ? (
+              )}
+            </>
+          ) : (
             <>
-              <div className="flex max-h-32 flex-col overflow-y-auto rounded-2xl border border-[#F2EEFA]">
-                {searchLoading ? (
-                  <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">搜尋中…</p>
-                ) : searchError ? (
-                  <p className="px-4 py-3 text-center text-xs text-[#D1517E]">{searchError}</p>
-                ) : !query.trim() ? (
-                  <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">輸入路線編號開始查詢</p>
-                ) : routeResults.length === 0 ? (
-                  <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">沒有符合的路線</p>
+              {/* 縣市一多（例如之後要加更多縣市）橫向捲動清單會變得很長，改成跟 Ubike 同一套
+                  「標籤＋按鈕開彈窗」寫法，點了跳出另一個 BottomSheetModal 選縣市——這個彈窗
+                  本身也是 BottomSheetModal，等於是疊兩層，疊起來的堆疊順序看 DOM 掛載順序，
+                  後開的（縣市選單）本來就會疊在先開的（這個彈窗）上面，不用特別處理 z-index。
+                  縣市跟目前這個模式要打的那個欄位（路線編號／站牌名稱）並排成一排，兩欄高度、
+                  padding 對齊，看起來是同一組查詢條件。 */}
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-[#9C94C4]">縣市</span>
+                  <button
+                    type="button"
+                    onClick={() => setCityPickerOpen(true)}
+                    className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-left text-sm text-[#4A3B7C]"
+                  >
+                    <span className="flex-1 truncate font-medium">{cityName}</span>
+                    <FaIcon icon="chevron-down" size={12} className="text-[#C7BFE6]" />
+                  </button>
+                </label>
+
+                {searchMode === "route" ? (
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-[#9C94C4]">路線編號</span>
+                    <div className="flex items-center rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-sm font-medium text-[#4A3B7C]">
+                      {query || (
+                        <span className="truncate text-[#C7BFE6]">例如「{ROUTE_QUERY_EXAMPLE_BY_CITY[cityName] ?? "105"}」</span>
+                      )}
+                    </div>
+                  </label>
                 ) : (
-                  routeResults.map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setStep({ kind: "routeDetail", routeName: r })}
-                      className="flex items-center gap-2 px-4 py-2.5 text-left transition-colors hover:bg-[#F8F6FD]"
-                    >
-                      <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${routeBadgeStyle(r)}`}>{r}</span>
-                    </button>
-                  ))
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-[#9C94C4]">站牌名稱</span>
+                    <input
+                      type="text"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="輸入站牌名稱"
+                      className="rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-sm font-medium text-[#4A3B7C] outline-none focus:border-[#6F5FD6]"
+                    />
+                  </label>
                 )}
               </div>
 
-              <div className="grid grid-cols-4 gap-2">
-                {keypadForCity(cityName).map((key, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setQuery((q) => (key.label === "⌫" ? q.slice(0, -1) : q + key.insert))}
-                    className={`rounded-2xl py-3 text-center text-sm font-semibold transition-colors ${
-                      key.tone ? ROUTE_COLOR_PREFIX_STYLE[key.tone] : "bg-[#F8F6FD] text-[#4A3B7C] hover:bg-[#F3EFFC]"
-                    }`}
-                  >
-                    {key.label}
-                  </button>
-                ))}
-              </div>
+              {searchMode === "route" ? (
+                <>
+                  <div className="flex max-h-32 flex-col overflow-y-auto rounded-2xl border border-[#F2EEFA]">
+                    {searchLoading ? (
+                      <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">搜尋中…</p>
+                    ) : searchError ? (
+                      <p className="px-4 py-3 text-center text-xs text-[#D1517E]">{searchError}</p>
+                    ) : !query.trim() ? (
+                      <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">輸入路線編號開始查詢</p>
+                    ) : routeResults.length === 0 ? (
+                      <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">沒有符合的路線</p>
+                    ) : (
+                      routeResults.map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => setStep({ kind: "routeDetail", routeName: r })}
+                          className="flex items-center gap-2 px-4 py-2.5 text-left transition-colors hover:bg-[#F8F6FD]"
+                        >
+                          <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${routeBadgeStyle(r)}`}>{r}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
 
-              {/* 「東山咖啡線」「先導公車」這種名稱裡完全沒有數字的路線，上面的鍵盤（數字＋
-                  縣市快速鍵）打不出這幾個字，查詢框也查不到，只能靠瀏覽的方式選。 */}
-              <button type="button" onClick={() => setNamedRoutesOpen(true)} className="self-start text-xs font-medium text-[#6F5FD6]">
-                找不到？瀏覽文字命名路線 →
-              </button>
-            </>
-          ) : (
-            <div className="flex max-h-72 flex-col overflow-y-auto rounded-2xl border border-[#F2EEFA]">
-              {searchLoading ? (
-                <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">搜尋中…</p>
-              ) : searchError ? (
-                <p className="px-4 py-3 text-center text-xs text-[#D1517E]">{searchError}</p>
-              ) : !query.trim() ? (
-                <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">輸入站牌名稱開始查詢</p>
-              ) : stopResults.length === 0 ? (
-                <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">沒有符合的站牌</p>
-              ) : (
-                stopResults.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setStep({ kind: "stopDetail", stopName: s })}
-                    className="px-4 py-2.5 text-left text-sm font-medium text-[#4A3B7C] transition-colors hover:bg-[#F8F6FD]"
-                  >
-                    {s}
+                  <div className="grid grid-cols-4 gap-2">
+                    {keypadForCity(cityName).map((key, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setQuery((q) => (key.label === "⌫" ? q.slice(0, -1) : q + key.insert))}
+                        className={`rounded-2xl py-3 text-center text-sm font-semibold transition-colors ${
+                          key.tone ? ROUTE_COLOR_PREFIX_STYLE[key.tone] : "bg-[#F8F6FD] text-[#4A3B7C] hover:bg-[#F3EFFC]"
+                        }`}
+                      >
+                        {key.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* 「東山咖啡線」「先導公車」這種名稱裡完全沒有數字的路線，上面的鍵盤（數字＋
+                      縣市快速鍵）打不出這幾個字，查詢框也查不到，只能靠瀏覽的方式選。 */}
+                  <button type="button" onClick={() => setNamedRoutesOpen(true)} className="self-start text-xs font-medium text-[#6F5FD6]">
+                    找不到？瀏覽文字命名路線 →
                   </button>
-                ))
+                </>
+              ) : (
+                <div className="flex max-h-72 flex-col overflow-y-auto rounded-2xl border border-[#F2EEFA]">
+                  {searchLoading ? (
+                    <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">搜尋中…</p>
+                  ) : searchError ? (
+                    <p className="px-4 py-3 text-center text-xs text-[#D1517E]">{searchError}</p>
+                  ) : !query.trim() ? (
+                    <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">輸入站牌名稱開始查詢</p>
+                  ) : stopResults.length === 0 ? (
+                    <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">沒有符合的站牌</p>
+                  ) : (
+                    stopResults.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setStep({ kind: "stopDetail", stopName: s })}
+                        className="px-4 py-2.5 text-left text-sm font-medium text-[#4A3B7C] transition-colors hover:bg-[#F8F6FD]"
+                      >
+                        {s}
+                      </button>
+                    ))
+                  )}
+                </div>
               )}
-            </div>
+            </>
           )}
         </>
       )}
@@ -608,12 +759,12 @@ export function BusRoutePickerModal({
           <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#F2EEFA]">
             {routeStopsError ? (
               <p className="px-4 py-3 text-center text-xs text-[#D1517E]">{routeStopsError}</p>
-            ) : routeStops === null ? (
+            ) : routeStopsForDirection === null ? (
               <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">查詢中…</p>
-            ) : routeStops.length === 0 ? (
+            ) : routeStopsForDirection.length === 0 ? (
               <p className="px-4 py-3 text-center text-xs text-[#B3ABD4]">查不到這個方向的站序</p>
             ) : (
-              routeStops.map((s) => (
+              routeStopsForDirection.map((s) => (
                 <button
                   key={s.name}
                   type="button"
@@ -672,6 +823,7 @@ export function BusRoutePickerModal({
           onClick={() => {
             setCityName(city);
             setCityPickerOpen(false);
+            onCityChange?.(city);
           }}
           className={`rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-colors ${
             city === cityName ? "border-[#6F5FD6] bg-[#F3EFFC] text-[#6F5FD6]" : "border-[#ECE4FA] text-[#4A3B7C] hover:bg-[#F3EFFC]"

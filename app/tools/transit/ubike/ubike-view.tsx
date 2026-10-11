@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { FaIcon } from "@/components/transit/fa-icon";
 import { BottomSheetModal } from "@/components/transit/bottom-sheet-modal";
+import { NearbyButton } from "@/components/transit/nearby-button";
 import { UBIKE_CITIES } from "@/components/transit/ubike-cities";
 import { scrollContainerToTop } from "@/lib/scroll-within";
+import { distanceMeters, formatDistance } from "@/lib/geo";
 
 const CITIES = UBIKE_CITIES;
 
@@ -22,24 +24,6 @@ interface NearbyStation extends UbikeStation {
 // 「附近站點」顯示的筆數上限——定位一次之後附近幾十公尺到幾公里內的站點就夠用，
 // 不用把排序完的幾百筆全塞進畫面。
 const NEARBY_LIMIT = 20;
-
-function toRad(deg: number): number {
-  return (deg * Math.PI) / 180;
-}
-
-// Haversine 公式算兩個經緯度之間的距離（公尺）——地球半徑用平均值 6371 公里，這個應用
-// 場景（站點導航用的距離排序）不需要更精確的橢球模型。
-function distanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6_371_000;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(a));
-}
-
-function formatDistance(m: number): string {
-  return m < 1000 ? `${Math.round(m)} 公尺` : `${(m / 1000).toFixed(1)} 公里`;
-}
 
 function googleMapsHref(lat: number, lng: number): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`;
@@ -188,17 +172,7 @@ export function UbikeView() {
           <h1 className="text-xl font-bold text-[#4A3B7C]">Ubike</h1>
           <p className="mt-1 text-xs text-[#9C94C4]">查詢站點位置，不含即時可借還車輛數。</p>
         </div>
-        <button
-          type="button"
-          onClick={nearbyActive ? cancelNearby : requestNearby}
-          disabled={locating}
-          className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-60 ${
-            nearbyActive ? "bg-[#F3EFFC] text-[#6F5FD6]" : "bg-[#6F5FD6] text-white"
-          }`}
-        >
-          <FaIcon icon={nearbyActive ? "xmark" : "location-dot"} className={nearbyActive ? "text-[#6F5FD6]" : "text-white"} />
-          {locating ? "定位中…" : nearbyActive ? "取消定位" : "附近站點"}
-        </button>
+        <NearbyButton active={nearbyActive} locating={locating} label="附近站點" onClick={nearbyActive ? cancelNearby : requestNearby} />
       </div>
       {nearbyError && <p className="mt-2 text-center text-xs text-[#D1517E]">{nearbyError}</p>}
 
