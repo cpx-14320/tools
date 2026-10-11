@@ -251,13 +251,18 @@ export function UbikeView() {
               訊息、查無結果、或站點清單）才用原本的卡片樣式。 */}
           {!cityName ? (
             <p className="mt-4 text-sm text-[#B3ABD4]">還沒有任何資料</p>
+          ) : error ? (
+            // error 要排在 stations === null 前面檢查——查詢失敗時 stations 本來就會一直是
+            // null（effect 裡失敗只設 error，沒有把 stations 設成別的值），放在後面的話
+            // 下面那支 stations === null 分支永遠先成立，錯誤訊息永遠顯示不出來。
+            <div className="mt-4 flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
+              <p className="px-4 py-6 text-center text-sm text-[#D1517E]">{error}</p>
+            </div>
           ) : stations === null ? (
             <p className="mt-4 text-sm text-[#B3ABD4]">載入中…</p>
           ) : (
             <div className="mt-4 flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl bg-white shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
-              {error ? (
-                <p className="px-4 py-6 text-center text-sm text-[#D1517E]">{error}</p>
-              ) : stations.length === 0 ? (
+              {stations.length === 0 ? (
                 <p className="px-4 py-6 text-center text-sm text-[#B3ABD4]">沒有符合的站點</p>
               ) : (
                 stations.map((s) => <StationRow key={s.id} station={s} />)
