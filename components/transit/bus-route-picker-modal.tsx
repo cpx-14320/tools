@@ -341,16 +341,18 @@ export function BusRoutePickerModal({
         .map((s) => ({ ...s, distanceMeters: distanceMeters(nearbyCoords.lat, nearbyCoords.lng, s.lat, s.lng) }))
         .sort((a, b) => a.distanceMeters - b.distanceMeters);
 
-      // 同一個站名常常掛著好幾支不同 StopUID 的牌子（路口兩側、不同路線各立一支），選哪一支
-      // 都是用站名去查「這個站有哪些路線經過」（見 pickNearbyStop／getStopRoutes），點進去
-      // 結果完全一樣——同縣市同站名在清單裡只留距離最近的那一筆，不要讓使用者看到一排
-      // 內容相同、只有公尺數有差的重複項目。
+      // 同一個站名常常掛著好幾支不同 StopUID 的牌子（路口兩側、不同路線各立一支，甚至同一個
+      // 實體站牌同時掛在兩個縣市的公車系統底下——例如台北車站周邊很多站是台北市、新北市
+      // 的公車都有停，TDX 兩邊各自登記一次），清單只留距離最近的那一筆就好，不分縣市：
+      // 原本用「縣市＋站名」當 key 只能擋掉同縣市的重複，兩個縣市各登記一次的同名站牌還是
+      // 會在列表裡出現兩筆、把 NEARBY_LIMIT 的名額占掉一半。站名直接拿來當 key，因為清單
+      // 本身已經先按距離排序，留下的一定是最近的那筆；真的恰好在很遠的縣市有同名站牌，排
+      // 進前 NEARBY_LIMIT 筆的機率極低，不特別處理。
       const seen = new Set<string>();
       const merged: typeof sorted = [];
       for (const s of sorted) {
-        const key = `${s.cityName}|${s.name}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
+        if (seen.has(s.name)) continue;
+        seen.add(s.name);
         merged.push(s);
         if (merged.length >= NEARBY_LIMIT) break;
       }

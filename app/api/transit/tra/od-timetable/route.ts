@@ -28,10 +28,11 @@ interface OdFareEntry {
   Fares: { TicketType: number; FareClass: number; Price: number }[];
 }
 
-// 全票價：TicketType 1 = 全票，FareClass 3 的全票價在各車種等級裡都是一致的那個數字
-// （商務／對號座等其他 FareClass 的價格另算，不是一般旅客平常看到的票價）。
+// 全票價：TicketType 1 = 全票，FareClass 1 才是乘客實際買到的那個票價；
+// 實測中壢到台北區間車 FareClass 1 = 85 元（跟官方公告一致），FareClass 3/4/5/7
+// 全部是 FareClass 1 的一半，應是給轉乘分段試算用的半價基準，不是真正的票價。
 function fullFareOf(entry: OdFareEntry): number | undefined {
-  return entry.Fares.find((f) => f.TicketType === 1 && f.FareClass === 3)?.Price;
+  return entry.Fares.find((f) => f.TicketType === 1 && f.FareClass === 1)?.Price;
 }
 
 // 同一個起訖站 TDX 常常同時回傳「直達」跟「繞道環島」兩種距離完全不同的報價，

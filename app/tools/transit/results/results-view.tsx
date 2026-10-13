@@ -20,10 +20,10 @@ export type Mode = "bus" | "train" | "metro" | "thsr";
 // API 那邊已經先簡化過一次，這裡還是用「開頭是不是這個車種」判斷比較保險）。
 // 比對順序跟頁籤顯示順序是分開的兩件事：「區間快」比對時要排在「區間」前面，不然
 // 「區間快 2005 次」會先被「區間」這個較短的前綴誤判掉；頁籤顯示順序則照使用者指定的
-// 全部／區間／區間快／自強／普悠瑪。沒列在這裡的車種（例如莒光、太魯閣）不會從列表
+// 全部／區間／區間快／莒光／自強／普悠瑪。沒列在這裡的車種（例如太魯閣）不會從列表
 // 消失，只是不會歸進任何一個特定分類頁籤，只能在「全部」看到。
-const TRAIN_TYPE_MATCH_ORDER = ["自強", "普悠瑪", "區間快", "區間"];
-const TRAIN_TYPE_TABS = ["全部", "區間", "區間快", "自強", "普悠瑪"];
+const TRAIN_TYPE_MATCH_ORDER = ["自強", "普悠瑪", "區間快", "區間", "莒光"];
+const TRAIN_TYPE_TABS = ["全部", "區間", "區間快", "莒光", "自強", "普悠瑪"];
 
 function trainTypeOf(code: string): string {
   return TRAIN_TYPE_MATCH_ORDER.find((prefix) => code.startsWith(prefix)) ?? code.split(" ")[0] ?? code;
