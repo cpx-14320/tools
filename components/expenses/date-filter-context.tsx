@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, type ReactNode } from "react";
-import { defaultDateFilter, type DateFilter, type DateFilterMode } from "@/lib/expenses/mock-data";
+import { defaultDateFilter, type DateFilter, type DateFilterMode } from "@/lib/expenses/date-filter";
 
 const STORAGE_KEY = "cpx-tools:expenses-date-filter";
 

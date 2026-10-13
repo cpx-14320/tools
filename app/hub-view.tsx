@@ -2,29 +2,19 @@
 
 import Link from "next/link";
 import { Card, CardBody, Badge } from "@/components/ui";
+import { useAuth } from "@/components/auth-provider";
+import { TOOLS_REGISTRY } from "@/lib/tools-registry";
 
-const tools = [
-  {
-    name: "搭乘車查詢",
-    desc: "查固定通勤班次時刻表，誤點或即將到站時推播提醒。",
-    icon: "🚌",
-    iconImage: "/hub/transit.png" as string | undefined,
-    iconBg: "bg-cat-b-bg",
-    href: "/tools/transit",
-    status: "active" as const,
-  },
-  {
-    name: "記帳本",
-    desc: "記錄家庭收支、拆分帳本成員，追蹤每月預算跟存錢目標。",
-    icon: "💰",
-    iconImage: "/hub/expenses.png" as string | undefined,
-    iconBg: "bg-cat-e-bg",
-    href: "/tools/expenses",
-    status: "active" as const,
-  },
-];
+// toolsRegistry 本身沒有卡片用的顏色／簡介文字，這兩個維度跟權限（user.tools）無關，
+// 純粹是顯示用，所以留在這個檔案裡依 toolId 另外配一份，不污染 tools-registry.ts。
+const ICON_BG: Record<string, string> = {
+  transit: "bg-cat-b-bg",
+  expenses: "bg-cat-e-bg",
+};
 
 export function HubView() {
+  const { user, loading } = useAuth();
+
   return (
     <div>
       <div className="mb-6">
@@ -33,22 +23,24 @@ export function HubView() {
       </div>
 
       <div className="flex flex-col gap-3">
-        {tools.map((tool) =>
-          tool.href ? (
-            <Link key={tool.name} href={tool.href} className="block">
+        {TOOLS_REGISTRY.map((tool) => {
+          const hasAccess = !loading && (user?.tools ?? []).includes(tool.toolId);
+          const iconBg = ICON_BG[tool.toolId] ?? "bg-surface-2";
+          return hasAccess ? (
+            <Link key={tool.toolId} href={tool.href} className="block">
               <Card className="transition-colors hover:border-brand">
                 <CardBody className="flex items-center gap-4">
                   {tool.iconImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={tool.iconImage} alt={tool.name} className="size-12 shrink-0 object-contain" />
                   ) : (
-                    <span className={`grid size-12 shrink-0 place-items-center rounded-2xl text-2xl ${tool.iconBg}`}>
+                    <span className={`grid size-12 shrink-0 place-items-center rounded-2xl text-2xl ${iconBg}`}>
                       {tool.icon}
                     </span>
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold">{tool.name}</p>
-                    <p className="mt-0.5 text-sm text-muted">{tool.desc}</p>
+                    <p className="mt-0.5 text-sm text-muted">{tool.description}</p>
                   </div>
                   <span aria-hidden className="shrink-0 text-muted">
                     ›
@@ -57,25 +49,25 @@ export function HubView() {
               </Card>
             </Link>
           ) : (
-            <Card key={tool.name} className="opacity-70">
+            <Card key={tool.toolId} className="opacity-70">
               <CardBody className="flex items-center gap-4">
                 {tool.iconImage ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={tool.iconImage} alt={tool.name} className="size-12 shrink-0 object-contain grayscale" />
                 ) : (
-                  <span className={`grid size-12 shrink-0 place-items-center rounded-2xl text-2xl grayscale ${tool.iconBg}`}>
+                  <span className={`grid size-12 shrink-0 place-items-center rounded-2xl text-2xl grayscale ${iconBg}`}>
                     {tool.icon}
                   </span>
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">{tool.name}</p>
-                  <p className="mt-0.5 text-sm text-muted">{tool.desc}</p>
+                  <p className="mt-0.5 text-sm text-muted">{tool.description}</p>
                 </div>
-                <Badge tone="future">尚未推出</Badge>
+                <Badge tone="future">需要權限</Badge>
               </CardBody>
             </Card>
-          ),
-        )}
+          );
+        })}
       </div>
     </div>
   );

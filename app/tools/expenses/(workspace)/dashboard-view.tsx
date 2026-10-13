@@ -1,59 +1,37 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
-import {
-  categoryBreakdown,
-  incomeBreakdown,
-  categoryColorClass,
-  categoryFillClass,
-  dateFilterRange,
-  previousPeriodSuffix,
-  referenceYearMonth,
-  rangeDelta,
-  budgetForMonth,
-  totalsForRange,
-  memberName,
-} from "@/lib/expenses/mock-data";
+import { Card, CardBody } from "@/components/expenses/card";
+import { text } from "@/components/expenses/theme";
+import { dateFilterRange, previousPeriodSuffix } from "@/lib/expenses/date-filter";
+import { categoryColorClass, categoryFillClass, type CategoryDTO } from "@/lib/expenses/categories";
+import { totalsForRange, rangeDelta, categoryBreakdown, incomeBreakdown, transactionsInDateRange, type TransactionDTO } from "@/lib/expenses/transactions";
+import { salaryNet, salaryRecordsInDateRange, type SalaryRecordDTO } from "@/lib/expenses/salary-records";
+import type { SalaryItemTypeDTO } from "@/lib/expenses/salary-types";
 import { formatCurrency } from "@/lib/format";
 
-// 色系直接比照搭乘車的實際色碼，跟 expenses-mobile-shell.tsx／expenses-mobile-nav.tsx
-// 同一組，獨立檔案、不 import 搭乘車的元件。
-const INK_STRONG = "#4A3B7C";
-const INK_MUTED = "#9C94C4";
-const BORDER = "#ECE4FA";
 const POSITIVE = "#2FAE82";
 const NEGATIVE = "#D1517E";
 
-/** 搭乘車卡片的共用視覺語言：白底、rounded-2xl、柔和陰影——這裡直接比照寫，不透過
- *  components/ui.tsx 的 Card（那個元件還是舊色票，其他記帳本頁面現在都還在用，這次只改
- *  首頁，不要連帶把舊頁面也染成新色票）。 */
-function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div
-      className={`rounded-2xl bg-white p-4 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)] ${className}`}
-      style={{ border: `1px solid ${BORDER}` }}
-    >
-      {children}
-    </div>
-  );
-}
-
-/** 「較上期 +N%」小字——收入類指標上升是好事用綠色，支出類指標上升是壞事用珊瑚紅，
- *  跟搭乘車 etaToneStyle 那套「依狀態決定色調」是同一個精神，只是這裡依漲跌方向決定。 */
+/** 「較上期 +N%」小字，緊接在金額後面同一行——收入類指標上升是好事用綠色，支出類指標
+ *  上升是壞事用珊瑚紅，跟搭乘車 etaToneStyle 那套「依狀態決定色調」是同一個精神，只是
+ *  這裡依漲跌方向決定。 */
 function DeltaText({ delta, pct, goodWhenUp }: { delta: number; pct: number | null; goodWhenUp: boolean }) {
   if (pct === null) return null;
   const isUp = delta >= 0;
   const isGood = isUp === goodWhenUp;
   return (
-    <p className="mt-1 text-xs font-semibold tabular-nums" style={{ color: isGood ? POSITIVE : NEGATIVE }}>
+    <span className="shrink-0 text-xs font-semibold tabular-nums" style={{ color: isGood ? POSITIVE : NEGATIVE }}>
       {isUp ? "▲" : "▼"} {Math.abs(pct).toFixed(0)}%
-    </p>
+    </span>
   );
 }
 
-/** KPI 卡片：圖示用色塊（不是圓形）配色直接沿用搭乘車路線色塊／即時到站狀態色那幾組
- *  現成配色（藍／橘／紅／綠），不是另外配的新顏色。 */
+/** KPI 卡片：圖示在左（垂直置中）、文字在右（標籤在上、金額＋漲跌幅同一行在下），
+ *  比垂直疊三層矮很多。圖示色塊沿用搭乘車路線色塊／即時到站狀態色那幾組現成配色
+ *  （藍／橘／紅／綠），不是另外配的新顏色。 */
 function KpiCard({
   icon,
   iconBg,
@@ -73,39 +51,88 @@ function KpiCard({
 }) {
   return (
     <Card>
-      <span className="grid size-9 place-items-center rounded-xl text-base" style={{ background: iconBg, color: iconFg }}>
-        {icon}
-      </span>
-      <p className="mt-2 text-xs" style={{ color: INK_MUTED }}>
-        {label}
-      </p>
-      <p className="mt-0.5 truncate text-lg font-bold tabular-nums" style={{ color: valueColor }}>
-        {value}
-      </p>
-      {delta}
+      <CardBody className="p-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl text-base" style={{ background: iconBg, color: iconFg }}>
+          {icon}
+        </span>
+        <p className={`mt-2 ${text.muted}`}>{label}</p>
+        <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5">
+          <p className="text-lg font-bold tabular-nums" style={{ color: valueColor }}>
+            {value}
+          </p>
+          {delta}
+        </div>
+      </CardBody>
     </Card>
   );
 }
 
 export function DashboardView() {
   const { filter } = useDateFilter();
+  const [categories, setCategories] = useState<CategoryDTO[]>([]);
+  const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
+  const [salaryRecords, setSalaryRecords] = useState<SalaryRecordDTO[]>([]);
+  const [salaryTypes, setSalaryTypes] = useState<SalaryItemTypeDTO[]>([]);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      fetch("/api/expenses/categories").then((res) => res.json()),
+      fetch("/api/expenses/transactions").then((res) => res.json()),
+      fetch("/api/expenses/salary-records").then((res) => res.json()),
+      fetch("/api/expenses/salary-types").then((res) => res.json()),
+    ])
+      .then(
+        ([categoriesData, txData, salaryData, typesData]: [
+          { categories?: CategoryDTO[] },
+          { transactions?: TransactionDTO[] },
+          { records?: SalaryRecordDTO[] },
+          { types?: SalaryItemTypeDTO[] },
+        ]) => {
+          if (cancelled) return;
+          setCategories(categoriesData.categories ?? []);
+          setTransactions(txData.transactions ?? []);
+          setSalaryRecords(salaryData.records ?? []);
+          setSalaryTypes(typesData.types ?? []);
+          setReady(true);
+        },
+      )
+      .catch(() => {
+        if (!cancelled) setReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const range = dateFilterRange(filter);
-  const { totalExpense, balance, expenseTx, salaryIncome, extraIncome } = totalsForRange(range);
-  const salaryDelta = rangeDelta((r) => totalsForRange(r).salaryIncome, filter);
-  const extraIncomeDelta = rangeDelta((r) => totalsForRange(r).extraIncome, filter);
-  const expenseDelta = rangeDelta((r) => totalsForRange(r).totalExpense, filter);
-  const balanceDelta = rangeDelta((r) => totalsForRange(r).balance, filter);
+  const salaryIncomeForRange = (r: ReturnType<typeof dateFilterRange>) =>
+    salaryRecordsInDateRange(salaryRecords, r).reduce((sum, rec) => sum + salaryNet(rec, salaryTypes), 0);
+  const hasPriorData = (r: ReturnType<typeof dateFilterRange>) =>
+    transactionsInDateRange(transactions, r).length > 0 || salaryRecordsInDateRange(salaryRecords, r).length > 0;
+
+  const { totalExpense, balance, expenseTx, salaryIncome, extraIncome } = totalsForRange(transactions, categories, range, salaryIncomeForRange(range));
+  const salaryDelta = rangeDelta((r) => salaryIncomeForRange(r), filter, hasPriorData);
+  const extraIncomeDelta = rangeDelta((r) => totalsForRange(transactions, categories, r, salaryIncomeForRange(r)).extraIncome, filter, hasPriorData);
+  const expenseDelta = rangeDelta((r) => totalsForRange(transactions, categories, r, salaryIncomeForRange(r)).totalExpense, filter, hasPriorData);
+  const balanceDelta = rangeDelta((r) => totalsForRange(transactions, categories, r, salaryIncomeForRange(r)).balance, filter, hasPriorData);
   const deltaSuffix = previousPeriodSuffix(filter.mode);
-  const breakdown = categoryBreakdown(range);
-  const incomeRows = incomeBreakdown(range);
+  const breakdown = categoryBreakdown(expenseTx, categories);
+  const incomeRows = incomeBreakdown(totalsForRange(transactions, categories, range, salaryIncome).incomeTx, categories, salaryIncome);
   const recent = [...expenseTx].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 5);
 
-  const budgetMonth = referenceYearMonth(filter);
-  const budget = budgetForMonth(budgetMonth);
-  const budgetMonthRange = dateFilterRange({ ...filter, mode: "month" });
-  const budgetSpent = totalsForRange(budgetMonthRange).totalExpense;
-  const budgetRemaining = budget !== undefined ? budget - budgetSpent : undefined;
-  const budgetPct = budget ? Math.min(100, Math.round((budgetSpent / budget) * 100)) : 0;
+  // 預算功能還沒做（不在這次範圍內），固定顯示「還沒設定預算」。
+  const budget: number | undefined = undefined;
+
+  if (!ready) {
+    return (
+      <div className="flex flex-col gap-4">
+        <DateFilterPicker />
+        <p className={text.faint}>載入中…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -121,7 +148,7 @@ export function DashboardView() {
           iconFg="#4E7FE0"
           label="本月薪水"
           value={formatCurrency(salaryIncome)}
-          valueColor={INK_STRONG}
+          valueColor="#4A3B7C"
           delta={salaryDelta && <DeltaText delta={salaryDelta.delta} pct={salaryDelta.pct} goodWhenUp />}
         />
         <KpiCard
@@ -130,7 +157,7 @@ export function DashboardView() {
           iconFg="#D97A3D"
           label="其他收入"
           value={formatCurrency(extraIncome)}
-          valueColor={INK_STRONG}
+          valueColor="#4A3B7C"
           delta={extraIncomeDelta && <DeltaText delta={extraIncomeDelta.delta} pct={extraIncomeDelta.pct} goodWhenUp />}
         />
         <KpiCard
@@ -139,7 +166,7 @@ export function DashboardView() {
           iconFg="#D1517E"
           label="本月支出"
           value={formatCurrency(totalExpense)}
-          valueColor={INK_STRONG}
+          valueColor="#4A3B7C"
           delta={expenseDelta && <DeltaText delta={expenseDelta.delta} pct={expenseDelta.pct} goodWhenUp={false} />}
         />
         <KpiCard
@@ -148,149 +175,90 @@ export function DashboardView() {
           iconFg="#2FAE82"
           label="本月結餘"
           value={`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`}
-          valueColor={balance >= 0 ? INK_STRONG : NEGATIVE}
+          valueColor={balance >= 0 ? "#4A3B7C" : NEGATIVE}
           delta={balanceDelta && <DeltaText delta={balanceDelta.delta} pct={balanceDelta.pct} goodWhenUp />}
         />
       </div>
-      <p className="-mt-2 text-right text-[11px]" style={{ color: INK_MUTED }}>
-        {deltaSuffix}
-      </p>
+      <p className={`-mt-2 text-right ${text.faint}`}>{deltaSuffix}</p>
 
       <Card>
-        <div className="flex items-center justify-between">
-          <p className="font-semibold" style={{ color: INK_STRONG }}>
-            {budgetMonth} 預算
-          </p>
-          {budget !== undefined && (
-            <span className="text-xs" style={{ color: INK_MUTED }}>
-              {budgetPct}%
-            </span>
-          )}
-        </div>
-        {budget === undefined ? (
-          <p className="mt-3 text-sm" style={{ color: INK_MUTED }}>
-            這個月還沒有設定預算。
-          </p>
-        ) : (
-          <>
-            <div className="mt-3 flex items-end justify-between">
-              <div>
-                <p className="text-xs" style={{ color: INK_MUTED }}>
-                  剩餘預算
-                </p>
-                <p
-                  className="mt-0.5 text-xl font-bold tabular-nums"
-                  style={{ color: budgetRemaining !== undefined && budgetRemaining < 0 ? NEGATIVE : INK_STRONG }}
-                >
-                  {formatCurrency(budgetRemaining ?? 0)}
-                </p>
-              </div>
-              <p className="text-xs" style={{ color: INK_MUTED }}>
-                已花 {formatCurrency(budgetSpent)} / {formatCurrency(budget)}
-              </p>
-            </div>
-            <div className="mt-2 h-2 overflow-hidden rounded-full" style={{ background: "#F3EFFC" }}>
-              <div
-                className="h-full rounded-full"
-                style={{ width: `${budgetPct}%`, background: budgetSpent > budget ? NEGATIVE : "#6F5FD6" }}
-              />
-            </div>
-          </>
-        )}
+        <CardBody>
+          <p className={text.sectionHeading}>本月預算</p>
+          {budget === undefined && <p className={`mt-3 ${text.muted}`}>這個月還沒有設定預算。</p>}
+        </CardBody>
       </Card>
 
       <Card>
-        <p className="font-semibold" style={{ color: INK_STRONG }}>
-          消費分類佔比
-        </p>
-        {breakdown.length === 0 ? (
-          <p className="mt-3 text-sm" style={{ color: INK_MUTED }}>
-            這段期間還沒有消費紀錄。
-          </p>
-        ) : (
-          <div className="mt-4 flex flex-col gap-3">
-            {breakdown.map((row) => (
-              <div key={row.category.id}>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2" style={{ color: INK_STRONG }}>
-                    <span
-                      className={`grid size-6 place-items-center rounded-full text-xs ${categoryColorClass[row.category.color]}`}
-                    >
-                      {row.category.icon}
+        <CardBody>
+          <p className={text.sectionHeading}>消費分類佔比</p>
+          {breakdown.length === 0 ? (
+            <p className={`mt-3 ${text.muted}`}>這段期間還沒有消費紀錄。</p>
+          ) : (
+            <div className="mt-4 flex flex-col gap-3">
+              {breakdown.map((row) => (
+                <div key={row.category.id}>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2 text-[#4A3B7C]">
+                      <span className={`grid size-6 place-items-center rounded-full text-xs ${categoryColorClass[row.category.color]}`}>
+                        {row.category.icon}
+                      </span>
+                      {row.category.name}
                     </span>
-                    {row.category.name}
-                  </span>
-                  <span className="tabular-nums" style={{ color: INK_MUTED }}>
-                    {formatCurrency(row.amount)}
-                  </span>
+                    <span className={`tabular-nums ${text.muted}`}>{formatCurrency(row.amount)}</span>
+                  </div>
+                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#F3EFFC]">
+                    <div className={`h-full rounded-full ${categoryFillClass[row.category.color]}`} style={{ width: `${row.pct}%` }} />
+                  </div>
                 </div>
-                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full" style={{ background: "#F3EFFC" }}>
-                  <div
-                    className={`h-full rounded-full ${categoryFillClass[row.category.color]}`}
-                    style={{ width: `${row.pct}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </CardBody>
       </Card>
 
       {incomeRows.length > 0 && (
         <Card>
-          <p className="font-semibold" style={{ color: INK_STRONG }}>
-            收入來源
-          </p>
-          <div className="mt-4 flex flex-col gap-3">
-            {incomeRows.map((row) => (
-              <div key={row.id}>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2" style={{ color: INK_STRONG }}>
-                    <span className="grid size-6 place-items-center rounded-full text-xs" style={{ background: "#E3F6EC" }}>
-                      {row.icon}
+          <CardBody>
+            <p className={text.sectionHeading}>收入來源</p>
+            <div className="mt-4 flex flex-col gap-3">
+              {incomeRows.map((row) => (
+                <div key={row.id}>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2 text-[#4A3B7C]">
+                      <span className="grid size-6 place-items-center rounded-full bg-[#E3F6EC] text-xs">{row.icon}</span>
+                      {row.name}
                     </span>
-                    {row.name}
-                  </span>
-                  <span className="tabular-nums" style={{ color: INK_MUTED }}>
-                    {formatCurrency(row.amount)}
-                  </span>
+                    <span className={`tabular-nums ${text.muted}`}>{formatCurrency(row.amount)}</span>
+                  </div>
+                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#F3EFFC]">
+                    <div className="h-full rounded-full bg-[#2FAE82]" style={{ width: `${row.pct}%` }} />
+                  </div>
                 </div>
-                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full" style={{ background: "#F3EFFC" }}>
-                  <div className="h-full rounded-full" style={{ width: `${row.pct}%`, background: POSITIVE }} />
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </CardBody>
         </Card>
       )}
 
       <Card>
-        <p className="font-semibold" style={{ color: INK_STRONG }}>
-          最近消費
-        </p>
-        {recent.length === 0 ? (
-          <p className="mt-3 text-sm" style={{ color: INK_MUTED }}>
-            這段期間還沒有消費紀錄。
-          </p>
-        ) : (
-          <ul className="mt-3 flex flex-col divide-y divide-[#ECE4FA]">
-            {recent.map((t) => (
-              <li key={t.id} className="flex items-center justify-between py-2.5 text-sm">
-                <div className="min-w-0">
-                  <p className="truncate" style={{ color: INK_STRONG }}>
-                    {t.note ?? "（無備註）"} <span style={{ color: INK_MUTED }}>· {memberName(t.memberId)}</span>
-                  </p>
-                  <p className="text-xs" style={{ color: INK_MUTED }}>
-                    {t.date}
-                  </p>
-                </div>
-                <span className="shrink-0 tabular-nums font-medium" style={{ color: INK_STRONG }}>
-                  {formatCurrency(t.amount)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <CardBody>
+          <p className={text.sectionHeading}>最近消費</p>
+          {recent.length === 0 ? (
+            <p className={`mt-3 ${text.muted}`}>這段期間還沒有消費紀錄。</p>
+          ) : (
+            <ul className="mt-3 flex flex-col divide-y divide-[#ECE4FA]">
+              {recent.map((t) => (
+                <li key={t.id} className="flex items-center justify-between py-2.5 text-sm">
+                  <div className="min-w-0">
+                    <p className="truncate text-[#4A3B7C]">{t.note ?? "（無備註）"}</p>
+                    <p className={text.muted}>{t.date}</p>
+                  </div>
+                  <span className="shrink-0 tabular-nums font-medium text-[#4A3B7C]">{formatCurrency(t.amount)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardBody>
       </Card>
     </div>
   );

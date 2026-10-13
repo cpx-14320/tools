@@ -1,23 +1,29 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Card, CardBody, Button, ButtonLink, PageHeader } from "@/components/ui";
-import {
-  parseTransactionsCSV,
-  commitImportedTransactions,
-  type ImportRowResult,
-} from "@/lib/expenses/mock-data";
+import { parseTransactionsCSV, type ImportRowResult } from "@/lib/expenses/csv";
+import type { CategoryDTO } from "@/lib/expenses/categories";
 
 type Stage = "pick" | "preview" | "done";
 
 export function ImportView() {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [stage, setStage] = useState<Stage>("pick");
   const [fileName, setFileName] = useState("");
   const [results, setResults] = useState<ImportRowResult[]>([]);
   const [importedCount, setImportedCount] = useState(0);
+  const [duplicateCount, setDuplicateCount] = useState(0);
   const [parseError, setParseError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/expenses/categories")
+      .then((res) => res.json())
+      .then((data: { categories?: CategoryDTO[] }) => setCategories(data.categories ?? []))
+      .catch(() => {});
+  }, []);
 
   const validCount = results.filter((r) => r.ok).length;
   const invalidResults = results.filter((r) => !r.ok);
@@ -27,7 +33,7 @@ export function ImportView() {
     setFileName(file.name);
     try {
       const text = await file.text();
-      const { results } = parseTransactionsCSV(text);
+      const { results } = parseTransactionsCSV(text, categories);
       if (results.length === 0) {
         setParseError("這個檔案裡沒有找到可以解析的資料列，確認一下是不是匯出時用的同一種格式。");
         return;
@@ -39,9 +45,17 @@ export function ImportView() {
     }
   }
 
-  function handleConfirmImport() {
-    const count = commitImportedTransactions(results);
-    setImportedCount(count);
+  async function handleConfirmImport() {
+    const rows = results.filter((r) => r.ok && r.transaction).map((r) => r.transaction);
+    const data: { count?: number; duplicates?: number } = await fetch("/api/expenses/transactions/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rows }),
+    })
+      .then((res) => res.json())
+      .catch(() => ({}));
+    setImportedCount(data.count ?? 0);
+    setDuplicateCount(data.duplicates ?? 0);
     setStage("done");
   }
 
@@ -50,6 +64,7 @@ export function ImportView() {
     setResults([]);
     setFileName("");
     setParseError(null);
+    setDuplicateCount(0);
     if (fileRef.current) fileRef.current.value = "";
   }
 
@@ -67,7 +82,7 @@ export function ImportView() {
             <div>
               <p className="font-medium">選擇 CSV 檔案</p>
               <p className="mt-1 text-xs text-muted">
-                欄位順序比照匯出格式：日期,分類,金額,備註,記錄人
+                欄位順序比照匯出格式：日期,分類,金額,備註
                 <br />
                 分類欄可以填完整路徑（例如「網購 › 服飾美妝」）或只填分類名稱
               </p>
@@ -138,7 +153,7 @@ export function ImportView() {
           <CardBody className="flex flex-col items-center gap-3 py-10 text-center">
             <span className="text-3xl">✅</span>
             <p className="font-medium">已匯入 {importedCount} 筆消費紀錄</p>
-            <p className="text-xs text-muted">資料目前存在這次瀏覽的記憶體裡，重新整理頁面會消失——之後接資料庫就會真的存起來。</p>
+            {duplicateCount > 0 && <p className="text-xs text-muted">其中 {duplicateCount} 筆跟現有紀錄完全相同，已自動略過</p>}
             <div className="mt-2 flex gap-3">
               <Button variant="secondary" onClick={reset}>
                 再匯入一次

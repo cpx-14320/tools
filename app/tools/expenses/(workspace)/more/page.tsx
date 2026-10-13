@@ -9,21 +9,23 @@ const items = [
   { href: "/tools/expenses/members", label: "成員", icon: "👥", desc: "邀請碼、移除成員" },
   { href: "/tools/expenses/reports", label: "報表", icon: "📈", desc: "趨勢圖表" },
   { href: "/tools/expenses/goals", label: "存錢目標", icon: "🎯", desc: "設定目標、追蹤進度" },
-  { href: "/tools/expenses/more/export", label: "匯出資料", icon: "📤", desc: "選區間匯出 CSV" },
-  { href: "/tools/expenses/more/import", label: "匯入資料", icon: "📥", desc: "上傳 CSV 批次新增" },
+  { href: "/tools/expenses/more/export", label: "匯出消費紀錄", icon: "📤", desc: "選區間匯出 CSV" },
+  { href: "/tools/expenses/more/import", label: "匯入消費紀錄", icon: "📥", desc: "上傳 CSV 批次新增" },
+  { href: "/tools/expenses/more/salary-export", label: "匯出薪資紀錄", icon: "📤", desc: "選區間匯出 CSV" },
+  { href: "/tools/expenses/more/salary-import", label: "匯入薪資紀錄", icon: "📥", desc: "上傳 CSV 批次新增" },
 ];
 
 export default function MorePage() {
   return (
-    <div className="flex flex-col divide-y divide-line overflow-hidden rounded-[1.5rem] border border-line bg-surface">
+    <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
       {items.map((item) => (
-        <Link key={item.href} href={item.href} className="flex items-center gap-3 px-4 py-3.5 active:bg-surface-2">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-surface-2 text-lg">{item.icon}</span>
+        <Link key={item.href} href={item.href} className="flex items-center gap-3 px-4 py-3.5 active:bg-[#F3EFFC]">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#F3EFFC] text-lg">{item.icon}</span>
           <span className="min-w-0 flex-1">
-            <span className="block font-medium">{item.label}</span>
-            <span className="block text-xs text-muted">{item.desc}</span>
+            <span className="block text-sm font-medium text-[#4A3B7C]">{item.label}</span>
+            <span className="block text-xs text-[#9C94C4]">{item.desc}</span>
           </span>
-          <span aria-hidden className="text-muted">
+          <span aria-hidden className="text-[#9C94C4]">
             ›
           </span>
         </Link>

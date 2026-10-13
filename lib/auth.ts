@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import bcrypt from "bcryptjs";
 import { getDb } from "./mongodb";
@@ -17,6 +18,24 @@ export interface SessionUser {
   name: string;
   tools: string[];
   isAdmin: boolean;
+}
+
+/** 這個使用者有沒有被勾選某個工具的使用權限（toolId 比照 lib/tools-registry.ts 的 toolId）。
+ *  isAdmin 只代表能進 /admin 管理其他人的權限，不會自動放行所有工具——admin 自己也要被
+ *  勾選了才看得到，跟一般使用者是同一套規則。 */
+export function hasToolAccess(user: SessionUser, toolId: string): boolean {
+  return user.tools.includes(toolId);
+}
+
+/** API route 專用：確認「有登入」且「有這個工具的權限」，兩者都滿足才回傳使用者本人，
+ *  不滿足就直接回傳成形的 NextResponse（401 沒登入／403 沒權限），讓呼叫端一行判斷
+ *  `if (user instanceof NextResponse) return user;` 就能把錯誤回應直接丟回去，不用在
+ *  每支 route 自己重複寫 getSessionUser／hasToolAccess 的檢查。 */
+export async function requireTool(toolId: string): Promise<SessionUser | NextResponse> {
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "請先登入" }, { status: 401 });
+  if (!hasToolAccess(user, toolId)) return NextResponse.json({ error: "沒有這個工具的使用權限" }, { status: 403 });
+  return user;
 }
 
 export interface UserDoc {

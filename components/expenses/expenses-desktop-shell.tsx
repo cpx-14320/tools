@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ledger } from "@/lib/expenses/mock-data";
+import { ledger } from "@/lib/expenses/mock-ledger";
 import { ExpensesNav } from "@/components/expenses/expenses-nav";
 import { LayoutToggle } from "@/components/layout-toggle";
 

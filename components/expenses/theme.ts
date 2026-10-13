@@ -1,0 +1,41 @@
+// 記帳本自己的一份色票／字級規範，比照「搭乘車」工具實際用的色碼跟排版比例抽出來的——
+// 搭乘車本身沒有共用 tokens 檔（刻意逐檔內嵌，不跨頁面 import 常數，見 home-view.tsx 的
+// 說明），所以這裡另外為記帳本建一份，不是從搭乘車那邊 import。
+// 只給記帳本模組（components/expenses/**、app/tools/expenses/**）用，不要讓登入／註冊／
+// 管理後台／搭乘車去 import 這裡——那些共用 components/ui.tsx 那一套舊色票。
+
+export const colors = {
+  ink: "#4A3B7C", // 主要文字／標題
+  muted: "#9C94C4", // 次要說明文字
+  faint: "#B3ABD4", // 更淡的輔助文字（空狀態、載入中）
+  border: "#ECE4FA", // 一般邊框
+  borderSoft: "#F2EEFA", // 卡片內部分隔線
+  surfaceSoft: "#F3EFFC", // 淡紫底（pill 選單底、hover 底）
+  surfaceActive: "#EFEAFC", // 選中態底色
+  brand: "#6F5FD6", // 品牌紫
+  brandLight: "#8A7CEE", // 品牌紫漸層亮端
+  positive: "#2FAE82",
+  positiveBg: "#E3F6EC",
+  negative: "#D1517E",
+  negativeBg: "#FDEEF0",
+} as const;
+
+export const gradient = {
+  primary: `linear-gradient(90deg, ${colors.brandLight}, ${colors.brand})`,
+};
+
+export const shadow = {
+  card: "0 6px 20px -8px rgba(111,95,214,0.2)",
+  cta: "0 8px 20px -6px rgba(111,95,214,0.6)",
+};
+
+/** 字級規範——直接當 className 字串用（比照既有 categoryColorClass 的用法），
+ *  避免每個頁面自己決定標題/內文要多大、顏色深淺不一致。 */
+export const text = {
+  pageTitle: "text-xl font-bold text-[#4A3B7C]",
+  sectionHeading: "text-sm font-semibold text-[#4A3B7C]",
+  body: "text-sm font-medium text-[#4A3B7C]",
+  muted: "text-xs text-[#9C94C4]",
+  faint: "text-xs text-[#B3ABD4]",
+  statValue: "text-lg font-bold tabular-nums text-[#4A3B7C]",
+} as const;

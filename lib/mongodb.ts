@@ -41,6 +41,14 @@ async function ensureIndexes(db: Db): Promise<void> {
     // tdxGet 的持久化快取（見 lib/transit/tdx-client.ts）——TTL index 負責把過期的
     // 快取文件自動清掉，不用另外寫排程清理。
     db.collection("transit.tdxCache").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+
+    // 記帳本（expenses.*）——目前是個人範圍（只用 userId 隔離），還沒有帳本／成員共用的概念。
+    db.collection("expenses.categories").createIndex({ userId: 1, kind: 1, parentId: 1, order: 1 }),
+    db.collection("expenses.salaryItemTypes").createIndex({ userId: 1, order: 1 }),
+    // 一人一月最多一筆薪資紀錄，重複新增同一個月要用編輯，不是再新增一筆。
+    db.collection("expenses.salaryRecords").createIndex({ userId: 1, yearMonth: 1 }, { unique: true }),
+    db.collection("expenses.transactions").createIndex({ userId: 1, date: 1 }),
+    db.collection("expenses.goals").createIndex({ userId: 1, createdAt: 1 }),
   ]);
 
   // toolsRegistry 是目前工具清單的真實來源，用 upsert 寫入 lib/tools-registry.ts 裡

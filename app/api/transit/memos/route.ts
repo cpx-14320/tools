@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import { getSessionUser } from "@/lib/auth";
+import { requireTool } from "@/lib/auth";
 import { listMemos, syncMemos, type MemoInput } from "@/lib/transit/memos";
 
 export async function GET() {
-  const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: "請先登入" }, { status: 401 });
+  const user = await requireTool("transit");
+  if (user instanceof NextResponse) return user;
 
   const memos = await listMemos(new ObjectId(user.id));
   return NextResponse.json({ memos });
 }
 
 export async function PUT(request: Request) {
-  const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: "請先登入" }, { status: 401 });
+  const user = await requireTool("transit");
+  if (user instanceof NextResponse) return user;
 
   const body = await request.json().catch(() => null);
   const rawItems = Array.isArray(body?.items) ? body.items : [];

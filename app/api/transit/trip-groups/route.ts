@@ -1,20 +1,20 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import { getSessionUser } from "@/lib/auth";
+import { requireTool } from "@/lib/auth";
 import { listTripGroups, createTripGroup, renameTripGroup, deleteTripGroup } from "@/lib/transit/trip-groups";
 import { listFrequentTrips } from "@/lib/transit/frequent-trips";
 
 export async function GET() {
-  const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: "請先登入" }, { status: 401 });
+  const user = await requireTool("transit");
+  if (user instanceof NextResponse) return user;
 
   const groups = await listTripGroups(new ObjectId(user.id));
   return NextResponse.json({ groups });
 }
 
 export async function POST(request: Request) {
-  const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: "請先登入" }, { status: 401 });
+  const user = await requireTool("transit");
+  if (user instanceof NextResponse) return user;
 
   const body = await request.json().catch(() => null);
   const mode = typeof body?.mode === "string" ? body.mode : "";
@@ -26,8 +26,8 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: "請先登入" }, { status: 401 });
+  const user = await requireTool("transit");
+  if (user instanceof NextResponse) return user;
 
   const body = await request.json().catch(() => null);
   const id = typeof body?.id === "string" ? body.id : "";
@@ -39,8 +39,8 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: "請先登入" }, { status: 401 });
+  const user = await requireTool("transit");
+  if (user instanceof NextResponse) return user;
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");

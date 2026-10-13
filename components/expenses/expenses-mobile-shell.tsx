@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useRef } from "react";
 import type { ReactNode } from "react";
-import { ledger } from "@/lib/expenses/mock-data";
+import { ledger } from "@/lib/expenses/mock-ledger";
 import { ExpensesMobileNav } from "@/components/expenses/expenses-mobile-nav";
 import { LayoutToggle } from "@/components/layout-toggle";
 import { scrollContainerToTop } from "@/lib/scroll-within";
