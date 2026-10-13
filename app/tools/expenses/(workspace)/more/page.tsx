@@ -9,6 +9,7 @@ const items = [
   { href: "/tools/expenses/members", label: "成員", icon: "👥", desc: "邀請碼、移除成員" },
   { href: "/tools/expenses/reports", label: "報表", icon: "📈", desc: "趨勢圖表" },
   { href: "/tools/expenses/goals", label: "存錢目標", icon: "🎯", desc: "設定目標、追蹤進度" },
+  { href: "/tools/expenses/recurring", label: "固定收支", icon: "🔁", desc: "電話費、房租這種週期收支" },
   { href: "/tools/expenses/more/export", label: "匯出消費紀錄", icon: "📤", desc: "選區間匯出 CSV" },
   { href: "/tools/expenses/more/import", label: "匯入消費紀錄", icon: "📥", desc: "上傳 CSV 批次新增" },
   { href: "/tools/expenses/more/salary-export", label: "匯出薪資紀錄", icon: "📤", desc: "選區間匯出 CSV" },

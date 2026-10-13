@@ -9,6 +9,9 @@ export interface TransactionDTO {
   amount: number;
   date: string;
   note?: string;
+  /** 由固定收支規則（lib/expenses/recurring-rules.ts）確認存入產生時才有值；一般手動
+   *  新增／CSV 匯入的交易不會有這個欄位，不能透過一般的新增／編輯 API 設定它。 */
+  sourceRuleId?: string;
 }
 
 export interface TransactionInput {

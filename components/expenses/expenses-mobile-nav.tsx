@@ -32,6 +32,7 @@ export function ExpensesMobileNav() {
                     "/tools/expenses/salary/types",
                     "/tools/expenses/members",
                     "/tools/expenses/goals",
+                    "/tools/expenses/recurring",
                     "/tools/expenses/reports",
                     "/tools/expenses/more",
                   ].some((p) => pathname.startsWith(p))

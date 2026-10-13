@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
 import { Button, Badge } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
+import { IconAvatar } from "@/components/expenses/icon-avatar";
+import { ProgressBar } from "@/components/expenses/progress-bar";
 import { text } from "@/components/expenses/theme";
 import { GoalModal, ContributeModal, type GoalModalDraft } from "@/components/expenses/goal-modal";
 import { goalProgress, goalPace, type SavingsGoalDTO } from "@/lib/expenses/goals";
@@ -111,7 +113,7 @@ export function GoalsView() {
               <Card key={goal.id}>
                 <CardBody>
                   <div className="flex items-start gap-3">
-                    <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[#F3EFFC] text-xl">{goal.icon}</span>
+                    <IconAvatar icon={goal.icon} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <button type="button" onClick={() => setModal({ mode: "edit", goal })} className={`${text.sectionHeading} hover:underline`}>
@@ -135,8 +137,8 @@ export function GoalsView() {
                     </p>
                     <p className={text.muted}>{achieved ? "🎉 目標達成" : `還差 ${formatCurrency(remaining)}`}</p>
                   </div>
-                  <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-[#F3EFFC]">
-                    <div className={`h-full rounded-full ${achieved ? "bg-[#2FAE82]" : "bg-[#6F5FD6]"}`} style={{ width: `${pct}%` }} />
+                  <div className="mt-2">
+                    <ProgressBar pct={pct} tone={achieved ? "positive" : "brand"} />
                   </div>
                   <p className={`mt-1 text-right ${text.muted}`}>{pct}%</p>
 

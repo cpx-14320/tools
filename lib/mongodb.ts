@@ -48,7 +48,15 @@ async function ensureIndexes(db: Db): Promise<void> {
     // 一人一月最多一筆薪資紀錄，重複新增同一個月要用編輯，不是再新增一筆。
     db.collection("expenses.salaryRecords").createIndex({ userId: 1, yearMonth: 1 }, { unique: true }),
     db.collection("expenses.transactions").createIndex({ userId: 1, date: 1 }),
+    // 固定收支規則確認存入時寫進來的 sourceRuleId——同一條規則同一天最多只能確認一次，
+    // 擋重複點擊「確認存入」生出兩筆一樣的交易。partialFilterExpression 只管有 sourceRuleId
+    // 的文件，手動新增／CSV 匯入的一般交易（沒有這個欄位）不受這個唯一限制影響。
+    db.collection("expenses.transactions").createIndex(
+      { userId: 1, sourceRuleId: 1, date: 1 },
+      { unique: true, partialFilterExpression: { sourceRuleId: { $exists: true } } },
+    ),
     db.collection("expenses.goals").createIndex({ userId: 1, createdAt: 1 }),
+    db.collection("expenses.recurringRules").createIndex({ userId: 1, active: 1, createdAt: 1 }),
   ]);
 
   // toolsRegistry 是目前工具清單的真實來源，用 upsert 寫入 lib/tools-registry.ts 裡

@@ -11,6 +11,7 @@ const navItems = [
   { href: "/tools/expenses/salary/types", label: "薪資明細類型", icon: "📑" },
   { href: "/tools/expenses/members", label: "成員", icon: "👥" },
   { href: "/tools/expenses/goals", label: "存錢目標", icon: "🎯" },
+  { href: "/tools/expenses/recurring", label: "固定收支", icon: "🔁" },
   { href: "/tools/expenses/reports", label: "報表", icon: "📈" },
 ];
 

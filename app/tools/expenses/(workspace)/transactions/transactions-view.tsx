@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button, SegmentedControl } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { DeltaBadge } from "@/components/expenses/delta-badge";
+import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { text } from "@/components/expenses/theme";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
@@ -218,11 +219,7 @@ export function TransactionsView() {
                           onClick={() => setModal({ mode: "edit", transaction: t })}
                           className="flex w-full items-center gap-3 px-4 py-3 text-left"
                         >
-                          <span
-                            className={`grid size-10 shrink-0 place-items-center rounded-xl text-lg ${category ? categoryColorClass[category.color] : "bg-[#F3EFFC]"}`}
-                          >
-                            {category?.icon}
-                          </span>
+                          <IconAvatar icon={category?.icon ?? ""} size="sm" className={category ? categoryColorClass[category.color] : undefined} />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium text-[#4A3B7C]">{t.note ?? category?.name}</p>
                             <p className={`truncate ${text.muted}`}>{categoryPath(categories, t.categoryId)}</p>

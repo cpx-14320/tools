@@ -9,11 +9,21 @@ interface TransactionDoc {
   amount: number;
   date: string; // YYYY-MM-DD
   note?: string;
+  // 只有固定收支規則確認存入時才會寫入（見 recurring-rules.server.ts 的 confirmOccurrence），
+  // 一般的新增／編輯／CSV 匯入路徑都不會碰這個欄位。
+  sourceRuleId?: ObjectId;
   createdAt: Date;
 }
 
 function toDTO(doc: TransactionDoc): TransactionDTO {
-  return { id: doc._id.toHexString(), categoryId: doc.categoryId.toHexString(), amount: doc.amount, date: doc.date, note: doc.note };
+  return {
+    id: doc._id.toHexString(),
+    categoryId: doc.categoryId.toHexString(),
+    amount: doc.amount,
+    date: doc.date,
+    note: doc.note,
+    sourceRuleId: doc.sourceRuleId?.toHexString(),
+  };
 }
 
 function collection() {
