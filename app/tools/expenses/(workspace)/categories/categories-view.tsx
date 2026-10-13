@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/expenses/page-header";
 import { Button } from "@/components/expenses/button";
 import { text } from "@/components/expenses/theme";
 import { CategoryModal, type CategoryModalDraft } from "@/components/expenses/category-modal";
+import { CategoryBatchModal, type CategoryBatchItem } from "@/components/expenses/category-batch-modal";
 import {
   topLevelCategories,
   subCategoriesOf,
@@ -12,16 +13,16 @@ import {
   type CategoryDTO,
 } from "@/lib/expenses/categories";
 
-type ModalState =
-  | { mode: "create-top" }
-  | { mode: "create-sub"; parentId: string; parentName: string }
-  | { mode: "edit"; category: CategoryDTO };
+/** 編輯既有分類／子分類用（點清單裡的一列開啟）；新增（不管頂層還是子分類）都走下面的
+ *  batchTarget／CategoryBatchModal，兩種彈窗各自管各自的狀態。 */
+type BatchTarget = { parentId?: string; parentName?: string };
 
 export function CategoriesView() {
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [ready, setReady] = useState(false);
-  const [modal, setModal] = useState<ModalState | null>(null);
+  const [modal, setModal] = useState<CategoryDTO | null>(null);
+  const [batchTarget, setBatchTarget] = useState<BatchTarget | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,41 +46,48 @@ export function CategoriesView() {
 
   async function handleSave(draft: Pick<CategoryModalDraft, "name" | "icon"> & Partial<Pick<CategoryModalDraft, "color" | "kind">>) {
     if (!modal) return;
-    if (modal.mode === "edit") {
-      const data: { categories?: CategoryDTO[] } = await fetch("/api/expenses/categories", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: modal.category.id, ...draft }),
-      })
-        .then((res) => res.json())
-        .catch(() => ({}));
-      if (data.categories) setCategories(data.categories);
-    } else {
-      const parentId = modal.mode === "create-sub" ? modal.parentId : undefined;
-      const data: { categories?: CategoryDTO[]; error?: string } = await fetch("/api/expenses/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...draft, parentId }),
-      })
-        .then((res) => res.json())
-        .catch(() => ({}));
-      if (data.categories) {
-        setCategories(data.categories);
-      } else {
-        if (data.error) alert(data.error);
-        return;
-      }
-    }
-    setModal(null);
-  }
-
-  async function handleDelete() {
-    if (modal?.mode !== "edit") return;
-    const data: { categories?: CategoryDTO[] } = await fetch(`/api/expenses/categories?id=${modal.category.id}`, { method: "DELETE" })
+    const data: { categories?: CategoryDTO[] } = await fetch("/api/expenses/categories", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: modal.id, ...draft }),
+    })
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.categories) setCategories(data.categories);
     setModal(null);
+  }
+
+  async function handleDelete() {
+    if (!modal) return;
+    const data: { categories?: CategoryDTO[] } = await fetch(`/api/expenses/categories?id=${modal.id}`, { method: "DELETE" })
+      .then((res) => res.json())
+      .catch(() => ({}));
+    if (data.categories) setCategories(data.categories);
+    setModal(null);
+  }
+
+  // 批次新增：逐筆依序 POST（不是 Promise.all 併發），理由跟薪資明細類型批次新增一樣——
+  // createCategory 的 order 是用當下已存在筆數算出來的，併發送出會拿到同一個 order。
+  async function handleBatchSave(items: CategoryBatchItem[]) {
+    if (!batchTarget) return;
+    let latest = categories;
+    for (const item of items) {
+      const data: { categories?: CategoryDTO[]; error?: string } = await fetch("/api/expenses/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...item, parentId: batchTarget.parentId }),
+      })
+        .then((res) => res.json())
+        .catch(() => ({}));
+      if (data.categories) {
+        latest = data.categories;
+      } else if (data.error) {
+        alert(data.error);
+        break;
+      }
+    }
+    setCategories(latest);
+    setBatchTarget(null);
   }
 
   const parents = topLevelCategories(categories);
@@ -89,18 +97,26 @@ export function CategoriesView() {
       <PageHeader
         title="消費分類"
         description="分類底下可以再開子分類，方便細看同一種消費裡哪種類型花最多"
-        actions={<Button onClick={() => setModal({ mode: "create-top" })}>＋ 新增分類</Button>}
+        actions={<Button onClick={() => setBatchTarget({})}>＋ 新增分類</Button>}
       />
 
       <CategoryModal
-        key={modal ? JSON.stringify(modal) : "closed"}
+        key={modal ? modal.id : "closed"}
         open={modal !== null}
-        isSubcategory={modal?.mode === "create-sub"}
-        parentName={modal?.mode === "create-sub" ? modal.parentName : undefined}
-        initial={modal?.mode === "edit" ? modal.category : undefined}
+        isSubcategory={!!modal?.parentId}
+        initial={modal ?? undefined}
         onClose={() => setModal(null)}
         onSave={handleSave}
-        onDelete={modal?.mode === "edit" ? handleDelete : undefined}
+        onDelete={handleDelete}
+      />
+
+      <CategoryBatchModal
+        key={batchTarget ? (batchTarget.parentId ?? "top") : "closed"}
+        open={batchTarget !== null}
+        isSubcategory={!!batchTarget?.parentId}
+        parentName={batchTarget?.parentName}
+        onClose={() => setBatchTarget(null)}
+        onSave={handleBatchSave}
       />
 
       {!ready ? (
@@ -116,7 +132,7 @@ export function CategoriesView() {
               <div key={c.id} className="overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
                 <button
                   type="button"
-                  onClick={() => setModal({ mode: "edit", category: c })}
+                  onClick={() => setModal(c)}
                   className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
                 >
                   <span className={`grid size-10 shrink-0 place-items-center rounded-xl text-lg ${categoryColorClass[c.color]}`}>
@@ -134,7 +150,7 @@ export function CategoriesView() {
                         <button
                           key={sub.id}
                           type="button"
-                          onClick={() => setModal({ mode: "edit", category: sub })}
+                          onClick={() => setModal(sub)}
                           className="flex w-full items-center gap-3 py-2.5 pr-4 text-left"
                         >
                           <span aria-hidden className="text-[#9C94C4]">
@@ -154,7 +170,7 @@ export function CategoriesView() {
                 <div className="border-t border-[#ECE4FA] px-4 py-2">
                   <button
                     type="button"
-                    onClick={() => setModal({ mode: "create-sub", parentId: c.id, parentName: c.name })}
+                    onClick={() => setBatchTarget({ parentId: c.id, parentName: c.name })}
                     className="text-xs font-medium text-[#6F5FD6] hover:underline"
                   >
                     ＋ 新增「{c.name}」的子分類

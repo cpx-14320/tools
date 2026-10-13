@@ -1,0 +1,138 @@
+"use client";
+
+import { useState } from "react";
+import { Button, SegmentedControl } from "./button";
+import { Modal, Field, fieldInputClass } from "./modal";
+import { categoryFillClass, type CategoryColor, type CategoryKind } from "@/lib/expenses/categories";
+
+const COLORS: CategoryColor[] = ["a", "b", "c", "d", "e", "f"];
+
+interface Draft {
+  name: string;
+  icon: string;
+  color: CategoryColor;
+  kind: CategoryKind;
+}
+
+function blankDraft(): Draft {
+  return { name: "", icon: "🏷️", color: "a", kind: "支出" };
+}
+
+export type CategoryBatchItem = Pick<Draft, "name" | "icon"> & Partial<Pick<Draft, "color" | "kind">>;
+
+/** 新增分類／子分類——跟薪資明細類型（salary-type-batch-modal.tsx）、搭乘車「新增分類」
+ *  同一種做法：一次開著好幾則草稿一起填，填完按一次「儲存」整批送出。子分類不能自己選
+ *  顏色／收支類型（跟父分類一致，見 category-modal.tsx 的同樣規則），所以 isSubcategory
+ *  時每一則只會顯示名稱／圖示兩個欄位，color/kind 不會出現在 onSave 回傳的物件裡，由
+ *  呼叫端補上父分類的值。 */
+export function CategoryBatchModal({
+  open,
+  isSubcategory,
+  parentName,
+  onClose,
+  onSave,
+}: {
+  open: boolean;
+  isSubcategory: boolean;
+  parentName?: string;
+  onClose: () => void;
+  /** 只會收到名稱與圖示都有填的草稿。 */
+  onSave: (items: CategoryBatchItem[]) => void;
+}) {
+  const [items, setItems] = useState<Draft[]>([blankDraft()]);
+
+  function updateItem(index: number, patch: Partial<Draft>) {
+    setItems((list) => list.map((it, i) => (i === index ? { ...it, ...patch } : it)));
+  }
+
+  function removeItem(index: number) {
+    setItems((list) => (list.length > 1 ? list.filter((_, i) => i !== index) : list));
+  }
+
+  const canSave = items.some((it) => it.name.trim() && it.icon.trim());
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={isSubcategory ? `新增「${parentName}」的子分類` : "新增分類"}
+      footer={
+        <>
+          <span />
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={onClose}>
+              取消
+            </Button>
+            <Button
+              disabled={!canSave}
+              onClick={() => {
+                const valid = items
+                  .map((it) => ({ ...it, name: it.name.trim(), icon: it.icon.trim() }))
+                  .filter((it) => it.name && it.icon);
+                onSave(isSubcategory ? valid.map(({ name, icon }) => ({ name, icon })) : valid);
+              }}
+            >
+              儲存
+            </Button>
+          </div>
+        </>
+      }
+    >
+      {items.map((item, i) => (
+        <div key={i} className="flex flex-col gap-2.5 rounded-2xl border border-[#ECE4FA] p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-[#9C94C4]">第 {i + 1} 則</span>
+            {items.length > 1 && (
+              <button type="button" onClick={() => removeItem(i)} className="text-xs font-medium text-[#D1517E]">
+                刪除
+              </button>
+            )}
+          </div>
+          <Field label="名稱">
+            <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} placeholder="例如「餐飲」" className={fieldInputClass} />
+          </Field>
+          <Field label="圖示（輸入一個表情符號）">
+            <input value={item.icon} onChange={(e) => updateItem(i, { icon: e.target.value })} className={fieldInputClass} />
+          </Field>
+
+          {!isSubcategory && (
+            <>
+              <Field label="收支類型">
+                <SegmentedControl
+                  className="self-start"
+                  value={item.kind}
+                  onChange={(kind) => updateItem(i, { kind })}
+                  options={[
+                    { value: "支出", label: "支出" },
+                    { value: "收入", label: "收入" },
+                  ]}
+                />
+              </Field>
+              <Field label="顏色">
+                <div className="flex gap-2">
+                  {COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      aria-label={`顏色 ${c}`}
+                      onClick={() => updateItem(i, { color: c })}
+                      className={`size-8 rounded-full ${categoryFillClass[c]} ${item.color === c ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`}
+                    />
+                  ))}
+                </div>
+              </Field>
+            </>
+          )}
+        </div>
+      ))}
+
+      <button
+        type="button"
+        onClick={() => setItems((list) => [...list, blankDraft()])}
+        className="rounded-xl border border-dashed border-[#C7BFE6] py-2.5 text-sm font-medium text-[#6F5FD6]"
+      >
+        ＋ 新增一則
+      </button>
+    </Modal>
+  );
+}
