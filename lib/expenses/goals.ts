@@ -6,6 +6,10 @@ export interface SavingsGoalDTO {
   icon: string;
   targetAmount: number;
   currentAmount: number;
+  /** 純顯示用，不影響 goalPace 試算——想標記「這個目標是什麼時候開始存的」時填，
+   *  跟「週期存錢」用固定收支規則連動（見 recurring-rules.ts）是兩回事，那邊規則本身
+   *  才有真正決定排程的 startDate。 */
+  startDate?: string;
   targetDate?: string;
 }
 

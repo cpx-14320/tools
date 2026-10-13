@@ -45,15 +45,16 @@ async function ensureIndexes(db: Db): Promise<void> {
     // 記帳本（expenses.*）——目前是個人範圍（只用 userId 隔離），還沒有帳本／成員共用的概念。
     db.collection("expenses.categories").createIndex({ userId: 1, kind: 1, parentId: 1, order: 1 }),
     db.collection("expenses.transactions").createIndex({ userId: 1, date: 1 }),
-    // 固定收支規則確認存入時寫進來的 sourceRuleId——同一條規則同一天最多只能確認一次，
-    // 擋重複點擊「確認存入」生出兩筆一樣的交易。partialFilterExpression 只管有 sourceRuleId
-    // 的文件，手動新增／CSV 匯入的一般交易（沒有這個欄位）不受這個唯一限制影響。
+    // 固定收支規則自動入帳時寫進來的 sourceRuleId——同一條規則同一天最多只會入帳一次，
+    // 擋重複呼叫 autoConfirmDueOccurrences 生出兩筆一樣的交易。partialFilterExpression
+    // 只管有 sourceRuleId 的文件，手動新增／CSV 匯入的一般交易（沒有這個欄位）不受影響。
     db.collection("expenses.transactions").createIndex(
       { userId: 1, sourceRuleId: 1, date: 1 },
       { unique: true, partialFilterExpression: { sourceRuleId: { $exists: true } } },
     ),
     db.collection("expenses.goals").createIndex({ userId: 1, createdAt: 1 }),
     db.collection("expenses.recurringRules").createIndex({ userId: 1, active: 1, createdAt: 1 }),
+    db.collection("expenses.accounts").createIndex({ userId: 1, kind: 1, order: 1 }),
   ]);
 
   // toolsRegistry 是目前工具清單的真實來源，用 upsert 寫入 lib/tools-registry.ts 裡

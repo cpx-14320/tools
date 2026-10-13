@@ -42,7 +42,14 @@ export function GoalsView() {
       const data: { goals?: SavingsGoalDTO[] } = await fetch("/api/expenses/goals", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: modal.goal.id, name: draft.name, icon: draft.icon, targetAmount: draft.targetAmount, targetDate: draft.targetDate }),
+        body: JSON.stringify({
+          id: modal.goal.id,
+          name: draft.name,
+          icon: draft.icon,
+          targetAmount: draft.targetAmount,
+          startDate: draft.startDate,
+          targetDate: draft.targetDate,
+        }),
       })
         .then((res) => res.json())
         .catch(() => ({}));
@@ -121,7 +128,10 @@ export function GoalsView() {
                         </button>
                         {achieved && <Badge tone="positive">已達成</Badge>}
                       </div>
-                      <p className={`mt-0.5 ${text.muted}`}>{goal.targetDate ? `目標日期 ${goal.targetDate}` : "沒有設定期限"}</p>
+                      <p className={`mt-0.5 ${text.muted}`}>
+                        {goal.startDate && `${goal.startDate} 開始・`}
+                        {goal.targetDate ? `目標日期 ${goal.targetDate}` : "沒有設定期限"}
+                      </p>
                     </div>
                     {!achieved && (
                       <Button variant="secondary" className="shrink-0" onClick={() => setContributeId(goal.id)}>

@@ -9,6 +9,7 @@ interface SavingsGoalDoc {
   icon: string;
   targetAmount: number;
   currentAmount: number;
+  startDate?: string; // YYYY-MM-DD，純顯示用
   targetDate?: string; // YYYY-MM-DD，沒填代表沒有期限
   createdAt: Date;
 }
@@ -20,6 +21,7 @@ function toDTO(doc: SavingsGoalDoc): SavingsGoalDTO {
     icon: doc.icon,
     targetAmount: doc.targetAmount,
     currentAmount: doc.currentAmount,
+    startDate: doc.startDate,
     targetDate: doc.targetDate,
   };
 }
@@ -39,6 +41,7 @@ export interface CreateGoalInput {
   icon: string;
   targetAmount: number;
   currentAmount: number;
+  startDate?: string;
   targetDate?: string;
 }
 
@@ -57,6 +60,7 @@ export interface UpdateGoalInput {
   name: string;
   icon: string;
   targetAmount: number;
+  startDate?: string;
   targetDate?: string;
 }
 

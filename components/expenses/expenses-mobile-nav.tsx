@@ -28,9 +28,9 @@ export function ExpensesMobileNav() {
               : tab.href === "/tools/expenses/more"
                 ? [
                     "/tools/expenses/categories",
-                    "/tools/expenses/members",
                     "/tools/expenses/goals",
                     "/tools/expenses/recurring",
+                    "/tools/expenses/assets",
                     "/tools/expenses/reports",
                     "/tools/expenses/more",
                   ].some((p) => pathname.startsWith(p))

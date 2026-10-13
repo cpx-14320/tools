@@ -15,6 +15,7 @@ interface CategoryDoc {
   parentId: ObjectId | null;
   order: number;
   createdAt: Date;
+  budgetAmount?: number;
 }
 
 function toDTO(doc: CategoryDoc): CategoryDTO {
@@ -25,6 +26,7 @@ function toDTO(doc: CategoryDoc): CategoryDTO {
     color: doc.color,
     kind: doc.kind,
     parentId: doc.parentId?.toHexString(),
+    budgetAmount: doc.budgetAmount,
   };
 }
 
@@ -82,15 +84,27 @@ export interface UpdateCategoryInput {
   name?: string;
   icon?: string;
   color?: CategoryColor;
+  /** undefined＝這次編輯不動預算欄位；null＝明確清掉預算；數字＝設定/修改預算。
+   *  跟 name／icon／color 不同，這個欄位需要區分「沒傳」跟「傳了但要清空」兩種情況，
+   *  所以不能套用下面同一招「過濾掉 undefined 就丟進 $set」。 */
+  budgetAmount?: number | null;
 }
 
 export async function updateCategory(userId: ObjectId, id: string, input: UpdateCategoryInput): Promise<CategoryDTO[]> {
   const col = await collection();
+  const { budgetAmount, ...rest } = input;
   // 子分類編輯時不會送 color（顏色跟父分類一致、不能自己改），這裡要過濾掉 undefined 欄位，
   // 不然 $set 可能把欄位整個設成 null，蓋掉原本繼承來的顏色。
-  const fields = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined));
-  if (Object.keys(fields).length > 0) {
-    await col.updateOne({ _id: new ObjectId(id), userId }, { $set: fields });
+  const fields: Record<string, unknown> = Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== undefined));
+  if (typeof budgetAmount === "number") fields.budgetAmount = budgetAmount;
+
+  // budgetAmount 不能跟 name/icon/color 一樣直接丟進同一個過濾流程：$set 跟 $unset
+  // 不能同時出現在同一個欄位上，null 代表「清空」要走 $unset，不能也留在 $set 裡。
+  const update: Record<string, unknown> = {};
+  if (Object.keys(fields).length > 0) update.$set = fields;
+  if (budgetAmount === null) update.$unset = { budgetAmount: "" };
+  if (Object.keys(update).length > 0) {
+    await col.updateOne({ _id: new ObjectId(id), userId }, update);
   }
   return listCategories(userId);
 }

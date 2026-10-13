@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import { useRef } from "react";
 import type { ReactNode } from "react";
-import { ledger } from "@/lib/expenses/mock-ledger";
 import { ExpensesMobileNav } from "@/components/expenses/expenses-mobile-nav";
 import { LayoutToggle } from "@/components/layout-toggle";
 import { scrollContainerToTop } from "@/lib/scroll-within";
@@ -12,7 +11,9 @@ const titles: Record<string, string> = {
   "/tools/expenses": "總覽",
   "/tools/expenses/transactions": "紀錄",
   "/tools/expenses/categories": "消費分類",
-  "/tools/expenses/members": "成員",
+  "/tools/expenses/goals": "存錢目標",
+  "/tools/expenses/recurring": "固定收支",
+  "/tools/expenses/assets": "資產總表",
   "/tools/expenses/reports": "報表",
   "/tools/expenses/more": "更多",
 };
@@ -50,7 +51,7 @@ export function ExpensesMobileShell({ children }: { children: ReactNode }) {
         >
           <div>
             <p className="text-[10px] font-medium uppercase tracking-wide" style={{ color: INK_MUTED }}>
-              📒 {ledger.name}
+              📒 記帳本
             </p>
             <h1 className="text-lg font-bold tracking-tight" style={{ color: INK_STRONG }}>
               {title}

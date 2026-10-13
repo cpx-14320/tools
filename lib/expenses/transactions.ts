@@ -119,6 +119,43 @@ export function incomeBreakdown(incomeTx: TransactionDTO[], categories: Category
   return rows.sort((a, b) => b.amount - a.amount).map((row) => ({ ...row, pct: Math.round((row.amount / total) * 100) }));
 }
 
+export interface BudgetRow {
+  category: CategoryDTO;
+  budgetAmount: number;
+  spent: number;
+  remaining: number;
+  pct: number; // 可能超過 100，代表已經超支
+}
+
+export interface BudgetSummary {
+  rows: BudgetRow[];
+  totalBudget: number;
+  totalSpent: number;
+  pct: number;
+}
+
+/** 本月預算使用狀況：只看有設定 budgetAmount 的頂層支出分類，用同一個月的 expenseTx
+ *  （呼叫端自己先依日期篩選器篩過）比對實際花了多少。完全沒有分類設過預算時
+ *  rows 是空陣列，畫面據此顯示「還沒設定預算」，不會顯示一個全是 0 的空殼卡片。 */
+export function budgetSummary(expenseTx: TransactionDTO[], categories: CategoryDTO[]): BudgetSummary {
+  const spentByCategory = new Map<string, number>();
+  for (const t of expenseTx) {
+    const topId = topLevelCategoryId(categories, t.categoryId);
+    spentByCategory.set(topId, (spentByCategory.get(topId) ?? 0) + t.amount);
+  }
+  const budgeted = topLevelCategories(categories, "支出").filter((c) => (c.budgetAmount ?? 0) > 0);
+  const rows: BudgetRow[] = budgeted
+    .map((category) => {
+      const budgetAmount = category.budgetAmount as number;
+      const spent = spentByCategory.get(category.id) ?? 0;
+      return { category, budgetAmount, spent, remaining: budgetAmount - spent, pct: Math.round((spent / budgetAmount) * 100) };
+    })
+    .sort((a, b) => b.pct - a.pct);
+  const totalBudget = rows.reduce((sum, r) => sum + r.budgetAmount, 0);
+  const totalSpent = rows.reduce((sum, r) => sum + r.spent, 0);
+  return { rows, totalBudget, totalSpent, pct: totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0 };
+}
+
 /** 單一大分類底下，每個子分類在這個區間各花多少——分類管理頁展開大分類時用。 */
 export function subcategoryBreakdown(expenseTx: TransactionDTO[], categories: CategoryDTO[], parentId: string) {
   const subs = categories.filter((c) => c.parentId === parentId);

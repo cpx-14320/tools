@@ -40,9 +40,17 @@ export async function PUT(request: Request) {
   const name = typeof body?.name === "string" ? body.name.trim() : "";
   const icon = typeof body?.icon === "string" ? body.icon.trim() : "";
   const color = typeof body?.color === "string" ? (body.color as CategoryColor) : undefined;
+  // 有帶這個欄位（不管值是什麼）才代表使用者這次有動預算；完全沒帶代表這次編輯不碰預算，
+  // 跟 updateCategory 的 undefined／null／number 三態約定對齊（見 categories.server.ts）。
+  const budgetAmount =
+    body && typeof body === "object" && "budgetAmount" in body
+      ? typeof body.budgetAmount === "number" && Number.isFinite(body.budgetAmount) && body.budgetAmount > 0
+        ? body.budgetAmount
+        : null
+      : undefined;
   if (!id || !name || !icon) return NextResponse.json({ error: "缺少必要欄位" }, { status: 400 });
 
-  const categories = await updateCategory(new ObjectId(user.id), id, { name, icon, color });
+  const categories = await updateCategory(new ObjectId(user.id), id, { name, icon, color, budgetAmount });
   return NextResponse.json({ categories });
 }
 

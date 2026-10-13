@@ -10,8 +10,10 @@ import {
   topLevelCategories,
   subCategoriesOf,
   categoryColorClass,
+  DEFAULT_CATEGORIES,
   type CategoryDTO,
 } from "@/lib/expenses/categories";
+import { formatCurrency } from "@/lib/format";
 
 /** 編輯既有分類／子分類用（點清單裡的一列開啟）；新增（不管頂層還是子分類）都走下面的
  *  batchTarget／CategoryBatchModal，兩種彈窗各自管各自的狀態。 */
@@ -44,7 +46,9 @@ export function CategoriesView() {
     };
   }, []);
 
-  async function handleSave(draft: Pick<CategoryModalDraft, "name" | "icon"> & Partial<Pick<CategoryModalDraft, "color" | "kind">>) {
+  async function handleSave(
+    draft: Pick<CategoryModalDraft, "name" | "icon"> & Partial<Pick<CategoryModalDraft, "color" | "kind">> & { budgetAmount?: number | null },
+  ) {
     if (!modal) return;
     const data: { categories?: CategoryDTO[] } = await fetch("/api/expenses/categories", {
       method: "PUT",
@@ -90,6 +94,27 @@ export function CategoriesView() {
     setBatchTarget(null);
   }
 
+  // 套用常見分類：跳過名稱（同收支類型下）已經存在的項目，不會建出重複分類；可以
+  // 重複點，缺哪個補哪個，不是只有第一次沒分類時才能用。一樣依序送出，理由跟批次
+  // 新增相同。
+  async function handleApplyDefaults() {
+    const existingNames = new Set(categories.map((c) => `${c.kind}:${c.name}`));
+    const toCreate = DEFAULT_CATEGORIES.filter((d) => !existingNames.has(`${d.kind}:${d.name}`));
+    if (toCreate.length === 0) return;
+    let latest = categories;
+    for (const item of toCreate) {
+      const data: { categories?: CategoryDTO[] } = await fetch("/api/expenses/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item),
+      })
+        .then((res) => res.json())
+        .catch(() => ({}));
+      if (data.categories) latest = data.categories;
+    }
+    setCategories(latest);
+  }
+
   const parents = topLevelCategories(categories);
 
   return (
@@ -97,7 +122,14 @@ export function CategoriesView() {
       <PageHeader
         title="消費分類"
         description="分類底下可以再開子分類，方便細看同一種消費裡哪種類型花最多"
-        actions={<Button onClick={() => setBatchTarget({})}>＋ 新增分類</Button>}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={handleApplyDefaults}>
+              套用常見分類
+            </Button>
+            <Button onClick={() => setBatchTarget({})}>＋ 新增分類</Button>
+          </div>
+        }
       />
 
       <CategoryModal
@@ -138,7 +170,10 @@ export function CategoriesView() {
                   <span className={`grid size-10 shrink-0 place-items-center rounded-xl text-lg ${categoryColorClass[c.color]}`}>
                     {c.icon}
                   </span>
-                  <span className={`min-w-0 flex-1 ${text.body}`}>{c.name}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className={`block ${text.body}`}>{c.name}</span>
+                    {!!c.budgetAmount && <span className={`block ${text.muted}`}>預算 {formatCurrency(c.budgetAmount)}／月</span>}
+                  </span>
                   <span className={`shrink-0 ${text.muted}`}>{count} 筆紀錄</span>
                 </button>
 

@@ -12,6 +12,7 @@ export interface CategoryModalDraft {
   icon: string;
   color: CategoryColor;
   kind: CategoryKind;
+  budgetAmount?: number;
 }
 
 export function CategoryModal({
@@ -24,18 +25,21 @@ export function CategoryModal({
   onDelete,
 }: {
   open: boolean;
-  /** 子分類不能自己選顏色／收支類型，跟父分類一致。 */
+  /** 子分類不能自己選顏色／收支類型／預算，跟父分類一致。 */
   isSubcategory: boolean;
   parentName?: string;
   initial?: CategoryModalDraft;
   onClose: () => void;
-  onSave: (draft: Pick<CategoryModalDraft, "name" | "icon"> & Partial<Pick<CategoryModalDraft, "color" | "kind">>) => void;
+  onSave: (
+    draft: Pick<CategoryModalDraft, "name" | "icon"> & Partial<Pick<CategoryModalDraft, "color" | "kind">> & { budgetAmount?: number | null },
+  ) => void;
   onDelete?: () => void;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [icon, setIcon] = useState(initial?.icon ?? "🏷️");
   const [color, setColor] = useState<CategoryColor>(initial?.color ?? "a");
   const [kind, setKind] = useState<CategoryKind>(initial?.kind ?? "支出");
+  const [budgetAmount, setBudgetAmount] = useState(initial?.budgetAmount ? String(initial.budgetAmount) : "");
 
   const title = initial ? "編輯分類" : isSubcategory ? `新增「${parentName}」的子分類` : "新增分類";
   const canSave = name.trim().length > 0 && icon.trim().length > 0;
@@ -60,7 +64,21 @@ export function CategoryModal({
             </Button>
             <Button
               disabled={!canSave}
-              onClick={() => onSave(isSubcategory ? { name: name.trim(), icon: icon.trim() } : { name: name.trim(), icon: icon.trim(), color, kind })}
+              onClick={() =>
+                onSave(
+                  isSubcategory
+                    ? { name: name.trim(), icon: icon.trim() }
+                    : {
+                        name: name.trim(),
+                        icon: icon.trim(),
+                        color,
+                        kind,
+                        // 只有「支出」分類有預算的概念；切到「收入」或本來就是收入分類時一律清空，
+                        // 不讓一個收入分類底下殘留一個永遠用不到的預算數字。
+                        budgetAmount: kind === "支出" && budgetAmount.trim() ? Number(budgetAmount) : null,
+                      },
+                )
+              }
             >
               儲存
             </Button>
@@ -101,6 +119,18 @@ export function CategoryModal({
               ))}
             </div>
           </Field>
+          {kind === "支出" && (
+            <Field label="每月預算（可不填）">
+              <input
+                type="number"
+                min={1}
+                placeholder="例如 3000"
+                value={budgetAmount}
+                onChange={(e) => setBudgetAmount(e.target.value)}
+                className={fieldInputClass}
+              />
+            </Field>
+          )}
         </>
       )}
     </Modal>

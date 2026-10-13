@@ -6,6 +6,7 @@ import { Modal, Field, fieldInputClass } from "./modal";
 import { DateField } from "./date-field";
 import { topLevelCategories, subCategoriesOf, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 import type { RecurrenceFrequencyUnit } from "@/lib/expenses/recurring-rules";
+import type { SavingsGoalDTO } from "@/lib/expenses/goals";
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -19,6 +20,7 @@ export interface RecurringRuleModalDraft {
   interval: number;
   startDate: string;
   cycleCount?: number;
+  linkedGoalId?: string;
 }
 
 const FREQUENCY_OPTIONS: { value: RecurrenceFrequencyUnit; label: string }[] = [
@@ -33,6 +35,7 @@ const FREQUENCY_OPTIONS: { value: RecurrenceFrequencyUnit; label: string }[] = [
 export function RecurringRuleModal({
   open,
   categories,
+  goals,
   defaultKind,
   initial,
   onClose,
@@ -41,6 +44,8 @@ export function RecurringRuleModal({
 }: {
   open: boolean;
   categories: CategoryDTO[];
+  /** 只有分類是「收入」時才會顯示「同時存入目標」選項，所以需要目標清單。 */
+  goals: SavingsGoalDTO[];
   defaultKind: CategoryKind;
   initial?: RecurringRuleModalDraft;
   onClose: () => void;
@@ -56,6 +61,7 @@ export function RecurringRuleModal({
   const [interval, setInterval_] = useState(initial ? String(initial.interval) : "1");
   const [startDate, setStartDate] = useState(initial?.startDate ?? todayISO());
   const [cycleCount, setCycleCount] = useState(initial?.cycleCount ? String(initial.cycleCount) : "");
+  const [linkedGoalId, setLinkedGoalId] = useState(initial?.linkedGoalId ?? "");
 
   const amountNum = Number(amount);
   const intervalNum = Number(interval);
@@ -106,6 +112,7 @@ export function RecurringRuleModal({
                   interval: Math.floor(intervalNum),
                   startDate,
                   cycleCount: cycleCountNum,
+                  linkedGoalId: kind === "收入" && linkedGoalId ? linkedGoalId : undefined,
                 })
               }
             >
@@ -170,6 +177,19 @@ export function RecurringRuleModal({
       <Field label="備註（可不填，例如「手機月租・綁約 2 年」）">
         <input value={note} onChange={(e) => setNote(e.target.value)} className={fieldInputClass} />
       </Field>
+
+      {kind === "收入" && goals.length > 0 && (
+        <Field label="同時存入目標（可不填）——「週期存錢」就是在這裡選一個目標">
+          <select value={linkedGoalId} onChange={(e) => setLinkedGoalId(e.target.value)} className={fieldInputClass}>
+            <option value="">不連動目標</option>
+            {goals.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.icon} {g.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
     </Modal>
   );
 }

@@ -8,7 +8,6 @@ import {
   updateRecurringRule,
   setRecurringRuleActive,
   deleteRecurringRule,
-  confirmOccurrence,
 } from "@/lib/expenses/recurring-rules.server";
 
 const FREQUENCY_UNITS: RecurrenceFrequencyUnit[] = ["day", "week", "month"];
@@ -34,6 +33,7 @@ function parseRuleInput(body: unknown) {
   // cycleCount 留空／0／負數都視為「沒填」＝無限期循環。
   const cycleCountRaw = Number(b?.cycleCount);
   const cycleCount = Number.isFinite(cycleCountRaw) && cycleCountRaw > 0 ? Math.floor(cycleCountRaw) : undefined;
+  const linkedGoalId = typeof b?.linkedGoalId === "string" && b.linkedGoalId ? b.linkedGoalId : undefined;
 
   if (
     !categoryId ||
@@ -47,7 +47,7 @@ function parseRuleInput(body: unknown) {
   ) {
     return null;
   }
-  return { categoryId, amount, note, frequencyUnit, interval: Math.floor(interval), startDate, cycleCount };
+  return { categoryId, amount, note, frequencyUnit, interval: Math.floor(interval), startDate, cycleCount, linkedGoalId };
 }
 
 export async function POST(request: Request) {
@@ -63,10 +63,11 @@ export async function POST(request: Request) {
 }
 
 /**
- * 同一支 route 依 body 形狀分三種操作（跟 goals route 同一套風格）：
- * - body.confirmDate 有值 → 確認存入這一期，變成一筆真正的交易紀錄
+ * 同一支 route 依 body 形狀分兩種操作：
  * - body.active 是 boolean、且沒有其他編輯欄位 → 只切換啟用／暫停
- * - 其他 → 整筆編輯（分類／金額／頻率／起訖）
+ * - 其他 → 整筆編輯（分類／金額／頻率／起訖／連動目標）
+ * 到期自動入帳不經過這支 route，是 lib/expenses/recurring-rules.server.ts 的
+ * autoConfirmDueOccurrences 在進記帳本頁面時（app/tools/expenses/layout.tsx）直接呼叫。
  */
 export async function PUT(request: Request) {
   const user = await requireTool("expenses");
@@ -76,17 +77,6 @@ export async function PUT(request: Request) {
   const b = body as Record<string, unknown> | null;
   const id = typeof b?.id === "string" ? b.id : "";
   if (!id) return NextResponse.json({ error: "缺少 id" }, { status: 400 });
-
-  if (typeof b?.confirmDate === "string" && b.confirmDate) {
-    try {
-      const { rules, transactionId } = await confirmOccurrence(new ObjectId(user.id), id, b.confirmDate);
-      return NextResponse.json({ rules, transactionId });
-    } catch (err) {
-      // 重複確認同一天會撞唯一索引；找不到規則是 confirmOccurrence 自己丟的 Error。
-      const message = err instanceof Error ? err.message : "確認存入失敗";
-      return NextResponse.json({ error: message.includes("duplicate") ? "這一期已經確認存入過了" : message }, { status: 400 });
-    }
-  }
 
   if (typeof b?.active === "boolean" && b?.categoryId === undefined) {
     const rules = await setRecurringRuleActive(new ObjectId(user.id), id, b.active);

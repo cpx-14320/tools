@@ -1,9 +1,10 @@
 // 純邏輯、不碰資料庫——CRUD 在同資料夾的 recurring-rules.server.ts（見 categories.ts 開頭的說明）。
 //
-// 「固定收支」只負責算出每一期應該在哪一天發生、算到今天總共該發生幾次；真正算不算一筆
-// 消費／收入，要等使用者在畫面上按「確認存入」才會變成一筆獨立的 expenses.transactions
-// 紀錄（見 recurring-rules.server.ts 的 confirmOccurrence）。那筆交易是獨立快照，之後
-// 規則被刪除、暫停、甚至循環次數改掉都不會回頭影響已經確認過的歷史紀錄。
+// 「固定收支」算出每一期應該在哪一天發生、算到今天總共該發生幾次；到期的那幾期由
+// app/tools/expenses/layout.tsx 在使用者每次進記帳本任何頁面時自動補上（見
+// recurring-rules.server.ts 的 autoConfirmDueOccurrences），不用使用者手動確認。
+// 補上的那筆交易是獨立快照，之後規則被刪除、暫停、甚至循環次數改掉都不會回頭影響
+// 已經自動入帳的歷史紀錄。
 
 export type RecurrenceFrequencyUnit = "day" | "week" | "month";
 
@@ -19,6 +20,10 @@ export interface RecurringRuleDTO {
   /** 總共循環幾次；留空＝無限期（例如房租沒有約定終止日）。 */
   cycleCount?: number;
   active: boolean;
+  /** 有填的話，自動入帳同時也會把這一期的金額存進這個存錢目標——「週期存錢」就是一條
+   *  指向存款分類、連著目標的固定收支規則，不用另外幫 Goal 做一套排程邏輯。只對分類
+   *  是「收入」的規則有意義，畫面上只在那個情境顯示這個選項。 */
+  linkedGoalId?: string;
 }
 
 export interface RecurringRuleInput {
@@ -29,6 +34,7 @@ export interface RecurringRuleInput {
   interval: number;
   startDate: string;
   cycleCount?: number;
+  linkedGoalId?: string;
 }
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -97,8 +103,8 @@ export interface OccurrenceStatus extends RuleOccurrence {
   transactionId?: string;
 }
 
-/** 把「應該發生的期數」跟「使用者已經按過確認存入、變成真正交易紀錄的那幾期」對起來。
- *  confirmedByDate 用發生日期當 key——同一條規則同一天正常只會被確認一次
+/** 把「應該發生的期數」跟「已經自動入帳、變成真正交易紀錄的那幾期」對起來。
+ *  confirmedByDate 用發生日期當 key——同一條規則同一天只會自動入帳一次
  *  （見 recurring-rules.server.ts 的唯一索引）。 */
 export function occurrenceStatuses(rule: RuleSpan, confirmedByDate: Map<string, string>, today: string): OccurrenceStatus[] {
   return occurrencesUpTo(rule, today).map((occ) => ({
@@ -108,10 +114,19 @@ export function occurrenceStatuses(rule: RuleSpan, confirmedByDate: Map<string, 
   }));
 }
 
-/** 目前最早一筆「已經到期、但使用者還沒按確認存入」的那一期；畫面上可以用這個顯示
- *  「本期應存 NT$299，還沒存」的提示。全部都確認過，或規則還沒輪到第一期，回傳 null。 */
+/** 目前最早一筆「已經到期、但還沒自動入帳」的那一期——正常情況下，使用者只要進過一次
+ *  記帳本任何頁面，到期的期數就會被 autoConfirmDueOccurrences 補上，這裡幾乎都會是
+ *  null；只有在補上的當下跟畫面查詢的當下有時間差時才可能短暫出現。 */
 export function nextPendingOccurrence(statuses: OccurrenceStatus[]): OccurrenceStatus | null {
   return statuses.find((s) => !s.confirmed) ?? null;
+}
+
+/** 下一次「預計」發生的日期，不限於是否已經到期——用來顯示「下次預計入帳：2026-11-05」
+ *  這種資訊性文字。假設期數都是依序自動入帳、不會有缺漏（auto-confirm 的實作保證這點），
+ *  所以直接用已確認期數當作下一期的索引。規則已經跑完全部循環次數就回傳 null。 */
+export function nextOccurrenceDate(rule: RuleSpan, confirmedCount: number): string | null {
+  if (rule.cycleCount && confirmedCount >= rule.cycleCount) return null;
+  return occurrenceDate(rule, confirmedCount);
 }
 
 const UNIT_LABEL: Record<RecurrenceFrequencyUnit, string> = { day: "天", week: "週", month: "月" };

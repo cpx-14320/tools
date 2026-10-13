@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ledger } from "@/lib/expenses/mock-ledger";
 import { ExpensesNav } from "@/components/expenses/expenses-nav";
 import { LayoutToggle } from "@/components/layout-toggle";
 
@@ -14,7 +13,7 @@ export function ExpensesDesktopShell({ children }: { children: ReactNode }) {
           </Link>
           <LayoutToggle />
         </div>
-        <p className="mt-2 text-sm font-semibold">📒 {ledger.name}</p>
+        <p className="mt-2 text-sm font-semibold">📒 記帳本</p>
         <ExpensesNav />
       </aside>
       <div className="min-w-0 flex-1">{children}</div>

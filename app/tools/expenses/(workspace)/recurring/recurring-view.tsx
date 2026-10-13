@@ -10,13 +10,14 @@ import { text } from "@/components/expenses/theme";
 import { RecurringRuleModal, type RecurringRuleModalDraft } from "@/components/expenses/recurring-rule-modal";
 import { categoryById, categoryColorClass, type CategoryDTO } from "@/lib/expenses/categories";
 import type { TransactionDTO } from "@/lib/expenses/transactions";
+import type { SavingsGoalDTO } from "@/lib/expenses/goals";
 import {
   occurrenceStatuses,
   ruleEndDate,
   isRuleFinished,
   describeFrequency,
   describeCycle,
-  nextPendingOccurrence,
+  nextOccurrenceDate,
   type RecurringRuleDTO,
 } from "@/lib/expenses/recurring-rules";
 import { formatCurrency } from "@/lib/format";
@@ -31,9 +32,9 @@ export function RecurringView() {
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [rules, setRules] = useState<RecurringRuleDTO[]>([]);
+  const [goals, setGoals] = useState<SavingsGoalDTO[]>([]);
   const [ready, setReady] = useState(false);
   const [modal, setModal] = useState<ModalState | null>(null);
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -41,14 +42,23 @@ export function RecurringView() {
       fetch("/api/expenses/categories").then((res) => res.json()),
       fetch("/api/expenses/transactions").then((res) => res.json()),
       fetch("/api/expenses/recurring-rules").then((res) => res.json()),
+      fetch("/api/expenses/goals").then((res) => res.json()),
     ])
-      .then(([categoriesData, txData, rulesData]: [{ categories?: CategoryDTO[] }, { transactions?: TransactionDTO[] }, { rules?: RecurringRuleDTO[] }]) => {
-        if (cancelled) return;
-        setCategories(categoriesData.categories ?? []);
-        setTransactions(txData.transactions ?? []);
-        setRules(rulesData.rules ?? []);
-        setReady(true);
-      })
+      .then(
+        ([categoriesData, txData, rulesData, goalsData]: [
+          { categories?: CategoryDTO[] },
+          { transactions?: TransactionDTO[] },
+          { rules?: RecurringRuleDTO[] },
+          { goals?: SavingsGoalDTO[] },
+        ]) => {
+          if (cancelled) return;
+          setCategories(categoriesData.categories ?? []);
+          setTransactions(txData.transactions ?? []);
+          setRules(rulesData.rules ?? []);
+          setGoals(goalsData.goals ?? []);
+          setReady(true);
+        },
+      )
       .catch(() => {
         if (!cancelled) setReady(true);
       });
@@ -56,16 +66,6 @@ export function RecurringView() {
       cancelled = true;
     };
   }, []);
-
-  /** 確認存入之後，規則清單本身不會變，但「哪幾期已存入」要靠重新抓一次交易紀錄才知道
-   *  ——固定收支沒有自己另外存一份「已確認期數」，完全是跟 expenses.transactions 比對出來的
-   *  （見 lib/expenses/recurring-rules.ts 開頭的說明）。 */
-  async function refetchTransactions() {
-    const data: { transactions?: TransactionDTO[] } = await fetch("/api/expenses/transactions")
-      .then((res) => res.json())
-      .catch(() => ({}));
-    if (data.transactions) setTransactions(data.transactions);
-  }
 
   async function handleSave(draft: RecurringRuleModalDraft) {
     if (!modal) return;
@@ -102,27 +102,13 @@ export function RecurringView() {
     if (data.rules) setRules(data.rules);
   }
 
-  async function handleConfirm(rule: RecurringRuleDTO, occurrenceDate: string) {
-    setConfirmingId(rule.id);
-    const data: { rules?: RecurringRuleDTO[]; error?: string } = await fetch("/api/expenses/recurring-rules", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: rule.id, confirmDate: occurrenceDate }),
-    })
-      .then((res) => res.json())
-      .catch(() => ({}));
-    if (data.rules) setRules(data.rules);
-    await refetchTransactions();
-    setConfirmingId(null);
-  }
-
   const today = todayISO();
 
   return (
     <div>
       <PageHeader
         title="固定收支"
-        description="每月電話費、房租這種會重複出現的收支，排好週期，到期時手動確認存入才會真正計入"
+        description="每月電話費、房租這種會重複出現的收支，到期會在你下次打開記帳本時自動入帳"
         actions={<Button onClick={() => setModal({ mode: "create" })}>＋ 新增固定收支</Button>}
       />
 
@@ -130,6 +116,7 @@ export function RecurringView() {
         key={modal ? JSON.stringify(modal) : "closed"}
         open={modal !== null}
         categories={categories}
+        goals={goals}
         defaultKind="支出"
         initial={
           modal?.mode === "edit"
@@ -141,6 +128,7 @@ export function RecurringView() {
                 interval: modal.rule.interval,
                 startDate: modal.rule.startDate,
                 cycleCount: modal.rule.cycleCount,
+                linkedGoalId: modal.rule.linkedGoalId,
               }
             : undefined
         }
@@ -157,12 +145,13 @@ export function RecurringView() {
         <div className="flex flex-col gap-4">
           {rules.map((rule) => {
             const category = categoryById(categories, rule.categoryId);
+            const linkedGoal = rule.linkedGoalId ? goals.find((g) => g.id === rule.linkedGoalId) : undefined;
             const confirmedByDate = new Map(
               transactions.filter((t) => t.sourceRuleId === rule.id).map((t) => [t.date, t.id] as const),
             );
             const statuses = occurrenceStatuses(rule, confirmedByDate, today);
             const confirmedCount = statuses.filter((s) => s.confirmed).length;
-            const pending = nextPendingOccurrence(statuses);
+            const nextDate = rule.active ? nextOccurrenceDate(rule, confirmedCount) : null;
             const endDate = ruleEndDate(rule);
             const finished = isRuleFinished(rule, today);
             const isIncome = category?.kind === "收入";
@@ -184,6 +173,11 @@ export function RecurringView() {
                       <p className={`mt-0.5 ${text.muted}`}>
                         {describeFrequency(rule)}・{describeCycle(rule)}・{rule.startDate} ～ {endDate ?? "無限期"}
                       </p>
+                      {linkedGoal && (
+                        <p className={`mt-0.5 ${text.muted}`}>
+                          🎯 同時存入「{linkedGoal.name}」
+                        </p>
+                      )}
                     </div>
                     <span className={`shrink-0 tabular-nums font-semibold text-[#4A3B7C] ${isIncome ? "text-[#2FAE82]" : ""}`}>
                       {isIncome ? "＋" : ""}
@@ -197,7 +191,7 @@ export function RecurringView() {
                       <div className="flex items-end justify-between">
                         <p className={text.statValue}>
                           {confirmedCount}
-                          <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {rule.cycleCount} 期已存入</span>
+                          <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {rule.cycleCount} 期已入帳</span>
                         </p>
                       </div>
                       <div className="mt-2">
@@ -205,25 +199,10 @@ export function RecurringView() {
                       </div>
                     </div>
                   ) : (
-                    <p className={`mt-3 ${text.muted}`}>已存入 {confirmedCount} 期（無限期循環）</p>
+                    <p className={`mt-3 ${text.muted}`}>已入帳 {confirmedCount} 期（無限期循環）</p>
                   )}
 
-                  {pending && (
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#F9F7FE] px-3 py-2.5">
-                      <p className="text-xs text-[#9C94C4]">
-                        本期應存（{pending.date}）
-                        <span className="ml-1 font-medium text-[#4A3B7C]">{formatCurrency(rule.amount)}</span>，還沒存入
-                      </p>
-                      <Button
-                        variant="secondary"
-                        className="shrink-0"
-                        disabled={confirmingId === rule.id}
-                        onClick={() => handleConfirm(rule, pending.date)}
-                      >
-                        確認存入
-                      </Button>
-                    </div>
-                  )}
+                  {nextDate && <p className={`mt-3 ${text.muted}`}>下次預計入帳：{nextDate}</p>}
 
                   <div className="mt-3 flex items-center justify-end gap-1">
                     <Button variant="ghost" onClick={() => handleToggleActive(rule)}>

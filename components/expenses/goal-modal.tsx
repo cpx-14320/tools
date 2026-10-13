@@ -10,6 +10,7 @@ export interface GoalModalDraft {
   icon: string;
   targetAmount: number;
   currentAmount: number;
+  startDate?: string;
   targetDate?: string;
 }
 
@@ -33,6 +34,7 @@ export function GoalModal({
   const [icon, setIcon] = useState(initial?.icon ?? "🎯");
   const [targetAmount, setTargetAmount] = useState(initial ? String(initial.targetAmount) : "");
   const [currentAmount, setCurrentAmount] = useState(initial ? String(initial.currentAmount) : "0");
+  const [startDate, setStartDate] = useState(initial?.startDate ?? "");
   const [targetDate, setTargetDate] = useState(initial?.targetDate ?? "");
 
   const targetAmountNum = Number(targetAmount);
@@ -65,6 +67,7 @@ export function GoalModal({
                   icon: icon.trim(),
                   targetAmount: targetAmountNum,
                   currentAmount: currentAmountNum,
+                  startDate: startDate || undefined,
                   targetDate: targetDate || undefined,
                 })
               }
@@ -89,6 +92,9 @@ export function GoalModal({
           <input type="number" min={0} value={currentAmount} onChange={(e) => setCurrentAmount(e.target.value)} className={fieldInputClass} />
         </Field>
       )}
+      <Field label="開始日期（可不填，純顯示用）">
+        <DateField value={startDate} onChange={setStartDate} placeholder="不設定" />
+      </Field>
       <Field label="目標日期（可不填）">
         <DateField value={targetDate} onChange={setTargetDate} placeholder="不設期限" />
       </Field>

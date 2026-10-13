@@ -20,12 +20,13 @@ export async function POST(request: Request) {
   const icon = typeof body?.icon === "string" ? body.icon.trim() : "";
   const targetAmount = Number(body?.targetAmount);
   const currentAmount = Number(body?.currentAmount ?? 0);
+  const startDate = typeof body?.startDate === "string" && body.startDate ? body.startDate : undefined;
   const targetDate = typeof body?.targetDate === "string" && body.targetDate ? body.targetDate : undefined;
   if (!name || !icon || !Number.isFinite(targetAmount) || targetAmount <= 0 || !Number.isFinite(currentAmount) || currentAmount < 0) {
     return NextResponse.json({ error: "缺少必要欄位" }, { status: 400 });
   }
 
-  const { goal, goals } = await createGoal(new ObjectId(user.id), { name, icon, targetAmount, currentAmount, targetDate });
+  const { goal, goals } = await createGoal(new ObjectId(user.id), { name, icon, targetAmount, currentAmount, startDate, targetDate });
   return NextResponse.json({ goal, goals });
 }
 
@@ -48,11 +49,12 @@ export async function PUT(request: Request) {
   const name = typeof body?.name === "string" ? body.name.trim() : "";
   const icon = typeof body?.icon === "string" ? body.icon.trim() : "";
   const targetAmount = Number(body?.targetAmount);
+  const startDate = typeof body?.startDate === "string" && body.startDate ? body.startDate : undefined;
   const targetDate = typeof body?.targetDate === "string" && body.targetDate ? body.targetDate : undefined;
   if (!name || !icon || !Number.isFinite(targetAmount) || targetAmount <= 0) {
     return NextResponse.json({ error: "缺少必要欄位" }, { status: 400 });
   }
-  const goals = await updateGoal(new ObjectId(user.id), id, { name, icon, targetAmount, targetDate });
+  const goals = await updateGoal(new ObjectId(user.id), id, { name, icon, targetAmount, startDate, targetDate });
   return NextResponse.json({ goals });
 }
 
