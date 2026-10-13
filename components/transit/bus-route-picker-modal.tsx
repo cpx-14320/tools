@@ -227,7 +227,7 @@ function DirectionTabsRow({
             key={d}
             type="button"
             onClick={() => onChangeDirection(d)}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
               direction === d ? "bg-white text-[#6F5FD6] shadow-[0_2px_8px_-2px_rgba(111,95,214,0.4)]" : "text-[#9C94C4]"
             }`}
           >
@@ -605,7 +605,7 @@ export function BusRoutePickerModal({
                     setSearchMode(m);
                     setQuery("");
                   }}
-                  className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                     searchMode === m ? "bg-white text-[#6F5FD6] shadow-[0_2px_8px_-2px_rgba(111,95,214,0.4)]" : "text-[#9C94C4]"
                   }`}
                 >

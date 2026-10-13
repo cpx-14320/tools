@@ -256,7 +256,7 @@ export function TripsView() {
               key={t.key}
               type="button"
               onClick={() => selectTab(t.key)}
-              className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                 active ? "bg-white text-[#6F5FD6] shadow-[0_2px_8px_-2px_rgba(111,95,214,0.4)]" : "text-[#9C94C4]"
               }`}
             >

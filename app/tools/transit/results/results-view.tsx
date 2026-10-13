@@ -586,7 +586,7 @@ export function ResultsView({
                     key={t}
                     type="button"
                     onClick={() => setTypeTab(t)}
-                    className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+                    className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                       active ? "bg-[#6F5FD6] text-white shadow-[0_2px_8px_-2px_rgba(111,95,214,0.4)]" : "text-[#9C94C4]"
                     }`}
                   >
