@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>搭車咻一下｜技術案例研究</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* ---------- 單一視覺世界：薰衣草色的黃昏天空，刻意不跟系統深色模式走
+   （跟本專案在 globals.css 的選擇一致：粉彩世界硬套深色版只會變得厚重），
+   所有顏色直接宣告在 :root，不依賴任何媒體查詢。 ---------- */
+:root{
+  --sky-top:#CDD8FB;
+  --sky-mid:#E7CFF2;
+  --sky-bottom:#FBDCEA;
+  --cloud:#FFFFFF;
+  --cloud-shadow:rgba(151,134,224,.22);
+  --surface:#FDFBFF;
+  --surface-ink:#FFFFFF;
+  --line:#E7DEFB;
+  --ink:#4B3C73;
+  --muted:#8E84B0;
+  --faint:#B2A8D4;
+  --lavender:#B9A6F0;
+  --lavender-deep:#7C63D9;
+  --pink:#F2A9C9;
+  --pink-deep:#D1709F;
+  --mono-ink:#5B4A96;
+  --code-bg:#EFE8FC;
+
+  --line-bus:#E79A5C;      --line-bus-soft:#FBE7D2;
+  --line-rail:#E0738A;     --line-rail-soft:#FBDEE5;
+  --line-metro:#5B9BD1;    --line-metro-soft:#DCEBFB;
+  --line-mobility:#4FA98A; --line-mobility-soft:#DCF2E8;
+  --line-personal:#9A7FE0; --line-personal-soft:#EAE2FB;
+  --line-infra:#7C63D9;    --line-infra-soft:#E7DEFB;
+  --line-gold:#D9A53B;     --line-gold-soft:#F8EBCE;
+
+  --shadow-out: 10px 10px 24px var(--cloud-shadow), -8px -8px 20px rgba(255,255,255,.85);
+  --shadow-in: inset 4px 4px 10px rgba(151,134,224,.18), inset -3px -3px 8px rgba(255,255,255,.7);
+}
+
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  background:
+    radial-gradient(1.1px 1.1px at 12% 18%, #fff 100%, transparent) ,
+    radial-gradient(1.4px 1.4px at 78% 9%, #fff 100%, transparent),
+    radial-gradient(1px 1px at 92% 28%, #fff 100%, transparent),
+    radial-gradient(1.3px 1.3px at 34% 6%, #fff 100%, transparent),
+    radial-gradient(1px 1px at 58% 14%, #fff 100%, transparent),
+    radial-gradient(1.5px 1.5px at 5% 40%, #fff 100%, transparent),
+    linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 45%, var(--sky-bottom) 100%);
+  color:var(--ink);
+  font-family:'Nunito',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+h1,h2,h3,.display{font-family:'Fredoka',system-ui,sans-serif; text-wrap:balance;}
+code,.mono,.pill-mono,table{font-family:'JetBrains Mono','Nunito',monospace;}
+::selection{background:var(--lavender); color:#fff;}
+a{color:var(--lavender-deep);}
+:focus-visible{outline:3px solid var(--lavender-deep); outline-offset:2px; border-radius:8px;}
+@media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} }
+
+/* ---------- 飄浮雲朵／星星的裝飾層 ---------- */
+.sky-deco{position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0;}
+.cloud{
+  position:absolute; background:var(--cloud); border-radius:100px;
+  box-shadow: var(--shadow-out);
+  opacity:.9;
+}
+.cloud::before,.cloud::after{content:""; position:absolute; background:var(--cloud); border-radius:50%;}
+.star{position:absolute; width:6px; height:6px; background:#fff; border-radius:50%; box-shadow:0 0 6px 1px #fff;
+  animation:twinkle 2.6s ease-in-out infinite;}
+@keyframes twinkle{0%,100%{opacity:.25; transform:scale(.8);} 50%{opacity:1; transform:scale(1.15);}}
+
+/* ---------- 版面骨架 ---------- */
+.wrap{position:relative; max-width:1040px; margin:0 auto; padding:0 24px;}
+header.hero{position:relative; padding:88px 0 64px; overflow:hidden;}
+.hero-inner{position:relative; z-index:2; text-align:center;}
+.eyebrow-chip{
+  display:inline-flex; align-items:center; gap:8px; padding:7px 18px; border-radius:999px;
+  background:rgba(255,255,255,.55); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.7);
+  color:var(--lavender-deep); font-weight:700; font-size:13px; letter-spacing:.04em;
+  box-shadow:0 6px 16px rgba(151,134,224,.18);
+}
+h1.title{font-size:clamp(40px,7vw,68px); font-weight:700; margin:22px 0 10px; color:var(--ink);}
+p.tagline{font-size:clamp(16px,2.4vw,19px); color:var(--mono-ink); max-width:620px; margin:0 auto 28px; line-height:1.7; font-weight:600;}
+.hero-stats{display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-top:30px;}
+.hero-stat{
+  background:rgba(255,255,255,.6); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.8);
+  border-radius:26px; padding:14px 20px; min-width:118px; box-shadow:0 8px 20px rgba(151,134,224,.15);
+}
+.hero-stat b{display:block; font-family:'Fredoka'; font-size:24px; color:var(--lavender-deep);}
+.hero-stat span{font-size:12px; color:var(--muted); font-weight:700;}
+
+.bus-scene{position:relative; width:min(560px,92%); margin:40px auto 0;}
+
+/* ---------- 玻璃擬態卡（玻璃卡片本身承載內容） ---------- */
+.glass{
+  position:relative; background:rgba(255,255,255,.58); backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.75); border-radius:32px;
+  box-shadow:0 16px 40px -12px rgba(123,99,217,.28), inset 0 1px 0 rgba(255,255,255,.6);
+  padding:34px clamp(20px,4vw,42px);
+}
+
+/* ---------- 新擬態（Neumorphism）元件：按鈕／標籤／圖示底座 ---------- */
+.neu-chip{
+  display:inline-flex; align-items:center; gap:8px; background:var(--surface);
+  border-radius:20px; padding:9px 16px; box-shadow:var(--shadow-out);
+  font-weight:800; font-size:13px; color:var(--lavender-deep);
+}
+.neu-btn{
+  display:inline-flex; align-items:center; gap:8px; background:var(--lavender);
+  color:#fff; font-family:'Fredoka'; font-weight:600; font-size:15px;
+  border:none; border-radius:22px; padding:13px 26px; cursor:pointer;
+  box-shadow:0 10px 22px -6px rgba(124,99,217,.55), inset 0 -3px 0 rgba(0,0,0,.08), inset 0 2px 0 rgba(255,255,255,.4);
+}
+.neu-icon{
+  display:grid; place-items:center; width:46px; height:46px; border-radius:18px; flex:none;
+  background:var(--surface); box-shadow:var(--shadow-out); font-size:21px;
+}
+
+/* ---------- 路線圖骨架：每個主題一站，站點顏色對應各交通工具的「線色」 ---------- */
+.route{position:relative; margin:72px 0 0; padding-left:0;}
+.route-track{
+  position:absolute; left:28px; top:14px; bottom:14px; width:5px; border-radius:6px;
+  background:repeating-linear-gradient(to bottom, var(--line) 0 10px, transparent 10px 18px);
+  z-index:0;
+}
+.stop{position:relative; display:grid; grid-template-columns:60px 1fr; gap:18px; margin-bottom:56px; z-index:1;}
+.stop-dot{
+  width:60px; height:60px; border-radius:50%; display:grid; place-items:center; align-self:start;
+  font-family:'Fredoka'; font-weight:700; font-size:14px; color:#fff;
+  box-shadow:0 8px 18px -6px rgba(0,0,0,.25), inset 0 2px 3px rgba(255,255,255,.4);
+  border:4px solid var(--sky-top);
+}
+.stop-body{min-width:0;}
+.stop-kicker{display:flex; align-items:center; gap:10px; margin-bottom:6px;}
+.stop-kicker .line-name{font-weight:800; font-size:13px; letter-spacing:.03em; text-transform:uppercase;}
+.stop h2{font-size:clamp(21px,3vw,26px); margin:0 0 14px; color:var(--ink);}
+.stop p{line-height:1.85; color:var(--mono-ink); margin:0 0 14px; font-size:15px;}
+.stop p:last-child{margin-bottom:0;}
+
+/* ---------- 內容元件 ---------- */
+.grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+.grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+@media (max-width:720px){.grid-2,.grid-3{grid-template-columns:1fr;}}
+.subcard{background:var(--surface); border-radius:22px; padding:18px 20px; box-shadow:var(--shadow-out);}
+.subcard h3{font-family:'Fredoka'; font-size:15px; margin:0 0 8px; color:var(--lavender-deep);}
+.subcard p{font-size:13.5px; margin:0; line-height:1.75; color:var(--mono-ink);}
+
+.table-scroll{overflow-x:auto; border-radius:20px; box-shadow:var(--shadow-in); background:var(--surface);}
+table{width:100%; border-collapse:collapse; font-size:13px; min-width:460px;}
+table caption{display:none;}
+thead th{
+  text-align:left; padding:12px 16px; background:var(--code-bg); color:var(--lavender-deep);
+  font-weight:700; letter-spacing:.02em; position:sticky; top:0;
+}
+tbody td{padding:11px 16px; border-top:1px solid var(--line); color:var(--ink); vertical-align:top;}
+tbody tr:nth-child(odd){background:rgba(185,166,240,.06);}
+td.num,th.num{text-align:right; font-variant-numeric:tabular-nums;}
+code.inline{background:var(--code-bg); color:var(--mono-ink); padding:2px 7px; border-radius:8px; font-size:12.5px;}
+
+.keycap{
+  display:inline-grid; place-items:center; min-width:34px; height:34px; padding:0 8px; border-radius:11px;
+  background:var(--surface); box-shadow:var(--shadow-out); font-weight:800; font-size:13px; color:var(--ink);
+}
+.keyboard-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 0; border-top:1px dashed var(--line);}
+.keyboard-row:first-of-type{border-top:none;}
+.keyboard-city{flex:0 0 96px; font-weight:800; font-size:13px; color:var(--pink-deep);}
+.keyboard-keys{display:flex; gap:6px; flex-wrap:wrap;}
+.keyboard-note{color:var(--faint); font-size:12px; font-style:italic;}
+
+.badge-list{display:flex; flex-direction:column; gap:10px;}
+.badge-item{display:flex; gap:12px; align-items:flex-start; background:var(--surface); border-radius:18px; padding:13px 16px; box-shadow:var(--shadow-out);}
+.badge-item .n{font-family:'Fredoka'; font-weight:700; color:#fff; background:var(--lavender); width:26px; height:26px; border-radius:50%; display:grid; place-items:center; font-size:12px; flex:none;}
+.badge-item p{margin:0; font-size:13.5px; line-height:1.7; color:var(--mono-ink);}
+.badge-item b{color:var(--ink);}
+
+/* ---------- 公告板（誠實揭露區，刻意跳出玻璃卡風格，像釘在軟木板上的紙條） ---------- */
+.board{
+  background:#E9DEC9; border-radius:26px; padding:36px clamp(18px,4vw,40px);
+  box-shadow:0 20px 40px -14px rgba(90,70,40,.3);
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.025) 0 2px, transparent 2px 6px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.02) 0 2px, transparent 2px 6px);
+}
+.board h2{color:#5A4328;}
+.note{
+  background:#FFFDF2; border-radius:4px 14px 14px 4px; padding:16px 18px; margin-bottom:14px;
+  box-shadow:3px 5px 10px rgba(0,0,0,.18); position:relative; font-size:13.5px; line-height:1.75; color:#4A3B20;
+  transform:rotate(var(--tilt,0deg));
+}
+.note:nth-child(odd){--tilt:-0.6deg;}
+.note:nth-child(even){--tilt:0.6deg;}
+.note .pin{position:absolute; top:-9px; left:18px; width:14px; height:14px; border-radius:50%; background:var(--pink); box-shadow:0 2px 4px rgba(0,0,0,.3);}
+.note b{color:#7C5A20;}
+
+footer{text-align:center; padding:60px 0 50px; color:var(--mono-ink); font-size:13px; position:relative; z-index:1;}
+footer .mascot-sign{margin-bottom:14px;}
+
+@media (max-width:640px){
+  .stop{grid-template-columns:44px 1fr; gap:12px;}
+  .stop-dot{width:44px; height:44px; font-size:11px;}
+  .route-track{left:20px;}
+  .glass{padding:26px 18px;}
+}
+</style>
+</head>
+<body>
+
+<div class="sky-deco" aria-hidden="true" style="height:1900px;">
+  <div class="star" style="top:4%; left:8%;"></div>
+  <div class="star" style="top:9%; left:88%; animation-delay:.4s;"></div>
+  <div class="star" style="top:2%; left:62%; animation-delay:.9s;"></div>
+  <div class="star" style="top:14%; left:30%; animation-delay:1.3s;"></div>
+  <div class="star" style="top:7%; left:46%; animation-delay:.6s;"></div>
+  <div class="cloud" style="top:3%; left:-4%; width:150px; height:46px;"></div>
+  <div class="cloud" style="top:11%; right:-6%; width:190px; height:56px;"></div>
+</div>
+
+<main class="wrap">
+
+  <header class="hero">
+    <div class="hero-inner">
+      <span class="eyebrow-chip">🚌 技術案例研究・前端工程師視角</span>
+      <h1 class="title">搭車咻一下</h1>
+      <p class="tagline">整合公車、台鐵、捷運、高鐵與 YouBike 的個人化交通查詢平台——這份案例研究拆解每一種交通工具背後不同的資料流程、快取策略與互動設計。</p>
+
+      <!-- 兔子騎車、貓咪在旁揮手的小場景，作為整頁吉祥物登場 -->
+      <svg class="bus-scene" viewBox="0 0 520 220" role="img" aria-label="白兔駕駛公車，黑貓坐在車頂揮手">
+        <ellipse cx="260" cy="200" rx="230" ry="12" fill="var(--cloud-shadow)"/>
+        <!-- 公車主體 -->
+        <rect x="90" y="88" width="300" height="100" rx="34" fill="var(--lavender)"/>
+        <rect x="90" y="88" width="300" height="34" rx="17" fill="#CBB8F7"/>
+        <circle cx="160" cy="196" r="20" fill="#5B4A96"/><circle cx="160" cy="196" r="8" fill="#CBB8F7"/>
+        <circle cx="330" cy="196" r="20" fill="#5B4A96"/><circle cx="330" cy="196" r="8" fill="#CBB8F7"/>
+        <rect x="112" y="128" width="54" height="42" rx="12" fill="#F6F2FF"/>
+        <rect x="180" y="128" width="54" height="42" rx="12" fill="#F6F2FF"/>
+        <rect x="312" y="128" width="54" height="42" rx="12" fill="#FDE9F2"/>
+        <!-- 窗內的兔子（駕駛） -->
+        <g transform="translate(130,132)">
+          <ellipse cx="14" cy="22" rx="16" ry="15" fill="#fff" stroke="#EADFF9" stroke-width="2"/>
+          <ellipse cx="4" cy="4" rx="4.2" ry="10" fill="#fff" stroke="#EADFF9" stroke-width="2" transform="rotate(-18 4 4)"/>
+          <ellipse cx="22" cy="2" rx="4.2" ry="10" fill="#fff" stroke="#EADFF9" stroke-width="2" transform="rotate(18 22 2)"/>
+          <circle cx="8" cy="22" r="2" fill="#4B3C73"/><circle cx="19" cy="22" r="2" fill="#4B3C73"/>
+          <ellipse cx="13.5" cy="27" rx="2.4" ry="1.6" fill="#F2A9C9"/>
+        </g>
+        <!-- 乘客窗的貓咪耳朵 -->
+        <g transform="translate(325,124)">
+          <path d="M2 14 L8 0 L14 14 Z" fill="#2B2733"/>
+          <path d="M18 14 L24 0 L30 14 Z" fill="#2B2733"/>
+          <ellipse cx="16" cy="24" rx="15" ry="13" fill="#2B2733"/>
+          <circle cx="11" cy="24" r="2" fill="#F6D96B"/><circle cx="21" cy="24" r="2" fill="#F6D96B"/>
+        </g>
+        <!-- 車頂上揮手的貓咪 -->
+        <g transform="translate(250,30)">
+          <ellipse cx="20" cy="34" rx="22" ry="18" fill="#2B2733"/>
+          <path d="M3 18 L10 2 L18 18 Z" fill="#2B2733"/>
+          <path d="M22 18 L30 2 L38 18 Z" fill="#2B2733"/>
+          <circle cx="13" cy="34" r="2.6" fill="#F6D96B"/><circle cx="27" cy="34" r="2.6" fill="#F6D96B"/>
+          <path d="M18 41 Q20 44 22 41" stroke="#F2A9C9" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          <path d="M40 24 Q50 12 46 2" stroke="#2B2733" stroke-width="5" fill="none" stroke-linecap="round"/>
+        </g>
+        <rect x="60" y="178" width="400" height="6" rx="3" fill="#EADFF9"/>
+      </svg>
+
+      <div class="hero-stats">
+        <div class="hero-stat"><b>5</b><span>種交通工具整合</span></div>
+        <div class="hero-stat"><b>2</b><span>層快取架構</span></div>
+        <div class="hero-stat"><b>9</b><span>種公車客製化鍵盤</span></div>
+        <div class="hero-stat"><b>Dijkstra</b><span>捷運最短路徑</span></div>
+      </div>
+    </div>
+  </header>
+
+  <section class="glass">
+    <h2 style="margin-top:0;">專案總覽</h2>
+    <p style="line-height:1.85; color:var(--mono-ink); font-size:15.5px;">
+      「搭車咻一下」讓使用者在同一個平台查詢公車、台鐵、捷運、高鐵與 YouBike，不必在不同官方網站或 App 之間切換。
+      比起單純展示班次，這份案例研究更想說明的是：每一種交通工具的資料特性都不同——台鐵／高鐵用出發站＋抵達站取得實際班次，
+      公車用縣市＋路線＋方向＋站牌找即時到站，捷運靠站間行車時間與轉乘關係計算路徑，YouBike 則是站點搜尋與距離排序。
+      平台另外整合「我的行程」、天氣、備忘錄與首頁內容管理，讓交通查詢配合日常使用習慣，而不只是一次性的單次搜尋。
+    </p>
+  </section>
+
+  <div class="route">
+    <div class="route-track" aria-hidden="true"></div>
+
+    <!-- S1 技術棧 -->
+    <article class="stop">
+      <div class="stop-dot" style="background:var(--line-infra);">S1</div>
+      <div class="stop-body glass">
+        <div class="stop-kicker"><span class="line-name" style="color:var(--line-infra);">基礎線・架構</span></div>
+        <h2>技術棧與共用外框</h2>
+        <p>前端使用 Next.js、React、TypeScript 搭配 Tailwind CSS 建置；Next.js App Router 負責路由與 API Route，React 管理頁面狀態與非同步資料，TypeScript 為每種交通工具的站點、班次與到站狀態定義資料型別。站點選擇、日期／時間選擇、行程編輯等功能都拆成共用元件，避免不同頁面重複撰寫相似邏輯。</p>
+        <div class="grid-2">
+          <div class="subcard"><h3>登入與工具權限</h3><p>交通工具頁面外層的共用 Layout 會先檢查登入狀態與工具權限；未登入導向登入頁，沒有權限則顯示提示畫面。個人資料 API（行程、備忘錄、橫幅等）另外用 <code class="inline">requireTool("transit")</code> 再驗證一次，確保依使用者識別碼讀寫資料。</p></div>
+          <div class="subcard"><h3>TransitShell 共用外框</h3><p>負責整合桌機與手機的導覽與頁面結構，header／footer 與互動樣式統一管理，讓每個頁面只需要處理自己的功能，不必重複刻一份外框。</p></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- S2 首頁 -->
+    <article class="stop">
+      <div class="stop-dot" style="background:var(--line-personal);">S2</div>
+      <div class="stop-body glass">
+        <div class="stop-kicker"><span class="line-name" style="color:var(--line-personal);">個人化線・首頁</span></div>
+        <h2>首頁：查詢入口與每日使用記憶</h2>
+        <p>首頁把交通工具選擇、站點設定、日期時間、天氣與備忘錄整合在同一畫面。切換公車／台鐵／捷運／高鐵時，介面會換上對應的欄位——台鐵與高鐵用出發／抵達站，捷運用起訖捷運站，公車則是縣市＋路線＋方向＋站牌的「路線優先」模式。最後使用的交通工具會存進 <code class="inline">localStorage</code>，重新整理頁面也能恢復上次模式。</p>
+        <div class="grid-3">
+          <div class="subcard"><h3>天氣卡片</h3><p>可自訂多個縣市＋行政區，各自顯示今天／明天兩張卡片，載入期間用 Skeleton Loading 避免畫面跳動。</p></div>
+          <div class="subcard"><h3>小小備忘錄</h3><p>文字、圖示與提醒時間存在 MongoDB，新增修改後前端即時更新清單筆數，供下次 Skeleton 列數預估。</p></div>
+          <div class="subcard"><h3>主視覺與週末小旅行</h3><p>首頁主視覺與週末小旅行橫幅由個人化內容提供，使用者沒自訂時退回預設內容，避免首頁空白。</p></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- S3 公車：重點章節 -->
+    <article class="stop">
+      <div class="stop-dot" style="background:var(--line-bus);">S3</div>
+      <div class="stop-body glass">
+        <div class="stop-kicker"><span class="line-name" style="color:var(--line-bus);">公車線・互動設計最濃的一站</span></div>
+        <h2>公車查詢：客製化鍵盤與即時到站</h2>
+        <p>公車沒有固定的「起訖站」概念，操作核心是「縣市＋路線／站牌＋方向」。使用者可能只記得路線編號或某個站名，介面因此設計成可以先搜路線再選方向站牌，也可以反過來先搜站牌再看有哪些車經過。</p>
+
+        <h3 style="font-family:'Fredoka'; font-size:15px; color:var(--pink-deep); margin:22px 0 10px;">依縣市客製化的快捷鍵盤</h3>
+        <p style="margin-bottom:14px;">不同縣市的路線命名習慣不同，<code class="inline">keypadForCity()</code> 把數字鍵、該縣市專屬的快捷字元與刪除鍵組成動態鍵盤——例如台北市搜尋「紅29」只要按紅色鍵再按 2、9，不必切換輸入法逐字輸入。</p>
+        <div class="subcard" style="padding:6px 20px;">
+          <div class="keyboard-row"><span class="keyboard-city">台北／新北</span><div class="keyboard-keys"><span class="keycap">紅</span><span class="keycap">藍</span><span class="keycap">綠</span><span class="keycap">棕</span><span class="keycap">橘</span><span class="keycap">黃</span><span class="keycap">F</span><span class="keycap">小</span><span class="keycap">幹線</span></div></div>
+          <div class="keyboard-row"><span class="keyboard-city">桃園市</span><div class="keyboard-keys"><span class="keycap">F</span><span class="keycap">紅線</span><span class="keycap">黃線</span><span class="keycap">綠線</span></div></div>
+          <div class="keyboard-row"><span class="keyboard-city">新竹市</span><div class="keyboard-keys"><span class="keycap">藍</span><span class="keycap">綠</span><span class="keycap">甲</span><span class="keycap">線</span></div></div>
+          <div class="keyboard-row"><span class="keyboard-city">台中市</span><div class="keyboard-keys"><span class="keycap">延</span><span class="keycap">副</span><span class="keycap">區</span></div></div>
+          <div class="keyboard-row"><span class="keyboard-city">台南市</span><div class="keyboard-keys"><span class="keycap">紅</span><span class="keycap">左</span><span class="keycap">右</span></div></div>
+          <div class="keyboard-row"><span class="keyboard-city">高雄市</span><div class="keyboard-keys"><span class="keycap">A</span><span class="keycap">B</span><span class="keycap">D</span><span class="keycap">E</span></div></div>
+          <div class="keyboard-row"><span class="keyboard-city">基隆／新竹縣／彰化縣</span><span class="keyboard-note">無額外快捷鍵，查無規律的縣市乾脆只給數字鍵</span></div>
+        </div>
+
+        <div class="grid-2" style="margin-top:18px;">
+          <div class="subcard"><h3>避免一開彈窗就觸發搜尋</h3><p>路線／站牌搜尋都打真實 TDX 資料，不是前端固定清單。查詢字串為空時完全不送出請求，前端用 200 毫秒 debounce，已查過的條件還會用前端快取，避免每按一個字就重打一次 API。</p></div>
+          <div class="subcard"><h3>特殊命名路線</h3><p>像「東山咖啡線」這種純文字命名、沒有數字的路線，鍵盤打不出來，所以另外提供「瀏覽文字命名路線」入口，只有使用者主動點開才會查詢。</p></div>
+        </div>
+
+        <h3 style="font-family:'Fredoka'; font-size:15px; color:var(--pink-deep); margin:22px 0 10px;">即時到站狀態</h3>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>狀態</th><th>意義與畫面顯示</th></tr></thead>
+            <tbody>
+              <tr><td><code class="inline">ok</code></td><td>有可用預估時間，顯示剩餘分鐘（3 分鐘內用更醒目色彩提示）</td></tr>
+              <tr><td><code class="inline">arriving</code></td><td>預估剩餘時間不超過 59 秒，顯示「進站中」</td></tr>
+              <tr><td><code class="inline">notStarted</code></td><td>尚未發車</td></tr>
+              <tr><td><code class="inline">pastLast</code></td><td>末班已過</td></tr>
+              <tr><td><code class="inline">unavailable</code></td><td>沒有可用到站資料</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="subcard" style="margin-top:16px;"><h3>附近站牌：跨縣市彙整＋依站名去重</h3><p>點選定位後才要求 GPS 權限，取得座標後用 <code class="inline">Promise.all()</code> 並行查詢所有支援縣市的站牌位置，依距離排序取最近 20 筆——跨縣市查詢是為了不漏掉行政區交界另一側更近的站牌；合併時依站名去重，保留距離最近的那一筆，避免重複登記的站牌占掉顯示名額。</p></div>
+      </div>
+    </article>
+
+    <!-- S4 台鐵/高鐵 -->
+    <article class="stop">
+      <div class="stop-dot" style="background:var(--line-rail);">S4</div>
+      <div class="stop-body glass">
+        <div class="stop-kicker"><span class="line-name" style="color:var(--line-rail);">鐵道線・台鐵與高鐵</span></div>
+        <h2>台鐵與高鐵：時刻表、票價與容錯</h2>
+        <p>台鐵結果頁用 <code class="inline">Promise.allSettled()</code> 並行取得每日時刻表、出發站即時誤點與起訖站票價三種資料。時刻表是必要資料，取不到就回傳錯誤；誤點或票價取不到時，班次仍會顯示，只是少了對應資訊——不會因為一項失敗就整頁空白。</p>
+        <div class="grid-2">
+          <div class="subcard"><h3>票價怎麼選</h3><p>從 ODFare 資料挑最短行駛距離的那組，再以 <code class="inline">TicketType = 1</code> 搭配 <code class="inline">FareClass = 1</code> 取全票價，避免不同距離或非一般全票的價格被誤用。</p></div>
+          <div class="subcard"><h3>班次是否已過期</h3><p>用台灣當地「現在」時間判斷，不是用使用者搜尋時選的時間——重新載入舊查詢條件時，尚未發車的班次不會被誤判成過期。</p></div>
+          <div class="subcard"><h3>高鐵站碼對照</h3><p><code class="inline">THSR_STATION_ID</code> 把顯示站名轉成 TDX 站碼，會先處理「站」字尾等格式差異再查表。</p></div>
+          <div class="subcard"><h3>早鳥票價</h3><p>只有在 API 確實提供早鳥票價欄位時才顯示折扣，沒有這個欄位就不顯示，不會自己假設一個折扣值。</p></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- S5 捷運 -->
+    <article class="stop">
+      <div class="stop-dot" style="background:var(--line-metro);">S5</div>
+      <div class="stop-body glass">
+        <div class="stop-kicker"><span class="line-name" style="color:var(--line-metro);">捷運線・Dijkstra 最短路徑</span></div>
+        <h2>捷運路線計算與轉乘</h2>
+        <p>捷運是案例研究中唯一用到圖論演算法的部分。系統把站點與站間行車時間建成路網圖，有明確轉乘關係的車站依 <code class="inline">METRO_TRANSFER_HUBS</code> 另外加一條轉乘邊（成本估算 180 秒），轉乘關係由程式明確定義，不是單靠站名相同就推斷能轉乘。接著用 Dijkstra 演算法找出起訖站之間時間最短的路徑，取得總車程、停靠站數、轉乘站與後續線別，依官方線色（G、R、O 等）標示。</p>
+        <div class="badge-list">
+          <div class="badge-item"><span class="n">!</span><p><b>跨系統查詢的真實狀態：</b>後端已有 <code class="inline">computeCrossSystemMetroTrip()</code> 可整合台北／新北／機場捷運與部分輕軌的路網，但目前前端 <code class="inline">results-view.tsx</code> 的跨系統查詢仍走另一條分支（轉乘站名稱對照＋預設估算值），對外的 API Route 也只呼叫單一系統版本——「後端已有的函式」跟「前端是否完整接上」是兩件需要分開看待的事。</p></div>
+          <div class="badge-item"><span class="n">!</span><p><b>結果時間列的性質：</b>目前前端版本是依規則在 06:00–24:00 間，以平均每 8 分鐘一筆的方式生成約 135 筆時間列，這是介面展示用的生成資料，不是向 TDX 取得的 135 班官方實際發車紀錄。</p></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- S6 我的行程 -->
+    <article class="stop">
+      <div class="stop-dot" style="background:var(--line-personal);">S6</div>
+      <div class="stop-body glass">
+        <div class="stop-kicker"><span class="line-name" style="color:var(--line-personal);">個人化線・我的行程</span></div>
+        <h2>我的行程：可重複使用的查詢條件</h2>
+        <p>「我的行程」保存的不是某一班車的靜態收藏，而是一組可以重複查詢的條件——例如一條下班通勤路線設定 16:00–16:26，之後按「搜尋班次」就會重新查詢並只保留這個時間範圍內的結果。使用者可以建立自己的分類（上班／下班／假日出遊），分類存在 <code class="inline">transit.tripGroups</code>，常用行程存在 <code class="inline">transit.frequentTrips</code> 並用 <code class="inline">groupId</code> 關聯。</p>
+        <div class="grid-2">
+          <div class="subcard"><h3>整批同步，不逐筆打 API</h3><p>常用行程清單透過 <code class="inline">PUT /api/transit/frequent-trips</code> 一次送出完整清單，後端依識別碼比對、更新、新增並刪除不在清單中的項目，回傳最新清單後前端直接更新畫面。</p></div>
+          <div class="subcard"><h3>一站式新增行程</h3><p>在查詢結果卡片按「加入行程」時可以直接建立新分類並加入，不必先離開結果頁建立分類再回頭操作。</p></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- S7 YouBike + 天氣 -->
+    <article class="stop">
+      <div class="stop-dot" style="background:var(--line-mobility);">S7</div>
+      <div class="stop-body glass">
+        <div class="stop-kicker"><span class="line-name" style="color:var(--line-mobility);">微旅行線・YouBike 與天氣</span></div>
+        <h2>YouBike 站點搜尋與天氣預報</h2>
+        <p>YouBike 功能查詢站點名稱與座標（<code class="inline">getUbikeStations()</code>），附近站點一樣先定位再並行查詢所有支援縣市，依距離排序顯示最近 20 筆，並附外部地圖步行導航連結。天氣則支援自訂多個縣市＋行政區，<code class="inline">dayOffset</code> 控制取今天或明天的預報，日期計算用 UTC+8 推算台灣當地日期，避免伺服器時區誤判。</p>
+        <div class="badge-list">
+          <div class="badge-item"><span class="n">!</span><p><b>誠實標註範圍：</b>目前程式只查站點名稱與座標，沒有呼叫即時可借車／可還車位數的 Availability 端點，所以這一頁應該稱作「YouBike 站點搜尋」，不是即時車輛數查詢。</p></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- S8 快取策略 -->
+    <article class="stop">
+      <div class="stop-dot" style="background:var(--line-infra);">S8</div>
+      <div class="stop-body glass">
+        <div class="stop-kicker"><span class="line-name" style="color:var(--line-infra);">基礎線・雙層快取</span></div>
+        <h2>TDX 外部 API 的雙層快取</h2>
+        <p>交通資料的即時性不同，快取也分開處理：<code class="inline">tdxGet()</code> 先查伺服器記憶體 Map（同時也存進行中的 Promise，併發呼叫可以共用同一次請求）；沒有有效資料才查 MongoDB 的 <code class="inline">transit.tdxCache</code>，這一層能撐過 Serverless 執行個體被回收的情況。Token 也在記憶體快取，到期前預留 60 秒避免用到快過期的 Token。</p>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>資料類型</th><th class="num">預設快取期限</th><th>原因</th></tr></thead>
+            <tbody>
+              <tr><td>一般 TDX 查詢</td><td class="num">60 秒</td><td>降低短時間重複請求</td></tr>
+              <tr><td>台鐵車站清單</td><td class="num">24 小時</td><td>車站資料變動頻率低</td></tr>
+              <tr><td>公車路線與站序</td><td class="num">24 小時</td><td>路線與站序較穩定</td></tr>
+              <tr><td>捷運站間時間／線別／票價</td><td class="num">24 小時</td><td>靜態交通資訊不需每次重抓</td></tr>
+              <tr><td>YouBike 站點名稱與座標</td><td class="num">24 小時</td><td>站點位置相對穩定</td></tr>
+              <tr><td>中央氣象署預報</td><td class="num">30 分鐘</td><td>需要定期更新預報</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:16px;">公車另外在 <code class="inline">BusRoutePickerModal</code> 疊了一層模組層級的前端快取——路線／站牌搜尋快取 5 分鐘，含即時到站的站序／站牌詳情快取 30 秒，彈窗關閉再打開仍能重用資料。前端快取降低重複操作造成的內部請求，後端快取降低對 TDX 的重複請求，兩層用途不同、互相補足。</p>
+      </div>
+    </article>
+
+    <!-- S9 資料結構與API -->
+    <article class="stop">
+      <div class="stop-dot" style="background:var(--line-infra);">S9</div>
+      <div class="stop-body glass">
+        <div class="stop-kicker"><span class="line-name" style="color:var(--line-infra);">基礎線・資料結構與 API</span></div>
+        <h2>MongoDB 資料結構與 API 總覽</h2>
+        <p>個人化資料（行程分類、常用行程、備忘錄、首頁橫幅、週末小旅行）多數採同一種「整批同步」模式：前端送出目前完整清單，後端依識別碼比對差異後更新、新增、刪除，回傳最新清單。這能減少每個表單欄位各自打一次 API 的需求，但也只是差異同步，不等同於跨多個 Collection 的交易式原子更新。</p>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>API</th><th>Method</th><th>功能</th></tr></thead>
+            <tbody>
+              <tr><td><code class="inline">/api/transit/tra/od-timetable</code></td><td>GET</td><td>台鐵起訖站班次、票價與誤點</td></tr>
+              <tr><td><code class="inline">/api/transit/thsr/timetable</code></td><td>GET</td><td>高鐵起訖站班次與票價</td></tr>
+              <tr><td><code class="inline">/api/transit/metro/trip</code></td><td>GET</td><td>同系統捷運起訖站路徑計算</td></tr>
+              <tr><td><code class="inline">/api/transit/bus/routes</code> ／ <code class="inline">stops</code></td><td>GET</td><td>依縣市＋關鍵字搜尋路線／站牌</td></tr>
+              <tr><td><code class="inline">/api/transit/bus/stop-locations</code></td><td>GET</td><td>縣市公車站牌位置，供附近站牌排序</td></tr>
+              <tr><td><code class="inline">/api/transit/ubike</code></td><td>GET</td><td>YouBike 站點搜尋</td></tr>
+              <tr><td><code class="inline">/api/transit/frequent-trips</code></td><td>GET／PUT</td><td>常用行程讀取與整批同步</td></tr>
+              <tr><td><code class="inline">/api/transit/memos</code></td><td>GET／PUT</td><td>備忘錄讀取與整批同步</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </article>
+
+    <!-- S10 總結 -->
+    <article class="stop">
+      <div class="stop-dot" style="background:var(--line-gold);">終點</div>
+      <div class="stop-body glass">
+        <div class="stop-kicker"><span class="line-name" style="color:var(--line-gold);">總站・專案特色</span></div>
+        <h2>技術特色總結</h2>
+        <p>「搭車咻一下」的重點不只是整合多種交通工具，而是針對每一種交通資料採取不同的處理、快取與互動方式：</p>
+        <div class="badge-list">
+          <div class="badge-item"><span class="n">1</span><p><b>多交通工具整合</b>——台鐵、高鐵、捷運、公車、YouBike 共用平台入口，各自保留查詢規則。</p></div>
+          <div class="badge-item"><span class="n">2</span><p><b>捷運路徑演算法</b>——站間行車時間與轉乘關係建圖，Dijkstra 計算同系統最短時間路徑。</p></div>
+          <div class="badge-item"><span class="n">3</span><p><b>公車客製化輸入</b>——依縣市提供對應命名習慣的鍵盤，支援文字路線、站牌詳情與附近站牌。</p></div>
+          <div class="badge-item"><span class="n">4</span><p><b>雙層快取策略</b>——記憶體＋MongoDB，依資料變動頻率設定不同 TTL，前端另疊 debounce 與模組快取。</p></div>
+          <div class="badge-item"><span class="n">5</span><p><b>個人化常用行程與首頁</b>——分類、路線、時間區間、天氣、備忘錄、主視覺整合成每日會用到的查詢捷徑。</p></div>
+          <div class="badge-item"><span class="n">6</span><p><b>前後端分工清楚</b>——前端處理互動顯示，後端負責參數驗證、外部資料整合、轉換、快取與個人資料保存。</p></div>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <section class="board" style="margin-top:72px;">
+    <h2 style="margin-top:0;">🗒️ 仍在核對的事項</h2>
+    <p style="color:#5A4328; margin-bottom:22px; font-size:14px;">這份案例研究也誠實標註了目前程式快照還不能完全確認的部分——不假裝已完成，才是真的可信。</p>
+    <div class="note"><span class="pin"></span><b>最快／最便宜／直達篩選：</b>老師回饋提到這些操作，但目前 <code class="inline">results-view.tsx</code> 快照尚未找到完整實作，需要補上對應程式碼才能說明各交通工具的排序規則。</div>
+    <div class="note"><span class="pin"></span><b>跨系統捷運：</b>後端已有多系統路網計算函式，前端快照仍是預設估算分支，需要確認是否已在其他版本整合。</div>
+    <div class="note"><span class="pin"></span><b>捷運時間列：</b>目前結果頁用每 8 分鐘生成的時間列，不應視為官方實際班次；若有正式時刻表版本，之後需要更新本文件。</div>
+    <div class="note"><span class="pin"></span><b>YouBike 即時車輛數：</b>目前只查站點名稱與座標，並未確認即時可借車／可還車位數功能。</div>
+    <div class="note"><span class="pin"></span><b>完整會員系統與部署設定：</b>已確認工具層級的登入與權限檢查，但完整註冊、Session 管理與部署監控仍需對應原始碼確認。</div>
+  </section>
+
+  <footer>
+    <svg class="mascot-sign" width="86" height="60" viewBox="0 0 86 60" aria-hidden="true">
+      <ellipse cx="24" cy="38" rx="20" ry="18" fill="#fff" stroke="#EADFF9" stroke-width="2"/>
+      <ellipse cx="14" cy="18" rx="5" ry="13" fill="#fff" stroke="#EADFF9" stroke-width="2" transform="rotate(-16 14 18)"/>
+      <ellipse cx="36" cy="16" rx="5" ry="13" fill="#fff" stroke="#EADFF9" stroke-width="2" transform="rotate(16 36 16)"/>
+      <circle cx="17" cy="38" r="2.4" fill="#4B3C73"/><circle cx="31" cy="38" r="2.4" fill="#4B3C73"/>
+      <ellipse cx="24" cy="44" rx="3" ry="2" fill="#F2A9C9"/>
+      <ellipse cx="66" cy="40" rx="17" ry="15" fill="#2B2733"/>
+      <path d="M52 24 L60 8 L66 24 Z" fill="#2B2733"/><path d="M68 24 L76 8 L80 24 Z" fill="#2B2733"/>
+      <circle cx="60" cy="40" r="2.2" fill="#F6D96B"/><circle cx="72" cy="40" r="2.2" fill="#F6D96B"/>
+    </svg>
+    <p>搭車咻一下 · 個人開發的交通查詢案例研究，兔子與貓咪陪你準時出發</p>
+  </footer>
+</main>
+</body>
+</html>
