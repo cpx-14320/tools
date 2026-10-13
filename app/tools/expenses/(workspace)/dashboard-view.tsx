@@ -5,9 +5,17 @@ import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { Card, CardBody } from "@/components/expenses/card";
 import { text } from "@/components/expenses/theme";
-import { dateFilterRange, previousPeriodSuffix } from "@/lib/expenses/date-filter";
+import { dateFilterRange, previousPeriodSuffix, defaultDateFilter } from "@/lib/expenses/date-filter";
 import { categoryColorClass, categoryFillClass, type CategoryDTO } from "@/lib/expenses/categories";
-import { totalsForRange, rangeDelta, categoryBreakdown, incomeBreakdown, transactionsInDateRange, type TransactionDTO } from "@/lib/expenses/transactions";
+import {
+  totalsForRange,
+  rangeDelta,
+  categoryBreakdown,
+  incomeBreakdown,
+  budgetSummary,
+  transactionsInDateRange,
+  type TransactionDTO,
+} from "@/lib/expenses/transactions";
 import { formatCurrency } from "@/lib/format";
 
 const POSITIVE = "#2FAE82";
@@ -100,8 +108,10 @@ export function DashboardView() {
   const incomeRows = incomeBreakdown(incomeTx, categories);
   const recent = [...expenseTx].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 5);
 
-  // 預算功能還沒做（不在這次範圍內），固定顯示「還沒設定預算」。
-  const budget: number | undefined = undefined;
+  // 預算卡片故意不跟著上面的日期篩選器走——預算本來就是「這個月」的概念，篩選器切到
+  // 別的區間（例如去年、自訂區間）時，預算對比還是要看真正的這個月，不是篩選器選的那段。
+  const thisMonthExpenseTx = totalsForRange(transactions, categories, dateFilterRange(defaultDateFilter())).expenseTx;
+  const budget = budgetSummary(thisMonthExpenseTx, categories);
 
   if (!ready) {
     return (
@@ -116,19 +126,21 @@ export function DashboardView() {
     <div className="flex flex-col gap-4">
       <DateFilterPicker />
 
-      {/* 收入／支出／結餘三格——薪資不再是獨立算出來的特例，就是收入分類加總的其中一塊，
-          想看薪資自己漲跌多少，看「收入來源」卡片裡薪資那一列即可，不需要 Dashboard 再
+      {/* 收入獨立一整排、支出跟結餘並排各半——收入是看整體財務狀況時最先想看的數字，
+          拉成滿版比較醒目；支出跟結餘互相比較的意義比較大（花了多少、剩多少），並排
+          方便一眼對照。薪資不再是獨立算出來的特例，就是收入分類加總的其中一塊，想看
+          薪資自己漲跌多少，看「收入來源」卡片裡薪資那一列即可，不需要 Dashboard 再
           另外開一組指標。圖示色塊沿用搭乘車既有的路線色塊配色，不是另外配的新顏色。 */}
-      <div className="grid grid-cols-3 gap-3">
-        <KpiCard
-          icon="💰"
-          iconBg="#E3F6EC"
-          iconFg="#2FAE82"
-          label="本月收入"
-          value={formatCurrency(totalIncome)}
-          valueColor="#4A3B7C"
-          delta={incomeDelta && <DeltaText delta={incomeDelta.delta} pct={incomeDelta.pct} goodWhenUp />}
-        />
+      <KpiCard
+        icon="💰"
+        iconBg="#E3F6EC"
+        iconFg="#2FAE82"
+        label="本月收入"
+        value={formatCurrency(totalIncome)}
+        valueColor="#4A3B7C"
+        delta={incomeDelta && <DeltaText delta={incomeDelta.delta} pct={incomeDelta.pct} goodWhenUp />}
+      />
+      <div className="grid grid-cols-2 gap-3">
         <KpiCard
           icon="🛍️"
           iconBg="#FDEEF0"
@@ -153,7 +165,42 @@ export function DashboardView() {
       <Card>
         <CardBody>
           <p className={text.sectionHeading}>本月預算</p>
-          {budget === undefined && <p className={`mt-3 ${text.muted}`}>這個月還沒有設定預算。</p>}
+          {budget.rows.length === 0 ? (
+            <p className={`mt-3 ${text.muted}`}>還沒有分類設定預算，到「消費分類」編輯分類時可以加一個。</p>
+          ) : (
+            <>
+              <div className="mt-3 flex items-end justify-between">
+                <p className={text.statValue}>
+                  {formatCurrency(budget.totalSpent)}
+                  <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {formatCurrency(budget.totalBudget)}</span>
+                </p>
+                <span className={`text-xs font-semibold ${budget.pct > 100 ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>{budget.pct}%</span>
+              </div>
+              <div className="mt-4 flex flex-col gap-3">
+                {budget.rows.map((row) => (
+                  <div key={row.category.id}>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="flex items-center gap-2 text-[#4A3B7C]">
+                        <span className={`grid size-6 place-items-center rounded-full text-xs ${categoryColorClass[row.category.color]}`}>
+                          {row.category.icon}
+                        </span>
+                        {row.category.name}
+                      </span>
+                      <span className={`tabular-nums ${text.muted}`}>
+                        {formatCurrency(row.spent)} / {formatCurrency(row.budgetAmount)}
+                      </span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#F3EFFC]">
+                      <div
+                        className={`h-full rounded-full ${row.pct > 100 ? "bg-[#D1517E]" : categoryFillClass[row.category.color]}`}
+                        style={{ width: `${Math.min(100, row.pct)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </CardBody>
       </Card>
 
