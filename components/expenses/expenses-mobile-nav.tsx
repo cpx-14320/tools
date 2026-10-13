@@ -5,8 +5,7 @@ import { usePathname } from "next/navigation";
 
 const tabs = [
   { href: "/tools/expenses", label: "總覽", icon: "🏠" },
-  { href: "/tools/expenses/transactions", label: "消費", icon: "🧾" },
-  { href: "/tools/expenses/salary", label: "薪資", icon: "💰" },
+  { href: "/tools/expenses/transactions", label: "紀錄", icon: "🧾" },
   { href: "/tools/expenses/more", label: "更多", icon: "⋯" },
 ];
 
@@ -29,7 +28,6 @@ export function ExpensesMobileNav() {
               : tab.href === "/tools/expenses/more"
                 ? [
                     "/tools/expenses/categories",
-                    "/tools/expenses/salary/types",
                     "/tools/expenses/members",
                     "/tools/expenses/goals",
                     "/tools/expenses/recurring",

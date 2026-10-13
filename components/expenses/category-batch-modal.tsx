@@ -20,8 +20,8 @@ function blankDraft(): Draft {
 
 export type CategoryBatchItem = Pick<Draft, "name" | "icon"> & Partial<Pick<Draft, "color" | "kind">>;
 
-/** 新增分類／子分類——跟薪資明細類型（salary-type-batch-modal.tsx）、搭乘車「新增分類」
- *  同一種做法：一次開著好幾則草稿一起填，填完按一次「儲存」整批送出。子分類不能自己選
+/** 新增分類／子分類——跟搭乘車「新增分類」同一種做法：一次開著好幾則草稿一起填，填完
+ *  按一次「儲存」整批送出。子分類不能自己選
  *  顏色／收支類型（跟父分類一致，見 category-modal.tsx 的同樣規則），所以 isSubcategory
  *  時每一則只會顯示名稱／圖示兩個欄位，color/kind 不會出現在 onSave 回傳的物件裡，由
  *  呼叫端補上父分類的值。 */

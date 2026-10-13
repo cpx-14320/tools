@@ -44,9 +44,6 @@ async function ensureIndexes(db: Db): Promise<void> {
 
     // 記帳本（expenses.*）——目前是個人範圍（只用 userId 隔離），還沒有帳本／成員共用的概念。
     db.collection("expenses.categories").createIndex({ userId: 1, kind: 1, parentId: 1, order: 1 }),
-    db.collection("expenses.salaryItemTypes").createIndex({ userId: 1, order: 1 }),
-    // 一人一月最多一筆薪資紀錄，重複新增同一個月要用編輯，不是再新增一筆。
-    db.collection("expenses.salaryRecords").createIndex({ userId: 1, yearMonth: 1 }, { unique: true }),
     db.collection("expenses.transactions").createIndex({ userId: 1, date: 1 }),
     // 固定收支規則確認存入時寫進來的 sourceRuleId——同一條規則同一天最多只能確認一次，
     // 擋重複點擊「確認存入」生出兩筆一樣的交易。partialFilterExpression 只管有 sourceRuleId

@@ -17,8 +17,6 @@ import {
   rangeDelta,
   type TransactionDTO,
 } from "@/lib/expenses/transactions";
-import { salaryNet, salaryRecordsInDateRange, type SalaryRecordDTO } from "@/lib/expenses/salary-records";
-import type { SalaryItemTypeDTO } from "@/lib/expenses/salary-types";
 import { formatCurrency } from "@/lib/format";
 
 function matchesQuery(t: TransactionDTO, categories: CategoryDTO[], query: string): boolean {
@@ -34,8 +32,6 @@ export function TransactionsView() {
   const { filter } = useDateFilter();
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
-  const [salaryRecords, setSalaryRecords] = useState<SalaryRecordDTO[]>([]);
-  const [salaryTypes, setSalaryTypes] = useState<SalaryItemTypeDTO[]>([]);
   const [ready, setReady] = useState(false);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<CategoryKind>("支出");
@@ -45,27 +41,13 @@ export function TransactionsView() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      fetch("/api/expenses/categories").then((res) => res.json()),
-      fetch("/api/expenses/transactions").then((res) => res.json()),
-      fetch("/api/expenses/salary-records").then((res) => res.json()),
-      fetch("/api/expenses/salary-types").then((res) => res.json()),
-    ])
-      .then(
-        ([categoriesData, txData, salaryData, typesData]: [
-          { categories?: CategoryDTO[] },
-          { transactions?: TransactionDTO[] },
-          { records?: SalaryRecordDTO[] },
-          { types?: SalaryItemTypeDTO[] },
-        ]) => {
-          if (cancelled) return;
-          setCategories(categoriesData.categories ?? []);
-          setTransactions(txData.transactions ?? []);
-          setSalaryRecords(salaryData.records ?? []);
-          setSalaryTypes(typesData.types ?? []);
-          setReady(true);
-        },
-      )
+    Promise.all([fetch("/api/expenses/categories").then((res) => res.json()), fetch("/api/expenses/transactions").then((res) => res.json())])
+      .then(([categoriesData, txData]: [{ categories?: CategoryDTO[] }, { transactions?: TransactionDTO[] }]) => {
+        if (cancelled) return;
+        setCategories(categoriesData.categories ?? []);
+        setTransactions(txData.transactions ?? []);
+        setReady(true);
+      })
       .catch(() => {
         if (!cancelled) setReady(true);
       });
@@ -75,8 +57,7 @@ export function TransactionsView() {
   }, []);
 
   const inKind = (t: TransactionDTO) => (categoryById(categories, t.categoryId)?.kind ?? "支出") === kind;
-  const salaryIncome = salaryRecordsInDateRange(salaryRecords, range).reduce((sum, r) => sum + salaryNet(r, salaryTypes), 0);
-  const totals = totalsForRange(transactions, categories, range, salaryIncome);
+  const totals = totalsForRange(transactions, categories, range);
 
   const rows = (isSearching ? transactions.filter(inKind) : totals[kind === "支出" ? "expenseTx" : "incomeTx"])
     .filter((t) => matchesQuery(t, categories, query))
@@ -84,12 +65,9 @@ export function TransactionsView() {
 
   const total = rows.reduce((sum, t) => sum + t.amount, 0);
   const delta = rangeDelta(
-    (r) => {
-      const sIncome = salaryRecordsInDateRange(salaryRecords, r).reduce((sum, rec) => sum + salaryNet(rec, salaryTypes), 0);
-      return totalsForRange(transactions, categories, r, sIncome)[kind === "支出" ? "totalExpense" : "extraIncome"];
-    },
+    (r) => totalsForRange(transactions, categories, r)[kind === "支出" ? "totalExpense" : "totalIncome"],
     filter,
-    (r) => transactionsInDateRange(transactions, r).length > 0 || salaryRecordsInDateRange(salaryRecords, r).length > 0,
+    (r) => transactionsInDateRange(transactions, r).length > 0,
   );
   const deltaSuffix = previousPeriodSuffix(filter.mode);
 

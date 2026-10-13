@@ -8,8 +8,6 @@ import { text } from "@/components/expenses/theme";
 import { dateFilterRange, previousPeriodSuffix } from "@/lib/expenses/date-filter";
 import { categoryColorClass, categoryFillClass, type CategoryDTO } from "@/lib/expenses/categories";
 import { totalsForRange, rangeDelta, categoryBreakdown, incomeBreakdown, transactionsInDateRange, type TransactionDTO } from "@/lib/expenses/transactions";
-import { salaryNet, salaryRecordsInDateRange, type SalaryRecordDTO } from "@/lib/expenses/salary-records";
-import type { SalaryItemTypeDTO } from "@/lib/expenses/salary-types";
 import { formatCurrency } from "@/lib/format";
 
 const POSITIVE = "#2FAE82";
@@ -71,33 +69,17 @@ export function DashboardView() {
   const { filter } = useDateFilter();
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
-  const [salaryRecords, setSalaryRecords] = useState<SalaryRecordDTO[]>([]);
-  const [salaryTypes, setSalaryTypes] = useState<SalaryItemTypeDTO[]>([]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      fetch("/api/expenses/categories").then((res) => res.json()),
-      fetch("/api/expenses/transactions").then((res) => res.json()),
-      fetch("/api/expenses/salary-records").then((res) => res.json()),
-      fetch("/api/expenses/salary-types").then((res) => res.json()),
-    ])
-      .then(
-        ([categoriesData, txData, salaryData, typesData]: [
-          { categories?: CategoryDTO[] },
-          { transactions?: TransactionDTO[] },
-          { records?: SalaryRecordDTO[] },
-          { types?: SalaryItemTypeDTO[] },
-        ]) => {
-          if (cancelled) return;
-          setCategories(categoriesData.categories ?? []);
-          setTransactions(txData.transactions ?? []);
-          setSalaryRecords(salaryData.records ?? []);
-          setSalaryTypes(typesData.types ?? []);
-          setReady(true);
-        },
-      )
+    Promise.all([fetch("/api/expenses/categories").then((res) => res.json()), fetch("/api/expenses/transactions").then((res) => res.json())])
+      .then(([categoriesData, txData]: [{ categories?: CategoryDTO[] }, { transactions?: TransactionDTO[] }]) => {
+        if (cancelled) return;
+        setCategories(categoriesData.categories ?? []);
+        setTransactions(txData.transactions ?? []);
+        setReady(true);
+      })
       .catch(() => {
         if (!cancelled) setReady(true);
       });
@@ -107,19 +89,15 @@ export function DashboardView() {
   }, []);
 
   const range = dateFilterRange(filter);
-  const salaryIncomeForRange = (r: ReturnType<typeof dateFilterRange>) =>
-    salaryRecordsInDateRange(salaryRecords, r).reduce((sum, rec) => sum + salaryNet(rec, salaryTypes), 0);
-  const hasPriorData = (r: ReturnType<typeof dateFilterRange>) =>
-    transactionsInDateRange(transactions, r).length > 0 || salaryRecordsInDateRange(salaryRecords, r).length > 0;
+  const hasPriorData = (r: ReturnType<typeof dateFilterRange>) => transactionsInDateRange(transactions, r).length > 0;
 
-  const { totalExpense, balance, expenseTx, salaryIncome, extraIncome } = totalsForRange(transactions, categories, range, salaryIncomeForRange(range));
-  const salaryDelta = rangeDelta((r) => salaryIncomeForRange(r), filter, hasPriorData);
-  const extraIncomeDelta = rangeDelta((r) => totalsForRange(transactions, categories, r, salaryIncomeForRange(r)).extraIncome, filter, hasPriorData);
-  const expenseDelta = rangeDelta((r) => totalsForRange(transactions, categories, r, salaryIncomeForRange(r)).totalExpense, filter, hasPriorData);
-  const balanceDelta = rangeDelta((r) => totalsForRange(transactions, categories, r, salaryIncomeForRange(r)).balance, filter, hasPriorData);
+  const { totalIncome, totalExpense, balance, expenseTx, incomeTx } = totalsForRange(transactions, categories, range);
+  const incomeDelta = rangeDelta((r) => totalsForRange(transactions, categories, r).totalIncome, filter, hasPriorData);
+  const expenseDelta = rangeDelta((r) => totalsForRange(transactions, categories, r).totalExpense, filter, hasPriorData);
+  const balanceDelta = rangeDelta((r) => totalsForRange(transactions, categories, r).balance, filter, hasPriorData);
   const deltaSuffix = previousPeriodSuffix(filter.mode);
   const breakdown = categoryBreakdown(expenseTx, categories);
-  const incomeRows = incomeBreakdown(totalsForRange(transactions, categories, range, salaryIncome).incomeTx, categories, salaryIncome);
+  const incomeRows = incomeBreakdown(incomeTx, categories);
   const recent = [...expenseTx].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 5);
 
   // 預算功能還沒做（不在這次範圍內），固定顯示「還沒設定預算」。
@@ -138,27 +116,18 @@ export function DashboardView() {
     <div className="flex flex-col gap-4">
       <DateFilterPicker />
 
-      {/* 薪水／其他收入／支出／結餘四格——薪水跟薪水以外的收入故意分開顯示，不是只看
-          「總收入」，呼應之後要做的薪資漲幅分析：總收入漲，不代表固定薪水真的調高了。
-          圖示色塊沿用搭乘車既有的路線色塊配色（藍／橘／紅／綠），不是另外配的新顏色。 */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* 收入／支出／結餘三格——薪資不再是獨立算出來的特例，就是收入分類加總的其中一塊，
+          想看薪資自己漲跌多少，看「收入來源」卡片裡薪資那一列即可，不需要 Dashboard 再
+          另外開一組指標。圖示色塊沿用搭乘車既有的路線色塊配色，不是另外配的新顏色。 */}
+      <div className="grid grid-cols-3 gap-3">
         <KpiCard
-          icon="💼"
-          iconBg="#E6EEFC"
-          iconFg="#4E7FE0"
-          label="本月薪水"
-          value={formatCurrency(salaryIncome)}
+          icon="💰"
+          iconBg="#E3F6EC"
+          iconFg="#2FAE82"
+          label="本月收入"
+          value={formatCurrency(totalIncome)}
           valueColor="#4A3B7C"
-          delta={salaryDelta && <DeltaText delta={salaryDelta.delta} pct={salaryDelta.pct} goodWhenUp />}
-        />
-        <KpiCard
-          icon="🎁"
-          iconBg="#FDE7D8"
-          iconFg="#D97A3D"
-          label="其他收入"
-          value={formatCurrency(extraIncome)}
-          valueColor="#4A3B7C"
-          delta={extraIncomeDelta && <DeltaText delta={extraIncomeDelta.delta} pct={extraIncomeDelta.pct} goodWhenUp />}
+          delta={incomeDelta && <DeltaText delta={incomeDelta.delta} pct={incomeDelta.pct} goodWhenUp />}
         />
         <KpiCard
           icon="🛍️"
@@ -171,8 +140,8 @@ export function DashboardView() {
         />
         <KpiCard
           icon="🐷"
-          iconBg="#E3F6EC"
-          iconFg="#2FAE82"
+          iconBg="#E6EEFC"
+          iconFg="#4E7FE0"
           label="本月結餘"
           value={`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`}
           valueColor={balance >= 0 ? "#4A3B7C" : NEGATIVE}

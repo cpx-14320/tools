@@ -113,14 +113,3 @@ export function inDateRange(date: string, range: DateRange | null): boolean {
   if (!range) return true;
   return date >= range.start && date <= range.end;
 }
-
-/** 某個月（YYYY-MM）的曆面範圍，是否跟篩選區間有重疊——薪資紀錄本身只有月份粒度，
- *  用「這個月的 1 號到月底」去跟篩選區間比對重疊，藉此也能套用到日／自訂這種更細的篩選。 */
-export function yearMonthOverlapsRange(yearMonth: string, range: DateRange | null): boolean {
-  if (!range) return true;
-  const [y, m] = yearMonth.split("-").map(Number);
-  const lastDay = new Date(y, m, 0).getDate();
-  const first = `${yearMonth}-01`;
-  const last = `${yearMonth}-${pad2(lastDay)}`;
-  return first <= range.end && last >= range.start;
-}

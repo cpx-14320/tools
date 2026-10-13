@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
-import type { TransactionDTO, TransactionInput } from "./transactions";
+import { breakdownNet, type BreakdownItem, type TransactionDTO, type TransactionInput } from "./transactions";
 
 interface TransactionDoc {
   _id: ObjectId;
@@ -12,6 +12,7 @@ interface TransactionDoc {
   // 只有固定收支規則確認存入時才會寫入（見 recurring-rules.server.ts 的 confirmOccurrence），
   // 一般的新增／編輯／CSV 匯入路徑都不會碰這個欄位。
   sourceRuleId?: ObjectId;
+  breakdown?: BreakdownItem[];
   createdAt: Date;
 }
 
@@ -23,7 +24,14 @@ function toDTO(doc: TransactionDoc): TransactionDTO {
     date: doc.date,
     note: doc.note,
     sourceRuleId: doc.sourceRuleId?.toHexString(),
+    breakdown: doc.breakdown,
   };
+}
+
+/** 有填明細的話，金額一律是明細算出來的淨額，不信任前端傳來的 amount——避免前端算錯
+ *  或被竄改之後，總額跟明細兜不起來。 */
+function resolveAmount(input: TransactionInput): number {
+  return input.breakdown && input.breakdown.length > 0 ? breakdownNet(input.breakdown) : input.amount;
 }
 
 function collection() {
@@ -47,9 +55,10 @@ export async function createTransaction(
     _id: new ObjectId(),
     userId,
     categoryId: new ObjectId(input.categoryId),
-    amount: input.amount,
+    amount: resolveAmount(input),
     date: input.date,
     note: input.note,
+    breakdown: input.breakdown,
     createdAt: new Date(),
   };
   await col.insertOne(doc);
@@ -61,7 +70,9 @@ export async function updateTransaction(userId: ObjectId, id: string, input: Tra
   const col = await collection();
   await col.updateOne(
     { _id: new ObjectId(id), userId },
-    { $set: { categoryId: new ObjectId(input.categoryId), amount: input.amount, date: input.date, note: input.note } },
+    {
+      $set: { categoryId: new ObjectId(input.categoryId), amount: resolveAmount(input), date: input.date, note: input.note, breakdown: input.breakdown },
+    },
   );
   return listTransactions(userId);
 }

@@ -7,8 +7,6 @@ const navItems = [
   { href: "/tools/expenses", label: "總覽", icon: "📊" },
   { href: "/tools/expenses/transactions", label: "消費紀錄", icon: "🧾" },
   { href: "/tools/expenses/categories", label: "消費分類", icon: "🏷️" },
-  { href: "/tools/expenses/salary", label: "薪資紀錄", icon: "💰" },
-  { href: "/tools/expenses/salary/types", label: "薪資明細類型", icon: "📑" },
   { href: "/tools/expenses/members", label: "成員", icon: "👥" },
   { href: "/tools/expenses/goals", label: "存錢目標", icon: "🎯" },
   { href: "/tools/expenses/recurring", label: "固定收支", icon: "🔁" },

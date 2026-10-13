@@ -3,6 +3,17 @@
 import { dateFilterRange, inDateRange, previousDateFilter, type DateFilter, type DateRange } from "./date-filter";
 import { categoryById, topLevelCategories, topLevelCategoryId, type CategoryDTO } from "./categories";
 
+export type BreakdownKind = "加項" | "扣項";
+
+/** 一筆交易底下的子項明細——例如薪資轉帳這筆交易，可以附上「本薪／加班費／獎金」幾個
+ *  加項跟「勞保／健保／所得稅」幾個扣項，交易本身的金額就是這些明細算出來的淨額。
+ *  這是依附在交易上的輔助資訊，不是獨立的資料表，沒有自己的 CRUD／管理頁。 */
+export interface BreakdownItem {
+  label: string;
+  kind: BreakdownKind;
+  amount: number;
+}
+
 export interface TransactionDTO {
   id: string;
   categoryId: string;
@@ -12,6 +23,9 @@ export interface TransactionDTO {
   /** 由固定收支規則（lib/expenses/recurring-rules.ts）確認存入產生時才有值；一般手動
    *  新增／CSV 匯入的交易不會有這個欄位，不能透過一般的新增／編輯 API 設定它。 */
   sourceRuleId?: string;
+  /** 有填的話，amount 一律是 breakdownNet(breakdown) 算出來的值，不能獨立編輯——
+   *  見 transactions.server.ts 的 createTransaction／updateTransaction。 */
+  breakdown?: BreakdownItem[];
 }
 
 export interface TransactionInput {
@@ -19,6 +33,12 @@ export interface TransactionInput {
   amount: number;
   date: string;
   note?: string;
+  breakdown?: BreakdownItem[];
+}
+
+/** 明細淨額：加項加總減去扣項加總，交易金額（amount）就是這個數字。 */
+export function breakdownNet(breakdown: BreakdownItem[]): number {
+  return breakdown.reduce((sum, item) => sum + (item.kind === "扣項" ? -item.amount : item.amount), 0);
 }
 
 export function transactionsInDateRange(transactions: TransactionDTO[], range: DateRange | null): TransactionDTO[] {
@@ -31,25 +51,18 @@ export interface RangeTotals {
   balance: number;
   expenseTx: TransactionDTO[];
   incomeTx: TransactionDTO[];
-  salaryIncome: number;
-  extraIncome: number;
 }
 
-/** 指定區間的總收入／總支出／結餘。收入＝薪資淨額（由呼叫端算好傳進來）＋收入類分類的
- *  Transaction（股息、接案、紅包…）；支出＝支出類分類的 Transaction。 */
-export function totalsForRange(
-  transactions: TransactionDTO[],
-  categories: CategoryDTO[],
-  range: DateRange | null,
-  salaryIncome: number,
-): RangeTotals {
+/** 指定區間的總收入／總支出／結餘。收入＝支出類以外（即「收入」分類，含薪資）的
+ *  Transaction 加總；薪資不再是另外算好傳進來的特例，就是一筆分類為「薪資」的一般收入
+ *  交易，想看明細（本薪／加班費／勞保／所得稅…）就看那筆交易自己的 breakdown。 */
+export function totalsForRange(transactions: TransactionDTO[], categories: CategoryDTO[], range: DateRange | null): RangeTotals {
   const rangeTx = transactionsInDateRange(transactions, range);
   const expenseTx = rangeTx.filter((t) => categoryById(categories, t.categoryId)?.kind !== "收入");
   const incomeTx = rangeTx.filter((t) => categoryById(categories, t.categoryId)?.kind === "收入");
   const totalExpense = expenseTx.reduce((sum, t) => sum + t.amount, 0);
-  const extraIncome = incomeTx.reduce((sum, t) => sum + t.amount, 0);
-  const totalIncome = salaryIncome + extraIncome;
-  return { totalIncome, totalExpense, balance: totalIncome - totalExpense, expenseTx, incomeTx, salaryIncome, extraIncome };
+  const totalIncome = incomeTx.reduce((sum, t) => sum + t.amount, 0);
+  return { totalIncome, totalExpense, balance: totalIncome - totalExpense, expenseTx, incomeTx };
 }
 
 export interface MonthDelta {
@@ -90,15 +103,14 @@ export function categoryBreakdown(expenseTx: TransactionDTO[], categories: Categ
     .map((row) => ({ ...row, pct: Math.round((row.amount / total) * 100) }));
 }
 
-/** 收入來源佔比：薪資（淨額算一筆「薪資」）＋各收入分類，想看整體收入怎麼來的用。 */
-export function incomeBreakdown(incomeTx: TransactionDTO[], categories: CategoryDTO[], salaryIncome: number) {
+/** 收入來源佔比：各收入分類（薪資也只是其中一個分類）加總，想看整體收入怎麼來的用。 */
+export function incomeBreakdown(incomeTx: TransactionDTO[], categories: CategoryDTO[]) {
   const byCategory = new Map<string, number>();
   for (const t of incomeTx) {
     const topId = topLevelCategoryId(categories, t.categoryId);
     byCategory.set(topId, (byCategory.get(topId) ?? 0) + t.amount);
   }
   const rows: { id: string; name: string; icon: string; amount: number }[] = [];
-  if (salaryIncome > 0) rows.push({ id: "salary", name: "薪資", icon: "💰", amount: salaryIncome });
   for (const c of topLevelCategories(categories, "收入")) {
     const amount = byCategory.get(c.id) ?? 0;
     if (amount > 0) rows.push({ id: c.id, name: c.name, icon: c.icon, amount });

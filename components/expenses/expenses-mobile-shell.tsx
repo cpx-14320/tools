@@ -10,10 +10,8 @@ import { scrollContainerToTop } from "@/lib/scroll-within";
 
 const titles: Record<string, string> = {
   "/tools/expenses": "總覽",
-  "/tools/expenses/transactions": "消費紀錄",
+  "/tools/expenses/transactions": "紀錄",
   "/tools/expenses/categories": "消費分類",
-  "/tools/expenses/salary": "薪資紀錄",
-  "/tools/expenses/salary/types": "薪資明細類型",
   "/tools/expenses/members": "成員",
   "/tools/expenses/reports": "報表",
   "/tools/expenses/more": "更多",

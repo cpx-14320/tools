@@ -5,9 +5,15 @@ import { Button, SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass } from "./modal";
 import { DateField } from "./date-field";
 import { topLevelCategories, subCategoriesOf, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
+import { breakdownNet, type BreakdownItem, type BreakdownKind } from "@/lib/expenses/transactions";
+import { formatCurrency } from "@/lib/format";
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function blankBreakdownItem(): BreakdownItem {
+  return { label: "", kind: "加項", amount: 0 };
 }
 
 export interface TransactionModalDraft {
@@ -15,6 +21,7 @@ export interface TransactionModalDraft {
   amount: number;
   date: string;
   note?: string;
+  breakdown?: BreakdownItem[];
 }
 
 export function TransactionModal({
@@ -40,9 +47,16 @@ export function TransactionModal({
   const [amount, setAmount] = useState(initial ? String(initial.amount) : "");
   const [date, setDate] = useState(initial?.date ?? todayISO());
   const [note, setNote] = useState(initial?.note ?? "");
+  // 明細是依附在這筆交易上的輔助資訊（見 lib/expenses/transactions.ts 開頭的說明），平常
+  // 大多數交易都不需要，預設收合成一般的單一金額輸入；只有使用者主動展開才出現逐項列表，
+  // 這時金額欄位改成唯讀顯示明細加總，避免兩邊數字兜不起來。
+  const [breakdown, setBreakdown] = useState<BreakdownItem[]>(initial?.breakdown ?? []);
+  const hasBreakdown = breakdown.length > 0;
 
-  const amountNum = Number(amount);
-  const canSave = categoryId && Number.isFinite(amountNum) && amountNum > 0 && date;
+  const breakdownTotal = hasBreakdown ? breakdownNet(breakdown) : 0;
+  const amountNum = hasBreakdown ? breakdownTotal : Number(amount);
+  const breakdownValid = !hasBreakdown || breakdown.every((b) => b.label.trim() && Number.isFinite(b.amount) && b.amount > 0);
+  const canSave = categoryId && Number.isFinite(amountNum) && amountNum > 0 && date && breakdownValid;
 
   const options: { id: string; label: string }[] = [];
   for (const parent of topLevelCategories(categories, kind)) {
@@ -50,6 +64,14 @@ export function TransactionModal({
     for (const sub of subCategoriesOf(categories, parent.id)) {
       options.push({ id: sub.id, label: `　↳ ${sub.icon} ${sub.name}` });
     }
+  }
+
+  function updateBreakdownItem(index: number, patch: Partial<BreakdownItem>) {
+    setBreakdown((list) => list.map((it, i) => (i === index ? { ...it, ...patch } : it)));
+  }
+
+  function removeBreakdownItem(index: number) {
+    setBreakdown((list) => list.filter((_, i) => i !== index));
   }
 
   return (
@@ -72,7 +94,15 @@ export function TransactionModal({
             </Button>
             <Button
               disabled={!canSave}
-              onClick={() => onSave({ categoryId, amount: amountNum, date, note: note.trim() || undefined })}
+              onClick={() =>
+                onSave({
+                  categoryId,
+                  amount: amountNum,
+                  date,
+                  note: note.trim() || undefined,
+                  breakdown: hasBreakdown ? breakdown : undefined,
+                })
+              }
             >
               儲存
             </Button>
@@ -106,15 +136,82 @@ export function TransactionModal({
           ))}
         </select>
       </Field>
-      <Field label="金額">
-        <input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} className={fieldInputClass} />
-      </Field>
+
+      {hasBreakdown ? (
+        <Field label="金額（由下方明細加總算出）">
+          <div className={`${fieldInputClass} font-semibold`}>{formatCurrency(breakdownTotal)}</div>
+        </Field>
+      ) : (
+        <Field label="金額">
+          <input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} className={fieldInputClass} />
+        </Field>
+      )}
+
       <Field label="日期">
         <DateField value={date} onChange={setDate} />
       </Field>
       <Field label="備註（可不填）">
         <input value={note} onChange={(e) => setNote(e.target.value)} className={fieldInputClass} />
       </Field>
+
+      {hasBreakdown ? (
+        <div className="flex flex-col gap-2.5">
+          <span className="text-xs font-medium text-[#9C94C4]">明細（例如薪資的本薪／加班費／勞保／所得稅）</span>
+          {breakdown.map((item, i) => (
+            <div key={i} className="flex flex-col gap-2 rounded-2xl border border-[#ECE4FA] p-3">
+              <div className="flex items-center gap-2">
+                <input
+                  value={item.label}
+                  onChange={(e) => updateBreakdownItem(i, { label: e.target.value })}
+                  placeholder="例如「本薪」「勞保費」"
+                  className={`${fieldInputClass} flex-1`}
+                />
+                <button type="button" onClick={() => removeBreakdownItem(i)} className="shrink-0 text-xs font-medium text-[#D1517E]">
+                  刪除
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <SegmentedControl
+                  value={item.kind}
+                  onChange={(v: BreakdownKind) => updateBreakdownItem(i, { kind: v })}
+                  options={[
+                    { value: "加項", label: "加項" },
+                    { value: "扣項", label: "扣項" },
+                  ]}
+                />
+                <input
+                  type="number"
+                  min={1}
+                  value={item.amount || ""}
+                  onChange={(e) => updateBreakdownItem(i, { amount: Number(e.target.value) })}
+                  placeholder="金額"
+                  className={`${fieldInputClass} flex-1`}
+                />
+              </div>
+            </div>
+          ))}
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setBreakdown((list) => [...list, blankBreakdownItem()])}
+              className="rounded-xl border border-dashed border-[#C7BFE6] px-4 py-2 text-xs font-medium text-[#6F5FD6]"
+            >
+              ＋ 新增明細項目
+            </button>
+            <button type="button" onClick={() => setBreakdown([])} className="text-xs font-medium text-[#9C94C4] hover:text-[#D1517E]">
+              移除全部明細
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setBreakdown([blankBreakdownItem()])}
+          className="self-start text-xs font-medium text-[#6F5FD6] hover:underline"
+        >
+          ＋ 新增明細（這筆錢想拆成好幾個加項/扣項時再用）
+        </button>
+      )}
     </Modal>
   );
 }
