@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { requireTool } from "@/lib/auth";
-import type { AccountKind } from "@/lib/expenses/accounts";
 import { listAccounts, createAccount, updateAccount, deleteAccount } from "@/lib/expenses/accounts.server";
 
-function parseInput(body: { name?: unknown; icon?: unknown; kind?: unknown; balance?: unknown } | null) {
+function parseInput(body: { name?: unknown; accountTypeId?: unknown; openingBalance?: unknown } | null) {
   const name = typeof body?.name === "string" ? body.name.trim() : "";
-  const icon = typeof body?.icon === "string" ? body.icon.trim() : "";
-  const kind = body?.kind === "asset" || body?.kind === "liability" ? (body.kind as AccountKind) : null;
-  const balance = Number(body?.balance);
-  if (!name || !icon || !kind || !Number.isFinite(balance) || balance < 0) return null;
-  return { name, icon, kind, balance };
+  const accountTypeId = typeof body?.accountTypeId === "string" ? body.accountTypeId : "";
+  const openingBalance = Number(body?.openingBalance);
+  if (!name || !accountTypeId || !Number.isFinite(openingBalance) || openingBalance < 0) return null;
+  return { name, accountTypeId, openingBalance };
 }
 
 export async function GET() {

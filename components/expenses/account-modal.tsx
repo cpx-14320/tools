@@ -1,37 +1,40 @@
 "use client";
 
 import { useState } from "react";
-import { Button, SegmentedControl } from "./button";
+import { Button } from "./button";
 import { Modal, Field, fieldInputClass } from "./modal";
-import type { AccountKind } from "@/lib/expenses/accounts";
+import { accountTypesByKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
 
 export interface AccountModalDraft {
   name: string;
-  icon: string;
-  kind: AccountKind;
-  balance: number;
+  accountTypeId: string;
+  openingBalance: number;
 }
 
 export function AccountModal({
   open,
+  accountTypes,
   initial,
   onClose,
   onSave,
   onDelete,
 }: {
   open: boolean;
+  accountTypes: AccountTypeDTO[];
   initial?: AccountModalDraft;
   onClose: () => void;
   onSave: (draft: AccountModalDraft) => void;
   onDelete?: () => void;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
-  const [icon, setIcon] = useState(initial?.icon ?? "💰");
-  const [kind, setKind] = useState<AccountKind>(initial?.kind ?? "asset");
-  const [balance, setBalance] = useState(initial ? String(initial.balance) : "");
+  const [accountTypeId, setAccountTypeId] = useState(initial?.accountTypeId ?? "");
+  const [openingBalance, setOpeningBalance] = useState(initial ? String(initial.openingBalance) : "");
 
-  const balanceNum = Number(balance);
-  const canSave = name.trim() && icon.trim() && Number.isFinite(balanceNum) && balanceNum >= 0;
+  const balanceNum = Number(openingBalance);
+  const canSave = name.trim() && accountTypeId && Number.isFinite(balanceNum) && balanceNum >= 0;
+  const assetTypes = accountTypesByKind(accountTypes, "asset");
+  const liabilityTypes = accountTypesByKind(accountTypes, "liability");
+  const selectedKind = accountTypes.find((t) => t.id === accountTypeId)?.kind;
 
   return (
     <Modal
@@ -51,32 +54,44 @@ export function AccountModal({
             <Button variant="ghost" onClick={onClose}>
               取消
             </Button>
-            <Button disabled={!canSave} onClick={() => onSave({ name: name.trim(), icon: icon.trim(), kind, balance: balanceNum })}>
+            <Button disabled={!canSave} onClick={() => onSave({ name: name.trim(), accountTypeId, openingBalance: balanceNum })}>
               儲存
             </Button>
           </div>
         </>
       }
     >
-      <Field label="類型">
-        <SegmentedControl
-          className="self-start"
-          value={kind}
-          onChange={setKind}
-          options={[
-            { value: "asset", label: "資產" },
-            { value: "liability", label: "負債" },
-          ]}
-        />
+      <Field label="帳戶類型">
+        <select value={accountTypeId} onChange={(e) => setAccountTypeId(e.target.value)} className={fieldInputClass}>
+          <option value="" disabled>
+            選擇帳戶類型
+          </option>
+          {assetTypes.length > 0 && (
+            <optgroup label="資產">
+              {assetTypes.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.icon} {t.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {liabilityTypes.length > 0 && (
+            <optgroup label="負債">
+              {liabilityTypes.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.icon} {t.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+        </select>
       </Field>
+      {accountTypes.length === 0 && <p className="text-xs text-[#D1517E]">還沒有帳戶類型，請先到「帳戶類型」頁面新增。</p>}
       <Field label="名稱">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如「現金錢包」「信用卡」" className={fieldInputClass} />
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如「主要活存帳戶」「緊急備用金」" className={fieldInputClass} />
       </Field>
-      <Field label="圖示（輸入一個表情符號）">
-        <input value={icon} onChange={(e) => setIcon(e.target.value)} className={fieldInputClass} />
-      </Field>
-      <Field label={kind === "liability" ? "目前欠款（輸入正數）" : "目前餘額"}>
-        <input type="number" min={0} value={balance} onChange={(e) => setBalance(e.target.value)} className={fieldInputClass} />
+      <Field label={selectedKind === "liability" ? "期初欠款（輸入正數）" : "期初餘額"}>
+        <input type="number" min={0} value={openingBalance} onChange={(e) => setOpeningBalance(e.target.value)} className={fieldInputClass} />
       </Field>
     </Modal>
   );

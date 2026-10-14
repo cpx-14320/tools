@@ -8,7 +8,8 @@ const items = [
   { href: "/tools/expenses/reports", label: "報表", icon: "📈", desc: "趨勢圖表" },
   { href: "/tools/expenses/goals", label: "存錢目標", icon: "🎯", desc: "設定目標、追蹤進度" },
   { href: "/tools/expenses/recurring", label: "固定收支", icon: "🔁", desc: "電話費、房租這種週期收支" },
-  { href: "/tools/expenses/assets", label: "資產總表", icon: "🏦", desc: "手動維護帳戶餘額，看淨資產" },
+  { href: "/tools/expenses/assets", label: "資產總表", icon: "🏦", desc: "帳戶餘額依交易即時算出，看淨資產" },
+  { href: "/tools/expenses/account-types", label: "帳戶類型", icon: "🗂️", desc: "自訂資產/負債的帳戶類型" },
   { href: "/tools/expenses/more/export", label: "匯出紀錄", icon: "📤", desc: "選區間匯出 CSV" },
   { href: "/tools/expenses/more/import", label: "匯入紀錄", icon: "📥", desc: "上傳 CSV 批次新增" },
 ];

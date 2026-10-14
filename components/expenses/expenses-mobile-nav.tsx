@@ -5,7 +5,9 @@ import { usePathname } from "next/navigation";
 
 const tabs = [
   { href: "/tools/expenses", label: "總覽", icon: "🏠" },
+  { href: "/tools/expenses/reports", label: "報表", icon: "📈" },
   { href: "/tools/expenses/transactions", label: "紀錄", icon: "🧾" },
+  { href: "/tools/expenses/assets", label: "資產", icon: "🏦" },
   { href: "/tools/expenses/more", label: "更多", icon: "⋯" },
 ];
 
@@ -25,16 +27,13 @@ export function ExpensesMobileNav() {
           const active =
             tab.href === "/tools/expenses"
               ? pathname === tab.href
-              : tab.href === "/tools/expenses/more"
-                ? [
-                    "/tools/expenses/categories",
-                    "/tools/expenses/goals",
-                    "/tools/expenses/recurring",
-                    "/tools/expenses/assets",
-                    "/tools/expenses/reports",
-                    "/tools/expenses/more",
-                  ].some((p) => pathname.startsWith(p))
-                : pathname.startsWith(tab.href);
+              : tab.href === "/tools/expenses/assets"
+                ? ["/tools/expenses/assets", "/tools/expenses/account-types"].some((p) => pathname.startsWith(p))
+                : tab.href === "/tools/expenses/more"
+                  ? ["/tools/expenses/categories", "/tools/expenses/goals", "/tools/expenses/recurring", "/tools/expenses/more"].some((p) =>
+                      pathname.startsWith(p),
+                    )
+                  : pathname.startsWith(tab.href);
           return (
             <Link key={tab.href} href={tab.href} className="flex flex-1 flex-col items-center gap-0.5 py-1 text-[11px]">
               <span className={`text-2xl leading-none ${active ? "" : "opacity-50"}`} aria-hidden>

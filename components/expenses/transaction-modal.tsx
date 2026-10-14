@@ -6,6 +6,8 @@ import { Modal, Field, fieldInputClass } from "./modal";
 import { DateField } from "./date-field";
 import { topLevelCategories, subCategoriesOf, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 import { breakdownNet, type BreakdownItem, type BreakdownKind } from "@/lib/expenses/transactions";
+import { accountsByKind, type AccountDTO } from "@/lib/expenses/accounts";
+import { accountTypeById, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { formatCurrency } from "@/lib/format";
 
 function todayISO(): string {
@@ -22,11 +24,14 @@ export interface TransactionModalDraft {
   date: string;
   note?: string;
   breakdown?: BreakdownItem[];
+  accountId?: string;
 }
 
 export function TransactionModal({
   open,
   categories,
+  accounts,
+  accountTypes,
   defaultKind,
   initial,
   onClose,
@@ -35,6 +40,8 @@ export function TransactionModal({
 }: {
   open: boolean;
   categories: CategoryDTO[];
+  accounts: AccountDTO[];
+  accountTypes: AccountTypeDTO[];
   defaultKind: CategoryKind;
   initial?: TransactionModalDraft;
   onClose: () => void;
@@ -47,6 +54,7 @@ export function TransactionModal({
   const [amount, setAmount] = useState(initial ? String(initial.amount) : "");
   const [date, setDate] = useState(initial?.date ?? todayISO());
   const [note, setNote] = useState(initial?.note ?? "");
+  const [accountId, setAccountId] = useState(initial?.accountId ?? "");
   // 明細是依附在這筆交易上的輔助資訊（見 lib/expenses/transactions.ts 開頭的說明），平常
   // 大多數交易都不需要，預設收合成一般的單一金額輸入；只有使用者主動展開才出現逐項列表，
   // 這時金額欄位改成唯讀顯示明細加總，避免兩邊數字兜不起來。
@@ -65,6 +73,10 @@ export function TransactionModal({
       options.push({ id: sub.id, label: `　↳ ${sub.icon} ${sub.name}` });
     }
   }
+
+  const assetAccounts = accountsByKind(accounts, accountTypes, "asset");
+  const liabilityAccounts = accountsByKind(accounts, accountTypes, "liability");
+  const accountLabel = (a: AccountDTO) => `${accountTypeById(accountTypes, a.accountTypeId)?.icon ?? ""} ${a.name}`;
 
   function updateBreakdownItem(index: number, patch: Partial<BreakdownItem>) {
     setBreakdown((list) => list.map((it, i) => (i === index ? { ...it, ...patch } : it)));
@@ -101,6 +113,7 @@ export function TransactionModal({
                   date,
                   note: note.trim() || undefined,
                   breakdown: hasBreakdown ? breakdown : undefined,
+                  accountId: accountId || undefined,
                 })
               }
             >
@@ -152,6 +165,29 @@ export function TransactionModal({
       </Field>
       <Field label="備註（可不填）">
         <input value={note} onChange={(e) => setNote(e.target.value)} className={fieldInputClass} />
+      </Field>
+      <Field label="帳戶（可不填）">
+        <select value={accountId} onChange={(e) => setAccountId(e.target.value)} className={fieldInputClass}>
+          <option value="">不指定帳戶</option>
+          {assetAccounts.length > 0 && (
+            <optgroup label="資產">
+              {assetAccounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {accountLabel(a)}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {liabilityAccounts.length > 0 && (
+            <optgroup label="負債">
+              {liabilityAccounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {accountLabel(a)}
+                </option>
+              ))}
+            </optgroup>
+          )}
+        </select>
       </Field>
 
       {hasBreakdown ? (

@@ -54,7 +54,8 @@ async function ensureIndexes(db: Db): Promise<void> {
     ),
     db.collection("expenses.goals").createIndex({ userId: 1, createdAt: 1 }),
     db.collection("expenses.recurringRules").createIndex({ userId: 1, active: 1, createdAt: 1 }),
-    db.collection("expenses.accounts").createIndex({ userId: 1, kind: 1, order: 1 }),
+    db.collection("expenses.accounts").createIndex({ userId: 1, createdAt: 1 }),
+    db.collection("expenses.accountTypes").createIndex({ userId: 1, kind: 1, order: 1 }),
   ]);
 
   // toolsRegistry 是目前工具清單的真實來源，用 upsert 寫入 lib/tools-registry.ts 裡

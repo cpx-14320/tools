@@ -1,20 +1,18 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
-import type { AccountDTO, AccountKind } from "./accounts";
+import type { AccountDTO } from "./accounts";
 
 interface AccountDoc {
   _id: ObjectId;
   userId: ObjectId;
   name: string;
-  icon: string;
-  kind: AccountKind;
-  balance: number;
-  order: number;
+  accountTypeId: ObjectId;
+  openingBalance: number;
   createdAt: Date;
 }
 
 function toDTO(doc: AccountDoc): AccountDTO {
-  return { id: doc._id.toHexString(), name: doc.name, icon: doc.icon, kind: doc.kind, balance: doc.balance };
+  return { id: doc._id.toHexString(), name: doc.name, accountTypeId: doc.accountTypeId.toHexString(), openingBalance: doc.openingBalance };
 }
 
 function collection() {
@@ -23,21 +21,26 @@ function collection() {
 
 export async function listAccounts(userId: ObjectId): Promise<AccountDTO[]> {
   const col = await collection();
-  const docs = await col.find({ userId }).sort({ kind: 1, order: 1 }).toArray();
+  const docs = await col.find({ userId }).sort({ createdAt: 1 }).toArray();
   return docs.map(toDTO);
 }
 
 export interface AccountInput {
   name: string;
-  icon: string;
-  kind: AccountKind;
-  balance: number;
+  accountTypeId: string;
+  openingBalance: number;
 }
 
 export async function createAccount(userId: ObjectId, input: AccountInput): Promise<{ account: AccountDTO; accounts: AccountDTO[] }> {
   const col = await collection();
-  const order = await col.countDocuments({ userId, kind: input.kind });
-  const doc: AccountDoc = { _id: new ObjectId(), userId, name: input.name, icon: input.icon, kind: input.kind, balance: input.balance, order, createdAt: new Date() };
+  const doc: AccountDoc = {
+    _id: new ObjectId(),
+    userId,
+    name: input.name,
+    accountTypeId: new ObjectId(input.accountTypeId),
+    openingBalance: input.openingBalance,
+    createdAt: new Date(),
+  };
   await col.insertOne(doc);
   const accounts = await listAccounts(userId);
   return { account: toDTO(doc), accounts };
@@ -47,7 +50,7 @@ export async function updateAccount(userId: ObjectId, id: string, input: Account
   const col = await collection();
   await col.updateOne(
     { _id: new ObjectId(id), userId },
-    { $set: { name: input.name, icon: input.icon, kind: input.kind, balance: input.balance } },
+    { $set: { name: input.name, accountTypeId: new ObjectId(input.accountTypeId), openingBalance: input.openingBalance } },
   );
   return listAccounts(userId);
 }

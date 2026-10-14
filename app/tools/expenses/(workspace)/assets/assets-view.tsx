@@ -1,31 +1,50 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { PageHeader } from "@/components/expenses/page-header";
-import { Button } from "@/components/expenses/button";
+import { Button, ButtonLink } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { text } from "@/components/expenses/theme";
 import { AccountModal, type AccountModalDraft } from "@/components/expenses/account-modal";
-import { accountsByKind, totalByKind, netWorth, type AccountDTO } from "@/lib/expenses/accounts";
+import { accountsByKind, accountBalance, totalByKind, netWorth, type AccountDTO } from "@/lib/expenses/accounts";
+import { accountTypeById, type AccountTypeDTO } from "@/lib/expenses/account-types";
+import { type CategoryDTO } from "@/lib/expenses/categories";
+import { type TransactionDTO } from "@/lib/expenses/transactions";
 import { formatCurrency } from "@/lib/format";
-
-type ModalState = { mode: "create" } | { mode: "edit"; account: AccountDTO };
 
 export function AssetsView() {
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
+  const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
+  const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
+  const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [ready, setReady] = useState(false);
-  const [modal, setModal] = useState<ModalState | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/expenses/accounts")
-      .then((res) => res.json())
-      .then((data: { accounts?: AccountDTO[] }) => {
-        if (cancelled) return;
-        setAccounts(data.accounts ?? []);
-        setReady(true);
-      })
+    Promise.all([
+      fetch("/api/expenses/accounts").then((res) => res.json()),
+      fetch("/api/expenses/account-types").then((res) => res.json()),
+      fetch("/api/expenses/transactions").then((res) => res.json()),
+      fetch("/api/expenses/categories").then((res) => res.json()),
+    ])
+      .then(
+        ([accountsData, accountTypesData, txData, categoriesData]: [
+          { accounts?: AccountDTO[] },
+          { accountTypes?: AccountTypeDTO[] },
+          { transactions?: TransactionDTO[] },
+          { categories?: CategoryDTO[] },
+        ]) => {
+          if (cancelled) return;
+          setAccounts(accountsData.accounts ?? []);
+          setAccountTypes(accountTypesData.accountTypes ?? []);
+          setTransactions(txData.transactions ?? []);
+          setCategories(categoriesData.categories ?? []);
+          setReady(true);
+        },
+      )
       .catch(() => {
         if (!cancelled) setReady(true);
       });
@@ -34,46 +53,38 @@ export function AssetsView() {
     };
   }, []);
 
-  async function handleSave(draft: AccountModalDraft) {
-    if (!modal) return;
-    const method = modal.mode === "edit" ? "PUT" : "POST";
-    const body = modal.mode === "edit" ? { id: modal.account.id, ...draft } : draft;
+  async function handleCreate(draft: AccountModalDraft) {
     const data: { accounts?: AccountDTO[] } = await fetch("/api/expenses/accounts", {
-      method,
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(draft),
     })
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.accounts) setAccounts(data.accounts);
-    setModal(null);
+    setCreateOpen(false);
   }
 
-  async function handleDelete() {
-    if (modal?.mode !== "edit") return;
-    const data: { accounts?: AccountDTO[] } = await fetch(`/api/expenses/accounts?id=${modal.account.id}`, { method: "DELETE" })
-      .then((res) => res.json())
-      .catch(() => ({}));
-    if (data.accounts) setAccounts(data.accounts);
-    setModal(null);
-  }
-
-  const assets = accountsByKind(accounts, "asset");
-  const liabilities = accountsByKind(accounts, "liability");
-  const net = netWorth(accounts);
+  const assets = accountsByKind(accounts, accountTypes, "asset");
+  const liabilities = accountsByKind(accounts, accountTypes, "liability");
+  const net = netWorth(accounts, accountTypes, transactions, categories);
 
   return (
     <div>
-      <PageHeader title="資產總表" description="帳戶餘額自己輸入維護，跟消費紀錄的收支流水帳是分開的兩件事" actions={<Button onClick={() => setModal({ mode: "create" })}>＋ 新增帳戶</Button>} />
-
-      <AccountModal
-        key={modal ? JSON.stringify(modal) : "closed"}
-        open={modal !== null}
-        initial={modal?.mode === "edit" ? modal.account : undefined}
-        onClose={() => setModal(null)}
-        onSave={handleSave}
-        onDelete={modal?.mode === "edit" ? handleDelete : undefined}
+      <PageHeader
+        title="資產總表"
+        description="帳戶餘額依期初餘額加總掛在帳戶上的交易即時算出，跟消費紀錄連動；點帳戶可以看明細"
+        actions={
+          <div className="flex items-center gap-2">
+            <ButtonLink href="/tools/expenses/account-types" variant="secondary">
+              帳戶類型
+            </ButtonLink>
+            <Button onClick={() => setCreateOpen(true)}>＋ 新增帳戶</Button>
+          </div>
+        }
       />
+
+      <AccountModal open={createOpen} accountTypes={accountTypes} onClose={() => setCreateOpen(false)} onSave={handleCreate} />
 
       {!ready ? (
         <p className={text.faint}>載入中…</p>
@@ -86,7 +97,8 @@ export function AssetsView() {
               <p className={text.muted}>淨資產</p>
               <p className={`mt-1 text-2xl font-bold tabular-nums ${net < 0 ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>{formatCurrency(net)}</p>
               <p className={`mt-1 ${text.muted}`}>
-                資產 {formatCurrency(totalByKind(accounts, "asset"))} － 負債 {formatCurrency(totalByKind(accounts, "liability"))}
+                資產 {formatCurrency(totalByKind(accounts, accountTypes, transactions, categories, "asset"))} － 負債{" "}
+                {formatCurrency(totalByKind(accounts, accountTypes, transactions, categories, "liability"))}
               </p>
             </CardBody>
           </Card>
@@ -96,16 +108,16 @@ export function AssetsView() {
               <p className={`mb-2 px-1 ${text.sectionHeading}`}>資產</p>
               <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
                 {assets.map((a) => (
-                  <button
-                    key={a.id}
-                    type="button"
-                    onClick={() => setModal({ mode: "edit", account: a })}
-                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
-                  >
-                    <IconAvatar icon={a.icon} size="sm" />
-                    <span className={`min-w-0 flex-1 ${text.body}`}>{a.name}</span>
-                    <span className="shrink-0 tabular-nums font-semibold text-[#4A3B7C]">{formatCurrency(a.balance)}</span>
-                  </button>
+                  <Link key={a.id} href={`/tools/expenses/assets/${a.id}`} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
+                    <IconAvatar icon={accountTypeById(accountTypes, a.accountTypeId)?.icon ?? "❓"} size="sm" />
+                    <span className="min-w-0 flex-1">
+                      <span className={`block ${text.body}`}>{a.name}</span>
+                      <span className={`block ${text.muted}`}>{accountTypeById(accountTypes, a.accountTypeId)?.name ?? "（未知類型）"}</span>
+                    </span>
+                    <span className="shrink-0 tabular-nums font-semibold text-[#4A3B7C]">
+                      {formatCurrency(accountBalance(a, accountTypes, transactions, categories))}
+                    </span>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -116,16 +128,16 @@ export function AssetsView() {
               <p className={`mb-2 px-1 ${text.sectionHeading}`}>負債</p>
               <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
                 {liabilities.map((a) => (
-                  <button
-                    key={a.id}
-                    type="button"
-                    onClick={() => setModal({ mode: "edit", account: a })}
-                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
-                  >
-                    <IconAvatar icon={a.icon} size="sm" />
-                    <span className={`min-w-0 flex-1 ${text.body}`}>{a.name}</span>
-                    <span className="shrink-0 tabular-nums font-semibold text-[#D1517E]">－{formatCurrency(a.balance)}</span>
-                  </button>
+                  <Link key={a.id} href={`/tools/expenses/assets/${a.id}`} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
+                    <IconAvatar icon={accountTypeById(accountTypes, a.accountTypeId)?.icon ?? "❓"} size="sm" />
+                    <span className="min-w-0 flex-1">
+                      <span className={`block ${text.body}`}>{a.name}</span>
+                      <span className={`block ${text.muted}`}>{accountTypeById(accountTypes, a.accountTypeId)?.name ?? "（未知類型）"}</span>
+                    </span>
+                    <span className="shrink-0 tabular-nums font-semibold text-[#D1517E]">
+                      －{formatCurrency(accountBalance(a, accountTypes, transactions, categories))}
+                    </span>
+                  </Link>
                 ))}
               </div>
             </div>

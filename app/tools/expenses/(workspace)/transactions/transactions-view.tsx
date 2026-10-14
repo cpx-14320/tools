@@ -17,6 +17,8 @@ import {
   rangeDelta,
   type TransactionDTO,
 } from "@/lib/expenses/transactions";
+import { type AccountDTO } from "@/lib/expenses/accounts";
+import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { formatCurrency } from "@/lib/format";
 
 function matchesQuery(t: TransactionDTO, categories: CategoryDTO[], query: string): boolean {
@@ -32,6 +34,8 @@ export function TransactionsView() {
   const { filter } = useDateFilter();
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
+  const [accounts, setAccounts] = useState<AccountDTO[]>([]);
+  const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const [ready, setReady] = useState(false);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<CategoryKind>("支出");
@@ -41,13 +45,27 @@ export function TransactionsView() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([fetch("/api/expenses/categories").then((res) => res.json()), fetch("/api/expenses/transactions").then((res) => res.json())])
-      .then(([categoriesData, txData]: [{ categories?: CategoryDTO[] }, { transactions?: TransactionDTO[] }]) => {
-        if (cancelled) return;
-        setCategories(categoriesData.categories ?? []);
-        setTransactions(txData.transactions ?? []);
-        setReady(true);
-      })
+    Promise.all([
+      fetch("/api/expenses/categories").then((res) => res.json()),
+      fetch("/api/expenses/transactions").then((res) => res.json()),
+      fetch("/api/expenses/accounts").then((res) => res.json()),
+      fetch("/api/expenses/account-types").then((res) => res.json()),
+    ])
+      .then(
+        ([categoriesData, txData, accountsData, accountTypesData]: [
+          { categories?: CategoryDTO[] },
+          { transactions?: TransactionDTO[] },
+          { accounts?: AccountDTO[] },
+          { accountTypes?: AccountTypeDTO[] },
+        ]) => {
+          if (cancelled) return;
+          setCategories(categoriesData.categories ?? []);
+          setTransactions(txData.transactions ?? []);
+          setAccounts(accountsData.accounts ?? []);
+          setAccountTypes(accountTypesData.accountTypes ?? []);
+          setReady(true);
+        },
+      )
       .catch(() => {
         if (!cancelled) setReady(true);
       });
@@ -122,6 +140,8 @@ export function TransactionsView() {
         key={modal ? JSON.stringify(modal) : "closed"}
         open={modal !== null}
         categories={categories}
+        accounts={accounts}
+        accountTypes={accountTypes}
         defaultKind={kind}
         initial={modal?.mode === "edit" ? modal.transaction : undefined}
         onClose={() => setModal(null)}

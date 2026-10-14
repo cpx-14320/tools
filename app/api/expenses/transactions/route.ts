@@ -27,16 +27,19 @@ function parseBreakdown(raw: unknown): BreakdownItem[] | undefined {
   return items.length > 0 ? items : undefined;
 }
 
-function parseInput(body: { categoryId?: unknown; amount?: unknown; date?: unknown; note?: unknown; breakdown?: unknown } | null) {
+function parseInput(
+  body: { categoryId?: unknown; amount?: unknown; date?: unknown; note?: unknown; breakdown?: unknown; accountId?: unknown } | null,
+) {
   const categoryId = typeof body?.categoryId === "string" ? body.categoryId : "";
   const date = typeof body?.date === "string" ? body.date : "";
   const note = typeof body?.note === "string" ? body.note.trim() || undefined : undefined;
   const breakdown = parseBreakdown(body?.breakdown);
+  const accountId = typeof body?.accountId === "string" && body.accountId ? body.accountId : undefined;
   // 有明細就用明細淨額當金額（跟 transactions.server.ts 的 resolveAmount 同一套規則），
   // 沒有明細才看前端送來的 amount 欄位。
   const amount = breakdown ? breakdownNet(breakdown) : Number(body?.amount);
   if (!categoryId || !Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
-  return { categoryId, amount, date, note, breakdown };
+  return { categoryId, amount, date, note, breakdown, accountId };
 }
 
 export async function POST(request: Request) {

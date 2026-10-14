@@ -1,11 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useRef } from "react";
 import type { ReactNode } from "react";
 import { ExpensesMobileNav } from "@/components/expenses/expenses-mobile-nav";
 import { LayoutToggle } from "@/components/layout-toggle";
-import { scrollContainerToTop } from "@/lib/scroll-within";
 
 const titles: Record<string, string> = {
   "/tools/expenses": "總覽",
@@ -33,7 +31,6 @@ const BORDER = "#ECE4FA";
 export function ExpensesMobileShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const title = titles[pathname] ?? "記帳本";
-  const mainRef = useRef<HTMLElement | null>(null);
 
   return (
     <div className="flex justify-center bg-[#EFE9FB] px-0 py-0 sm:px-4 sm:py-6">
@@ -61,21 +58,7 @@ export function ExpensesMobileShell({ children }: { children: ReactNode }) {
         </header>
 
         {/* 導覽列是 fixed（不佔版面流動空間），這裡要補 padding-bottom 留出同等高度，內容才不會被蓋住。 */}
-        <main ref={mainRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4 pb-24">
-          {children}
-        </main>
-
-        <button
-          type="button"
-          onClick={() => mainRef.current && scrollContainerToTop(mainRef.current)}
-          aria-label="回到頂部"
-          // 用 inline style 設定 bottom：這個專案目前 Tailwind 沒有產生 bottom-* 這類 inset 工具類別
-          // （right-6／pb-24 都有產生，唯獨 bottom-* 缺漏，原因不明），直接寫 style 比較保險。
-          style={{ bottom: "calc(env(safe-area-inset-bottom) + 5.5rem)", background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
-          className="fixed right-6 z-20 grid size-11 place-items-center rounded-full text-white shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)] transition-opacity hover:opacity-90"
-        >
-          ↑
-        </button>
+        <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4 pb-24">{children}</main>
 
         <ExpensesMobileNav />
       </div>

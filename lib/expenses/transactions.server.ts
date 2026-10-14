@@ -13,6 +13,7 @@ interface TransactionDoc {
   // 一般的新增／編輯／CSV 匯入路徑都不會碰這個欄位。
   sourceRuleId?: ObjectId;
   breakdown?: BreakdownItem[];
+  accountId?: ObjectId;
   createdAt: Date;
 }
 
@@ -25,6 +26,7 @@ function toDTO(doc: TransactionDoc): TransactionDTO {
     note: doc.note,
     sourceRuleId: doc.sourceRuleId?.toHexString(),
     breakdown: doc.breakdown,
+    accountId: doc.accountId?.toHexString(),
   };
 }
 
@@ -59,6 +61,7 @@ export async function createTransaction(
     date: input.date,
     note: input.note,
     breakdown: input.breakdown,
+    accountId: input.accountId ? new ObjectId(input.accountId) : undefined,
     createdAt: new Date(),
   };
   await col.insertOne(doc);
@@ -71,7 +74,14 @@ export async function updateTransaction(userId: ObjectId, id: string, input: Tra
   await col.updateOne(
     { _id: new ObjectId(id), userId },
     {
-      $set: { categoryId: new ObjectId(input.categoryId), amount: resolveAmount(input), date: input.date, note: input.note, breakdown: input.breakdown },
+      $set: {
+        categoryId: new ObjectId(input.categoryId),
+        amount: resolveAmount(input),
+        date: input.date,
+        note: input.note,
+        breakdown: input.breakdown,
+        accountId: input.accountId ? new ObjectId(input.accountId) : undefined,
+      },
     },
   );
   return listTransactions(userId);

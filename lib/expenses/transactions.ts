@@ -1,7 +1,7 @@
 // 純邏輯、不碰資料庫——CRUD 在同資料夾的 transactions.server.ts（見 categories.ts 開頭的說明）。
 
 import { dateFilterRange, inDateRange, previousDateFilter, type DateFilter, type DateRange } from "./date-filter";
-import { categoryById, topLevelCategories, topLevelCategoryId, type CategoryDTO } from "./categories";
+import { categoryById, topLevelCategories, topLevelCategoryId, type CategoryDTO, type CategoryKind } from "./categories";
 
 export type BreakdownKind = "加項" | "扣項";
 
@@ -26,6 +26,9 @@ export interface TransactionDTO {
   /** 有填的話，amount 一律是 breakdownNet(breakdown) 算出來的值，不能獨立編輯——
    *  見 transactions.server.ts 的 createTransaction／updateTransaction。 */
   breakdown?: BreakdownItem[];
+  /** 這筆錢從哪個帳戶出去／進來——可不填，純粹記錄用途。資產總表的帳戶餘額是即時
+   *  從掛了 accountId 的交易加總出來的，見 lib/expenses/accounts.ts 的 accountBalance()。 */
+  accountId?: string;
 }
 
 export interface TransactionInput {
@@ -34,6 +37,7 @@ export interface TransactionInput {
   date: string;
   note?: string;
   breakdown?: BreakdownItem[];
+  accountId?: string;
 }
 
 /** 明細淨額：加項加總減去扣項加總，交易金額（amount）就是這個數字。 */
@@ -169,4 +173,77 @@ export function subcategoryBreakdown(expenseTx: TransactionDTO[], categories: Ca
     .map((c) => ({ id: c.id, name: c.name, amount: byCategory.get(c.id) ?? 0 }))
     .filter((row) => row.amount > 0)
     .sort((a, b) => b.amount - a.amount);
+}
+
+export type TrendGranularity = "day" | "week" | "month" | "year";
+
+export interface TrendPoint {
+  label: string;
+  start: string;
+  end: string;
+  total: number;
+  byCategory: { categoryId: string; amount: number }[];
+}
+
+const trendPad2 = (n: number) => String(n).padStart(2, "0");
+
+function trendDateStr(d: Date): string {
+  return `${d.getFullYear()}-${trendPad2(d.getMonth() + 1)}-${trendPad2(d.getDate())}`;
+}
+
+/** 這一期（granularity 的第 offset 個週期，0＝今天所在的那一期）的日期範圍跟顯示標籤。
+ *  週固定從週一開始算，不是「今天往前推 7 天」的滾動視窗——這樣同一週內不管哪天打開
+ *  報表頁，看到的那一期範圍都一樣，不會因為今天是週幾而每天位移。 */
+function trendPeriodBounds(granularity: TrendGranularity, offset: number, today: Date): { start: string; end: string; label: string } {
+  if (granularity === "day") {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset);
+    return { start: trendDateStr(d), end: trendDateStr(d), label: `${d.getMonth() + 1}/${d.getDate()}` };
+  }
+  if (granularity === "week") {
+    const dow = today.getDay(); // 0=Sun..6=Sat
+    const mondayOffset = dow === 0 ? -6 : 1 - dow;
+    const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + mondayOffset + offset * 7);
+    const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+    return { start: trendDateStr(monday), end: trendDateStr(sunday), label: `${monday.getMonth() + 1}/${monday.getDate()}` };
+  }
+  if (granularity === "month") {
+    const start = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+    const end = new Date(today.getFullYear(), today.getMonth() + offset + 1, 0);
+    return { start: trendDateStr(start), end: trendDateStr(end), label: `${start.getMonth() + 1}月` };
+  }
+  const year = today.getFullYear() + offset;
+  return { start: `${year}-01-01`, end: `${year}-12-31`, label: `${year}` };
+}
+
+/** 近 periods 期（依 granularity 切）的收支趨勢，每一期再依頂層分類拆開——畫堆疊長條圖用。
+ *  只看指定 kind（支出或收入）的交易；「淨額」趨勢不是這個函式的事，呼叫端自己各呼叫一次
+ *  支出、一次收入，用兩邊的 total 相減即可，不需要這裡再多一種「淨額模式」。 */
+export function trendByPeriod(
+  transactions: TransactionDTO[],
+  categories: CategoryDTO[],
+  kind: CategoryKind,
+  granularity: TrendGranularity,
+  periods: number,
+): TrendPoint[] {
+  const today = new Date();
+  const points: TrendPoint[] = [];
+  for (let offset = -(periods - 1); offset <= 0; offset++) {
+    const { start, end, label } = trendPeriodBounds(granularity, offset, today);
+    const rangeTx = transactionsInDateRange(transactions, { start, end }).filter(
+      (t) => categoryById(categories, t.categoryId)?.kind === kind,
+    );
+    const byCategory = new Map<string, number>();
+    for (const t of rangeTx) {
+      const topId = topLevelCategoryId(categories, t.categoryId);
+      byCategory.set(topId, (byCategory.get(topId) ?? 0) + t.amount);
+    }
+    points.push({
+      label,
+      start,
+      end,
+      total: [...byCategory.values()].reduce((a, b) => a + b, 0),
+      byCategory: [...byCategory.entries()].map(([categoryId, amount]) => ({ categoryId, amount })),
+    });
+  }
+  return points;
 }

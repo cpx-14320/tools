@@ -89,3 +89,15 @@ export const categoryFillClass: Record<CategoryColor, string> = {
   e: "bg-cat-e-fg",
   f: "bg-cat-f-fg",
 };
+
+// SVG 圖表的 stroke/fill 需要真的顏色值，不能用 Tailwind class（class 只會在编译时被
+// 掃進 CSS，SVG 屬性拿到的是一個字串，套不上 class）——這份是 globals.css 那組
+// --cat-*-fg 的字面值複製一份，跟分類圖示徽章用的是同一組顏色，不是另外配的新色票。
+export const categoryColorHex: Record<CategoryColor, string> = {
+  a: "#D97A3D",
+  b: "#3B6FD1",
+  c: "#6C5CE0",
+  d: "#D1517E",
+  e: "#2FAE82",
+  f: "#C99A1E",
+};
