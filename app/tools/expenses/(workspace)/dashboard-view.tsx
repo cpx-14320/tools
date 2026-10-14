@@ -5,7 +5,7 @@ import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { Card, CardBody } from "@/components/expenses/card";
 import { text } from "@/components/expenses/theme";
-import { dateFilterRange, previousPeriodSuffix, defaultDateFilter } from "@/lib/expenses/date-filter";
+import { dateFilterRange, defaultDateFilter } from "@/lib/expenses/date-filter";
 import { categoryColorClass, categoryFillClass, type CategoryDTO } from "@/lib/expenses/categories";
 import {
   totalsForRange,
@@ -35,21 +35,13 @@ function DeltaText({ delta, pct, goodWhenUp }: { delta: number; pct: number | nu
   );
 }
 
-/** KPI 卡片：圖示在左（垂直置中）、文字在右（標籤在上、金額＋漲跌幅同一行在下），
- *  比垂直疊三層矮很多。圖示色塊沿用搭乘車路線色塊／即時到站狀態色那幾組現成配色
- *  （藍／橘／紅／綠），不是另外配的新顏色。 */
+/** KPI 卡片：標籤在上、金額＋漲跌幅同一行在下，不放圖示。 */
 function KpiCard({
-  icon,
-  iconBg,
-  iconFg,
   label,
   value,
   valueColor,
   delta,
 }: {
-  icon: string;
-  iconBg: string;
-  iconFg: string;
   label: string;
   value: string;
   valueColor: string;
@@ -58,10 +50,7 @@ function KpiCard({
   return (
     <Card>
       <CardBody className="p-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-xl text-base" style={{ background: iconBg, color: iconFg }}>
-          {icon}
-        </span>
-        <p className={`mt-2 ${text.muted}`}>{label}</p>
+        <p className={text.muted}>{label}</p>
         <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5">
           <p className="text-lg font-bold tabular-nums" style={{ color: valueColor }}>
             {value}
@@ -103,7 +92,6 @@ export function DashboardView() {
   const incomeDelta = rangeDelta((r) => totalsForRange(transactions, categories, r).totalIncome, filter, hasPriorData);
   const expenseDelta = rangeDelta((r) => totalsForRange(transactions, categories, r).totalExpense, filter, hasPriorData);
   const balanceDelta = rangeDelta((r) => totalsForRange(transactions, categories, r).balance, filter, hasPriorData);
-  const deltaSuffix = previousPeriodSuffix(filter.mode);
   const breakdown = categoryBreakdown(expenseTx, categories);
   const incomeRows = incomeBreakdown(incomeTx, categories);
   const recent = [...expenseTx].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 5);
@@ -130,11 +118,8 @@ export function DashboardView() {
           拉成滿版比較醒目；支出跟結餘互相比較的意義比較大（花了多少、剩多少），並排
           方便一眼對照。薪資不再是獨立算出來的特例，就是收入分類加總的其中一塊，想看
           薪資自己漲跌多少，看「收入來源」卡片裡薪資那一列即可，不需要 Dashboard 再
-          另外開一組指標。圖示色塊沿用搭乘車既有的路線色塊配色，不是另外配的新顏色。 */}
+          另外開一組指標。 */}
       <KpiCard
-        icon="💰"
-        iconBg="#E3F6EC"
-        iconFg="#2FAE82"
         label="本月收入"
         value={formatCurrency(totalIncome)}
         valueColor="#4A3B7C"
@@ -142,25 +127,18 @@ export function DashboardView() {
       />
       <div className="grid grid-cols-2 gap-3">
         <KpiCard
-          icon="🛍️"
-          iconBg="#FDEEF0"
-          iconFg="#D1517E"
           label="本月支出"
           value={formatCurrency(totalExpense)}
           valueColor="#4A3B7C"
           delta={expenseDelta && <DeltaText delta={expenseDelta.delta} pct={expenseDelta.pct} goodWhenUp={false} />}
         />
         <KpiCard
-          icon="🐷"
-          iconBg="#E6EEFC"
-          iconFg="#4E7FE0"
           label="本月結餘"
           value={`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`}
           valueColor={balance >= 0 ? "#4A3B7C" : NEGATIVE}
           delta={balanceDelta && <DeltaText delta={balanceDelta.delta} pct={balanceDelta.pct} goodWhenUp />}
         />
       </div>
-      <p className={`-mt-2 text-right ${text.faint}`}>{deltaSuffix}</p>
 
       <Card>
         <CardBody>
