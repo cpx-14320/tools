@@ -13,7 +13,7 @@ export function ExpensesDesktopShell({ children }: { children: ReactNode }) {
           </Link>
           <LayoutToggle />
         </div>
-        <p className="mt-2 text-sm font-semibold">📒 記帳本</p>
+        <p className="mt-2 text-sm font-semibold">記帳本</p>
         <ExpensesNav />
       </aside>
       <div className="min-w-0 flex-1">{children}</div>

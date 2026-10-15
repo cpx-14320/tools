@@ -7,9 +7,9 @@ import { DatePickerModal } from "@/components/expenses/date-picker-modal";
 import type { DateFilterMode } from "@/lib/expenses/date-filter";
 
 const MODES: { value: DateFilterMode; label: string }[] = [
-  { value: "year", label: "年" },
-  { value: "month", label: "月" },
   { value: "day", label: "日" },
+  { value: "month", label: "月" },
+  { value: "year", label: "年" },
   { value: "all", label: "全部" },
   { value: "custom", label: "自訂" },
 ];
@@ -59,7 +59,7 @@ export function DateFilterPicker({ className = "" }: { className?: string }) {
 
         {filter.mode === "year" && (
           <PeriodNav
-            label={`${filter.year} 年`}
+            label={`${filter.year}`}
             onPrev={() => setFilter({ ...filter, year: filter.year - 1 })}
             onNext={() => setFilter({ ...filter, year: filter.year + 1 })}
           />
@@ -87,8 +87,6 @@ export function DateFilterPicker({ className = "" }: { className?: string }) {
             onLabelClick={() => setDayPickerOpen(true)}
           />
         )}
-
-        {filter.mode === "all" && <p className="text-xs text-[#9C94C4]">顯示所有期間的資料</p>}
       </div>
 
       {filter.mode === "day" && (

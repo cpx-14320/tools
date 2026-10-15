@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
-import { Button } from "@/components/expenses/button";
+import { Button, SegmentedControl } from "@/components/expenses/button";
 import { text } from "@/components/expenses/theme";
 import { CategoryModal, type CategoryModalDraft } from "@/components/expenses/category-modal";
 import { CategoryBatchModal, type CategoryBatchItem } from "@/components/expenses/category-batch-modal";
@@ -12,6 +12,7 @@ import {
   categoryColorClass,
   DEFAULT_CATEGORIES,
   type CategoryDTO,
+  type CategoryKind,
 } from "@/lib/expenses/categories";
 import { formatCurrency } from "@/lib/format";
 
@@ -25,6 +26,7 @@ export function CategoriesView() {
   const [ready, setReady] = useState(false);
   const [modal, setModal] = useState<CategoryDTO | null>(null);
   const [batchTarget, setBatchTarget] = useState<BatchTarget | null>(null);
+  const [kind, setKind] = useState<CategoryKind>("支出");
 
   useEffect(() => {
     let cancelled = false;
@@ -115,7 +117,7 @@ export function CategoriesView() {
     setCategories(latest);
   }
 
-  const parents = topLevelCategories(categories);
+  const parents = topLevelCategories(categories, kind);
 
   return (
     <div>
@@ -147,14 +149,25 @@ export function CategoriesView() {
         open={batchTarget !== null}
         isSubcategory={!!batchTarget?.parentId}
         parentName={batchTarget?.parentName}
+        defaultKind={kind}
         onClose={() => setBatchTarget(null)}
         onSave={handleBatchSave}
+      />
+
+      <SegmentedControl
+        className="mb-4"
+        value={kind}
+        onChange={setKind}
+        options={[
+          { value: "支出", label: "支出" },
+          { value: "收入", label: "收入" },
+        ]}
       />
 
       {!ready ? (
         <p className={text.faint}>載入中…</p>
       ) : parents.length === 0 ? (
-        <p className={text.faint}>還沒有任何分類，點上方新增第一個分類</p>
+        <p className={text.faint}>還沒有任何{kind}分類，點上方新增第一個，或直接套用常見分類</p>
       ) : (
         <div className="flex flex-col gap-3">
           {parents.map((c) => {

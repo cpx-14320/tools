@@ -12,11 +12,14 @@ import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { AccountModal, type AccountModalDraft } from "@/components/expenses/account-modal";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
+import { TransferModal, type TransferModalDraft } from "@/components/expenses/transfer-modal";
 import { dateFilterRange, previousPeriodSuffix } from "@/lib/expenses/date-filter";
 import { categoryById, categoryColorClass, categoryPath, type CategoryDTO } from "@/lib/expenses/categories";
 import { totalsForRange, rangeDelta, transactionsInDateRange, type TransactionDTO } from "@/lib/expenses/transactions";
+import { inDateRange } from "@/lib/expenses/date-filter";
 import { accountBalance, type AccountDTO } from "@/lib/expenses/accounts";
 import { accountTypeById, type AccountTypeDTO } from "@/lib/expenses/account-types";
+import { transfersForAccount, type TransferDTO } from "@/lib/expenses/transfers";
 import { formatCurrency } from "@/lib/format";
 
 const NEGATIVE = "#D1517E";
@@ -67,9 +70,11 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
+  const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [ready, setReady] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [txModal, setTxModal] = useState<TxModalState | null>(null);
+  const [transferModal, setTransferModal] = useState<TransferDTO | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,19 +83,22 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
       fetch("/api/expenses/account-types").then((res) => res.json()),
       fetch("/api/expenses/categories").then((res) => res.json()),
       fetch("/api/expenses/transactions").then((res) => res.json()),
+      fetch("/api/expenses/transfers").then((res) => res.json()),
     ])
       .then(
-        ([accountsData, accountTypesData, categoriesData, txData]: [
+        ([accountsData, accountTypesData, categoriesData, txData, transfersData]: [
           { accounts?: AccountDTO[] },
           { accountTypes?: AccountTypeDTO[] },
           { categories?: CategoryDTO[] },
           { transactions?: TransactionDTO[] },
+          { transfers?: TransferDTO[] },
         ]) => {
           if (cancelled) return;
           setAccounts(accountsData.accounts ?? []);
           setAccountTypes(accountTypesData.accountTypes ?? []);
           setCategories(categoriesData.categories ?? []);
           setTransactions(txData.transactions ?? []);
+          setTransfers(transfersData.transfers ?? []);
           setReady(true);
         },
       )
@@ -147,6 +155,28 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
     setTxModal(null);
   }
 
+  async function handleTransferSave(draft: TransferModalDraft) {
+    if (!transferModal) return;
+    const data: { transfers?: TransferDTO[] } = await fetch("/api/expenses/transfers", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: transferModal.id, ...draft }),
+    })
+      .then((res) => res.json())
+      .catch(() => ({}));
+    if (data.transfers) setTransfers(data.transfers);
+    setTransferModal(null);
+  }
+
+  async function handleTransferDelete() {
+    if (!transferModal) return;
+    const data: { transfers?: TransferDTO[] } = await fetch(`/api/expenses/transfers?id=${transferModal.id}`, { method: "DELETE" })
+      .then((res) => res.json())
+      .catch(() => ({}));
+    if (data.transfers) setTransfers(data.transfers);
+    setTransferModal(null);
+  }
+
   if (!ready) {
     return (
       <div className="flex flex-col gap-4">
@@ -180,16 +210,24 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
   const balanceDelta = rangeDelta((r) => totalsForRange(accountTx, categories, r).balance, filter, hasPriorData);
   const deltaSuffix = previousPeriodSuffix(filter.mode);
 
-  const rows = [...expenseTx, ...incomeTx].sort((a, b) => (a.date < b.date ? 1 : -1));
-  const groups = new Map<string, typeof rows>();
-  for (const t of rows) {
-    const list = groups.get(t.date) ?? [];
-    list.push(t);
-    groups.set(t.date, list);
+  const accountTransfers = transfersForAccount(transfers, account.id).filter((t) => inDateRange(t.date, range));
+
+  // 「明細」要把一般交易跟轉帳混在同一個依日期分組的列表裡——轉帳不是支出也不是收入，
+  // 不算進上面的 KPI 統計，但使用者翻帳戶明細時仍然要看得到錢是什麼時候被轉走/轉進來的。
+  type DetailEntry = { date: string } & ({ kind: "tx"; tx: TransactionDTO } | { kind: "transfer"; transfer: TransferDTO });
+  const entries: DetailEntry[] = [
+    ...[...expenseTx, ...incomeTx].map((tx): DetailEntry => ({ kind: "tx", date: tx.date, tx })),
+    ...accountTransfers.map((transfer): DetailEntry => ({ kind: "transfer", date: transfer.date, transfer })),
+  ].sort((a, b) => (a.date < b.date ? 1 : -1));
+  const groups = new Map<string, DetailEntry[]>();
+  for (const e of entries) {
+    const list = groups.get(e.date) ?? [];
+    list.push(e);
+    groups.set(e.date, list);
   }
 
   const kind = accountTypeById(accountTypes, account.accountTypeId)?.kind ?? "asset";
-  const currentBalance = accountBalance(account, accountTypes, transactions, categories);
+  const currentBalance = accountBalance(account, accountTypes, transactions, categories, transfers);
 
   return (
     <div className="flex flex-col gap-4">
@@ -223,11 +261,28 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
         categories={categories}
         accounts={accounts}
         accountTypes={accountTypes}
+        transactions={transactions}
+        transfers={transfers}
         defaultKind="支出"
         initial={txModal?.mode === "edit" ? txModal.transaction : undefined}
         onClose={() => setTxModal(null)}
         onSave={handleTxSave}
         onDelete={txModal?.mode === "edit" ? handleTxDelete : undefined}
+        onCategoriesChange={setCategories}
+      />
+
+      <TransferModal
+        key={transferModal ? transferModal.id : "closed"}
+        open={transferModal !== null}
+        accounts={accounts}
+        accountTypes={accountTypes}
+        transactions={transactions}
+        categories={categories}
+        transfers={transfers}
+        initial={transferModal ?? undefined}
+        onClose={() => setTransferModal(null)}
+        onSave={handleTransferSave}
+        onDelete={handleTransferDelete}
       />
 
       <Card>
@@ -277,32 +332,61 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
       <Card>
         <CardBody>
           <p className={text.sectionHeading}>明細</p>
-          {rows.length === 0 ? (
-            <p className={`mt-3 ${text.muted}`}>這段期間這個帳戶還沒有掛任何交易。</p>
+          {entries.length === 0 ? (
+            <p className={`mt-3 ${text.muted}`}>這段期間這個帳戶還沒有掛任何交易或轉帳。</p>
           ) : (
             <div className="mt-3 flex flex-col gap-4">
               {[...groups.entries()].map(([date, items]) => (
                 <div key={date}>
                   <p className={`mb-1.5 font-medium ${text.muted}`}>{date}</p>
                   <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA]">
-                    {items.map((t) => {
-                      const category = categoryById(categories, t.categoryId);
-                      const isIncome = category?.kind === "收入";
+                    {items.map((e) => {
+                      if (e.kind === "tx") {
+                        const t = e.tx;
+                        const category = categoryById(categories, t.categoryId);
+                        const isIncome = category?.kind === "收入";
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => setTxModal({ mode: "edit", transaction: t })}
+                            className="flex w-full items-center gap-3 px-3 py-3 text-left"
+                          >
+                            <IconAvatar icon={category?.icon ?? ""} size="sm" className={category ? categoryColorClass[category.color] : undefined} />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium text-[#4A3B7C]">{t.note ?? category?.name}</p>
+                              <p className={`truncate ${text.muted}`}>{categoryPath(categories, t.categoryId)}</p>
+                            </div>
+                            <span className={`shrink-0 tabular-nums font-semibold text-[#4A3B7C] ${isIncome ? "text-[#2FAE82]" : ""}`}>
+                              {isIncome ? "＋" : "－"}
+                              {formatCurrency(t.amount)}
+                            </span>
+                          </button>
+                        );
+                      }
+
+                      const transfer = e.transfer;
+                      const isOutgoing = transfer.fromAccountId === account.id;
+                      const otherAccount = accounts.find((a) => a.id === (isOutgoing ? transfer.toAccountId : transfer.fromAccountId));
                       return (
                         <button
-                          key={t.id}
+                          key={transfer.id}
                           type="button"
-                          onClick={() => setTxModal({ mode: "edit", transaction: t })}
+                          onClick={() => setTransferModal(transfer)}
                           className="flex w-full items-center gap-3 px-3 py-3 text-left"
                         >
-                          <IconAvatar icon={category?.icon ?? ""} size="sm" className={category ? categoryColorClass[category.color] : undefined} />
+                          <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#F3EFFC] text-lg">
+                            ⇄
+                          </span>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-[#4A3B7C]">{t.note ?? category?.name}</p>
-                            <p className={`truncate ${text.muted}`}>{categoryPath(categories, t.categoryId)}</p>
+                            <p className="truncate text-sm font-medium text-[#4A3B7C]">
+                              {isOutgoing ? `轉帳至 ${otherAccount?.name ?? "（未知帳戶）"}` : `轉帳自 ${otherAccount?.name ?? "（未知帳戶）"}`}
+                            </p>
+                            <p className={`truncate ${text.muted}`}>{transfer.note || "轉帳"}</p>
                           </div>
-                          <span className={`shrink-0 tabular-nums font-semibold text-[#4A3B7C] ${isIncome ? "text-[#2FAE82]" : ""}`}>
-                            {isIncome ? "＋" : ""}
-                            {formatCurrency(t.amount)}
+                          <span className="shrink-0 tabular-nums font-semibold text-[#6F5FD6]">
+                            {isOutgoing ? "－" : "＋"}
+                            {formatCurrency(transfer.amount)}
                           </span>
                         </button>
                       );

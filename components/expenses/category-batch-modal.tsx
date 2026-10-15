@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass } from "./modal";
 import { categoryFillClass, type CategoryColor, type CategoryKind } from "@/lib/expenses/categories";
@@ -14,8 +14,8 @@ interface Draft {
   kind: CategoryKind;
 }
 
-function blankDraft(): Draft {
-  return { name: "", icon: "🏷️", color: "a", kind: "支出" };
+function blankDraft(kind: CategoryKind = "支出"): Draft {
+  return { name: "", icon: "🏷️", color: "a", kind };
 }
 
 export type CategoryBatchItem = Pick<Draft, "name" | "icon"> & Partial<Pick<Draft, "color" | "kind">>;
@@ -29,17 +29,25 @@ export function CategoryBatchModal({
   open,
   isSubcategory,
   parentName,
+  defaultKind = "支出",
   onClose,
   onSave,
 }: {
   open: boolean;
   isSubcategory: boolean;
   parentName?: string;
+  /** 從新增交易彈窗點分類格子裡的「＋新增」開這個彈窗時，直接預選目前支出/收入分頁。 */
+  defaultKind?: CategoryKind;
   onClose: () => void;
   /** 只會收到名稱與圖示都有填的草稿。 */
   onSave: (items: CategoryBatchItem[]) => void;
 }) {
-  const [items, setItems] = useState<Draft[]>([blankDraft()]);
+  const [items, setItems] = useState<Draft[]>([blankDraft(defaultKind)]);
+
+  useEffect(() => {
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    if (open) setItems([blankDraft(defaultKind)]);
+  }, [open, defaultKind]);
 
   function updateItem(index: number, patch: Partial<Draft>) {
     setItems((list) => list.map((it, i) => (i === index ? { ...it, ...patch } : it)));

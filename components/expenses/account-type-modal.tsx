@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "./button";
 import { Modal, Field, fieldInputClass } from "./modal";
+import { accountTypeNameTaken, type AccountKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
 
 export interface AccountTypeModalDraft {
   name: string;
@@ -15,19 +16,28 @@ export interface AccountTypeModalDraft {
 export function AccountTypeModal({
   open,
   initial,
+  accountTypes,
+  kind,
+  excludeId,
   onClose,
   onSave,
   onDelete,
 }: {
   open: boolean;
   initial?: AccountTypeModalDraft;
+  /** 現有的所有帳戶類型，用來擋同一種資產/負債底下名稱重複。 */
+  accountTypes: AccountTypeDTO[];
+  kind: AccountKind;
+  /** 編輯既有類型時傳自己的 id，重複檢查才不會把自己判定成跟自己撞名。 */
+  excludeId?: string;
   onClose: () => void;
   onSave: (draft: AccountTypeModalDraft) => void;
   onDelete?: () => void;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [icon, setIcon] = useState(initial?.icon ?? "🏷️");
-  const canSave = name.trim() && icon.trim();
+  const isDuplicate = accountTypeNameTaken(accountTypes, kind, name, excludeId);
+  const canSave = name.trim() && icon.trim() && !isDuplicate;
 
   return (
     <Modal
@@ -57,6 +67,7 @@ export function AccountTypeModal({
       <Field label="名稱">
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如「定存」" className={fieldInputClass} />
       </Field>
+      {isDuplicate && <p className="text-xs text-[#D1517E]">已經有同樣名稱的{kind === "asset" ? "資產" : "負債"}類型了，換一個名稱吧。</p>}
       <Field label="圖示（輸入一個表情符號）">
         <input value={icon} onChange={(e) => setIcon(e.target.value)} className={fieldInputClass} />
       </Field>

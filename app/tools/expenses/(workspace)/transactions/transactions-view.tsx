@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, SegmentedControl } from "@/components/expenses/button";
+import { SegmentedControl } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { DeltaBadge } from "@/components/expenses/delta-badge";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
@@ -19,6 +19,7 @@ import {
 } from "@/lib/expenses/transactions";
 import { type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
+import { type TransferDTO } from "@/lib/expenses/transfers";
 import { formatCurrency } from "@/lib/format";
 
 function matchesQuery(t: TransactionDTO, categories: CategoryDTO[], query: string): boolean {
@@ -28,18 +29,19 @@ function matchesQuery(t: TransactionDTO, categories: CategoryDTO[], query: strin
   return haystack.includes(q);
 }
 
-type ModalState = { mode: "create" } | { mode: "edit"; transaction: TransactionDTO };
-
 export function TransactionsView() {
   const { filter } = useDateFilter();
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
+  const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [ready, setReady] = useState(false);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<CategoryKind>("支出");
-  const [modal, setModal] = useState<ModalState | null>(null);
+  // 這頁現在只處理既有紀錄的編輯（新增交易改到首頁的浮動按鈕），所以只需要存「正在編輯
+  // 哪一筆」，不用再分 create/edit 兩種模式。
+  const [modal, setModal] = useState<TransactionDTO | null>(null);
   const isSearching = query.trim().length > 0;
   const range = dateFilterRange(filter);
 
@@ -50,19 +52,22 @@ export function TransactionsView() {
       fetch("/api/expenses/transactions").then((res) => res.json()),
       fetch("/api/expenses/accounts").then((res) => res.json()),
       fetch("/api/expenses/account-types").then((res) => res.json()),
+      fetch("/api/expenses/transfers").then((res) => res.json()),
     ])
       .then(
-        ([categoriesData, txData, accountsData, accountTypesData]: [
+        ([categoriesData, txData, accountsData, accountTypesData, transfersData]: [
           { categories?: CategoryDTO[] },
           { transactions?: TransactionDTO[] },
           { accounts?: AccountDTO[] },
           { accountTypes?: AccountTypeDTO[] },
+          { transfers?: TransferDTO[] },
         ]) => {
           if (cancelled) return;
           setCategories(categoriesData.categories ?? []);
           setTransactions(txData.transactions ?? []);
           setAccounts(accountsData.accounts ?? []);
           setAccountTypes(accountTypesData.accountTypes ?? []);
+          setTransfers(transfersData.transfers ?? []);
           setReady(true);
         },
       )
@@ -99,31 +104,20 @@ export function TransactionsView() {
 
   async function handleSave(draft: TransactionModalDraft) {
     if (!modal) return;
-    if (modal.mode === "edit") {
-      const data: { transactions?: TransactionDTO[] } = await fetch("/api/expenses/transactions", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: modal.transaction.id, ...draft }),
-      })
-        .then((res) => res.json())
-        .catch(() => ({}));
-      if (data.transactions) setTransactions(data.transactions);
-    } else {
-      const data: { transactions?: TransactionDTO[] } = await fetch("/api/expenses/transactions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(draft),
-      })
-        .then((res) => res.json())
-        .catch(() => ({}));
-      if (data.transactions) setTransactions(data.transactions);
-    }
+    const data: { transactions?: TransactionDTO[] } = await fetch("/api/expenses/transactions", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: modal.id, ...draft }),
+    })
+      .then((res) => res.json())
+      .catch(() => ({}));
+    if (data.transactions) setTransactions(data.transactions);
     setModal(null);
   }
 
   async function handleDelete() {
-    if (modal?.mode !== "edit") return;
-    const data: { transactions?: TransactionDTO[] } = await fetch(`/api/expenses/transactions?id=${modal.transaction.id}`, {
+    if (!modal) return;
+    const data: { transactions?: TransactionDTO[] } = await fetch(`/api/expenses/transactions?id=${modal.id}`, {
       method: "DELETE",
     })
       .then((res) => res.json())
@@ -137,19 +131,22 @@ export function TransactionsView() {
       <DateFilterPicker className="mb-4" />
 
       <TransactionModal
-        key={modal ? JSON.stringify(modal) : "closed"}
+        key={modal ? modal.id : "closed"}
         open={modal !== null}
         categories={categories}
         accounts={accounts}
         accountTypes={accountTypes}
+        transactions={transactions}
+        transfers={transfers}
         defaultKind={kind}
-        initial={modal?.mode === "edit" ? modal.transaction : undefined}
+        initial={modal ?? undefined}
         onClose={() => setModal(null)}
         onSave={handleSave}
-        onDelete={modal?.mode === "edit" ? handleDelete : undefined}
+        onDelete={handleDelete}
+        onCategoriesChange={setCategories}
       />
 
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mb-4">
         <SegmentedControl
           value={kind}
           onChange={setKind}
@@ -158,7 +155,6 @@ export function TransactionsView() {
             { value: "收入", label: "收入" },
           ]}
         />
-        <Button onClick={() => setModal({ mode: "create" })}>＋ 新增</Button>
       </div>
 
       <label className="mb-4 flex items-center gap-2 rounded-full border border-[#ECE4FA] bg-white px-4 py-2.5">
@@ -214,7 +210,7 @@ export function TransactionsView() {
                         <button
                           key={t.id}
                           type="button"
-                          onClick={() => setModal({ mode: "edit", transaction: t })}
+                          onClick={() => setModal(t)}
                           className="flex w-full items-center gap-3 px-4 py-3 text-left"
                         >
                           <IconAvatar icon={category?.icon ?? ""} size="sm" className={category ? categoryColorClass[category.color] : undefined} />
@@ -223,7 +219,7 @@ export function TransactionsView() {
                             <p className={`truncate ${text.muted}`}>{categoryPath(categories, t.categoryId)}</p>
                           </div>
                           <span className={`shrink-0 tabular-nums font-semibold text-[#4A3B7C] ${kind === "收入" ? "text-[#2FAE82]" : ""}`}>
-                            {kind === "收入" ? "＋" : ""}
+                            {kind === "收入" ? "＋" : "－"}
                             {formatCurrency(t.amount)}
                           </span>
                         </button>

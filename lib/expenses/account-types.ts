@@ -42,3 +42,12 @@ export function accountTypesByKind(types: AccountTypeDTO[], kind: AccountKind): 
 export function accountTypeById(types: AccountTypeDTO[], id: string): AccountTypeDTO | undefined {
   return types.find((t) => t.id === id);
 }
+
+/** 同一種資產/負債底下名稱不能重複——重複的話「資產配置」那種依名稱分組/上色的畫面
+ *  會把兩個其實不同的類型顯示成同一塊，使用者看了會以為資料算錯。excludeId 讓編輯
+ *  既有類型時不會把自己當成跟自己重複。 */
+export function accountTypeNameTaken(types: AccountTypeDTO[], kind: AccountKind, name: string, excludeId?: string): boolean {
+  const trimmed = name.trim();
+  if (!trimmed) return false;
+  return types.some((t) => t.kind === kind && t.id !== excludeId && t.name.trim() === trimmed);
+}

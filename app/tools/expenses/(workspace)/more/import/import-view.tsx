@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Card, CardBody, Button, ButtonLink, PageHeader } from "@/components/ui";
+import { Card, CardBody } from "@/components/expenses/card";
+import { Button, ButtonLink } from "@/components/expenses/button";
+import { PageHeader } from "@/components/expenses/page-header";
+import { text } from "@/components/expenses/theme";
 import { parseTransactionsCSV, type ImportRowResult } from "@/lib/expenses/csv";
 import type { CategoryDTO } from "@/lib/expenses/categories";
 
@@ -70,7 +73,7 @@ export function ImportView() {
 
   return (
     <div>
-      <Link href="/tools/expenses/more" className="mb-3 inline-block text-xs font-medium text-muted hover:text-ink">
+      <Link href="/tools/expenses/more" className={`mb-3 inline-block font-medium ${text.muted} hover:text-[#6F5FD6]`}>
         ← 更多
       </Link>
       <PageHeader title="匯入資料" description="上傳 CSV 檔案，批次新增消費紀錄" />
@@ -80,8 +83,8 @@ export function ImportView() {
           <CardBody className="flex flex-col items-center gap-4 py-10 text-center">
             <span className="text-3xl">📥</span>
             <div>
-              <p className="font-medium">選擇 CSV 檔案</p>
-              <p className="mt-1 text-xs text-muted">
+              <p className={text.body}>選擇 CSV 檔案</p>
+              <p className={`mt-1 ${text.faint}`}>
                 欄位順序比照匯出格式：日期,分類,金額,備註
                 <br />
                 分類欄可以填完整路徑（例如「網購 › 服飾美妝」）或只填分類名稱
@@ -98,7 +101,7 @@ export function ImportView() {
                 if (file) handleFile(file);
               }}
             />
-            {parseError && <p className="text-sm text-negative">{parseError}</p>}
+            {parseError && <p className="text-sm text-[#D1517E]">{parseError}</p>}
           </CardBody>
         </Card>
       )}
@@ -107,14 +110,14 @@ export function ImportView() {
         <div className="flex flex-col gap-4">
           <Card>
             <CardBody>
-              <p className="truncate text-sm font-medium">{fileName}</p>
+              <p className={`truncate ${text.body}`}>{fileName}</p>
               <div className="mt-3 flex gap-4 text-sm">
-                <p>
-                  可匯入 <span className="font-semibold text-positive">{validCount}</span> 筆
+                <p className="text-[#4A3B7C]">
+                  可匯入 <span className="font-semibold text-[#2FAE82]">{validCount}</span> 筆
                 </p>
                 {invalidResults.length > 0 && (
-                  <p>
-                    有問題 <span className="font-semibold text-negative">{invalidResults.length}</span> 筆
+                  <p className="text-[#4A3B7C]">
+                    有問題 <span className="font-semibold text-[#D1517E]">{invalidResults.length}</span> 筆
                   </p>
                 )}
               </div>
@@ -124,12 +127,12 @@ export function ImportView() {
           {invalidResults.length > 0 && (
             <Card>
               <CardBody>
-                <p className="text-sm font-semibold text-negative">以下列會被略過，不會匯入</p>
-                <ul className="mt-2 flex flex-col divide-y divide-line">
+                <p className="text-sm font-semibold text-[#D1517E]">以下列會被略過，不會匯入</p>
+                <ul className="mt-2 flex flex-col divide-y divide-[#F2EEFA]">
                   {invalidResults.map((r) => (
-                    <li key={r.row} className="py-2 text-sm">
+                    <li key={r.row} className="py-2 text-sm text-[#4A3B7C]">
                       <span className="font-medium">第 {r.row} 列</span>
-                      <span className="text-muted">　{r.error}</span>
+                      <span className={text.muted}>　{r.error}</span>
                     </li>
                   ))}
                 </ul>
@@ -152,8 +155,8 @@ export function ImportView() {
         <Card>
           <CardBody className="flex flex-col items-center gap-3 py-10 text-center">
             <span className="text-3xl">✅</span>
-            <p className="font-medium">已匯入 {importedCount} 筆消費紀錄</p>
-            {duplicateCount > 0 && <p className="text-xs text-muted">其中 {duplicateCount} 筆跟現有紀錄完全相同，已自動略過</p>}
+            <p className={text.body}>已匯入 {importedCount} 筆消費紀錄</p>
+            {duplicateCount > 0 && <p className={text.faint}>其中 {duplicateCount} 筆跟現有紀錄完全相同，已自動略過</p>}
             <div className="mt-2 flex gap-3">
               <Button variant="secondary" onClick={reset}>
                 再匯入一次

@@ -19,12 +19,15 @@
   --negative-soft: #FBE3E8;
   --icon: #ada0ff;
 
-  --cat-a-bg: #FDE7D8; --cat-a-fg: #D97A3D;
-  --cat-b-bg: #DCEAFC; --cat-b-fg: #3B6FD1;
-  --cat-c-bg: #E3E1FB; --cat-c-fg: #6C5CE0;
-  --cat-d-bg: #FBE1EA; --cat-d-fg: #D1517E;
-  --cat-e-bg: #DFF4EB; --cat-e-fg: #2FAE82;
-  --cat-f-bg: #FBF2D2; --cat-f-fg: #C99A1E;
+  /* 六色一起重新調過（2026-10），同一組彩度/亮度（OKLCH 驗證過色盲可辨識度），色相
+     往記帳本品牌紫（brand #6F5FD6）靠攏，不再是一組彩度/亮度各自亂跳、顯得突兀的
+     「隨便六色」。 */
+  --cat-a-bg: #E9E9FD; --cat-a-fg: #8982E3;
+  --cat-b-bg: #EBEED6; --cat-b-fg: #9CA326;
+  --cat-c-bg: #FFE3EB; --cat-c-fg: #BA5178;
+  --cat-d-bg: #E0ECFD; --cat-d-fg: #3873BA;
+  --cat-e-bg: #F4EBD4; --cat-e-fg: #8A6E1F;
+  --cat-f-bg: #D5F3ED; --cat-f-fg: #30AE9F;
 }
 
 @theme inline {

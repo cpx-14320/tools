@@ -50,10 +50,10 @@ export function Modal({
       <div className="relative flex h-full w-full justify-center px-0 py-0 sm:px-4 sm:py-6">
         <div className="flex h-dvh w-full max-w-[430px] items-end sm:h-[850px]">
           <div
-            className="flex max-h-[80%] w-full flex-col overflow-y-auto rounded-t-[1.75rem] bg-white"
+            className="flex max-h-[80%] w-full flex-col overflow-hidden rounded-t-[1.75rem] bg-white"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-[#ECE4FA] px-5 py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#ECE4FA] px-5 py-4">
               <p className="font-semibold text-[#4A3B7C]">{title}</p>
               <button
                 type="button"
@@ -65,9 +65,11 @@ export function Modal({
               </button>
             </div>
 
-            <div className="flex flex-1 flex-col gap-4 px-5 py-5">{children}</div>
+            {/* 標題跟 footer 固定不動，只有這一段內容自己捲動——不然表單一長，連「取消／
+                儲存」都會被捲出畫面外。 */}
+            <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-5">{children}</div>
 
-            {footer && <div className="flex items-center justify-between gap-2 border-t border-[#ECE4FA] px-5 py-4">{footer}</div>}
+            {footer && <div className="flex shrink-0 items-center justify-between gap-2 border-t border-[#ECE4FA] px-5 py-4">{footer}</div>}
           </div>
         </div>
       </div>

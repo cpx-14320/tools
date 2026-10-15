@@ -97,7 +97,6 @@ export function AccountTypesView() {
     <div>
       <PageHeader
         title="帳戶類型"
-        description="資產總表新增帳戶時從這裡挑一個類型，圖示跟資產/負債都由類型決定"
         actions={
           <div className="flex items-center gap-2">
             <ButtonLink href="/tools/expenses/assets" variant="secondary">
@@ -115,11 +114,14 @@ export function AccountTypesView() {
         key={modal ? modal.id : "closed"}
         open={modal !== null}
         initial={modal ?? undefined}
+        accountTypes={accountTypes}
+        kind={modal?.kind ?? "asset"}
+        excludeId={modal?.id}
         onClose={() => setModal(null)}
         onSave={handleSave}
         onDelete={handleDelete}
       />
-      <AccountTypeBatchModal open={batchOpen} onClose={() => setBatchOpen(false)} onSave={handleBatchSave} />
+      <AccountTypeBatchModal open={batchOpen} onClose={() => setBatchOpen(false)} onSave={handleBatchSave} accountTypes={accountTypes} />
 
       {!ready ? (
         <p className={text.faint}>載入中…</p>

@@ -180,7 +180,7 @@ export function RecurringView() {
                       )}
                     </div>
                     <span className={`shrink-0 tabular-nums font-semibold text-[#4A3B7C] ${isIncome ? "text-[#2FAE82]" : ""}`}>
-                      {isIncome ? "＋" : ""}
+                      {isIncome ? "＋" : "－"}
                       {formatCurrency(rule.amount)}
                       <span className={`ml-1 font-normal ${text.muted}`}>／期</span>
                     </span>

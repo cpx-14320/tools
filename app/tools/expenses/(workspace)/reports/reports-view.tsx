@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
 import { Card, CardBody } from "@/components/expenses/card";
+import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { SegmentedControl } from "@/components/expenses/button";
 import { DeltaBadge } from "@/components/expenses/delta-badge";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
@@ -192,6 +193,8 @@ export function ReportsView() {
           setKind(v);
           setExpanded(false);
         }}
+        fullWidth
+        size="lg"
         options={[
           { value: "支出", label: "支出" },
           { value: "收入", label: "收入" },
@@ -204,7 +207,7 @@ export function ReportsView() {
       <Card>
         <CardBody>
           <p className={text.muted}>{kind === "淨額" ? "這段期間結餘" : `這段期間${kind}`}</p>
-          <div className="mt-1 flex flex-wrap items-baseline gap-x-2">
+          <div className="mt-1 flex flex-col gap-1.5">
             <p className="text-2xl font-bold tabular-nums text-[#4A3B7C]">
               {summaryTotal < 0 ? "－" : ""}
               {formatCurrency(Math.abs(summaryTotal))}
@@ -223,7 +226,7 @@ export function ReportsView() {
             ) : (
               <>
                 <div className="mt-4 flex items-center gap-5">
-                  <DonutChart data={donutData} />
+                  <DonutChart data={donutData} size={120} />
                   <div className="flex flex-1 flex-col gap-2">
                     {donutData.slice(0, TOP_N).map((d) => (
                       <div key={d.id} className="flex items-center justify-between text-xs">
@@ -239,27 +242,24 @@ export function ReportsView() {
 
                 <div className="mt-5 flex flex-col gap-3 border-t border-[#F2EEFA] pt-4">
                   {visibleRows.map((row) => (
-                    <div key={row.id}>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="flex items-center gap-2 text-[#4A3B7C]">
-                          <span className={`grid size-6 place-items-center rounded-full text-xs ${row.colorClass}`}>{row.icon}</span>
-                          {row.name}
-                        </span>
-                        <span className="flex flex-col items-end">
-                          <span className="tabular-nums text-[#4A3B7C]">{formatCurrency(row.amount)}</span>
-                          <span className={`tabular-nums ${text.faint}`}>{row.pct}%</span>
-                        </span>
-                      </div>
-                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#F3EFFC]">
-                        <div className="h-full rounded-full" style={{ width: `${row.pct}%`, background: row.colorHex }} />
-                      </div>
+                    <div key={row.id} className="flex items-center gap-3">
+                      <ListProgressRow
+                        icon={row.icon}
+                        iconClassName={row.colorClass}
+                        name={row.name}
+                        amount={formatCurrency(row.amount)}
+                        pct={row.pct}
+                        barColorHex={row.colorHex}
+                      />
                     </div>
                   ))}
                 </div>
                 {breakdown.length > TOP_N && (
-                  <button type="button" onClick={() => setExpanded((v) => !v)} className="mt-3 text-xs font-medium text-[#6F5FD6]">
-                    {expanded ? "收合" : `顯示全部 (${breakdown.length})`}
-                  </button>
+                  <div className="mt-3 flex justify-center">
+                    <button type="button" onClick={() => setExpanded((v) => !v)} className="text-xs font-medium text-[#6F5FD6]">
+                      {expanded ? "收合" : `顯示全部 (${breakdown.length})`}
+                    </button>
+                  </div>
                 )}
               </>
             )}

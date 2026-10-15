@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { Card, CardBody } from "@/components/expenses/card";
-import { text } from "@/components/expenses/theme";
+import { ListProgressRow } from "@/components/expenses/list-progress-row";
+import { KpiCard, DeltaText, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
+import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
+import { text, gradient, shadow } from "@/components/expenses/theme";
 import { dateFilterRange, defaultDateFilter } from "@/lib/expenses/date-filter";
 import { categoryColorClass, categoryFillClass, type CategoryDTO } from "@/lib/expenses/categories";
 import {
@@ -16,67 +20,51 @@ import {
   transactionsInDateRange,
   type TransactionDTO,
 } from "@/lib/expenses/transactions";
+import { type AccountDTO } from "@/lib/expenses/accounts";
+import { type AccountTypeDTO } from "@/lib/expenses/account-types";
+import { type TransferDTO } from "@/lib/expenses/transfers";
 import { formatCurrency } from "@/lib/format";
 
-const POSITIVE = "#2FAE82";
-const NEGATIVE = "#D1517E";
-
-/** 「較上期 +N%」小字，緊接在金額後面同一行——收入類指標上升是好事用綠色，支出類指標
- *  上升是壞事用珊瑚紅，跟搭乘車 etaToneStyle 那套「依狀態決定色調」是同一個精神，只是
- *  這裡依漲跌方向決定。 */
-function DeltaText({ delta, pct, goodWhenUp }: { delta: number; pct: number | null; goodWhenUp: boolean }) {
-  if (pct === null) return null;
-  const isUp = delta >= 0;
-  const isGood = isUp === goodWhenUp;
-  return (
-    <span className="shrink-0 text-xs font-semibold tabular-nums" style={{ color: isGood ? POSITIVE : NEGATIVE }}>
-      {isUp ? "▲" : "▼"} {Math.abs(pct).toFixed(0)}%
-    </span>
-  );
-}
-
-/** KPI 卡片：標籤在上、金額＋漲跌幅同一行在下，不放圖示。 */
-function KpiCard({
-  label,
-  value,
-  valueColor,
-  delta,
-}: {
-  label: string;
-  value: string;
-  valueColor: string;
-  delta: React.ReactNode;
-}) {
-  return (
-    <Card>
-      <CardBody className="p-3">
-        <p className={text.muted}>{label}</p>
-        <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5">
-          <p className="text-lg font-bold tabular-nums" style={{ color: valueColor }}>
-            {value}
-          </p>
-          {delta}
-        </div>
-      </CardBody>
-    </Card>
-  );
-}
+// 首頁只做「摘要」，不是報表頁的另一份拷貝——這幾張卡片的清單固定只顯示前 5 筆，
+// 分類一多也不會把首頁拉得又臭又長，完整清單一律用「查看完整報表」導去報表頁看。
+const SUMMARY_LIMIT = 5;
 
 export function DashboardView() {
   const { filter } = useDateFilter();
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
+  const [accounts, setAccounts] = useState<AccountDTO[]>([]);
+  const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
+  const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [ready, setReady] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([fetch("/api/expenses/categories").then((res) => res.json()), fetch("/api/expenses/transactions").then((res) => res.json())])
-      .then(([categoriesData, txData]: [{ categories?: CategoryDTO[] }, { transactions?: TransactionDTO[] }]) => {
-        if (cancelled) return;
-        setCategories(categoriesData.categories ?? []);
-        setTransactions(txData.transactions ?? []);
-        setReady(true);
-      })
+    Promise.all([
+      fetch("/api/expenses/categories").then((res) => res.json()),
+      fetch("/api/expenses/transactions").then((res) => res.json()),
+      fetch("/api/expenses/accounts").then((res) => res.json()),
+      fetch("/api/expenses/account-types").then((res) => res.json()),
+      fetch("/api/expenses/transfers").then((res) => res.json()),
+    ])
+      .then(
+        ([categoriesData, txData, accountsData, accountTypesData, transfersData]: [
+          { categories?: CategoryDTO[] },
+          { transactions?: TransactionDTO[] },
+          { accounts?: AccountDTO[] },
+          { accountTypes?: AccountTypeDTO[] },
+          { transfers?: TransferDTO[] },
+        ]) => {
+          if (cancelled) return;
+          setCategories(categoriesData.categories ?? []);
+          setTransactions(txData.transactions ?? []);
+          setAccounts(accountsData.accounts ?? []);
+          setAccountTypes(accountTypesData.accountTypes ?? []);
+          setTransfers(transfersData.transfers ?? []);
+          setReady(true);
+        },
+      )
       .catch(() => {
         if (!cancelled) setReady(true);
       });
@@ -84,6 +72,18 @@ export function DashboardView() {
       cancelled = true;
     };
   }, []);
+
+  async function handleCreateTransaction(draft: TransactionModalDraft) {
+    const data: { transactions?: TransactionDTO[] } = await fetch("/api/expenses/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(draft),
+    })
+      .then((res) => res.json())
+      .catch(() => ({}));
+    if (data.transactions) setTransactions(data.transactions);
+    setAddOpen(false);
+  }
 
   const range = dateFilterRange(filter);
   const hasPriorData = (r: ReturnType<typeof dateFilterRange>) => transactionsInDateRange(transactions, r).length > 0;
@@ -114,6 +114,32 @@ export function DashboardView() {
     <div className="flex flex-col gap-4">
       <DateFilterPicker />
 
+      <TransactionModal
+        open={addOpen}
+        categories={categories}
+        accounts={accounts}
+        accountTypes={accountTypes}
+        transactions={transactions}
+        transfers={transfers}
+        defaultKind="支出"
+        onClose={() => setAddOpen(false)}
+        onSave={handleCreateTransaction}
+        onCategoriesChange={setCategories}
+      />
+
+      {/* 新增交易的入口搬到首頁，固定在卡片右下角（底部導覽列上方）——跟搭乘車同一招，
+          fixed 子孫以外殼卡片容器（有 transform）為定位基準，不是整個瀏覽器視窗。用純
+          「＋」而不是其他 emoji，跟選單圖示區分開，一眼就看得出是「新增」的動作。 */}
+      <button
+        type="button"
+        onClick={() => setAddOpen(true)}
+        aria-label="新增交易"
+        className="fixed right-5 z-20 grid size-14 place-items-center rounded-full text-3xl font-bold leading-none text-white"
+        style={{ background: gradient.primary, boxShadow: shadow.cta, bottom: "calc(env(safe-area-inset-bottom) + 86px)" }}
+      >
+        ＋
+      </button>
+
       {/* 收入獨立一整排、支出跟結餘並排各半——收入是看整體財務狀況時最先想看的數字，
           拉成滿版比較醒目；支出跟結餘互相比較的意義比較大（花了多少、剩多少），並排
           方便一眼對照。薪資不再是獨立算出來的特例，就是收入分類加總的其中一塊，想看
@@ -135,14 +161,19 @@ export function DashboardView() {
         <KpiCard
           label="本月結餘"
           value={`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`}
-          valueColor={balance >= 0 ? "#4A3B7C" : NEGATIVE}
+          valueColor={balance >= 0 ? "#4A3B7C" : KPI_NEGATIVE}
           delta={balanceDelta && <DeltaText delta={balanceDelta.delta} pct={balanceDelta.pct} goodWhenUp />}
         />
       </div>
 
       <Card>
         <CardBody>
-          <p className={text.sectionHeading}>本月預算</p>
+          <div className="flex items-center justify-between">
+            <p className={text.sectionHeading}>本月預算</p>
+            <Link href="/tools/expenses/categories" className="text-xs font-medium text-[#6F5FD6]">
+              管理分類
+            </Link>
+          </div>
           {budget.rows.length === 0 ? (
             <p className={`mt-3 ${text.muted}`}>還沒有分類設定預算，到「消費分類」編輯分類時可以加一個。</p>
           ) : (
@@ -155,25 +186,17 @@ export function DashboardView() {
                 <span className={`text-xs font-semibold ${budget.pct > 100 ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>{budget.pct}%</span>
               </div>
               <div className="mt-4 flex flex-col gap-3">
-                {budget.rows.map((row) => (
-                  <div key={row.category.id}>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2 text-[#4A3B7C]">
-                        <span className={`grid size-6 place-items-center rounded-full text-xs ${categoryColorClass[row.category.color]}`}>
-                          {row.category.icon}
-                        </span>
-                        {row.category.name}
-                      </span>
-                      <span className={`tabular-nums ${text.muted}`}>
-                        {formatCurrency(row.spent)} / {formatCurrency(row.budgetAmount)}
-                      </span>
-                    </div>
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#F3EFFC]">
-                      <div
-                        className={`h-full rounded-full ${row.pct > 100 ? "bg-[#D1517E]" : categoryFillClass[row.category.color]}`}
-                        style={{ width: `${Math.min(100, row.pct)}%` }}
-                      />
-                    </div>
+                {budget.rows.slice(0, SUMMARY_LIMIT).map((row) => (
+                  <div key={row.category.id} className="flex items-center gap-3">
+                    <ListProgressRow
+                      icon={row.category.icon}
+                      iconClassName={categoryColorClass[row.category.color]}
+                      name={row.category.name}
+                      amount={`${formatCurrency(row.spent)} / ${formatCurrency(row.budgetAmount)}`}
+                      pct={row.pct}
+                      pctLabel={<span className={row.pct > 100 ? "text-[#D1517E]" : undefined}>{row.pct}%</span>}
+                      barColorClass={row.pct > 100 ? "bg-[#D1517E]" : categoryFillClass[row.category.color]}
+                    />
                   </div>
                 ))}
               </div>
@@ -184,25 +207,26 @@ export function DashboardView() {
 
       <Card>
         <CardBody>
-          <p className={text.sectionHeading}>消費分類佔比</p>
+          <div className="flex items-center justify-between">
+            <p className={text.sectionHeading}>消費分類佔比</p>
+            <Link href="/tools/expenses/reports" className="text-xs font-medium text-[#6F5FD6]">
+              查看完整報表
+            </Link>
+          </div>
           {breakdown.length === 0 ? (
             <p className={`mt-3 ${text.muted}`}>這段期間還沒有消費紀錄。</p>
           ) : (
             <div className="mt-4 flex flex-col gap-3">
-              {breakdown.map((row) => (
-                <div key={row.category.id}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2 text-[#4A3B7C]">
-                      <span className={`grid size-6 place-items-center rounded-full text-xs ${categoryColorClass[row.category.color]}`}>
-                        {row.category.icon}
-                      </span>
-                      {row.category.name}
-                    </span>
-                    <span className={`tabular-nums ${text.muted}`}>{formatCurrency(row.amount)}</span>
-                  </div>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#F3EFFC]">
-                    <div className={`h-full rounded-full ${categoryFillClass[row.category.color]}`} style={{ width: `${row.pct}%` }} />
-                  </div>
+              {breakdown.slice(0, SUMMARY_LIMIT).map((row) => (
+                <div key={row.category.id} className="flex items-center gap-3">
+                  <ListProgressRow
+                    icon={row.category.icon}
+                    iconClassName={categoryColorClass[row.category.color]}
+                    name={row.category.name}
+                    amount={formatCurrency(row.amount)}
+                    pct={row.pct}
+                    barColorClass={categoryFillClass[row.category.color]}
+                  />
                 </div>
               ))}
             </div>
@@ -213,20 +237,23 @@ export function DashboardView() {
       {incomeRows.length > 0 && (
         <Card>
           <CardBody>
-            <p className={text.sectionHeading}>收入來源</p>
+            <div className="flex items-center justify-between">
+              <p className={text.sectionHeading}>收入來源</p>
+              <Link href="/tools/expenses/reports" className="text-xs font-medium text-[#6F5FD6]">
+                查看完整報表
+              </Link>
+            </div>
             <div className="mt-4 flex flex-col gap-3">
-              {incomeRows.map((row) => (
-                <div key={row.id}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2 text-[#4A3B7C]">
-                      <span className="grid size-6 place-items-center rounded-full bg-[#E3F6EC] text-xs">{row.icon}</span>
-                      {row.name}
-                    </span>
-                    <span className={`tabular-nums ${text.muted}`}>{formatCurrency(row.amount)}</span>
-                  </div>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#F3EFFC]">
-                    <div className="h-full rounded-full bg-[#2FAE82]" style={{ width: `${row.pct}%` }} />
-                  </div>
+              {incomeRows.slice(0, SUMMARY_LIMIT).map((row) => (
+                <div key={row.id} className="flex items-center gap-3">
+                  <ListProgressRow
+                    icon={row.icon}
+                    iconClassName="bg-[#E3F6EC] text-[#2FAE82]"
+                    name={row.name}
+                    amount={formatCurrency(row.amount)}
+                    pct={row.pct}
+                    barColorClass="bg-[#2FAE82]"
+                  />
                 </div>
               ))}
             </div>
@@ -236,7 +263,12 @@ export function DashboardView() {
 
       <Card>
         <CardBody>
-          <p className={text.sectionHeading}>最近消費</p>
+          <div className="flex items-center justify-between">
+            <p className={text.sectionHeading}>最近消費</p>
+            <Link href="/tools/expenses/transactions" className="text-xs font-medium text-[#6F5FD6]">
+              查看全部
+            </Link>
+          </div>
           {recent.length === 0 ? (
             <p className={`mt-3 ${text.muted}`}>這段期間還沒有消費紀錄。</p>
           ) : (
@@ -247,7 +279,7 @@ export function DashboardView() {
                     <p className="truncate text-[#4A3B7C]">{t.note ?? "（無備註）"}</p>
                     <p className={text.muted}>{t.date}</p>
                   </div>
-                  <span className="shrink-0 tabular-nums font-medium text-[#4A3B7C]">{formatCurrency(t.amount)}</span>
+                  <span className="shrink-0 tabular-nums font-medium text-[#4A3B7C]">－{formatCurrency(t.amount)}</span>
                 </li>
               ))}
             </ul>

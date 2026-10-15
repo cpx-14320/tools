@@ -4,9 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const tabs = [
-  { href: "/tools/expenses", label: "總覽", icon: "🏠" },
+  { href: "/tools/expenses", label: "首頁", icon: "🏠" },
   { href: "/tools/expenses/reports", label: "報表", icon: "📈" },
-  { href: "/tools/expenses/transactions", label: "紀錄", icon: "🧾" },
   { href: "/tools/expenses/assets", label: "資產", icon: "🏦" },
   { href: "/tools/expenses/more", label: "更多", icon: "⋯" },
 ];

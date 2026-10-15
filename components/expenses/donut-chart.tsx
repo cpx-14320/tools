@@ -1,7 +1,9 @@
 /** 中空圓餅圖——用 SVG <circle> 的 stroke-dasharray 畫弧段，pathLength=100 讓百分比可以
- *  直接當 dasharray 數值用，不用自己算弧長。每段之間留一點空隙（＋圓端）做視覺區隔，
- *  呼應分類佔比卡片既有的「色塊＋名稱＋%」列表，色彩是同一組分類顏色，不是另外配的。
- *  不放中心文字——總額已經在上面的大數字卡顯示過一次，圖表本身只負責呈現「各佔多少」。 */
+ *  直接當 dasharray 數值用，不用自己算弧長。各段緊鄰、不留空隙，用平直端（butt）切開
+ *  （不要圓端），看起來是直線切一刀、不是圓弧收邊——比照參考圖（記帳本參考資料夾）的
+ *  圓餅圖樣式。呼應分類佔比卡片既有的「色塊＋名稱＋%」列表，色彩是同一組分類顏色，
+ *  不是另外配的。不放中心文字——總額已經在上面的大數字卡顯示過一次，圖表本身只負責
+ *  呈現「各佔多少」。 */
 export interface DonutSlice {
   id: string;
   label: string;
@@ -12,8 +14,6 @@ export interface DonutSlice {
 export function DonutChart({ data, size = 140, thickness = 42 }: { data: DonutSlice[]; size?: number; thickness?: number }) {
   const total = data.reduce((sum, d) => sum + d.amount, 0);
   const radius = (size - thickness) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const gapPct = total > 0 ? Math.min(2.5, (3 / circumference) * 100) : 0;
 
   if (total <= 0) {
     return (
@@ -35,26 +35,23 @@ export function DonutChart({ data, size = 140, thickness = 42 }: { data: DonutSl
   return (
     <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} role="img" aria-label="分類佔比圖">
       <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
-        {segments.map(({ slice, pct, offset }) => {
-          const dash = Math.max(pct - gapPct, 0.0001);
-          return (
-            <circle
-              key={slice.id}
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              fill="none"
-              stroke={slice.colorHex}
-              strokeWidth={thickness}
-              strokeLinecap="round"
-              pathLength={100}
-              strokeDasharray={`${dash} ${100 - dash}`}
-              strokeDashoffset={-offset}
-            >
-              <title>{`${slice.label} ${pct.toFixed(1)}%`}</title>
-            </circle>
-          );
-        })}
+        {segments.map(({ slice, pct, offset }) => (
+          <circle
+            key={slice.id}
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke={slice.colorHex}
+            strokeWidth={thickness}
+            strokeLinecap="butt"
+            pathLength={100}
+            strokeDasharray={`${pct} ${100 - pct}`}
+            strokeDashoffset={-offset}
+          >
+            <title>{`${slice.label} ${pct.toFixed(1)}%`}</title>
+          </circle>
+        ))}
       </g>
     </svg>
   );
