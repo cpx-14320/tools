@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/expenses/page-header";
 import { ButtonLink, IconButton } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { DeltaBadge } from "@/components/expenses/delta-badge";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
+import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { text } from "@/components/expenses/theme";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
@@ -21,45 +22,6 @@ import { accountBalance, type AccountDTO } from "@/lib/expenses/accounts";
 import { accountTypeById, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { transfersForAccount, type TransferDTO } from "@/lib/expenses/transfers";
 import { formatCurrency } from "@/lib/format";
-
-const NEGATIVE = "#D1517E";
-
-/** 跟 dashboard-view.tsx 的 KpiCard 同一種版面（圖示在左、標籤+金額+漲跌幅在右），
- *  這裡是這個帳戶自己的收入/支出/結餘，不是全部帳戶合計。 */
-function KpiCard({
-  icon,
-  iconBg,
-  iconFg,
-  label,
-  value,
-  valueColor,
-  delta,
-}: {
-  icon: string;
-  iconBg: string;
-  iconFg: string;
-  label: string;
-  value: string;
-  valueColor: string;
-  delta: ReactNode;
-}) {
-  return (
-    <Card>
-      <CardBody className="p-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-xl text-base" style={{ background: iconBg, color: iconFg }}>
-          {icon}
-        </span>
-        <p className={`mt-2 ${text.muted}`}>{label}</p>
-        <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5">
-          <p className="text-lg font-bold tabular-nums" style={{ color: valueColor }}>
-            {value}
-          </p>
-          {delta}
-        </div>
-      </CardBody>
-    </Card>
-  );
-}
 
 type TxModalState = { mode: "create" } | { mode: "edit"; transaction: TransactionDTO };
 
@@ -300,9 +262,6 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
       <DateFilterPicker />
 
       <KpiCard
-        icon="💰"
-        iconBg="#E3F6EC"
-        iconFg="#2FAE82"
         label="這段期間收入"
         value={formatCurrency(totalIncome)}
         valueColor="#4A3B7C"
@@ -310,21 +269,15 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
       />
       <div className="grid grid-cols-2 gap-3">
         <KpiCard
-          icon="🛍️"
-          iconBg="#FDEEF0"
-          iconFg="#D1517E"
           label="這段期間支出"
           value={formatCurrency(totalExpense)}
           valueColor="#4A3B7C"
           delta={expenseDelta && <DeltaBadge delta={expenseDelta.delta} pct={expenseDelta.pct} goodWhenUp={false} suffix={deltaSuffix} className="shrink-0" />}
         />
         <KpiCard
-          icon="🐷"
-          iconBg="#E6EEFC"
-          iconFg="#4E7FE0"
           label="這段期間結餘"
           value={`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`}
-          valueColor={balance >= 0 ? "#4A3B7C" : NEGATIVE}
+          valueColor={balance >= 0 ? "#4A3B7C" : KPI_NEGATIVE}
           delta={balanceDelta && <DeltaBadge delta={balanceDelta.delta} pct={balanceDelta.pct} goodWhenUp suffix={deltaSuffix} className="shrink-0" />}
         />
       </div>
