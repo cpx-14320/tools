@@ -35,7 +35,21 @@ export const text = {
   pageTitle: "text-xl font-bold text-[#4A3B7C]",
   sectionHeading: "text-sm font-semibold text-[#4A3B7C]",
   body: "text-sm font-medium text-[#4A3B7C]",
+  /** 表單欄位的小標籤（Field 元件用）——跟 muted 同色但字重不同，不要混用。 */
+  label: "text-xs font-medium text-[#9C94C4]",
   muted: "text-xs text-[#9C94C4]",
   faint: "text-xs text-[#B3ABD4]",
   statValue: "text-lg font-bold tabular-nums text-[#4A3B7C]",
+} as const;
+
+/** 間距規範——卡片/區塊/欄位之間統一用這幾階，不要每個頁面自己湊 gap-3／gap-4／gap-5。
+ *  card：同一張卡片內，標題跟內容、內容跟內容之間的間距。section：頁面裡一個區塊
+ *  （一張卡片／一個列表）跟下一個區塊之間的間距。field：表單裡欄位跟欄位之間。
+ *  tight：格子選擇器（分類格、帳戶類型格）這種本來就比較密集的排列。 */
+export const spacing = {
+  tight: "gap-1.5",
+  card: "gap-3",
+  field: "gap-4",
+  section: "gap-4",
+  page: "gap-4",
 } as const;

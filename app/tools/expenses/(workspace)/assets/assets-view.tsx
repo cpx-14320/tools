@@ -164,7 +164,14 @@ export function AssetsView() {
         }
       />
 
-      <AccountModal open={createOpen} accountTypes={accountTypes} onClose={() => setCreateOpen(false)} onSave={handleCreate} />
+      <AccountModal
+        open={createOpen}
+        accounts={accounts}
+        accountTypes={accountTypes}
+        onClose={() => setCreateOpen(false)}
+        onSave={handleCreate}
+        onAccountTypesChange={setAccountTypes}
+      />
       <AccountTypeBatchModal
         open={typeModalOpen}
         defaultKind={typeModalKind}

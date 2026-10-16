@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
-import type { AccountKind, AccountTypeDTO } from "./account-types";
+import { accountTypeNameTaken, type AccountKind, type AccountTypeDTO } from "./account-types";
 
 interface AccountTypeDoc {
   _id: ObjectId;
@@ -35,7 +35,10 @@ export interface AccountTypeInput {
 export async function createAccountType(
   userId: ObjectId,
   input: AccountTypeInput,
-): Promise<{ accountType: AccountTypeDTO; accountTypes: AccountTypeDTO[] }> {
+): Promise<{ accountType: AccountTypeDTO; accountTypes: AccountTypeDTO[] } | { error: string }> {
+  const existing = await listAccountTypes(userId);
+  if (accountTypeNameTaken(existing, input.kind, input.name)) return { error: "已經有同樣名稱的類型了，換一個名稱吧。" };
+
   const col = await collection();
   const order = await col.countDocuments({ userId, kind: input.kind });
   const doc: AccountTypeDoc = { _id: new ObjectId(), userId, name: input.name, icon: input.icon, kind: input.kind, order, createdAt: new Date() };
@@ -46,16 +49,38 @@ export async function createAccountType(
 
 /** 類型（資產／負債）建立後不能改——跟分類的 kind 一樣，改了會讓既有帳戶跟類型的
  *  資產/負債認定兜不起來，要改的話請刪除後重新新增。 */
-export async function updateAccountType(userId: ObjectId, id: string, input: { name: string; icon: string }): Promise<AccountTypeDTO[]> {
+export async function updateAccountType(
+  userId: ObjectId,
+  id: string,
+  input: { name: string; icon: string },
+): Promise<{ accountTypes: AccountTypeDTO[] } | { error: string }> {
   const col = await collection();
+  const current = await col.findOne({ _id: new ObjectId(id), userId });
+  if (current) {
+    const existing = await listAccountTypes(userId);
+    if (accountTypeNameTaken(existing, current.kind, input.name, id)) return { error: "已經有同樣名稱的類型了，換一個名稱吧。" };
+  }
   await col.updateOne({ _id: new ObjectId(id), userId }, { $set: { name: input.name, icon: input.icon } });
-  return listAccountTypes(userId);
+  return { accountTypes: await listAccountTypes(userId) };
 }
 
-/** 刪除類型不會動到既有帳戶，只是那些帳戶的 accountTypeId 會變成指向已刪除的類型——
- *  跟分類被刪除時的行為一致，顯示層用 accountTypeById 查不到時自己處理 fallback。 */
-export async function deleteAccountType(userId: ObjectId, id: string): Promise<AccountTypeDTO[]> {
+/** 刪除前查一下還有幾個帳戶掛著這個類型——類型決定資產/負債跟圖示，刪除後若還有帳戶
+ *  在用，那些帳戶的資產/負債判定會悄悄跑掉（查不到類型時 accountKind() 一律當成
+ *  「資產」，見 accounts.ts），所以這裡直接擋下，不像分類還有「未分類」可以歸類
+ *  ——帳戶類型沒有一個通用的歸宿可以自動改掛，要刪除請先把這些帳戶改成別的類型。 */
+export async function countAccountTypeUsage(userId: ObjectId, id: string): Promise<number> {
+  const db = await getDb();
+  return db.collection("expenses.accounts").countDocuments({ userId, accountTypeId: new ObjectId(id) });
+}
+
+export async function deleteAccountType(
+  userId: ObjectId,
+  id: string,
+): Promise<{ accountTypes: AccountTypeDTO[] } | { error: string; inUseCount: number }> {
+  const inUseCount = await countAccountTypeUsage(userId, id);
+  if (inUseCount > 0) return { error: "帳戶類型仍有帳戶使用中", inUseCount };
+
   const col = await collection();
   await col.deleteOne({ _id: new ObjectId(id), userId });
-  return listAccountTypes(userId);
+  return { accountTypes: await listAccountTypes(userId) };
 }

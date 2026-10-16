@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button, SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass } from "./modal";
-import { categoryFillClass, type CategoryColor, type CategoryKind } from "@/lib/expenses/categories";
+import { categoryFillClass, categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 
 const COLORS: CategoryColor[] = ["a", "b", "c", "d", "e", "f"];
 
@@ -19,6 +19,9 @@ export function CategoryModal({
   open,
   isSubcategory,
   parentName,
+  parentId,
+  categories,
+  excludeId,
   initial,
   onClose,
   onSave,
@@ -28,6 +31,12 @@ export function CategoryModal({
   /** 子分類不能自己選顏色／收支類型／預算，跟父分類一致。 */
   isSubcategory: boolean;
   parentName?: string;
+  /** 子分類時用來圈定「同一個父分類底下」的名稱重複檢查範圍。 */
+  parentId?: string;
+  /** 現有的所有分類，用來擋同一個父分類（或同一種收支類型的頂層）底下名稱重複。 */
+  categories: CategoryDTO[];
+  /** 編輯既有分類時傳自己的 id，重複檢查才不會把自己判定成跟自己撞名。 */
+  excludeId?: string;
   initial?: CategoryModalDraft;
   onClose: () => void;
   onSave: (
@@ -42,7 +51,8 @@ export function CategoryModal({
   const [budgetAmount, setBudgetAmount] = useState(initial?.budgetAmount ? String(initial.budgetAmount) : "");
 
   const title = initial ? "編輯分類" : isSubcategory ? `新增「${parentName}」的子分類` : "新增分類";
-  const canSave = name.trim().length > 0 && icon.trim().length > 0;
+  const isDuplicate = categoryNameTaken(categories, name, { kind, parentId }, excludeId);
+  const canSave = name.trim().length > 0 && icon.trim().length > 0 && !isDuplicate;
 
   return (
     <Modal
@@ -89,6 +99,7 @@ export function CategoryModal({
       <Field label="名稱">
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如「餐飲」" className={fieldInputClass} />
       </Field>
+      {isDuplicate && <p className="text-xs text-[#D1517E]">已經有同樣名稱的分類了，換一個名稱吧。</p>}
       <Field label="圖示（輸入一個表情符號）">
         <input value={icon} onChange={(e) => setIcon(e.target.value)} className={fieldInputClass} />
       </Field>

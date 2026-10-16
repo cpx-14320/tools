@@ -77,8 +77,16 @@ export async function contributeToGoal(userId: ObjectId, id: string, amount: num
   return listGoals(userId);
 }
 
+/** 刪除目標前，先解除所有連著它的固定收支規則（linkedGoalId 設回空）——不然規則還留著
+ *  一個指向已刪除目標的 id，之後每次自動入帳都會對一個不存在的目標做 $inc，靜默什麼事
+ *  都不會發生，使用者永遠不會發現連動早就失效了（見 recurring-rules.server.ts 的
+ *  confirmOneOccurrence）。規則本身不用跟著刪，只是不再連動存錢目標。 */
 export async function deleteGoal(userId: ObjectId, id: string): Promise<SavingsGoalDTO[]> {
+  const db = await getDb();
+  const goalId = new ObjectId(id);
+  await db.collection("expenses.recurringRules").updateMany({ userId, linkedGoalId: goalId }, { $unset: { linkedGoalId: "" } });
+
   const col = await collection();
-  await col.deleteOne({ _id: new ObjectId(id), userId });
+  await col.deleteOne({ _id: goalId, userId });
   return listGoals(userId);
 }

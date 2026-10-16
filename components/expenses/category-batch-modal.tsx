@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button, SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass } from "./modal";
-import { categoryFillClass, type CategoryColor, type CategoryKind } from "@/lib/expenses/categories";
+import { categoryFillClass, categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 
 const COLORS: CategoryColor[] = ["a", "b", "c", "d", "e", "f"];
 
@@ -20,6 +20,16 @@ function blankDraft(kind: CategoryKind = "支出"): Draft {
 
 export type CategoryBatchItem = Pick<Draft, "name" | "icon"> & Partial<Pick<Draft, "color" | "kind">>;
 
+// 同一個父分類底下（或同一種收支類型的頂層）名稱不能重複——跟已存在的分類撞名，或這一批
+// 草稿裡自己人互撞都算。
+function isDuplicateDraft(items: Draft[], index: number, existing: CategoryDTO[], parentId: string | undefined): boolean {
+  const item = items[index];
+  const name = item.name.trim();
+  if (!name) return false;
+  if (categoryNameTaken(existing, name, { kind: item.kind, parentId })) return true;
+  return items.some((other, i) => i !== index && other.kind === item.kind && other.name.trim() === name);
+}
+
 /** 新增分類／子分類——跟搭乘車「新增分類」同一種做法：一次開著好幾則草稿一起填，填完
  *  按一次「儲存」整批送出。子分類不能自己選
  *  顏色／收支類型（跟父分類一致，見 category-modal.tsx 的同樣規則），所以 isSubcategory
@@ -29,6 +39,8 @@ export function CategoryBatchModal({
   open,
   isSubcategory,
   parentName,
+  parentId,
+  categories,
   defaultKind = "支出",
   onClose,
   onSave,
@@ -36,10 +48,14 @@ export function CategoryBatchModal({
   open: boolean;
   isSubcategory: boolean;
   parentName?: string;
+  /** 子分類時用來圈定「同一個父分類底下」的名稱重複檢查範圍。 */
+  parentId?: string;
+  /** 現有的所有分類，用來擋名稱重複。 */
+  categories: CategoryDTO[];
   /** 從新增交易彈窗點分類格子裡的「＋新增」開這個彈窗時，直接預選目前支出/收入分頁。 */
   defaultKind?: CategoryKind;
   onClose: () => void;
-  /** 只會收到名稱與圖示都有填的草稿。 */
+  /** 只會收到名稱與圖示都有填、且名稱沒有撞名的草稿。 */
   onSave: (items: CategoryBatchItem[]) => void;
 }) {
   const [items, setItems] = useState<Draft[]>([blankDraft(defaultKind)]);
@@ -57,7 +73,7 @@ export function CategoryBatchModal({
     setItems((list) => (list.length > 1 ? list.filter((_, i) => i !== index) : list));
   }
 
-  const canSave = items.some((it) => it.name.trim() && it.icon.trim());
+  const canSave = items.some((it, i) => it.name.trim() && it.icon.trim() && !isDuplicateDraft(items, i, categories, parentId));
 
   return (
     <Modal
@@ -75,9 +91,9 @@ export function CategoryBatchModal({
               disabled={!canSave}
               onClick={() => {
                 const valid = items
-                  .map((it) => ({ ...it, name: it.name.trim(), icon: it.icon.trim() }))
-                  .filter((it) => it.name && it.icon);
-                onSave(isSubcategory ? valid.map(({ name, icon }) => ({ name, icon })) : valid);
+                  .map((it, i) => ({ ...it, name: it.name.trim(), icon: it.icon.trim(), _dup: isDuplicateDraft(items, i, categories, parentId) }))
+                  .filter((it) => it.name && it.icon && !it._dup);
+                onSave(isSubcategory ? valid.map(({ name, icon }) => ({ name, icon })) : valid.map(({ name, icon, color, kind }) => ({ name, icon, color, kind })));
               }}
             >
               儲存
@@ -99,6 +115,9 @@ export function CategoryBatchModal({
           <Field label="名稱">
             <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} placeholder="例如「餐飲」" className={fieldInputClass} />
           </Field>
+          {isDuplicateDraft(items, i, categories, parentId) && (
+            <p className="text-xs text-[#D1517E]">已經有同樣名稱的分類了，換一個名稱吧。</p>
+          )}
           <Field label="圖示（輸入一個表情符號）">
             <input value={item.icon} onChange={(e) => updateItem(i, { icon: e.target.value })} className={fieldInputClass} />
           </Field>

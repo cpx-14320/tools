@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   }
 
   const result = await createCategory(new ObjectId(user.id), { name, icon, color: color ?? "a", kind: kind ?? "支出", parentId });
-  if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 });
+  if ("error" in result) return NextResponse.json({ error: result.error }, { status: 409 });
   return NextResponse.json(result);
 }
 
@@ -50,8 +50,9 @@ export async function PUT(request: Request) {
       : undefined;
   if (!id || !name || !icon) return NextResponse.json({ error: "缺少必要欄位" }, { status: 400 });
 
-  const categories = await updateCategory(new ObjectId(user.id), id, { name, icon, color, budgetAmount });
-  return NextResponse.json({ categories });
+  const result = await updateCategory(new ObjectId(user.id), id, { name, icon, color, budgetAmount });
+  if ("error" in result) return NextResponse.json(result, { status: 409 });
+  return NextResponse.json(result);
 }
 
 export async function DELETE(request: Request) {
@@ -60,8 +61,10 @@ export async function DELETE(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
+  const force = searchParams.get("force") === "1";
   if (!id) return NextResponse.json({ error: "缺少 id" }, { status: 400 });
 
-  const categories = await deleteCategory(new ObjectId(user.id), id);
-  return NextResponse.json({ categories });
+  const result = await deleteCategory(new ObjectId(user.id), id, { force });
+  if ("error" in result) return NextResponse.json(result, { status: 409 });
+  return NextResponse.json(result);
 }

@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
-import type { AccountDTO } from "./accounts";
+import { accountNameTaken, type AccountDTO } from "./accounts";
 
 interface AccountDoc {
   _id: ObjectId;
@@ -31,7 +31,13 @@ export interface AccountInput {
   openingBalance: number;
 }
 
-export async function createAccount(userId: ObjectId, input: AccountInput): Promise<{ account: AccountDTO; accounts: AccountDTO[] }> {
+export async function createAccount(
+  userId: ObjectId,
+  input: AccountInput,
+): Promise<{ account: AccountDTO; accounts: AccountDTO[] } | { error: string }> {
+  const existing = await listAccounts(userId);
+  if (accountNameTaken(existing, input.name)) return { error: "已經有同樣名稱的帳戶了，換一個名稱吧。" };
+
   const col = await collection();
   const doc: AccountDoc = {
     _id: new ObjectId(),
@@ -46,13 +52,33 @@ export async function createAccount(userId: ObjectId, input: AccountInput): Prom
   return { account: toDTO(doc), accounts };
 }
 
-export async function updateAccount(userId: ObjectId, id: string, input: AccountInput): Promise<AccountDTO[]> {
+export async function updateAccount(
+  userId: ObjectId,
+  id: string,
+  input: AccountInput,
+): Promise<{ accounts: AccountDTO[] } | { error: string }> {
+  const existing = await listAccounts(userId);
+  if (accountNameTaken(existing, input.name, id)) return { error: "已經有同樣名稱的帳戶了，換一個名稱吧。" };
+
   const col = await collection();
   await col.updateOne(
     { _id: new ObjectId(id), userId },
     { $set: { name: input.name, accountTypeId: new ObjectId(input.accountTypeId), openingBalance: input.openingBalance } },
   );
-  return listAccounts(userId);
+  return { accounts: await listAccounts(userId) };
+}
+
+/** 刪除前查一下這個帳戶還有幾筆交易／轉帳掛著——不是為了擋下刪除（帳戶被刪除後交易
+ *  變成「不指定帳戶」本來就是支援的狀態，不是壞資料），是讓呼叫端可以先跟使用者說
+ *  清楚「這個帳戶還有 N 筆紀錄」，使用者自己決定要不要繼續，不是刪了才發現。 */
+export async function countAccountUsage(userId: ObjectId, id: string): Promise<number> {
+  const db = await getDb();
+  const accountObjId = new ObjectId(id);
+  const [txCount, transferCount] = await Promise.all([
+    db.collection("expenses.transactions").countDocuments({ userId, accountId: accountObjId }),
+    db.collection("expenses.transfers").countDocuments({ userId, $or: [{ fromAccountId: accountObjId }, { toAccountId: accountObjId }] }),
+  ]);
+  return txCount + transferCount;
 }
 
 export async function deleteAccount(userId: ObjectId, id: string): Promise<AccountDTO[]> {

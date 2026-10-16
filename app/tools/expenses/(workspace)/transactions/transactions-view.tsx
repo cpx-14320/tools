@@ -15,6 +15,7 @@ import {
   transactionsInDateRange,
   totalsForRange,
   rangeDelta,
+  transactionDisplayName,
   type TransactionDTO,
 } from "@/lib/expenses/transactions";
 import { type AccountDTO } from "@/lib/expenses/accounts";
@@ -215,7 +216,7 @@ export function TransactionsView() {
                         >
                           <IconAvatar icon={category?.icon ?? ""} size="sm" className={category ? categoryColorClass[category.color] : undefined} />
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-[#4A3B7C]">{t.note ?? category?.name}</p>
+                            <p className="truncate text-sm font-medium text-[#4A3B7C]">{transactionDisplayName(t, categories)}</p>
                             <p className={`truncate ${text.muted}`}>{categoryPath(categories, t.categoryId)}</p>
                           </div>
                           <span className={`shrink-0 tabular-nums font-semibold text-[#4A3B7C] ${kind === "收入" ? "text-[#2FAE82]" : ""}`}>

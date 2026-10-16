@@ -21,13 +21,14 @@
 
   /* 六色一起重新調過（2026-10），同一組彩度/亮度（OKLCH 驗證過色盲可辨識度），色相
      往記帳本品牌紫（brand #6F5FD6）靠攏，不再是一組彩度/亮度各自亂跳、顯得突兀的
-     「隨便六色」。 */
-  --cat-a-bg: #E9E9FD; --cat-a-fg: #8982E3;
-  --cat-b-bg: #EBEED6; --cat-b-fg: #9CA326;
-  --cat-c-bg: #FFE3EB; --cat-c-fg: #BA5178;
-  --cat-d-bg: #E0ECFD; --cat-d-fg: #3873BA;
-  --cat-e-bg: #F4EBD4; --cat-e-fg: #8A6E1F;
-  --cat-f-bg: #D5F3ED; --cat-f-fg: #30AE9F;
+     「隨便六色」。這次再往馬卡龍糖果色調一輪（亮度拉高、彩度收斂），驗證過拉亮之後
+     色盲可辨識度仍然全部通過，不是單純用眼睛猜的。 */
+  --cat-a-bg: #E8E9FF; --cat-a-fg: #A9A5FF;
+  --cat-b-bg: #EBEED6; --cat-b-fg: #B2B950;
+  --cat-c-bg: #FFE3EB; --cat-c-fg: #F38CAF;
+  --cat-d-bg: #DEEDFF; --cat-d-fg: #79B4FF;
+  --cat-e-bg: #F4EBD4; --cat-e-fg: #D3AC41;
+  --cat-f-bg: #D5F3ED; --cat-f-fg: #22CBB9;
 }
 
 @theme inline {

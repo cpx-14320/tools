@@ -70,6 +70,26 @@ export function topLevelCategoryId(categories: CategoryDTO[], id: string): strin
   return cat?.parentId ?? id;
 }
 
+/** 同一個父分類底下（頂層分類比對 kind，子分類比對 parentId）名稱不能重複——重複的話
+ *  分類格子、下拉路徑都分不出是哪一個。excludeId 讓編輯既有分類時不會把自己當成跟
+ *  自己撞名。 */
+export function categoryNameTaken(
+  categories: CategoryDTO[],
+  name: string,
+  scope: { kind: CategoryKind; parentId?: string },
+  excludeId?: string,
+): boolean {
+  const trimmed = name.trim();
+  if (!trimmed) return false;
+  return categories.some(
+    (c) =>
+      c.id !== excludeId &&
+      c.kind === scope.kind &&
+      (c.parentId ?? undefined) === scope.parentId &&
+      c.name.trim() === trimmed,
+  );
+}
+
 export const categoryColorClass: Record<CategoryColor, string> = {
   a: "bg-cat-a-bg text-cat-a-fg",
   b: "bg-cat-b-bg text-cat-b-fg",
@@ -94,10 +114,10 @@ export const categoryFillClass: Record<CategoryColor, string> = {
 // 掃進 CSS，SVG 屬性拿到的是一個字串，套不上 class）——這份是 globals.css 那組
 // --cat-*-fg 的字面值複製一份，跟分類圖示徽章用的是同一組顏色，不是另外配的新色票。
 export const categoryColorHex: Record<CategoryColor, string> = {
-  a: "#8982E3",
-  b: "#9CA326",
-  c: "#BA5178",
-  d: "#3873BA",
-  e: "#8A6E1F",
-  f: "#30AE9F",
+  a: "#A9A5FF",
+  b: "#B2B950",
+  c: "#F38CAF",
+  d: "#79B4FF",
+  e: "#D3AC41",
+  f: "#22CBB9",
 };

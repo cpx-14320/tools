@@ -14,9 +14,10 @@ import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { AccountModal, type AccountModalDraft } from "@/components/expenses/account-modal";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { TransferModal, type TransferModalDraft } from "@/components/expenses/transfer-modal";
+import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { dateFilterRange, previousPeriodSuffix } from "@/lib/expenses/date-filter";
 import { categoryById, categoryColorClass, categoryPath, type CategoryDTO } from "@/lib/expenses/categories";
-import { totalsForRange, rangeDelta, transactionsInDateRange, type TransactionDTO } from "@/lib/expenses/transactions";
+import { totalsForRange, rangeDelta, transactionsInDateRange, transactionDisplayName, type TransactionDTO } from "@/lib/expenses/transactions";
 import { inDateRange } from "@/lib/expenses/date-filter";
 import { accountBalance, type AccountDTO } from "@/lib/expenses/accounts";
 import { accountTypeById, type AccountTypeDTO } from "@/lib/expenses/account-types";
@@ -37,6 +38,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
   const [editOpen, setEditOpen] = useState(false);
   const [txModal, setTxModal] = useState<TxModalState | null>(null);
   const [transferModal, setTransferModal] = useState<TransferDTO | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ inUseCount: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,7 +89,18 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
   }
 
   async function handleEditDelete() {
-    await fetch(`/api/expenses/accounts?id=${accountId}`, { method: "DELETE" }).catch(() => {});
+    const res = await fetch(`/api/expenses/accounts?id=${accountId}`, { method: "DELETE" }).catch(() => null);
+    if (res?.status === 409) {
+      const data: { inUseCount?: number } = await res.json().catch(() => ({}));
+      setEditOpen(false);
+      setDeleteConfirm({ inUseCount: data.inUseCount ?? 0 });
+      return;
+    }
+    router.push("/tools/expenses/assets");
+  }
+
+  async function handleForceDeleteAccount() {
+    await fetch(`/api/expenses/accounts?id=${accountId}&force=1`, { method: "DELETE" }).catch(() => {});
     router.push("/tools/expenses/assets");
   }
 
@@ -210,11 +223,22 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
 
       <AccountModal
         open={editOpen}
+        accounts={accounts}
         accountTypes={accountTypes}
         initial={{ name: account.name, accountTypeId: account.accountTypeId, openingBalance: account.openingBalance }}
+        excludeId={accountId}
         onClose={() => setEditOpen(false)}
         onSave={handleEditSave}
         onDelete={handleEditDelete}
+        onAccountTypesChange={setAccountTypes}
+      />
+
+      <ConfirmModal
+        open={deleteConfirm !== null}
+        title="這個帳戶還有紀錄"
+        message={`這個帳戶還有 ${deleteConfirm?.inUseCount ?? 0} 筆交易或轉帳紀錄，刪除後這些紀錄會變成「不指定帳戶」，但不會被刪除。確定要刪除這個帳戶嗎？`}
+        onConfirm={handleForceDeleteAccount}
+        onClose={() => setDeleteConfirm(null)}
       />
 
       <TransactionModal
@@ -307,7 +331,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
                           >
                             <IconAvatar icon={category?.icon ?? ""} size="sm" className={category ? categoryColorClass[category.color] : undefined} />
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-medium text-[#4A3B7C]">{t.note ?? category?.name}</p>
+                              <p className="truncate text-sm font-medium text-[#4A3B7C]">{transactionDisplayName(t, categories)}</p>
                               <p className={`truncate ${text.muted}`}>{categoryPath(categories, t.categoryId)}</p>
                             </div>
                             <span className={`shrink-0 tabular-nums font-semibold text-[#4A3B7C] ${isIncome ? "text-[#2FAE82]" : ""}`}>

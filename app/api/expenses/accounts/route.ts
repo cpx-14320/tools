@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { requireTool } from "@/lib/auth";
-import { listAccounts, createAccount, updateAccount, deleteAccount } from "@/lib/expenses/accounts.server";
+import { listAccounts, createAccount, updateAccount, deleteAccount, countAccountUsage } from "@/lib/expenses/accounts.server";
 
 function parseInput(body: { name?: unknown; accountTypeId?: unknown; openingBalance?: unknown } | null) {
   const name = typeof body?.name === "string" ? body.name.trim() : "";
@@ -27,8 +27,9 @@ export async function POST(request: Request) {
   const input = parseInput(body);
   if (!input) return NextResponse.json({ error: "缺少必要欄位" }, { status: 400 });
 
-  const { account, accounts } = await createAccount(new ObjectId(user.id), input);
-  return NextResponse.json({ account, accounts });
+  const result = await createAccount(new ObjectId(user.id), input);
+  if ("error" in result) return NextResponse.json(result, { status: 409 });
+  return NextResponse.json(result);
 }
 
 export async function PUT(request: Request) {
@@ -40,8 +41,9 @@ export async function PUT(request: Request) {
   const input = parseInput(body);
   if (!id || !input) return NextResponse.json({ error: "缺少必要欄位" }, { status: 400 });
 
-  const accounts = await updateAccount(new ObjectId(user.id), id, input);
-  return NextResponse.json({ accounts });
+  const result = await updateAccount(new ObjectId(user.id), id, input);
+  if ("error" in result) return NextResponse.json(result, { status: 409 });
+  return NextResponse.json(result);
 }
 
 export async function DELETE(request: Request) {
@@ -50,8 +52,15 @@ export async function DELETE(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
+  const force = searchParams.get("force") === "1";
   if (!id) return NextResponse.json({ error: "缺少 id" }, { status: 400 });
 
-  const accounts = await deleteAccount(new ObjectId(user.id), id);
+  const userId = new ObjectId(user.id);
+  if (!force) {
+    const inUseCount = await countAccountUsage(userId, id);
+    if (inUseCount > 0) return NextResponse.json({ error: "帳戶仍有使用中的紀錄", inUseCount }, { status: 409 });
+  }
+
+  const accounts = await deleteAccount(userId, id);
   return NextResponse.json({ accounts });
 }

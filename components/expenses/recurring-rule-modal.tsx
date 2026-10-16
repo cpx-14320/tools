@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Button, SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass } from "./modal";
 import { DateField } from "./date-field";
-import { topLevelCategories, subCategoriesOf, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
+import { CategoryGridPicker } from "./category-grid-picker";
+import { CategoryBatchModal, type CategoryBatchItem } from "./category-batch-modal";
+import { categoryPath, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 import type { RecurrenceFrequencyUnit } from "@/lib/expenses/recurring-rules";
 import type { SavingsGoalDTO } from "@/lib/expenses/goals";
 
@@ -30,8 +32,8 @@ const FREQUENCY_OPTIONS: { value: RecurrenceFrequencyUnit; label: string }[] = [
 ];
 
 /** 新增／編輯固定收支規則——跟 TransactionModal 共用「收支類型→分類」的篩選邏輯
- *  （同一個分類清單、同一套 topLevelCategories／subCategoriesOf 用法），差別只在於
- *  這裡多了頻率／循環次數／開始日期這組「排程」欄位。 */
+ *  （同一個 CategoryGridPicker、同一個分類清單），差別只在於這裡多了頻率／循環次數／
+ *  開始日期這組「排程」欄位。 */
 export function RecurringRuleModal({
   open,
   categories,
@@ -41,6 +43,7 @@ export function RecurringRuleModal({
   onClose,
   onSave,
   onDelete,
+  onCategoriesChange,
 }: {
   open: boolean;
   categories: CategoryDTO[];
@@ -51,6 +54,9 @@ export function RecurringRuleModal({
   onClose: () => void;
   onSave: (draft: RecurringRuleModalDraft) => void;
   onDelete?: () => void;
+  /** 分類格子裡「＋新增」當場建好新分類後，把最新的分類清單回報給呼叫端更新自己的
+   *  categories 狀態。 */
+  onCategoriesChange: (categories: CategoryDTO[]) => void;
 }) {
   const initialCategory = initial ? categories.find((c) => c.id === initial.categoryId) : undefined;
   const [kind, setKind] = useState<CategoryKind>(initialCategory?.kind ?? defaultKind);
@@ -62,6 +68,7 @@ export function RecurringRuleModal({
   const [startDate, setStartDate] = useState(initial?.startDate ?? todayISO());
   const [cycleCount, setCycleCount] = useState(initial?.cycleCount ? String(initial.cycleCount) : "");
   const [linkedGoalId, setLinkedGoalId] = useState(initial?.linkedGoalId ?? "");
+  const [categoryBatchOpen, setCategoryBatchOpen] = useState(false);
 
   const amountNum = Number(amount);
   const intervalNum = Number(interval);
@@ -75,12 +82,27 @@ export function RecurringRuleModal({
     startDate &&
     (cycleCountNum === undefined || (Number.isFinite(cycleCountNum) && cycleCountNum > 0));
 
-  const options: { id: string; label: string }[] = [];
-  for (const parent of topLevelCategories(categories, kind)) {
-    options.push({ id: parent.id, label: `${parent.icon} ${parent.name}` });
-    for (const sub of subCategoriesOf(categories, parent.id)) {
-      options.push({ id: sub.id, label: `　↳ ${sub.icon} ${sub.name}` });
+  // 逐筆依序 POST，理由跟新增交易彈窗的「＋新增」分類一樣：新分類的 order 是用當下已
+  // 存在筆數算出來的，併發送出會拿到同一個 order。建好之後直接選進這條規則。
+  async function handleCreateCategories(items: CategoryBatchItem[]) {
+    let latest = categories;
+    let firstNewId: string | undefined;
+    for (const item of items) {
+      const data: { category?: CategoryDTO; categories?: CategoryDTO[] } = await fetch("/api/expenses/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item),
+      })
+        .then((res) => res.json())
+        .catch(() => ({}));
+      if (data.categories) {
+        latest = data.categories;
+        if (!firstNewId && data.category) firstNewId = data.category.id;
+      }
     }
+    onCategoriesChange(latest);
+    if (firstNewId) setCategoryId(firstNewId);
+    setCategoryBatchOpen(false);
   }
 
   return (
@@ -122,32 +144,35 @@ export function RecurringRuleModal({
         </>
       }
     >
-      <Field label="收支類型">
-        <SegmentedControl
-          className="self-start"
-          value={kind}
-          onChange={(k) => {
-            setKind(k);
-            setCategoryId("");
-          }}
-          options={[
-            { value: "支出", label: "支出" },
-            { value: "收入", label: "收入" },
-          ]}
+      <SegmentedControl
+        fullWidth
+        size="lg"
+        value={kind}
+        onChange={(k) => {
+          setKind(k);
+          setCategoryId("");
+        }}
+        options={[
+          { value: "支出", label: "支出" },
+          { value: "收入", label: "收入" },
+        ]}
+      />
+
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-xs font-medium text-[#9C94C4]">分類</span>
+          {categoryId && <span className="text-xs font-medium text-[#4A3B7C]">{categoryPath(categories, categoryId)}</span>}
+        </div>
+        <CategoryGridPicker
+          categories={categories}
+          kind={kind}
+          value={categoryId}
+          onChange={setCategoryId}
+          onAddClick={() => setCategoryBatchOpen(true)}
+          maxHeightClass="max-h-[200px]"
         />
-      </Field>
-      <Field label="分類">
-        <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={fieldInputClass}>
-          <option value="" disabled>
-            選擇分類
-          </option>
-          {options.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </Field>
+      </div>
+
       <Field label="每次金額">
         <input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} className={fieldInputClass} />
       </Field>
@@ -180,16 +205,40 @@ export function RecurringRuleModal({
 
       {kind === "收入" && goals.length > 0 && (
         <Field label="同時存入目標（可不填）——「週期存錢」就是在這裡選一個目標">
-          <select value={linkedGoalId} onChange={(e) => setLinkedGoalId(e.target.value)} className={fieldInputClass}>
-            <option value="">不連動目標</option>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setLinkedGoalId("")}
+              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                !linkedGoalId ? "border-[#6F5FD6] bg-[#6F5FD6] text-white" : "border-[#ECE4FA] bg-white text-[#4A3B7C]"
+              }`}
+            >
+              不連動目標
+            </button>
             {goals.map((g) => (
-              <option key={g.id} value={g.id}>
+              <button
+                key={g.id}
+                type="button"
+                onClick={() => setLinkedGoalId(g.id)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  linkedGoalId === g.id ? "border-[#6F5FD6] bg-[#6F5FD6] text-white" : "border-[#ECE4FA] bg-white text-[#4A3B7C]"
+                }`}
+              >
                 {g.icon} {g.name}
-              </option>
+              </button>
             ))}
-          </select>
+          </div>
         </Field>
       )}
+
+      <CategoryBatchModal
+        open={categoryBatchOpen}
+        isSubcategory={false}
+        categories={categories}
+        defaultKind={kind}
+        onClose={() => setCategoryBatchOpen(false)}
+        onSave={handleCreateCategories}
+      />
     </Modal>
   );
 }

@@ -6,6 +6,8 @@ import { Button, SegmentedControl } from "@/components/expenses/button";
 import { text } from "@/components/expenses/theme";
 import { CategoryModal, type CategoryModalDraft } from "@/components/expenses/category-modal";
 import { CategoryBatchModal, type CategoryBatchItem } from "@/components/expenses/category-batch-modal";
+import { ConfirmModal } from "@/components/expenses/confirm-modal";
+import { SelectionBar, SelectionDot } from "@/components/expenses/selection-bar";
 import {
   topLevelCategories,
   subCategoriesOf,
@@ -27,6 +29,9 @@ export function CategoriesView() {
   const [modal, setModal] = useState<CategoryDTO | null>(null);
   const [batchTarget, setBatchTarget] = useState<BatchTarget | null>(null);
   const [kind, setKind] = useState<CategoryKind>("支出");
+  const [deleteConfirm, setDeleteConfirm] = useState<{ ids: string[]; inUseCount: number } | null>(null);
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -63,13 +68,60 @@ export function CategoriesView() {
     setModal(null);
   }
 
+  // 刪除分類（單筆或多選批次共用）：先不帶 force 試刪，查無使用中紀錄的會直接刪掉、
+  // 立刻反映在畫面上；有紀錄在用的會被擋下，彙總成一個總筆數，讓呼叫端跳一次確認彈窗
+  // 問要不要強制刪除（確認後這些紀錄會被歸類到「未分類」，不會變成孤兒資料）。
+  async function tryDeleteCategories(ids: string[], force: boolean) {
+    let latest = categories;
+    const blocked: string[] = [];
+    let totalInUse = 0;
+    for (const id of ids) {
+      const res = await fetch(`/api/expenses/categories?id=${id}${force ? "&force=1" : ""}`, { method: "DELETE" }).catch(() => null);
+      if (!res) continue;
+      const data: { categories?: CategoryDTO[]; inUseCount?: number } = await res.json().catch(() => ({}));
+      if (res.status === 409) {
+        blocked.push(id);
+        totalInUse += data.inUseCount ?? 0;
+      } else if (data.categories) {
+        latest = data.categories;
+      }
+    }
+    setCategories(latest);
+    return { blocked, totalInUse };
+  }
+
   async function handleDelete() {
     if (!modal) return;
-    const data: { categories?: CategoryDTO[] } = await fetch(`/api/expenses/categories?id=${modal.id}`, { method: "DELETE" })
-      .then((res) => res.json())
-      .catch(() => ({}));
-    if (data.categories) setCategories(data.categories);
+    const { blocked, totalInUse } = await tryDeleteCategories([modal.id], false);
     setModal(null);
+    if (blocked.length > 0) setDeleteConfirm({ ids: blocked, inUseCount: totalInUse });
+  }
+
+  async function handleBulkDelete() {
+    const { blocked, totalInUse } = await tryDeleteCategories([...selectedIds], false);
+    if (blocked.length > 0) {
+      setDeleteConfirm({ ids: blocked, inUseCount: totalInUse });
+    } else {
+      setSelecting(false);
+      setSelectedIds(new Set());
+    }
+  }
+
+  async function handleForceDelete() {
+    if (!deleteConfirm) return;
+    await tryDeleteCategories(deleteConfirm.ids, true);
+    setDeleteConfirm(null);
+    setSelecting(false);
+    setSelectedIds(new Set());
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((set) => {
+      const next = new Set(set);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
 
   // 批次新增：逐筆依序 POST（不是 Promise.all 併發），理由跟薪資明細類型批次新增一樣——
@@ -129,6 +181,9 @@ export function CategoriesView() {
             <Button variant="secondary" onClick={handleApplyDefaults}>
               套用常見分類
             </Button>
+            <Button variant="secondary" onClick={() => setSelecting((v) => !v)}>
+              {selecting ? "完成" : "選取"}
+            </Button>
             <Button onClick={() => setBatchTarget({})}>＋ 新增分類</Button>
           </div>
         }
@@ -138,6 +193,9 @@ export function CategoriesView() {
         key={modal ? modal.id : "closed"}
         open={modal !== null}
         isSubcategory={!!modal?.parentId}
+        parentId={modal?.parentId}
+        categories={categories}
+        excludeId={modal?.id}
         initial={modal ?? undefined}
         onClose={() => setModal(null)}
         onSave={handleSave}
@@ -149,9 +207,19 @@ export function CategoriesView() {
         open={batchTarget !== null}
         isSubcategory={!!batchTarget?.parentId}
         parentName={batchTarget?.parentName}
+        parentId={batchTarget?.parentId}
+        categories={categories}
         defaultKind={kind}
         onClose={() => setBatchTarget(null)}
         onSave={handleBatchSave}
+      />
+
+      <ConfirmModal
+        open={deleteConfirm !== null}
+        title="這些分類還有紀錄"
+        message={`選取的分類裡，還有共 ${deleteConfirm?.inUseCount ?? 0} 筆交易或固定收支規則在用。刪除後這些紀錄會自動歸類到「未分類」，不會被刪除也不會變成孤兒資料。確定要刪除嗎？`}
+        onConfirm={handleForceDelete}
+        onClose={() => setDeleteConfirm(null)}
       />
 
       <SegmentedControl
@@ -163,6 +231,19 @@ export function CategoriesView() {
           { value: "收入", label: "收入" },
         ]}
       />
+
+      {selecting && (
+        <SelectionBar
+          count={selectedIds.size}
+          total={parents.length}
+          onToggleAll={() => setSelectedIds((set) => (set.size === parents.length ? new Set() : new Set(parents.map((c) => c.id))))}
+          onCancel={() => {
+            setSelecting(false);
+            setSelectedIds(new Set());
+          }}
+          onDelete={handleBulkDelete}
+        />
+      )}
 
       {!ready ? (
         <p className={text.faint}>載入中…</p>
@@ -177,9 +258,10 @@ export function CategoriesView() {
               <div key={c.id} className="overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
                 <button
                   type="button"
-                  onClick={() => setModal(c)}
+                  onClick={() => (selecting ? toggleSelected(c.id) : setModal(c))}
                   className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
                 >
+                  {selecting && <SelectionDot selected={selectedIds.has(c.id)} />}
                   <span className={`grid size-10 shrink-0 place-items-center rounded-xl text-lg ${categoryColorClass[c.color]}`}>
                     {c.icon}
                   </span>

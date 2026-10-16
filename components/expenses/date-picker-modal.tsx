@@ -6,6 +6,7 @@ import { Button } from "./button";
 
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
 const MONTHS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+const YEAR_GRID_SPAN = 12; // 年份列表往前往後各抓幾年，中間夾著目前選到的那年
 
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
@@ -32,10 +33,80 @@ function parseValue(value: string) {
 
 export type DateGranularity = "day" | "month";
 
-/** 記帳本共用日期／月份選擇器，比照搭乘車 components/transit/date-picker-modal.tsx 的
- *  行事曆格子＋手動輸入切換（日期模式）；月份模式是這裡額外做的，把日期格換成 12 個
- *  月份格、用年份切換，給薪資紀錄的月份欄、匯出頁的起訖月份用，不需要手動輸入模式
- *  （格子本來就只有 12 個，已經夠快選）。 */
+/** 年份選擇格——日期／月份選擇器共用，點了年份數字就會切來這一層，不是只能用 ‹ › 一年
+ *  一年翻。以目前瀏覽的年份為中心，前後各抓 YEAR_GRID_SPAN 年，4 欄排列，可以上下捲動。 */
+function YearGrid({ year, onSelect }: { year: number; onSelect: (year: number) => void }) {
+  const start = year - YEAR_GRID_SPAN;
+  const years = Array.from({ length: YEAR_GRID_SPAN * 2 + 1 }, (_, i) => start + i);
+  return (
+    <div className="max-h-[320px] w-full overflow-y-auto">
+      <div className="grid grid-cols-4 gap-2">
+        {years.map((y) => (
+          <button
+            key={y}
+            type="button"
+            onClick={() => onSelect(y)}
+            className={`rounded-xl py-2.5 text-sm font-medium transition-colors ${
+              y === year ? "bg-[#6F5FD6] text-white" : "text-[#4A3B7C] hover:bg-[#EFEAFC]"
+            }`}
+          >
+            {y}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** 12 個月份格——月份篩選器（granularity="month"）跟日期篩選器點月份切換過來的子畫面
+ *  共用同一個，不要兩邊各刻一份一樣的格子。 */
+function MonthGrid({
+  year,
+  month,
+  onSelectYear,
+  onSelectMonth,
+}: {
+  year: number;
+  month: number;
+  onSelectYear: () => void;
+  onSelectMonth: (month: number) => void;
+}) {
+  const now = new Date();
+  return (
+    <>
+      <div className="flex w-full items-center justify-center gap-1.5">
+        <button type="button" onClick={onSelectYear} className="rounded-full px-3 py-1 text-base font-semibold text-[#4A3B7C] hover:bg-[#EFEAFC]">
+          {year} ▾
+        </button>
+      </div>
+      <div className="grid w-full grid-cols-4 gap-2">
+        {MONTHS.map((label, i) => {
+          const m = i + 1;
+          const isSelected = m === month;
+          const isCurrent = year === now.getFullYear() && m === now.getMonth() + 1;
+          return (
+            <button
+              key={m}
+              type="button"
+              onClick={() => onSelectMonth(m)}
+              className={`rounded-xl py-2.5 text-sm font-medium transition-colors ${
+                isSelected ? "bg-[#6F5FD6] text-white" : isCurrent ? "bg-[#EFEAFC] text-[#6F5FD6]" : "text-[#4A3B7C] hover:bg-[#EFEAFC]"
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+type View = "year" | "month" | "day";
+
+/** 記帳本共用日期／月份選擇器——標題列的「年」「月」都可以個別點開單獨切換（年份跳
+ *  列表選、月份跳 12 格選），不用只能靠 ‹ › 一格一格翻；拿掉原本的「手動輸入」模式
+ *  （原生數字輸入框），年/月/日都改成跟搭乘車同一套圖形選擇。 */
 export function DatePickerModal({
   open,
   granularity = "day",
@@ -53,7 +124,7 @@ export function DatePickerModal({
   const [year, setYear] = useState(parsed.year);
   const [month, setMonth] = useState(parsed.month);
   const [day, setDay] = useState(parsed.day);
-  const [viewMode, setViewMode] = useState<"calendar" | "manual">("calendar");
+  const [view, setView] = useState<View>(granularity === "month" ? "month" : "day");
 
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
@@ -76,10 +147,15 @@ export function DatePickerModal({
     setDay((d) => Math.min(d, daysInMonth(nextYear, nextMonth)));
   }
 
-  function setManualMonth(v: number) {
-    const m = Math.min(12, Math.max(1, v));
+  function pickYear(y: number) {
+    setYear(y);
+    setView(granularity === "month" ? "month" : "day");
+  }
+
+  function pickMonth(m: number) {
     setMonth(m);
     setDay((d) => Math.min(d, daysInMonth(year, m)));
+    setView(granularity === "month" ? "month" : "day");
   }
 
   function handleConfirm() {
@@ -104,66 +180,42 @@ export function DatePickerModal({
       }
     >
       <div className="flex flex-col items-center gap-4">
-        {granularity === "month" ? (
-          <>
-            <div className="flex w-full items-center justify-between">
-              <button
-                type="button"
-                onClick={() => setYear((y) => y - 1)}
-                aria-label="上一年"
-                className="grid size-8 place-items-center rounded-full text-[#6F5FD6] hover:bg-[#F3EFFC]"
-              >
-                ‹
-              </button>
-              <p className="text-base font-semibold text-[#4A3B7C]">{year} 年</p>
-              <button
-                type="button"
-                onClick={() => setYear((y) => y + 1)}
-                aria-label="下一年"
-                className="grid size-8 place-items-center rounded-full text-[#6F5FD6] hover:bg-[#F3EFFC]"
-              >
-                ›
-              </button>
-            </div>
-            <div className="grid w-full grid-cols-4 gap-2">
-              {MONTHS.map((label, i) => {
-                const m = i + 1;
-                const isSelected = m === month;
-                const isCurrent = year === now.getFullYear() && m === now.getMonth() + 1;
-                return (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setMonth(m)}
-                    className={`rounded-xl py-2.5 text-sm font-medium transition-colors ${
-                      isSelected ? "bg-[#6F5FD6] text-white" : isCurrent ? "bg-[#EFEAFC] text-[#6F5FD6]" : "text-[#4A3B7C] hover:bg-[#EFEAFC]"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-          </>
-        ) : viewMode === "calendar" ? (
+        {view === "year" ? (
+          <YearGrid year={year} onSelect={pickYear} />
+        ) : granularity === "month" || view === "month" ? (
+          <MonthGrid year={year} month={month} onSelectYear={() => setView("year")} onSelectMonth={pickMonth} />
+        ) : (
           <>
             <div className="flex w-full items-center justify-between">
               <button
                 type="button"
                 onClick={() => changeMonth(-1)}
                 aria-label="上個月"
-                className="grid size-8 place-items-center rounded-full text-[#6F5FD6] hover:bg-[#F3EFFC]"
+                className="grid size-8 shrink-0 place-items-center rounded-full text-[#6F5FD6] hover:bg-[#F3EFFC]"
               >
                 ‹
               </button>
-              <p className="text-base font-semibold text-[#4A3B7C]">
-                {year}年{month}月
-              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setView("year")}
+                  className="rounded-full px-2 py-1 text-base font-semibold text-[#4A3B7C] hover:bg-[#EFEAFC]"
+                >
+                  {year}年
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setView("month")}
+                  className="rounded-full px-2 py-1 text-base font-semibold text-[#4A3B7C] hover:bg-[#EFEAFC]"
+                >
+                  {month}月
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => changeMonth(1)}
                 aria-label="下個月"
-                className="grid size-8 place-items-center rounded-full text-[#6F5FD6] hover:bg-[#F3EFFC]"
+                className="grid size-8 shrink-0 place-items-center rounded-full text-[#6F5FD6] hover:bg-[#F3EFFC]"
               >
                 ›
               </button>
@@ -194,49 +246,6 @@ export function DatePickerModal({
               })}
             </div>
           </>
-        ) : (
-          <div className="flex items-center gap-2 py-6">
-            <input
-              type="number"
-              value={year}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                if (Number.isFinite(v)) setYear(v);
-              }}
-              className="w-20 rounded-2xl border border-[#ECE4FA] px-2 py-2 text-center text-lg font-semibold text-[#4A3B7C] outline-none"
-            />
-            <span className="text-sm text-[#9C94C4]">年</span>
-            <input
-              type="number"
-              min={1}
-              max={12}
-              value={month}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                if (Number.isFinite(v)) setManualMonth(v);
-              }}
-              className="w-14 rounded-2xl border border-[#ECE4FA] px-2 py-2 text-center text-lg font-semibold text-[#4A3B7C] outline-none"
-            />
-            <span className="text-sm text-[#9C94C4]">月</span>
-            <input
-              type="number"
-              min={1}
-              max={daysInMonth(year, month)}
-              value={day}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                if (Number.isFinite(v)) setDay(Math.min(daysInMonth(year, month), Math.max(1, v)));
-              }}
-              className="w-14 rounded-2xl border border-[#ECE4FA] px-2 py-2 text-center text-lg font-semibold text-[#4A3B7C] outline-none"
-            />
-            <span className="text-sm text-[#9C94C4]">日</span>
-          </div>
-        )}
-
-        {granularity === "day" && (
-          <button type="button" onClick={() => setViewMode((v) => (v === "calendar" ? "manual" : "calendar"))} className="text-xs font-medium text-[#6F5FD6]">
-            {viewMode === "calendar" ? "切換為手動輸入" : "切換為圖形選擇"}
-          </button>
         )}
       </div>
     </Modal>

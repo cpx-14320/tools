@@ -6,6 +6,8 @@ import { Button, Badge } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ProgressBar } from "@/components/expenses/progress-bar";
+import { ConfirmModal } from "@/components/expenses/confirm-modal";
+import { SelectionBar, SelectionDot } from "@/components/expenses/selection-bar";
 import { text } from "@/components/expenses/theme";
 import { GoalModal, ContributeModal, type GoalModalDraft } from "@/components/expenses/goal-modal";
 import { goalProgress, goalPace, type SavingsGoalDTO } from "@/lib/expenses/goals";
@@ -18,6 +20,9 @@ export function GoalsView() {
   const [ready, setReady] = useState(false);
   const [modal, setModal] = useState<ModalState | null>(null);
   const [contributeId, setContributeId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -67,13 +72,38 @@ export function GoalsView() {
     setModal(null);
   }
 
-  async function handleDelete() {
+  async function performDelete(ids: string[]) {
+    let latest = goals;
+    for (const id of ids) {
+      const data: { goals?: SavingsGoalDTO[] } = await fetch(`/api/expenses/goals?id=${id}`, { method: "DELETE" })
+        .then((res) => res.json())
+        .catch(() => ({}));
+      if (data.goals) latest = data.goals;
+    }
+    setGoals(latest);
+  }
+
+  function requestDelete() {
     if (modal?.mode !== "edit") return;
-    const data: { goals?: SavingsGoalDTO[] } = await fetch(`/api/expenses/goals?id=${modal.goal.id}`, { method: "DELETE" })
-      .then((res) => res.json())
-      .catch(() => ({}));
-    if (data.goals) setGoals(data.goals);
     setModal(null);
+    setDeleteConfirm([modal.goal.id]);
+  }
+
+  async function handleConfirmedDelete() {
+    if (!deleteConfirm) return;
+    await performDelete(deleteConfirm);
+    setDeleteConfirm(null);
+    setSelecting(false);
+    setSelectedIds(new Set());
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((set) => {
+      const next = new Set(set);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
 
   async function handleContribute(amount: number) {
@@ -94,7 +124,14 @@ export function GoalsView() {
       <PageHeader
         title="存錢目標"
         description="設定目標金額，追蹤存了多少、還差多少"
-        actions={<Button onClick={() => setModal({ mode: "create" })}>＋ 新增目標</Button>}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => setSelecting((v) => !v)}>
+              {selecting ? "完成" : "選取"}
+            </Button>
+            <Button onClick={() => setModal({ mode: "create" })}>＋ 新增目標</Button>
+          </div>
+        }
       />
 
       <GoalModal
@@ -103,9 +140,30 @@ export function GoalsView() {
         initial={modal?.mode === "edit" ? modal.goal : undefined}
         onClose={() => setModal(null)}
         onSave={handleSave}
-        onDelete={modal?.mode === "edit" ? handleDelete : undefined}
+        onDelete={modal?.mode === "edit" ? requestDelete : undefined}
       />
       <ContributeModal open={contributeId !== null} onClose={() => setContributeId(null)} onSave={handleContribute} />
+
+      <ConfirmModal
+        open={deleteConfirm !== null}
+        title="確定要刪除目標嗎？"
+        message={`刪除後這${(deleteConfirm?.length ?? 0) > 1 ? ` ${deleteConfirm?.length} 個` : "個"}目標跟累積進度都會不見，無法復原。還有固定收支連著的話，連動也會一併解除。`}
+        onConfirm={handleConfirmedDelete}
+        onClose={() => setDeleteConfirm(null)}
+      />
+
+      {selecting && (
+        <SelectionBar
+          count={selectedIds.size}
+          total={goals.length}
+          onToggleAll={() => setSelectedIds((set) => (set.size === goals.length ? new Set() : new Set(goals.map((g) => g.id))))}
+          onCancel={() => {
+            setSelecting(false);
+            setSelectedIds(new Set());
+          }}
+          onDelete={() => setDeleteConfirm([...selectedIds])}
+        />
+      )}
 
       {!ready ? (
         <p className={text.faint}>載入中…</p>
@@ -120,12 +178,26 @@ export function GoalsView() {
               <Card key={goal.id}>
                 <CardBody>
                   <div className="flex items-start gap-3">
-                    <IconAvatar icon={goal.icon} />
+                    {selecting ? (
+                      <button type="button" onClick={() => toggleSelected(goal.id)} className="shrink-0 pt-1">
+                        <SelectionDot selected={selectedIds.has(goal.id)} />
+                      </button>
+                    ) : (
+                      <IconAvatar icon={goal.icon} />
+                    )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => setModal({ mode: "edit", goal })} className={`${text.sectionHeading} hover:underline`}>
-                          {goal.name}
-                        </button>
+                        {selecting ? (
+                          <span className={text.sectionHeading}>{goal.name}</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setModal({ mode: "edit", goal })}
+                            className={`${text.sectionHeading} hover:underline`}
+                          >
+                            {goal.name}
+                          </button>
+                        )}
                         {achieved && <Badge tone="positive">已達成</Badge>}
                       </div>
                       <p className={`mt-0.5 ${text.muted}`}>
@@ -133,7 +205,7 @@ export function GoalsView() {
                         {goal.targetDate ? `目標日期 ${goal.targetDate}` : "沒有設定期限"}
                       </p>
                     </div>
-                    {!achieved && (
+                    {!selecting && !achieved && (
                       <Button variant="secondary" className="shrink-0" onClick={() => setContributeId(goal.id)}>
                         ＋ 存入
                       </Button>

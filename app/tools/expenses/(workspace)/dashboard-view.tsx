@@ -18,6 +18,7 @@ import {
   incomeBreakdown,
   budgetSummary,
   transactionsInDateRange,
+  transactionDisplayName,
   type TransactionDTO,
 } from "@/lib/expenses/transactions";
 import { type AccountDTO } from "@/lib/expenses/accounts";
@@ -276,7 +277,7 @@ export function DashboardView() {
               {recent.map((t) => (
                 <li key={t.id} className="flex items-center justify-between py-2.5 text-sm">
                   <div className="min-w-0">
-                    <p className="truncate text-[#4A3B7C]">{t.note ?? "（無備註）"}</p>
+                    <p className="truncate text-[#4A3B7C]">{transactionDisplayName(t, categories)}</p>
                     <p className={text.muted}>{t.date}</p>
                   </div>
                   <span className="shrink-0 tabular-nums font-medium text-[#4A3B7C]">－{formatCurrency(t.amount)}</span>

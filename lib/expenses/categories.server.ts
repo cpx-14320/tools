@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
-import type { CategoryColor, CategoryDTO, CategoryKind } from "./categories";
+import { categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "./categories";
 
 interface CategoryDoc {
   _id: ObjectId;
@@ -16,6 +16,9 @@ interface CategoryDoc {
   order: number;
   createdAt: Date;
   budgetAmount?: number;
+  /** 刪除分類時，既有紀錄被強制歸類到「未分類」留下的標記——純粹讓畫面知道這是系統
+   *  自動生成的歸宿分類，不是使用者自己建的，目前還沒有特殊 UI 處理，先記著備用。 */
+  isUncategorized?: boolean;
 }
 
 function toDTO(doc: CategoryDoc): CategoryDTO {
@@ -63,6 +66,11 @@ export async function createCategory(
     kind = parent.kind; // 子分類的 kind 跟父分類一致，不能自己另外選
   }
 
+  const existing = await listCategories(userId);
+  if (categoryNameTaken(existing, input.name, { kind, parentId: parentId?.toHexString() })) {
+    return { error: "已經有同樣名稱的分類了，換一個名稱吧。" };
+  }
+
   const order = await col.countDocuments({ userId, parentId, kind });
   const doc: CategoryDoc = {
     _id: new ObjectId(),
@@ -90,8 +98,23 @@ export interface UpdateCategoryInput {
   budgetAmount?: number | null;
 }
 
-export async function updateCategory(userId: ObjectId, id: string, input: UpdateCategoryInput): Promise<CategoryDTO[]> {
+export async function updateCategory(
+  userId: ObjectId,
+  id: string,
+  input: UpdateCategoryInput,
+): Promise<{ categories: CategoryDTO[] } | { error: string }> {
   const col = await collection();
+
+  if (input.name) {
+    const current = await col.findOne({ _id: new ObjectId(id), userId });
+    if (current) {
+      const existing = await listCategories(userId);
+      if (categoryNameTaken(existing, input.name, { kind: current.kind, parentId: current.parentId?.toHexString() }, id)) {
+        return { error: "已經有同樣名稱的分類了，換一個名稱吧。" };
+      }
+    }
+  }
+
   const { budgetAmount, ...rest } = input;
   // 子分類編輯時不會送 color（顏色跟父分類一致、不能自己改），這裡要過濾掉 undefined 欄位，
   // 不然 $set 可能把欄位整個設成 null，蓋掉原本繼承來的顏色。
@@ -106,14 +129,78 @@ export async function updateCategory(userId: ObjectId, id: string, input: Update
   if (Object.keys(update).length > 0) {
     await col.updateOne({ _id: new ObjectId(id), userId }, update);
   }
-  return listCategories(userId);
+  return { categories: await listCategories(userId) };
 }
 
-/** 刪除大分類會連同底下的子分類一起刪掉；既有消費紀錄若引用到被刪除的分類不會跟著刪，
- *  只是之後查詢時 categoryPath／categoryById 會顯示「（已刪除分類）」。 */
-export async function deleteCategory(userId: ObjectId, id: string): Promise<CategoryDTO[]> {
+/** 刪除分類（含子分類）前，這個分類／子分類底下還有幾筆交易或固定收支規則在用——
+ *  不計入就刪，這些紀錄會變成查無分類的孤兒資料，連帶讓支出/收入統計算錯（查無分類
+ *  的交易會被誤判成支出，詳見 transactions.ts 的 totalsForRange）。 */
+export async function countCategoryUsage(userId: ObjectId, id: string): Promise<number> {
+  const db = await getDb();
   const col = await collection();
   const target = new ObjectId(id);
+  const subs = await col.find({ userId, parentId: target }, { projection: { _id: 1 } }).toArray();
+  const ids = [target, ...subs.map((s) => s._id)];
+  const [txCount, ruleCount] = await Promise.all([
+    db.collection("expenses.transactions").countDocuments({ userId, categoryId: { $in: ids } }),
+    db.collection("expenses.recurringRules").countDocuments({ userId, categoryId: { $in: ids } }),
+  ]);
+  return txCount + ruleCount;
+}
+
+/** 找不到就建一個「未分類」分類回傳 id——刪除一個還有紀錄在用的分類時，這些紀錄會被
+ *  強制歸類到這裡，而不是留著查無分類的孤兒 categoryId。每個收支方向（支出/收入）各自
+ *  一個，名稱固定「未分類」，重複呼叫也不會建出第二個（用名稱＋kind 查過一輪才建）。 */
+async function ensureUncategorized(userId: ObjectId, kind: CategoryKind): Promise<ObjectId> {
+  const col = await collection();
+  const existing = await col.findOne({ userId, kind, parentId: null, name: "未分類" });
+  if (existing) return existing._id;
+  const order = await col.countDocuments({ userId, parentId: null, kind });
+  const doc: CategoryDoc = {
+    _id: new ObjectId(),
+    userId,
+    name: "未分類",
+    icon: "📦",
+    color: "f",
+    kind,
+    parentId: null,
+    order,
+    createdAt: new Date(),
+    isUncategorized: true,
+  };
+  await col.insertOne(doc);
+  return doc._id;
+}
+
+/** 刪除大分類會連同底下的子分類一起刪掉。預設（force=false）如果還有交易/固定收支規則
+ *  引用這個分類（或它的子分類），不會真的刪除，回傳 { error, inUseCount } 讓呼叫端先問過
+ *  使用者；force=true 才會真的刪，刪之前先把那些紀錄的 categoryId 改成「未分類」，
+ *  不留孤兒資料。 */
+export async function deleteCategory(
+  userId: ObjectId,
+  id: string,
+  options?: { force?: boolean },
+): Promise<{ categories: CategoryDTO[] } | { error: string; inUseCount: number }> {
+  const col = await collection();
+  const target = new ObjectId(id);
+
+  if (!options?.force) {
+    const inUseCount = await countCategoryUsage(userId, id);
+    if (inUseCount > 0) return { error: "分類仍有使用中的紀錄", inUseCount };
+  } else {
+    const targetDoc = await col.findOne({ _id: target, userId });
+    if (targetDoc) {
+      const subs = await col.find({ userId, parentId: target }, { projection: { _id: 1 } }).toArray();
+      const ids = [target, ...subs.map((s) => s._id)];
+      const uncategorizedId = await ensureUncategorized(userId, targetDoc.kind);
+      const db = await getDb();
+      await Promise.all([
+        db.collection("expenses.transactions").updateMany({ userId, categoryId: { $in: ids } }, { $set: { categoryId: uncategorizedId } }),
+        db.collection("expenses.recurringRules").updateMany({ userId, categoryId: { $in: ids } }, { $set: { categoryId: uncategorizedId } }),
+      ]);
+    }
+  }
+
   await col.deleteMany({ userId, $or: [{ _id: target }, { parentId: target }] });
-  return listCategories(userId);
+  return { categories: await listCategories(userId) };
 }

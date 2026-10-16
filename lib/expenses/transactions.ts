@@ -45,6 +45,13 @@ export function breakdownNet(breakdown: BreakdownItem[]): number {
   return breakdown.reduce((sum, item) => sum + (item.kind === "扣項" ? -item.amount : item.amount), 0);
 }
 
+/** 交易列表要顯示的「名稱」——使用者不一定每筆都會打備註，沒打的話用分類（或子分類）
+ *  名稱頂上去，分類也查不到（被刪除又沒有正確歸類到「未分類」的孤兒資料）才顯示
+ *  「（未分類）」，不會整排空白。有備註一律優先顯示備註文案。 */
+export function transactionDisplayName(t: TransactionDTO, categories: CategoryDTO[]): string {
+  return t.note || categoryById(categories, t.categoryId)?.name || "（未分類）";
+}
+
 export function transactionsInDateRange(transactions: TransactionDTO[], range: DateRange | null): TransactionDTO[] {
   return transactions.filter((t) => inDateRange(t.date, range)).sort((a, b) => (a.date < b.date ? -1 : 1));
 }
@@ -59,10 +66,14 @@ export interface RangeTotals {
 
 /** 指定區間的總收入／總支出／結餘。收入＝支出類以外（即「收入」分類，含薪資）的
  *  Transaction 加總；薪資不再是另外算好傳進來的特例，就是一筆分類為「薪資」的一般收入
- *  交易，想看明細（本薪／加班費／勞保／所得稅…）就看那筆交易自己的 breakdown。 */
+ *  交易，想看明細（本薪／加班費／勞保／所得稅…）就看那筆交易自己的 breakdown。
+ *
+ *  查不到分類（分類被刪除後沒有正確歸類到「未分類」留下的孤兒資料——正常流程不會發生，
+ *  見 categories.server.ts 的 deleteCategory，但還是防一下）的交易兩邊都不算，不要預設
+ *  當成支出：分類是「收入」被刪的話，把它誤判成支出會讓本月收入/支出/結餘整組數字錯開。 */
 export function totalsForRange(transactions: TransactionDTO[], categories: CategoryDTO[], range: DateRange | null): RangeTotals {
   const rangeTx = transactionsInDateRange(transactions, range);
-  const expenseTx = rangeTx.filter((t) => categoryById(categories, t.categoryId)?.kind !== "收入");
+  const expenseTx = rangeTx.filter((t) => categoryById(categories, t.categoryId)?.kind === "支出");
   const incomeTx = rangeTx.filter((t) => categoryById(categories, t.categoryId)?.kind === "收入");
   const totalExpense = expenseTx.reduce((sum, t) => sum + t.amount, 0);
   const totalIncome = incomeTx.reduce((sum, t) => sum + t.amount, 0);

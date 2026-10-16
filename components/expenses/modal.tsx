@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { text } from "./theme";
 
 export const fieldInputClass =
   "w-full rounded-2xl border border-[#ECE4FA] bg-white px-4 py-2.5 text-sm text-[#4A3B7C] outline-none focus:border-[#6F5FD6]";
@@ -9,7 +10,7 @@ export const fieldInputClass =
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium text-[#9C94C4]">{label}</span>
+      <span className={text.label}>{label}</span>
       {children}
     </label>
   );

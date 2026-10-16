@@ -29,6 +29,14 @@ export function accountsByKind(accounts: AccountDTO[], types: AccountTypeDTO[], 
   return accounts.filter((a) => accountKind(types, a) === kind);
 }
 
+/** 帳戶名稱不能重複（不分資產/負債，整個使用者底下唯一）——重複的話資產總表、帳戶選擇
+ *  彈窗都分不出是哪一個帳戶。excludeId 讓編輯既有帳戶時不會把自己當成跟自己撞名。 */
+export function accountNameTaken(accounts: AccountDTO[], name: string, excludeId?: string): boolean {
+  const trimmed = name.trim();
+  if (!trimmed) return false;
+  return accounts.some((a) => a.id !== excludeId && a.name.trim() === trimmed);
+}
+
 /** 單筆交易對指定帳戶餘額的影響：資產帳戶支出扣錢／收入加錢，負債帳戶反過來
  *  （支出＝刷卡消費，負債增加；收入＝還款，負債減少）。 */
 function signedDelta(tx: TransactionDTO, kind: AccountKind, categories: CategoryDTO[]): number {

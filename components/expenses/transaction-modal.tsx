@@ -4,19 +4,11 @@ import { useState } from "react";
 import { Button, SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass } from "./modal";
 import { DateField } from "./date-field";
-import { IconAvatar } from "./icon-avatar";
 import { AccountPickerModal } from "./account-picker-modal";
+import { CategoryGridPicker } from "./category-grid-picker";
 import { CategoryBatchModal, type CategoryBatchItem } from "./category-batch-modal";
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
-import {
-  topLevelCategories,
-  subCategoriesOf,
-  categoryColorClass,
-  categoryPath,
-  topLevelCategoryId,
-  type CategoryDTO,
-  type CategoryKind,
-} from "@/lib/expenses/categories";
+import { categoryPath, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 import { breakdownNet, type BreakdownItem, type BreakdownKind, type TransactionDTO } from "@/lib/expenses/transactions";
 import { type AccountDTO } from "@/lib/expenses/accounts";
 import { accountTypeById, type AccountTypeDTO } from "@/lib/expenses/account-types";
@@ -90,10 +82,6 @@ export function TransactionModal({
   const amountNum = hasBreakdown ? breakdownTotal : evaluateExpr(expr);
   const breakdownValid = !hasBreakdown || breakdown.every((b) => b.label.trim() && Number.isFinite(b.amount) && b.amount > 0);
   const canSave = categoryId && Number.isFinite(amountNum) && amountNum > 0 && date && breakdownValid;
-
-  const topCategories = topLevelCategories(categories, kind);
-  const activeParentId = categoryId ? topLevelCategoryId(categories, categoryId) : "";
-  const subcategories = activeParentId ? subCategoriesOf(categories, activeParentId) : [];
 
   const selectedAccount = accounts.find((a) => a.id === accountId);
   const selectedAccountLabel = selectedAccount
@@ -190,47 +178,7 @@ export function TransactionModal({
         </div>
         {/* 只有這一塊自己捲動——分類一多，捲的是這個格子區塊，不是整個彈窗（彈窗本身的
             標題／底部按鈕已經固定不動，見 modal.tsx）。 */}
-        <div className="max-h-[260px] overflow-y-auto">
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => setCategoryBatchOpen(true)}
-              className="flex flex-col items-center gap-1.5 rounded-2xl border border-dashed border-[#C7BFE6] bg-white px-2 py-3 transition-colors hover:bg-[#F3EFFC]"
-            >
-              <IconAvatar icon="＋" size="sm" className="bg-[#F3EFFC] text-[#6F5FD6]" />
-              <span className="line-clamp-1 text-xs font-medium text-[#6F5FD6]">新增</span>
-            </button>
-            {topCategories.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setCategoryId(cat.id)}
-                className={`flex flex-col items-center gap-1.5 rounded-2xl border px-2 py-3 transition-colors ${
-                  cat.id === activeParentId ? "border-[#6F5FD6] bg-[#F3EFFC]" : "border-[#ECE4FA] bg-white"
-                }`}
-              >
-                <IconAvatar icon={cat.icon} size="sm" className={categoryColorClass[cat.color]} />
-                <span className="line-clamp-1 text-xs font-medium text-[#4A3B7C]">{cat.name}</span>
-              </button>
-            ))}
-          </div>
-          {subcategories.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {subcategories.map((sub) => (
-                <button
-                  key={sub.id}
-                  type="button"
-                  onClick={() => setCategoryId(sub.id)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                    sub.id === categoryId ? "border-[#6F5FD6] bg-[#6F5FD6] text-white" : "border-[#ECE4FA] bg-white text-[#4A3B7C]"
-                  }`}
-                >
-                  {sub.icon} {sub.name}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <CategoryGridPicker categories={categories} kind={kind} value={categoryId} onChange={setCategoryId} onAddClick={() => setCategoryBatchOpen(true)} />
       </div>
 
       <Field label="日期">
@@ -242,7 +190,7 @@ export function TransactionModal({
           onClick={() => setAccountPickerOpen(true)}
           className={`${fieldInputClass} flex items-center justify-between gap-2 text-left`}
         >
-          <span className={accountId ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}>{accountId ? selectedAccountLabel : "不指定帳戶"}</span>
+          <span className={selectedAccount ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}>{selectedAccount ? selectedAccountLabel : "不指定帳戶"}</span>
           <span aria-hidden className="shrink-0 text-[#9C94C4]">
             🏦
           </span>
@@ -335,6 +283,7 @@ export function TransactionModal({
       <CategoryBatchModal
         open={categoryBatchOpen}
         isSubcategory={false}
+        categories={categories}
         defaultKind={kind}
         onClose={() => setCategoryBatchOpen(false)}
         onSave={handleCreateCategories}

@@ -8,6 +8,8 @@ import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ProgressBar } from "@/components/expenses/progress-bar";
 import { text } from "@/components/expenses/theme";
 import { RecurringRuleModal, type RecurringRuleModalDraft } from "@/components/expenses/recurring-rule-modal";
+import { ConfirmModal } from "@/components/expenses/confirm-modal";
+import { SelectionBar, SelectionDot } from "@/components/expenses/selection-bar";
 import { categoryById, categoryColorClass, type CategoryDTO } from "@/lib/expenses/categories";
 import type { TransactionDTO } from "@/lib/expenses/transactions";
 import type { SavingsGoalDTO } from "@/lib/expenses/goals";
@@ -35,6 +37,9 @@ export function RecurringView() {
   const [goals, setGoals] = useState<SavingsGoalDTO[]>([]);
   const [ready, setReady] = useState(false);
   const [modal, setModal] = useState<ModalState | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -82,13 +87,38 @@ export function RecurringView() {
     setModal(null);
   }
 
-  async function handleDelete() {
+  async function performDelete(ids: string[]) {
+    let latest = rules;
+    for (const id of ids) {
+      const data: { rules?: RecurringRuleDTO[] } = await fetch(`/api/expenses/recurring-rules?id=${id}`, { method: "DELETE" })
+        .then((res) => res.json())
+        .catch(() => ({}));
+      if (data.rules) latest = data.rules;
+    }
+    setRules(latest);
+  }
+
+  function requestDelete() {
     if (modal?.mode !== "edit") return;
-    const data: { rules?: RecurringRuleDTO[] } = await fetch(`/api/expenses/recurring-rules?id=${modal.rule.id}`, { method: "DELETE" })
-      .then((res) => res.json())
-      .catch(() => ({}));
-    if (data.rules) setRules(data.rules);
     setModal(null);
+    setDeleteConfirm([modal.rule.id]);
+  }
+
+  async function handleConfirmedDelete() {
+    if (!deleteConfirm) return;
+    await performDelete(deleteConfirm);
+    setDeleteConfirm(null);
+    setSelecting(false);
+    setSelectedIds(new Set());
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((set) => {
+      const next = new Set(set);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
 
   async function handleToggleActive(rule: RecurringRuleDTO) {
@@ -109,7 +139,14 @@ export function RecurringView() {
       <PageHeader
         title="固定收支"
         description="每月電話費、房租這種會重複出現的收支，到期會在你下次打開記帳本時自動入帳"
-        actions={<Button onClick={() => setModal({ mode: "create" })}>＋ 新增固定收支</Button>}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => setSelecting((v) => !v)}>
+              {selecting ? "完成" : "選取"}
+            </Button>
+            <Button onClick={() => setModal({ mode: "create" })}>＋ 新增固定收支</Button>
+          </div>
+        }
       />
 
       <RecurringRuleModal
@@ -134,8 +171,30 @@ export function RecurringView() {
         }
         onClose={() => setModal(null)}
         onSave={handleSave}
-        onDelete={modal?.mode === "edit" ? handleDelete : undefined}
+        onDelete={modal?.mode === "edit" ? requestDelete : undefined}
+        onCategoriesChange={setCategories}
       />
+
+      <ConfirmModal
+        open={deleteConfirm !== null}
+        title="確定要刪除固定收支嗎？"
+        message={`刪除後這${(deleteConfirm?.length ?? 0) > 1 ? ` ${deleteConfirm?.length} 條` : "條"}規則不會再自動入帳，但已經入帳過的交易紀錄不會被刪除，會繼續留著。`}
+        onConfirm={handleConfirmedDelete}
+        onClose={() => setDeleteConfirm(null)}
+      />
+
+      {selecting && (
+        <SelectionBar
+          count={selectedIds.size}
+          total={rules.length}
+          onToggleAll={() => setSelectedIds((set) => (set.size === rules.length ? new Set() : new Set(rules.map((r) => r.id))))}
+          onCancel={() => {
+            setSelecting(false);
+            setSelectedIds(new Set());
+          }}
+          onDelete={() => setDeleteConfirm([...selectedIds])}
+        />
+      )}
 
       {!ready ? (
         <p className={text.faint}>載入中…</p>
@@ -160,12 +219,22 @@ export function RecurringView() {
               <Card key={rule.id}>
                 <CardBody>
                   <div className="flex items-start gap-3">
-                    <IconAvatar icon={category?.icon ?? ""} size="sm" className={category ? categoryColorClass[category.color] : undefined} />
+                    {selecting ? (
+                      <button type="button" onClick={() => toggleSelected(rule.id)} className="shrink-0 pt-1">
+                        <SelectionDot selected={selectedIds.has(rule.id)} />
+                      </button>
+                    ) : (
+                      <IconAvatar icon={category?.icon ?? ""} size="sm" className={category ? categoryColorClass[category.color] : undefined} />
+                    )}
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <button type="button" onClick={() => setModal({ mode: "edit", rule })} className={`${text.sectionHeading} hover:underline`}>
-                          {category?.name ?? "（已刪除分類）"}
-                        </button>
+                        {selecting ? (
+                          <span className={text.sectionHeading}>{category?.name ?? "（已刪除分類）"}</span>
+                        ) : (
+                          <button type="button" onClick={() => setModal({ mode: "edit", rule })} className={`${text.sectionHeading} hover:underline`}>
+                            {category?.name ?? "（已刪除分類）"}
+                          </button>
+                        )}
                         {!rule.active && <Badge>已暫停</Badge>}
                         {rule.active && finished && <Badge tone="positive">已完成</Badge>}
                       </div>
@@ -204,11 +273,13 @@ export function RecurringView() {
 
                   {nextDate && <p className={`mt-3 ${text.muted}`}>下次預計入帳：{nextDate}</p>}
 
-                  <div className="mt-3 flex items-center justify-end gap-1">
-                    <Button variant="ghost" onClick={() => handleToggleActive(rule)}>
-                      {rule.active ? "暫停" : "恢復"}
-                    </Button>
-                  </div>
+                  {!selecting && (
+                    <div className="mt-3 flex items-center justify-end gap-1">
+                      <Button variant="ghost" onClick={() => handleToggleActive(rule)}>
+                        {rule.active ? "暫停" : "恢復"}
+                      </Button>
+                    </div>
+                  )}
                 </CardBody>
               </Card>
             );

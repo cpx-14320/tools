@@ -28,8 +28,9 @@ export async function POST(request: Request) {
   const input = parseCreateInput(body);
   if (!input) return NextResponse.json({ error: "缺少必要欄位" }, { status: 400 });
 
-  const { accountType, accountTypes } = await createAccountType(new ObjectId(user.id), input);
-  return NextResponse.json({ accountType, accountTypes });
+  const result = await createAccountType(new ObjectId(user.id), input);
+  if ("error" in result) return NextResponse.json(result, { status: 409 });
+  return NextResponse.json(result);
 }
 
 export async function PUT(request: Request) {
@@ -42,8 +43,9 @@ export async function PUT(request: Request) {
   const icon = typeof body?.icon === "string" ? body.icon.trim() : "";
   if (!id || !name || !icon) return NextResponse.json({ error: "缺少必要欄位" }, { status: 400 });
 
-  const accountTypes = await updateAccountType(new ObjectId(user.id), id, { name, icon });
-  return NextResponse.json({ accountTypes });
+  const result = await updateAccountType(new ObjectId(user.id), id, { name, icon });
+  if ("error" in result) return NextResponse.json(result, { status: 409 });
+  return NextResponse.json(result);
 }
 
 export async function DELETE(request: Request) {
@@ -54,6 +56,7 @@ export async function DELETE(request: Request) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "缺少 id" }, { status: 400 });
 
-  const accountTypes = await deleteAccountType(new ObjectId(user.id), id);
-  return NextResponse.json({ accountTypes });
+  const result = await deleteAccountType(new ObjectId(user.id), id);
+  if ("error" in result) return NextResponse.json(result, { status: 409 });
+  return NextResponse.json(result);
 }

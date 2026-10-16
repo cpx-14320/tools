@@ -4,6 +4,7 @@ import { useState } from "react";
 import { SegmentedControl } from "@/components/expenses/button";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { DatePickerModal } from "@/components/expenses/date-picker-modal";
+import { DateRangePickerModal } from "@/components/expenses/date-range-picker-modal";
 import type { DateFilterMode } from "@/lib/expenses/date-filter";
 
 const MODES: { value: DateFilterMode; label: string }[] = [
@@ -50,7 +51,7 @@ function PeriodNav({ label, onPrev, onNext, onLabelClick }: { label: string; onP
 export function DateFilterPicker({ className = "" }: { className?: string }) {
   const { filter, setFilter, setMode } = useDateFilter();
   const [dayPickerOpen, setDayPickerOpen] = useState(false);
-  const [customField, setCustomField] = useState<"start" | "end" | null>(null);
+  const [rangePickerOpen, setRangePickerOpen] = useState(false);
 
   return (
     <div className={className}>
@@ -104,31 +105,23 @@ export function DateFilterPicker({ className = "" }: { className?: string }) {
 
       {filter.mode === "custom" && (
         <>
-          <div className="mt-2 flex w-full items-center gap-2 rounded-full border border-[#ECE4FA] bg-white p-1 pl-3">
-            <button type="button" onClick={() => setCustomField("start")} className="w-0 flex-1 truncate text-left text-sm text-[#4A3B7C]">
-              {filter.customStart}
-            </button>
-            <span className="shrink-0 text-[#9C94C4]">～</span>
-            <button type="button" onClick={() => setCustomField("end")} className="w-0 flex-1 truncate text-left text-sm text-[#4A3B7C]">
-              {filter.customEnd}
-            </button>
-          </div>
-          <DatePickerModal
-            open={customField === "start"}
-            initial={filter.customStart}
-            onClose={() => setCustomField(null)}
-            onSave={(v) => {
-              setFilter({ ...filter, customStart: v });
-              setCustomField(null);
-            }}
-          />
-          <DatePickerModal
-            open={customField === "end"}
-            initial={filter.customEnd}
-            onClose={() => setCustomField(null)}
-            onSave={(v) => {
-              setFilter({ ...filter, customEnd: v });
-              setCustomField(null);
+          <button
+            type="button"
+            onClick={() => setRangePickerOpen(true)}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-[#ECE4FA] bg-white py-2 text-sm text-[#4A3B7C]"
+          >
+            <span>{filter.customStart}</span>
+            <span className="text-[#9C94C4]">～</span>
+            <span>{filter.customEnd}</span>
+          </button>
+          <DateRangePickerModal
+            open={rangePickerOpen}
+            initialStart={filter.customStart}
+            initialEnd={filter.customEnd}
+            onClose={() => setRangePickerOpen(false)}
+            onSave={(start, end) => {
+              setFilter({ ...filter, customStart: start, customEnd: end });
+              setRangePickerOpen(false);
             }}
           />
         </>
