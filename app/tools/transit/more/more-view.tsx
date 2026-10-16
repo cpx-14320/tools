@@ -6,9 +6,10 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { TOOLS_REGISTRY } from "@/lib/tools-registry";
 import { ImageSlot } from "@/components/transit/image-slot";
-import { FaIcon } from "@/components/transit/fa-icon";
-import { ListRowSkeleton } from "@/components/transit/list-row-skeleton";
+import { DividedRowsSkeleton } from "@/components/transit/skeleton";
 import { loadSkeletonCount, saveSkeletonCount } from "@/components/transit/skeleton-count";
+import { DividedCard, FieldLabel, Hint, IconButton, PageTitle } from "@/components/transit/ui";
+import { copy, text } from "@/components/transit/theme";
 import { HERO_BANNER_IMAGE_OPTIONS, WEEKEND_TRIP_IMAGE_OPTIONS } from "@/components/transit/caption-image-options";
 import { CaptionImageEditorModal, type CaptionImageDraft, type CaptionImageInitial } from "@/components/transit/caption-image-editor-modal";
 import { CenterToast } from "@/components/transit/center-toast";
@@ -117,7 +118,7 @@ export function MoreView() {
         const items = data.items ?? [];
         setWeekendTrips(items);
         saveSkeletonCount(WEEKEND_COUNT_KEY, items.length);
-        setToast("儲存成功");
+        setToast(copy.saved);
       })
       .catch(() => {});
     setWeekendEditorOpen(false);
@@ -134,7 +135,7 @@ export function MoreView() {
         const items = data.items ?? [];
         setHeroBanners(items);
         saveSkeletonCount(HERO_COUNT_KEY, items.length);
-        setToast("儲存成功");
+        setToast(copy.saved);
       })
       .catch(() => {});
     setHeroEditorOpen(false);
@@ -147,94 +148,80 @@ export function MoreView() {
 
   return (
     <div className="flex flex-col px-5 pb-6 pt-6">
-      <h1 className="text-xl font-bold text-[#4A3B7C]">設定</h1>
+      <PageTitle>設定</PageTitle>
 
       <div className="mt-5 flex flex-col gap-5">
         <div>
           <div className="mb-2 flex items-center justify-between px-1">
-            <p className="text-xs font-medium text-[#9C94C4]">主視覺</p>
-            <button type="button" onClick={() => setHeroEditorOpen(true)} aria-label="編輯主視覺">
-              <FaIcon icon="pen" size={12} />
-            </button>
+            <FieldLabel>主視覺</FieldLabel>
+            <IconButton icon="pen" size={24} iconSize={12} onClick={() => setHeroEditorOpen(true)} aria-label="編輯主視覺" />
           </div>
-          <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl bg-white shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
+          <DividedCard>
             {!heroReady ? (
               heroSkeletonCount === 0 ? (
-                // 沒有上次記住的筆數可以猜（新帳號、或從來沒存過）時骨架列數是 0，
-                // Array.from 出來是空陣列、畫面上什麼都不會顯示，額外補一個「載入中」文字。
-                <p className="px-4 py-3 text-sm text-[#B3ABD4]">載入中…</p>
+                // 沒有上次記住的筆數可以猜（新帳號、或從來沒存過）時骨架列數是 0，畫面上
+                // 什麼都不會顯示，額外補一個「載入中」文字。
+                <Hint className="px-4 py-3">{copy.loading}</Hint>
               ) : (
-                Array.from({ length: heroSkeletonCount }, (_, i) => (
-                  <div key={i} className="px-4 py-3">
-                    <ListRowSkeleton />
-                  </div>
-                ))
+                <DividedRowsSkeleton count={heroSkeletonCount} />
               )
             ) : heroBanners.length === 0 ? (
-              <p className="px-4 py-3 text-sm text-[#B3ABD4]">還沒設定，首頁目前顯示預設的文案跟背景圖</p>
+              <Hint className="px-4 py-3">還沒設定，首頁目前顯示預設的文案跟背景圖</Hint>
             ) : (
               heroBanners.map((b) => (
                 <div key={b.id} className="flex w-full items-center gap-3 px-4 py-3 text-left">
                   <ImageSlot src={b.image} alt={b.title} className="size-10 shrink-0 rounded-xl" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-[#4A3B7C]">{b.title}</p>
-                    <p className="truncate text-xs text-[#9C94C4]">{b.caption}</p>
+                    <p className={`truncate ${text.bodyStrong}`}>{b.title}</p>
+                    <p className={`truncate ${text.meta}`}>{b.caption}</p>
                   </div>
                 </div>
               ))
             )}
-          </div>
+          </DividedCard>
         </div>
 
         <div>
           <div className="mb-2 flex items-center justify-between px-1">
-            <p className="text-xs font-medium text-[#9C94C4]">橫幅</p>
-            <button type="button" onClick={() => setWeekendEditorOpen(true)} aria-label="編輯橫幅">
-              <FaIcon icon="pen" size={12} />
-            </button>
+            <FieldLabel>橫幅</FieldLabel>
+            <IconButton icon="pen" size={24} iconSize={12} onClick={() => setWeekendEditorOpen(true)} aria-label="編輯橫幅" />
           </div>
-          <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl bg-white shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
+          <DividedCard>
             {!weekendReady ? (
               weekendSkeletonCount === 0 ? (
-                <p className="px-4 py-3 text-sm text-[#B3ABD4]">載入中…</p>
+                <Hint className="px-4 py-3">{copy.loading}</Hint>
               ) : (
-                Array.from({ length: weekendSkeletonCount }, (_, i) => (
-                  <div key={i} className="px-4 py-3">
-                    <ListRowSkeleton />
-                  </div>
-                ))
+                <DividedRowsSkeleton count={weekendSkeletonCount} />
               )
             ) : weekendTrips.length === 0 ? (
-              <p className="px-4 py-3 text-sm text-[#B3ABD4]">還沒設定，首頁目前顯示預設的文案跟背景圖</p>
+              <Hint className="px-4 py-3">還沒設定，首頁目前顯示預設的文案跟背景圖</Hint>
             ) : (
               weekendTrips.map((t) => (
                 <div key={t.id} className="flex w-full items-center gap-3 px-4 py-3 text-left">
                   <ImageSlot src={t.image} alt={t.title} className="size-10 shrink-0 rounded-xl" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-[#4A3B7C]">{t.title}</p>
-                    <p className="truncate text-xs text-[#9C94C4]">{t.caption}</p>
+                    <p className={`truncate ${text.bodyStrong}`}>{t.title}</p>
+                    <p className={`truncate ${text.meta}`}>{t.caption}</p>
                   </div>
                 </div>
               ))
             )}
-          </div>
+          </DividedCard>
         </div>
 
         <div>
-          <p className="mb-2 px-1 text-xs font-medium text-[#9C94C4]">其他小工具</p>
-          <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl bg-white shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
+          <div className="mb-2 px-1">
+            <FieldLabel>其他小工具</FieldLabel>
+          </div>
+          <DividedCard>
             {loading ? (
               otherToolsSkeletonCount === 0 ? (
-                <p className="px-4 py-3 text-sm text-[#B3ABD4]">載入中…</p>
+                <Hint className="px-4 py-3">{copy.loading}</Hint>
               ) : (
-                Array.from({ length: otherToolsSkeletonCount }, (_, i) => (
-                  <div key={i} className="px-4 py-3">
-                    <ListRowSkeleton iconSize={40} lines={1} />
-                  </div>
-                ))
+                <DividedRowsSkeleton count={otherToolsSkeletonCount} iconSize={40} lines={1} />
               )
             ) : otherTools.length === 0 ? (
-              <p className="px-4 py-3 text-sm text-[#B3ABD4]">目前沒有其他小工具的使用權限</p>
+              <Hint className="px-4 py-3">目前沒有其他小工具的使用權限</Hint>
             ) : (
               otherTools.map((tool) => (
                 <Link key={tool.toolId} href={tool.href} className="flex w-full items-center gap-3 px-4 py-3 text-left">
@@ -244,14 +231,14 @@ export function MoreView() {
                   ) : (
                     <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#F3EFFC] text-lg">{tool.icon}</span>
                   )}
-                  <span className="flex-1 text-sm text-[#4A3B7C]">{tool.name}</span>
+                  <span className={`flex-1 ${text.body}`}>{tool.name}</span>
                   <span aria-hidden className="text-[#C7BFE6]">
                     ›
                   </span>
                 </Link>
               ))
             )}
-          </div>
+          </DividedCard>
         </div>
 
         <button

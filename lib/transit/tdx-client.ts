@@ -73,6 +73,16 @@ async function getAccessToken(): Promise<string> {
 // 不快取失敗結果，失敗就從快取移除，下次重新打。
 const CACHE_TTL_MS = 60_000;
 
+/** 常用的快取時間，照「這份資料多久會變」分三級，不要每個呼叫端自己湊數字。
+ *  - realtime：即時到站、誤點——本來就會變，只用來擋同一分鐘內的重複查詢。
+ *  - dailyTimetable：某一天的時刻表，公告後當天幾乎不會再變，但還是留半天的新鮮度。
+ *  - static：車站清單、票價表、站序、捷運站間行車時間——幾乎不會變。 */
+export const TDX_TTL = {
+  realtime: CACHE_TTL_MS,
+  dailyTimetable: 6 * 60 * 60 * 1000,
+  static: 24 * 60 * 60 * 1000,
+} as const;
+
 // 這一層是 process 記憶體內的第一層快取，同一個還熱著的 function instance 連續打同個
 // path 時完全不用等 Mongo 往返；它也靠「存 promise 不是存值」順便處理同一 instance 內
 // 多個併發請求打同個 path 的情況，大家等同一個 promise，不會真的各自打一次 TDX。
@@ -94,17 +104,26 @@ interface TdxCacheDoc {
  * 注意：這不是跨 instance 的鎖，兩個 instance 真的同時冷啟動、同時查同個 path，還是可能各自
  * 打一次 TDX——這個情境很少見，不特別處理。
  */
-export function tdxGet<T>(path: string, ttlMs: number = CACHE_TTL_MS): Promise<T> {
+export function tdxGet<T>(
+  path: string,
+  ttlMs: number = CACHE_TTL_MS,
+  /** persist=false 代表不要把原始回應寫進 Mongo 快取。給「原始回應很大、呼叫端會自己
+   *  壓成精簡版再存一份」的端點用（見 lib/transit/bus-routing.ts 的公車站序）——整個
+   *  縣市的 StopOfRoute 動輒好幾 MB，寫進單一文件可能直接撞到 MongoDB 16MB 的文件上限
+   *  而靜默失敗，等於這層快取形同沒有，每次冷啟動都重打一次 TDX。 */
+  options?: { persist?: boolean },
+): Promise<T> {
+  const persist = options?.persist !== false;
   const cached = memCache.get(path);
   if (cached && cached.expiresAt > Date.now()) {
     return cached.promise as Promise<T>;
   }
 
   const promise = (async () => {
-    const db = await getDb();
-    const cacheColl = db.collection<TdxCacheDoc>("transit.tdxCache");
+    const db = persist ? await getDb() : null;
+    const cacheColl = db?.collection<TdxCacheDoc>("transit.tdxCache");
 
-    const cachedDoc = await cacheColl.findOne({ _id: path });
+    const cachedDoc = cacheColl ? await cacheColl.findOne({ _id: path }) : null;
     if (cachedDoc && cachedDoc.expiresAt.getTime() > Date.now()) {
       return cachedDoc.data as T;
     }
@@ -131,7 +150,7 @@ export function tdxGet<T>(path: string, ttlMs: number = CACHE_TTL_MS): Promise<T
     // 快取寫入失敗不該讓這次查詢跟著失敗（使用者已經拿到資料了），吞掉錯誤就好；
     // 下一次請求頂多就是沒快取可用、重新打一次 TDX，不是什麼嚴重後果。
     await cacheColl
-      .updateOne({ _id: path }, { $set: { data, expiresAt: new Date(Date.now() + ttlMs) } }, { upsert: true })
+      ?.updateOne({ _id: path }, { $set: { data, expiresAt: new Date(Date.now() + ttlMs) } }, { upsert: true })
       .catch(() => {});
 
     return data;

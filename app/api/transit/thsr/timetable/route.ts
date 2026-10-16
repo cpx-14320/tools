@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { tdxGet } from "@/lib/transit/tdx-client";
+import { tdxGet, TDX_TTL } from "@/lib/transit/tdx-client";
 import { THSR_STATION_ID } from "@/lib/transit/tdx-stations";
 import { todayInTaipei, nowHHmmInTaipei, minutesBetween, formatDuration } from "@/lib/transit/tdx-time";
+import { API_CACHE, jsonCached } from "@/lib/transit/api-cache";
 
 interface DailyTimetableRow {
   DailyTrainInfo: { TrainNo: string };
@@ -54,8 +55,9 @@ export async function GET(request: Request) {
 
   try {
     const [timetable, fareEntries] = await Promise.allSettled([
-      tdxGet<DailyTimetableRow[]>(`/v2/Rail/THSR/DailyTimetable/OD/${originId}/to/${destId}/${date}`),
-      tdxGet<OdFareEntry[]>(`/v2/Rail/THSR/ODFare/${originId}/to/${destId}`, 24 * 60 * 60 * 1000),
+      // 跟台鐵同一個理由：某一天的時刻表公告後幾乎不會再變，不要用 60 秒的預設快取。
+      tdxGet<DailyTimetableRow[]>(`/v2/Rail/THSR/DailyTimetable/OD/${originId}/to/${destId}/${date}`, TDX_TTL.dailyTimetable),
+      tdxGet<OdFareEntry[]>(`/v2/Rail/THSR/ODFare/${originId}/to/${destId}`, TDX_TTL.static),
     ]);
 
     if (timetable.status === "rejected") throw timetable.reason;
@@ -79,8 +81,8 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json({ rows });
+    return jsonCached({ rows }, API_CACHE.timetable);
   } catch (err) {
-    return NextResponse.json({ rows: [], error: err instanceof Error ? err.message : "高鐵時刻查詢失敗" }, { status: 502 });
+    return NextResponse.json({ rows: [], error: err instanceof Error ? err.message : "高鐵班次查詢失敗，請稍後再試" }, { status: 502 });
   }
 }

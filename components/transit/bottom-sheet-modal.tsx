@@ -60,9 +60,11 @@ export function BottomSheetModal({
             className={`flex max-h-[80%] w-full ${maxWidthClassName} flex-col overflow-y-auto rounded-t-[1.75rem] bg-white`}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* 彈窗標題列：所有彈窗（選擇器、編輯器）共用這一份，標題字級／關閉鈕的
+                大小位置只有這裡一個定義。 */}
             <div className="flex items-center justify-between border-b border-[#ECE4FA] px-5 py-4">
-              <p className="font-semibold text-[#4A3B7C]">{title}</p>
-              <button type="button" onClick={onClose} aria-label="關閉" className="grid size-8 place-items-center rounded-full text-[#9C94C4] hover:bg-[#F3EFFC]">
+              <p className="text-base font-semibold text-[#4A3B7C]">{title}</p>
+              <button type="button" onClick={onClose} aria-label="關閉" className="grid size-8 place-items-center rounded-full text-[#9C94C4] transition-colors hover:bg-[#F3EFFC]">
                 ✕
               </button>
             </div>

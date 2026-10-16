@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { BottomSheetModal } from "./bottom-sheet-modal";
+import { GhostButton, LinkButton, PrimaryButton } from "./ui";
+import { copy } from "./theme";
 
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
 
@@ -85,17 +87,8 @@ export function DatePickerModal({
       bodyClassName="flex flex-col items-center gap-4 px-5 py-5"
       footer={
         <>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-[#9C94C4] hover:text-[#6F5FD6]">
-            取消
-          </button>
-          <button
-            type="button"
-            onClick={() => onSave(formatDate(year, month, day))}
-            className="rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)]"
-            style={{ background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
-          >
-            確定
-          </button>
+          <GhostButton onClick={onClose}>{copy.cancel}</GhostButton>
+          <PrimaryButton onClick={() => onSave(formatDate(year, month, day))}>{copy.confirm}</PrimaryButton>
         </>
       }
     >
@@ -187,13 +180,9 @@ export function DatePickerModal({
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => setViewMode((v) => (v === "calendar" ? "manual" : "calendar"))}
-        className="text-xs font-medium text-[#6F5FD6]"
-      >
+      <LinkButton onClick={() => setViewMode((v) => (v === "calendar" ? "manual" : "calendar"))}>
         {viewMode === "calendar" ? "切換為手動輸入" : "切換為圖形選擇"}
-      </button>
+      </LinkButton>
     </BottomSheetModal>
   );
 }

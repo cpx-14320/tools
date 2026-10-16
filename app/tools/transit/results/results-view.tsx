@@ -12,6 +12,11 @@ import type { FrequentTripDraft } from "@/components/transit/frequent-trip-modal
 import { metroSystemOf, findCrossSystemTransferStation } from "@/lib/transit/metro-lines";
 import { formatDuration, todayInTaipei, nowHHmmInTaipei } from "@/lib/transit/tdx-time";
 import { routeBadgeStyle, etaLabel, etaToneStyle } from "@/components/transit/bus-route-picker-modal";
+import { fetchTrainStationCities } from "@/lib/transit/train-cities-client";
+import { Badge, ErrorText, Hint, IconButton, SegmentedTabs } from "@/components/transit/ui";
+import { copy, shadow, text } from "@/components/transit/theme";
+import { ResultCardSkeleton, StopCardSkeleton } from "@/components/transit/skeleton";
+import { loadSkeletonCount, saveSkeletonCount } from "@/components/transit/skeleton-count";
 
 export type Mode = "bus" | "train" | "metro" | "thsr";
 
@@ -53,10 +58,11 @@ function badgeClass(mode: Mode) {
 async function resolveCityFor(mode: Mode, stationName: string): Promise<string> {
   if (mode === "train") {
     try {
-      const res = await fetch("/api/transit/tra/stations");
-      const data: { cities?: { city: string; stations: { name: string }[] }[] } = await res.json();
-      const found = data.cities?.find((c) => c.stations.some((s) => s.name === stationName));
-      if (found) return found.city;
+      // 走 fetchTrainStationCities 這層共用快取：出發站、抵達站是兩次呼叫（下面的
+      // Promise.all），以前兩次各自 fetch 同一個網址＝真的送出兩個一模一樣的請求。
+      const { byCity } = await fetchTrainStationCities();
+      const found = Object.keys(byCity).find((city) => byCity[city].includes(stationName));
+      if (found) return found;
     } catch {
       // 查不到就退回墊檔清單的第一個縣市，使用者之後打開分類編輯彈窗自己校正站名即可。
     }
@@ -66,6 +72,14 @@ async function resolveCityFor(mode: Mode, stationName: string): Promise<string> 
   const found = Object.keys(cities).find((c) => cities[c].includes(stationName));
   return found ?? Object.keys(cities)[0];
 }
+
+// 骨架筆數記憶的 key——同一組起訖站的班次數、同一條路線的站數每次查都差不多，記住上次
+// 的實際筆數，載入中就能畫出跟載入完一樣多的卡片（設計系統規定骨架數量要跟實際一致）。
+const resultCountKey = (mode: Mode, origin: string, dest: string) => `cpx-tools:transit:results-count:${mode}:${origin}|${dest}`;
+// 公車站序的筆數跟選擇彈窗查的是同一份資料，共用同一個 key——在彈窗裡看過這條路線的
+// 站序，按下去進結果頁時骨架就已經是對的列數了。
+const busStopsCountKey = (city: string, route: string, direction: 0 | 1) =>
+  `cpx-tools:transit:bus-route-stops-count:${city}|${route}|${direction}`;
 
 /** 捷運轉乘其中一段的明細，跟 lib/metro-routing.ts 的 TransferStep 同一個形狀——這個檔案
  *  是 "use client"，不能直接 import 那邊（會把伺服器端的 TDX 金鑰牽連進前端 bundle），
@@ -402,6 +416,23 @@ export function ResultsView({
     (isMetro && metroTrip === null);
   const queryError = trainError || thsrError || busError;
   const [typeTab, setTypeTab] = useState("全部");
+  // 載入中要畫幾張骨架卡——localStorage 只有瀏覽器端讀得到，所以在 effect 裡讀、不在
+  // render 當下讀（伺服器端渲染那一次讀不到會造成 hydration 不匹配）。
+  const [skeletonCount, setSkeletonCount] = useState(0);
+  useEffect(() => {
+    const key = isBus ? busStopsCountKey(busCity, busRoute, busDirection) : resultCountKey(mode, origin, dest);
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    setSkeletonCount(loadSkeletonCount(key, 0));
+  }, [isBus, busCity, busRoute, busDirection, mode, origin, dest]);
+  // 查到結果後把實際筆數記起來，下次查同一組起訖站／同一條路線的骨架就跟實際一樣多。
+  useEffect(() => {
+    if (loading) return;
+    if (isBus) {
+      if (busStops) saveSkeletonCount(busStopsCountKey(busCity, busRoute, busDirection), busStops.length);
+      return;
+    }
+    if (allResults.length > 0) saveSkeletonCount(resultCountKey(mode, origin, dest), allResults.length);
+  }, [loading, isBus, busStops, busCity, busRoute, busDirection, allResults.length, mode, origin, dest]);
   const visibleResults = isTrain && typeTab !== "全部" ? results.filter((r) => trainTypeOf(r.code) === typeTab) : results;
   // 點班次卡片右邊的「加入行程」時記住是哪一筆，選好分類（或新增分類）後才知道要用
   // 哪一筆的時間／站名組出常用行程的資料。公車不是逐筆班次、是單一路線＋方向＋站牌的
@@ -435,7 +466,7 @@ export function ResultsView({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mode, groupId, items: [...existing, newItem] }),
     }).catch(() => null);
-    if (res?.ok) setToast("已加入行程");
+    if (res?.ok) setToast(copy.addedToTrip);
   }
 
   async function createGroupAndAddPickerTarget(name: string) {
@@ -465,7 +496,7 @@ export function ResultsView({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mode, groupId: createData.group.id, items: [newItem] }),
     }).catch(() => null);
-    if (res?.ok) setToast("已加入行程");
+    if (res?.ok) setToast(copy.addedToTrip);
   }
 
   // 公車把目前選好的縣市／路線／方向／站牌整組加入分類（不是逐筆班次），時段先給預設值，
@@ -495,7 +526,7 @@ export function ResultsView({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mode, groupId, items: [...existing, busDraft()] }),
     }).catch(() => null);
-    if (res?.ok) setToast("已加入行程");
+    if (res?.ok) setToast(copy.addedToTrip);
   }
 
   async function createGroupAndAddBus(name: string) {
@@ -513,7 +544,7 @@ export function ResultsView({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mode, groupId: createData.group.id, items: [busDraft()] }),
     }).catch(() => null);
-    if (res?.ok) setToast("已加入行程");
+    if (res?.ok) setToast(copy.addedToTrip);
   }
 
   // 錨點效果：列表一出現（或切換車種頁籤）就跳到「最後一筆已過站」的卡片，讓使用者一眼
@@ -539,32 +570,25 @@ export function ResultsView({
           <div className="min-w-0">
             {isBus ? (
               <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${routeBadgeStyle(busRoute)}`}>{busRoute}</span>
-                <span className="text-xs text-[#9C94C4]">{busDirection === 1 ? "返程" : "去程"}</span>
+                <Badge className={routeBadgeStyle(busRoute)}>{busRoute}</Badge>
+                <span className={text.meta}>{busDirection === 1 ? "返程" : "去程"}</span>
                 <span className="truncate text-base font-bold text-[#4A3B7C]">{busStop}</span>
-                {/* 跟火車/高鐵的「查詢中…」「共 N 筆班次」同一個位置、同一套樣式——緊接在
+                {/* 跟火車/高鐵的「搜尋中…」「共 N 筆班次」同一個位置、同一套樣式——緊接在
                     站名右邊，不要另外開一行，查詢狀態的呈現位置跟文案在車種間保持一致。 */}
-                <span className="truncate text-xs text-[#B3ABD4]">{loading ? "查詢中…" : `共 ${(busStops ?? []).length} 站`}</span>
+                <span className={`truncate ${text.hint}`}>{loading ? copy.searching : `共 ${(busStops ?? []).length} 站`}</span>
               </p>
             ) : (
               <p className="flex items-center gap-3 truncate">
                 <span className="text-base font-bold text-[#4A3B7C]">
                   {origin} <span aria-hidden>→</span> {dest}
                 </span>
-                <span className="truncate text-xs text-[#B3ABD4]">{loading ? "查詢中…" : `共 ${visibleResults.length} 筆班次`}</span>
+                <span className={`truncate ${text.hint}`}>{loading ? copy.searching : `共 ${visibleResults.length} 筆班次`}</span>
               </p>
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {isBus && (
-              <button
-                type="button"
-                onClick={() => setBusAddOpen(true)}
-                aria-label="加入行程"
-                className="grid size-8 place-items-center rounded-full bg-white text-sm font-bold leading-none text-[#6F5FD6]"
-              >
-                ＋
-              </button>
+              <IconButton icon="plus" tone="white" size={32} iconSize={13} onClick={() => setBusAddOpen(true)} aria-label={`加入${copy.tripItem}`} />
             )}
             <Link
               href={from === "trips" ? "/tools/transit/trips" : "/tools/transit"}
@@ -578,54 +602,61 @@ export function ResultsView({
 
         {isTrain && (
           <div className="-mx-5 mt-4 overflow-x-auto px-5">
-            <div className="inline-flex items-center gap-1 rounded-full bg-white p-1">
-              {TRAIN_TYPE_TABS.map((t) => {
-                const active = typeTab === t;
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setTypeTab(t)}
-                    className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                      active ? "bg-[#6F5FD6] text-white shadow-[0_2px_8px_-2px_rgba(111,95,214,0.4)]" : "text-[#9C94C4]"
-                    }`}
-                  >
-                    {t}
-                  </button>
-                );
-              })}
-            </div>
+            <SegmentedTabs
+              tone="solid"
+              items={TRAIN_TYPE_TABS.map((t) => ({ key: t, label: t }))}
+              value={typeTab}
+              onChange={setTypeTab}
+            />
           </div>
         )}
       </div>
 
-      {queryError && <p className="mx-5 mt-4 rounded-2xl bg-[#FDEEF0] px-4 py-3 text-xs text-[#D1517E]">{queryError}</p>}
+      {queryError && (
+        <div className="mx-5 mt-4 rounded-2xl bg-[#FDEEF0] px-4 py-3">
+          <ErrorText>{queryError}</ErrorText>
+        </div>
+      )}
+
+      {/* 載入中的骨架：張數＝上次查同一組起訖站／同一條路線的實際筆數，卡片內部結構也跟
+          真正的卡片一致，資料回來那一刻版面不會整塊跳。沒有上次的紀錄（第一次查這組）
+          才退回一行「搜尋中…」文字。 */}
+      {loading && !queryError && (
+        <div className="mt-4 px-5 pb-6">
+          {skeletonCount === 0 ? (
+            <Hint>{copy.searching}</Hint>
+          ) : isBus ? (
+            <StopCardSkeleton count={skeletonCount} />
+          ) : (
+            <ResultCardSkeleton count={skeletonCount} columns={isTrain || isMetro || isThsr ? 3 : 2} />
+          )}
+        </div>
+      )}
 
       {!isBus && !loading && !queryError && visibleResults.length === 0 && (
-        <p className="mx-5 mt-6 text-left text-xs text-[#B3ABD4]">目前沒有查到任何班次。</p>
+        <Hint className="mx-5 mt-6">目前沒有查到任何班次。</Hint>
       )}
 
       {isBus && !loading && !queryError && (busStops?.length ?? 0) === 0 && (
-        <p className="mx-5 mt-6 text-left text-xs text-[#B3ABD4]">目前查不到這條路線這個方向的站序資料。</p>
+        <Hint className="mx-5 mt-6">目前查不到這條路線這個方向的站序資料。</Hint>
       )}
 
-      {isBus && (
+      {isBus && !loading && (
         <div className="mt-4 flex flex-col gap-2.5 px-5 pb-6">
           {(busStops ?? []).map((s) => (
             <div
               key={s.name}
-              className={`flex items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.25)] ${
-                s.name === busStop ? "ring-2 ring-[#6F5FD6]" : ""
-              }`}
+              className={`flex items-center justify-between gap-3 rounded-2xl bg-white p-4 ${s.name === busStop ? "ring-2 ring-[#6F5FD6]" : ""}`}
+              style={{ boxShadow: shadow.cardStrong }}
             >
-              <span className="truncate text-sm font-medium text-[#4A3B7C]">{s.name}</span>
-              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${etaToneStyle(s)}`}>{etaLabel(s)}</span>
+              <span className={`truncate ${text.bodyStrong}`}>{s.name}</span>
+              <Badge className={`font-semibold ${etaToneStyle(s)}`}>{etaLabel(s)}</Badge>
             </div>
           ))}
         </div>
       )}
 
-      {!isBus && (
+      {!isBus && !loading && (
       <div className="mt-4 flex flex-col gap-2.5 px-5 pb-6">
         {visibleResults.map((r, i) => (
           <div
@@ -633,11 +664,12 @@ export function ResultsView({
             ref={(el) => {
               cardRefs.current[i] = el;
             }}
-            className={`rounded-[1.5rem] bg-white p-4 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.25)] ${r.isPast ? "opacity-50" : ""}`}
+            className={`rounded-[1.5rem] bg-white p-4 ${r.isPast ? "opacity-50" : ""}`}
+            style={{ boxShadow: shadow.cardStrong }}
           >
             <div className="flex items-start gap-3">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-[#4A3B7C]">
+                <p className={`truncate ${text.cardTitle}`}>
                   {r.time} <span aria-hidden>→</span> {r.arrive}
                 </p>
                 {/* 高鐵下方格線本來就有「車程時間」那一欄，這裡不用重複顯示一次；捷運如果
@@ -645,7 +677,7 @@ export function ResultsView({
                     格線那欄就好，不用在這裡重複、也不用犧牲轉乘資訊的版面。 */}
                 {!isThsr &&
                   (isMetro && r.transfer && r.transferSteps && r.transferSteps.length > 0 ? (
-                    <p className="mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-1 text-xs text-[#9C94C4]">
+                    <p className={`mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-1 ${text.meta}`}>
                       {r.transferSteps.map((step, idx, arr) => (
                         <span key={idx} className="inline-flex items-center gap-1">
                           於{step.stationName}轉乘
@@ -662,64 +694,52 @@ export function ResultsView({
                       ))}
                     </p>
                   ) : (
-                    <p className="mt-0.5 truncate text-xs text-[#9C94C4]">{isTrain && r.operatingNote ? r.operatingNote : r.duration}</p>
+                    <p className={`mt-0.5 truncate ${text.meta}`}>{isTrain && r.operatingNote ? r.operatingNote : r.duration}</p>
                   ))}
               </div>
 
               <div className="flex shrink-0 items-center gap-1.5">
                 {r.delayMinutes !== undefined ? (
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                      r.delayMinutes > 0 ? "bg-[#FDE7D8] text-[#D97A3D]" : "bg-[#E3F6EC] text-[#2FAE82]"
-                    }`}
-                  >
+                  <Badge className={`font-semibold ${r.delayMinutes > 0 ? "bg-[#FDE7D8] text-[#D97A3D]" : "bg-[#E3F6EC] text-[#2FAE82]"}`}>
                     {r.delayMinutes > 0 ? `誤點 ${r.delayMinutes} 分` : "準時"}
-                  </span>
+                  </Badge>
                 ) : null}
                 {/* 「全部」頁籤混雜各種車種，班次號前面補一個車種標籤方便分辨；切到區間／區間快／
                     自強／普悠瑪這些已經篩過的頁籤，車種從頁籤本身就看得出來，標籤是多餘資訊，不顯示。 */}
-                {isTrain && typeTab === "全部" && (
-                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${badgeClass(mode)}`}>{trainTypeOf(r.code)}</span>
-                )}
-                <span className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${badgeClass(mode)}`}>
-                  {isTrain ? trainNumberOf(r.code) : r.code}
-                </span>
+                {isTrain && typeTab === "全部" && <Badge className={badgeClass(mode)}>{trainTypeOf(r.code)}</Badge>}
+                <Badge className={badgeClass(mode)}>{isTrain ? trainNumberOf(r.code) : r.code}</Badge>
                 {/* 用「加入」而不是收藏愛心：單純是一次性加入分類的動作，不是可切換的收藏
                     狀態，不用額外判斷、呈現「是否已收藏」。 */}
-                <button
-                  type="button"
-                  onClick={() => setPickerTarget(r)}
-                  aria-label="加入行程"
-                  className="grid size-6 shrink-0 place-items-center rounded-full bg-[#F3EFFC] text-sm font-bold leading-none text-[#6F5FD6]"
-                >
-                  ＋
-                </button>
+                <IconButton icon="plus" tone="soft" size={24} iconSize={11} onClick={() => setPickerTarget(r)} aria-label={`加入${copy.tripItem}`} />
               </div>
             </div>
 
+            {/* 下方格線是「欄位標題＋值」的附註資訊：標題用 11px 的 meta 字級、值用 12px，
+                不要跟卡片主要內容（出發→抵達）一樣大，不然一張卡上四五個同樣大小的字會
+                分不出主次。 */}
             <div
-              className={`mt-3 grid gap-2 border-t border-[#F2EEFA] pt-3 text-xs text-center ${
+              className={`mt-3 grid gap-2 border-t border-[#F2EEFA] pt-3 text-center ${
                 isThsr && r.earlyBirdDiscount ? "grid-cols-4" : isTrain || isMetro || isThsr ? "grid-cols-3" : "grid-cols-2"
               }`}
             >
               <div>
-                <p className="text-[#B3ABD4]">車程時間</p>
-                <p className="mt-0.5 font-medium text-[#4A3B7C]">{r.duration}</p>
+                <p className="text-[11px] text-[#B3ABD4]">車程時間</p>
+                <p className="mt-0.5 text-xs font-medium text-[#4A3B7C]">{r.duration}</p>
               </div>
               <div>
-                <p className="text-[#B3ABD4]">停靠站數</p>
-                <p className="mt-0.5 font-medium text-[#4A3B7C]">{r.stops} 站</p>
+                <p className="text-[11px] text-[#B3ABD4]">停靠站數</p>
+                <p className="mt-0.5 text-xs font-medium text-[#4A3B7C]">{r.stops} 站</p>
               </div>
               {(isTrain || isMetro || isThsr) && (
                 <div>
-                  <p className="text-[#B3ABD4]">全票</p>
-                  <p className="mt-0.5 font-medium text-[#4A3B7C]">{r.fare ?? "—"}</p>
+                  <p className="text-[11px] text-[#B3ABD4]">全票</p>
+                  <p className="mt-0.5 text-xs font-medium text-[#4A3B7C]">{r.fare ?? "—"}</p>
                 </div>
               )}
               {isThsr && r.earlyBirdDiscount && (
                 <div>
-                  <p className="text-[#B3ABD4]">早鳥</p>
-                  <p className="mt-0.5 font-medium text-[#4A3B7C]">{r.earlyBirdDiscount}</p>
+                  <p className="text-[11px] text-[#B3ABD4]">早鳥</p>
+                  <p className="mt-0.5 text-xs font-medium text-[#4A3B7C]">{r.earlyBirdDiscount}</p>
                 </div>
               )}
             </div>

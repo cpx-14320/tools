@@ -2,15 +2,24 @@
 
 import { useEffect, useState } from "react";
 import type { Mode } from "./stations-data";
+import { EditorSheet } from "./editor-sheet";
+import { AddButton, ErrorText, Hint, TextInput } from "./ui";
+import { copy } from "./theme";
+import { SkeletonBar } from "./skeleton";
+import { loadSkeletonCount, saveSkeletonCount } from "./skeleton-count";
 
 interface PickerGroup {
   id: string;
   name: string;
 }
 
+// 這個車種上次實際有幾個分類——骨架列數照這個猜，不要固定寫死（設計系統規定骨架數量
+// 要跟載入完的實際數量一致）。
+const groupCountKey = (mode: Mode) => `cpx-tools:transit:trip-groups-count:${mode}`;
+
 /** 搜尋結果頁「加入行程」用的輕量選單：列出目前車種底下使用者自己建立的分類，外加一個
  *  「新增分類」。這裡故意不重用 FrequentTripModal（那個是編輯一整份分類的完整表單），
- *  收藏這個動作只需要「選一個分類」或「取個新分類名稱」，不需要再跳一次完整編輯畫面。 */
+ *  加入行程這個動作只需要「選一個分類」或「取個新分類名稱」，不需要再跳一次完整編輯畫面。 */
 export function TripGroupPickerModal({
   open,
   mode,
@@ -29,11 +38,19 @@ export function TripGroupPickerModal({
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [nameError, setNameError] = useState(false);
+  const [skeletonCount, setSkeletonCount] = useState(0);
+
+  useEffect(() => {
+    // 掛載後才讀得到 localStorage（伺服器端渲染那一次沒有，初始值要跟瀏覽器端一致才不會
+    // hydration 不匹配）。
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    setSkeletonCount(loadSkeletonCount(groupCountKey(mode), 0));
+  }, [mode]);
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    // 每次打開（或換車種）都要重新查，故意同步把上一次的結果清掉讓畫面回到查詢中狀態，
+    // 每次打開（或換車種）都要重新查，故意同步把上一次的結果清掉讓畫面回到載入中狀態，
     // 不是在訂閱外部事件、也不會連鎖觸發其他 effect，屬於這個規則容許的例外。
     /* eslint-disable-next-line react-hooks/set-state-in-effect */
     setLoading(true);
@@ -41,7 +58,9 @@ export function TripGroupPickerModal({
       .then((res) => res.json())
       .then((data: { groups?: { id: string; mode: string; name: string }[] }) => {
         if (cancelled) return;
-        setGroups((data.groups ?? []).filter((g) => g.mode === mode).map((g) => ({ id: g.id, name: g.name })));
+        const forMode = (data.groups ?? []).filter((g) => g.mode === mode).map((g) => ({ id: g.id, name: g.name }));
+        setGroups(forMode);
+        saveSkeletonCount(groupCountKey(mode), forMode.length);
       })
       .catch(() => {})
       .finally(() => {
@@ -52,47 +71,61 @@ export function TripGroupPickerModal({
     };
   }, [open, mode]);
 
-  if (!open) return null;
+  function create() {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    if (groups.some((g) => g.name.trim().toLowerCase() === trimmed.toLowerCase())) {
+      setNameError(true);
+      return;
+    }
+    onCreateGroup(trimmed);
+  }
 
   return (
-    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30" onClick={onClose}>
-      {/* max-h 用 % 不是 vh：外層卡片容器有 transform，是這個 fixed 彈窗的定位基準，桌面寬度
-          時卡片是寫死 850px 高、不是跟著瀏覽器視窗高度變化，vh 會抓到瀏覽器高度而不是卡片
-          高度，兩者不一致時彈窗會比卡片本身還高。 */}
-      <div
-        className="flex max-h-[70%] w-full flex-col overflow-y-auto rounded-t-[1.75rem] bg-white"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-[#ECE4FA] px-5 py-4">
-          <p className="font-semibold text-[#4A3B7C]">加入行程分類</p>
-          <button type="button" onClick={onClose} aria-label="關閉" className="grid size-8 place-items-center rounded-full text-[#9C94C4] hover:bg-[#F3EFFC]">
-            ✕
-          </button>
-        </div>
-
-        <div className="flex max-h-[50vh] flex-col gap-2 overflow-y-auto px-5 py-4">
-          {loading ? (
-            <p className="py-4 text-center text-xs text-[#B3ABD4]">載入中…</p>
-          ) : (
-            groups.length === 0 &&
-            !creating && <p className="py-2 text-xs text-[#B3ABD4]">這個車種還沒有任何分類，新增一個吧</p>
-          )}
-
-          {!loading &&
-            groups.map((g) => (
-              <button
-                key={g.id}
-                type="button"
-                onClick={() => onSelectGroup(g.id)}
-                className="rounded-2xl border border-[#ECE4FA] px-4 py-3 text-left text-sm font-medium text-[#4A3B7C] hover:bg-[#F3EFFC]"
-              >
-                {g.name}
-              </button>
+    <EditorSheet
+      open={open}
+      title={`加入${copy.tripItem}`}
+      onClose={onClose}
+      // 還沒按「新增分類」時底部不需要主要按鈕——點分類本身就是確認動作了，多一顆「儲存」
+      // 反而讓人以為要先選再按才算完成。
+      onSave={creating ? create : undefined}
+      saveLabel="新增並加入"
+    >
+      {loading ? (
+        skeletonCount === 0 ? (
+          <Hint>{copy.loading}</Hint>
+        ) : (
+          // 骨架列數＝上次這個車種實際的分類數，列高也跟下面真正的分類按鈕一致。
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: skeletonCount }, (_, i) => (
+              <div key={i} className="rounded-2xl border border-[#ECE4FA] px-4 py-3">
+                <SkeletonBar width={`${40 + ((i * 17) % 30)}%`} height={14} />
+              </div>
             ))}
+          </div>
+        )
+      ) : (
+        <>
+          {groups.length === 0 && !creating && <Hint>這個車種還沒有任何{copy.group}，新增一個吧</Hint>}
+
+          {groups.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {groups.map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => onSelectGroup(g.id)}
+                  className="rounded-2xl border border-[#ECE4FA] px-4 py-3 text-left text-sm font-medium text-[#4A3B7C] transition-colors hover:bg-[#F3EFFC]"
+                >
+                  {g.name}
+                </button>
+              ))}
+            </div>
+          )}
 
           {creating ? (
             <>
-              <input
+              <TextInput
                 type="text"
                 autoFocus
                 value={name}
@@ -100,50 +133,16 @@ export function TripGroupPickerModal({
                   setName(e.target.value);
                   setNameError(false);
                 }}
-                placeholder="分類名稱"
-                className={`rounded-2xl border bg-white px-4 py-3 text-sm font-medium text-[#4A3B7C] outline-none focus:border-[#6F5FD6] ${
-                  nameError ? "border-[#D1517E]" : "border-[#ECE4FA]"
-                }`}
+                placeholder={`${copy.group}名稱`}
+                className={nameError ? "border-[#D1517E]" : ""}
               />
-              {nameError && <span className="text-xs text-[#D1517E]">這個車種已經有同名的分類了</span>}
+              {nameError && <ErrorText>這個車種已經有同名的{copy.group}了</ErrorText>}
             </>
           ) : (
-            <button
-              type="button"
-              onClick={() => setCreating(true)}
-              className="rounded-xl border border-dashed border-[#C7BFE6] py-2.5 text-sm font-medium text-[#6F5FD6]"
-            >
-              ＋ 新增分類
-            </button>
+            <AddButton onClick={() => setCreating(true)}>新增{copy.group}</AddButton>
           )}
-        </div>
-
-        {/* 「新增並加入」跟其他彈窗的「儲存」一樣，獨立一個區塊放在最下方，不跟輸入框擠在
-            同一排。 */}
-        {creating && (
-          <div className="flex items-center justify-end gap-2 border-t border-[#ECE4FA] px-5 py-4">
-            <button type="button" onClick={() => setCreating(false)} className="px-4 py-2 text-sm text-[#9C94C4] hover:text-[#6F5FD6]">
-              取消
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const trimmed = name.trim();
-                if (!trimmed) return;
-                if (groups.some((g) => g.name.trim().toLowerCase() === trimmed.toLowerCase())) {
-                  setNameError(true);
-                  return;
-                }
-                onCreateGroup(trimmed);
-              }}
-              className="rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)]"
-              style={{ background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
-            >
-              新增並加入
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+        </>
+      )}
+    </EditorSheet>
   );
 }

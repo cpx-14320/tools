@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { BottomSheetModal } from "./bottom-sheet-modal";
+import { GhostButton, PrimaryButton } from "./ui";
+import { copy } from "./theme";
 
 /** 城市＋站名雙欄選擇彈窗：取代原生 <select>，手機上不會跳出系統原生的下拉選單，
  *  外殼（置中/置底、標題＋✕、底部取消／確定）共用 BottomSheetModal。 */
@@ -43,17 +45,9 @@ export function StationPickerModal({
       bodyClassName="flex h-[320px]"
       footer={
         <>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-[#9C94C4] hover:text-[#6F5FD6]">
-            取消
-          </button>
-          <button
-            type="button"
-            onClick={() => onSave(city, station)}
-            className="rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)]"
-            style={{ background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
-          >
-            確定
-          </button>
+          <GhostButton onClick={onClose}>{copy.cancel}</GhostButton>
+          {/* 選擇器用「確定」、編輯器用「儲存」，見 theme.ts 的 copy 用詞表。 */}
+          <PrimaryButton onClick={() => onSave(city, station)}>{copy.confirm}</PrimaryButton>
         </>
       }
     >

@@ -44,6 +44,33 @@ export async function renameTripGroup(userId: ObjectId, id: string, name: string
   return listTripGroups(userId);
 }
 
+/**
+ * 重新排序某個車種底下的分類。前端把拖曳完的完整 id 順序送上來，這裡照陣列索引寫回
+ * order 欄位（listTripGroups 本來就是用 order 排序）。
+ *
+ * 以前只有 createTripGroup 在設 order（＝建立當下已有幾個分類），所以順序永遠是建立
+ * 順序，使用者想把「上班」固定在最上面只能砍掉重建。
+ *
+ * 不信任前端傳來的 id 清單：先用 userId＋mode 查出真的屬於這個使用者、這個車種的分類
+ * （別人的 id 混進來也不會被動到），再照傳進來的順序排；清單裡沒出現的分類（例如前端
+ * 的資料比較舊、少了剛在別的裝置新增的那一筆）接在後面，不會不見。
+ */
+export async function reorderTripGroups(userId: ObjectId, mode: string, orderedIds: string[]): Promise<TripGroupDTO[]> {
+  const db = await getDb();
+  const collection = db.collection<TripGroupDoc>("transit.tripGroups");
+  const existing = await collection.find({ userId, mode }).sort({ order: 1 }).toArray();
+  const existingIds = existing.map((d) => d._id.toHexString());
+
+  const requested = orderedIds.filter((id) => existingIds.includes(id));
+  const finalOrder = [...requested, ...existingIds.filter((id) => !requested.includes(id))];
+
+  await Promise.all(
+    finalOrder.map((id, index) => collection.updateOne({ _id: new ObjectId(id), userId, mode }, { $set: { order: index } })),
+  );
+
+  return listTripGroups(userId);
+}
+
 // 刪除分類時，底下掛的常用行程清單要一起清掉，不留沒有分類可以歸屬的孤兒資料；
 // 回傳值特意同時給 groups 跟剩下的 frequentTrips 清單，前端兩份 state 一次更新完。
 export async function deleteTripGroup(userId: ObjectId, id: string): Promise<{ groups: TripGroupDTO[] }> {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getStopRoutes, BUS_CITY_CODE } from "@/lib/transit/bus-routing";
+import { API_CACHE, jsonCached } from "@/lib/transit/api-cache";
 
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
@@ -12,8 +13,8 @@ export async function GET(request: Request) {
 
   try {
     const routes = await getStopRoutes(city, stop);
-    return NextResponse.json({ routes });
+    return jsonCached({ routes }, API_CACHE.realtime);
   } catch (err) {
-    return NextResponse.json({ routes: [], error: err instanceof Error ? err.message : "公車站牌查詢失敗" }, { status: 502 });
+    return NextResponse.json({ routes: [], error: err instanceof Error ? err.message : "公車站牌查詢失敗，請稍後再試" }, { status: 502 });
   }
 }

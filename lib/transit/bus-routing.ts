@@ -1,4 +1,6 @@
-import { tdxGet } from "./tdx-client";
+import { tdxGet, TDX_TTL } from "./tdx-client";
+import { getDb } from "../mongodb";
+import { distanceMeters } from "../geo";
 
 // 跟 lib/metro-lines.ts 的 METRO_SYSTEM_CODE 同一個概念：畫面上顯示用中文縣市名，打 TDX
 // 要用英文城市代碼，跟 components/transit/bus-cities.ts 的 BUS_CITIES 一起維護。這份縣市
@@ -17,9 +19,33 @@ export const BUS_CITY_CODE: Record<string, string> = {
   高雄市: "Kaohsiung",
 };
 
+// 各縣市的大致中心點（市中心／縣政府所在地），只用來做「附近站牌」的粗篩：使用者的座標
+// 離哪幾個縣市比較近，就只查那幾個縣市的站牌清單。以前是不管使用者在哪，一次把 10 個
+// 縣市的站牌清單全查一遍再排序——TDX 每分鐘只有 5 次額度，冷快取時那 10 個請求一定有
+// 一半以上被擋掉，而且整包幾 MB 的站牌座標還得送到瀏覽器端才開始算距離。
+const BUS_CITY_CENTER: Record<string, { lat: number; lng: number }> = {
+  台北市: { lat: 25.0375, lng: 121.5637 },
+  新北市: { lat: 25.0169, lng: 121.4628 },
+  桃園市: { lat: 24.9937, lng: 121.2969 },
+  基隆市: { lat: 25.1276, lng: 121.7392 },
+  新竹市: { lat: 24.8138, lng: 120.9675 },
+  新竹縣: { lat: 24.8276, lng: 121.0177 },
+  台中市: { lat: 24.1477, lng: 120.6736 },
+  彰化縣: { lat: 24.0809, lng: 120.5386 },
+  台南市: { lat: 22.9999, lng: 120.227 },
+  高雄市: { lat: 22.6273, lng: 120.3014 },
+};
+
+// 粗篩的半徑跟上限：縣市本身有大小，用中心點算距離會有誤差，所以半徑放寬到 45 公里
+// （雙北／基隆／桃園這種相鄰縣市都會一起入選），再取最近的 3 個縣市。實際驗算過：在
+// 台北車站會選到台北＋新北＋基隆，在中壢會選到桃園＋新竹縣＋新竹市，都涵蓋到真正走得
+// 到的站牌；更遠的縣市本來也不可能出現在「附近」清單裡。
+const NEARBY_CITY_RADIUS_M = 45_000;
+const NEARBY_CITY_LIMIT = 3;
+
 // 公車站序幾乎不會變，快取 24 小時；即時到站預估時間本來就會變，用 tdxGet 預設的 60 秒
 // 快取就好（同一分鐘內重複查詢不用一直打 TDX，但也不會舊到離譜）。
-const DAY_MS = 24 * 60 * 60 * 1000;
+const DAY_MS = TDX_TTL.static;
 
 interface StopOfRouteEntry {
   RouteUID: string;
@@ -33,8 +59,82 @@ interface StopOfRouteEntry {
   }[];
 }
 
-async function getStopOfRouteList(cityCode: string): Promise<StopOfRouteEntry[]> {
-  return tdxGet<StopOfRouteEntry[]>(`/v2/Bus/StopOfRoute/City/${cityCode}`, DAY_MS);
+/** 壓縮後的站序資料——只留畫面真正會用到的欄位，欄位名稱也縮短。 */
+interface CompactStop {
+  uid: string;
+  name: string;
+  seq: number;
+  lat: number;
+  lng: number;
+}
+
+interface CompactRoute {
+  route: string;
+  direction: number;
+  stops: CompactStop[];
+}
+
+interface BusRoutesCacheDoc {
+  _id: string; // cityCode
+  routes: CompactRoute[];
+  expiresAt: Date;
+}
+
+// 同一個 function instance 連續查同個縣市時完全不用等 Mongo 往返；存 promise 不是存值，
+// 順便處理同一 instance 內多個併發請求打同個縣市的情況（大家等同一個 promise）。
+const routesMemCache = new Map<string, { promise: Promise<CompactRoute[]>; expiresAt: number }>();
+
+/**
+ * 某個縣市全部路線的站序（去程／返程各一筆）。
+ *
+ * TDX 的 /v2/Bus/StopOfRoute/City/{code} 原始回應很肥（台北市、新北市這種大城市是好幾
+ * MB，每個站牌還附帶十幾個這裡用不到的欄位）。直接交給 tdxGet 的 Mongo 快取存原始回應
+ * 有兩個問題：(1) 大城市可能撞到 MongoDB 單一文件 16MB 上限、寫入失敗（原本是靜默吞掉
+ * 錯誤），等於這個縣市永遠沒有快取、每次冷啟動都重打一次 TDX；(2) 就算存進去了，每次
+ * 讀取都要從 Mongo 搬好幾 MB 回來。
+ *
+ * 所以這裡自己管一份「壓縮後」的快取：只存路線名稱／方向／站牌（UID、站名、站序、座標），
+ * 體積大約是原始回應的十分之一，24 小時內同一個縣市不管被查幾次、哪個端點查、冷啟動
+ * 幾次，都只會真的打 TDX 一次。
+ */
+async function getStopOfRouteList(cityCode: string): Promise<CompactRoute[]> {
+  const cached = routesMemCache.get(cityCode);
+  if (cached && cached.expiresAt > Date.now()) return cached.promise;
+
+  const promise = (async () => {
+    const db = await getDb();
+    const coll = db.collection<BusRoutesCacheDoc>("transit.busRoutes");
+
+    const doc = await coll.findOne({ _id: cityCode });
+    if (doc && doc.expiresAt.getTime() > Date.now()) return doc.routes;
+
+    // persist: false——原始回應不要再進 tdxCache 存一份（見上面的理由），壓縮完由這裡
+    // 自己存進 transit.busRoutes。
+    const entries = await tdxGet<StopOfRouteEntry[]>(`/v2/Bus/StopOfRoute/City/${cityCode}`, DAY_MS, { persist: false });
+    const routes: CompactRoute[] = entries.map((e) => ({
+      route: e.RouteName.Zh_tw,
+      direction: e.Direction,
+      stops: e.Stops.map((s) => ({
+        uid: s.StopUID,
+        name: s.StopName.Zh_tw,
+        seq: s.StopSequence,
+        lat: s.StopPosition.PositionLat,
+        lng: s.StopPosition.PositionLon,
+      })),
+    }));
+
+    // 快取寫入失敗不該讓這次查詢跟著失敗（使用者已經拿到資料了），吞掉錯誤就好。
+    await coll
+      .updateOne({ _id: cityCode }, { $set: { routes, expiresAt: new Date(Date.now() + DAY_MS) } }, { upsert: true })
+      .catch(() => {});
+
+    return routes;
+  })();
+
+  routesMemCache.set(cityCode, { promise, expiresAt: Date.now() + DAY_MS });
+  // 失敗不留快取，下一次請求可以重新嘗試。
+  promise.catch(() => routesMemCache.delete(cityCode));
+  return promise;
 }
 
 interface EtaRow {
@@ -46,7 +146,7 @@ interface EtaRow {
 }
 
 async function getEtaList(cityCode: string): Promise<EtaRow[]> {
-  return tdxGet<EtaRow[]>(`/v2/Bus/EstimatedTimeOfArrival/City/${cityCode}`);
+  return tdxGet<EtaRow[]>(`/v2/Bus/EstimatedTimeOfArrival/City/${cityCode}`, TDX_TTL.realtime);
 }
 
 export type BusEtaStatus = "ok" | "arriving" | "notStarted" | "pastLast" | "unavailable";
@@ -80,7 +180,7 @@ export async function searchBusRoutes(cityName: string, query: string): Promise<
   const cityCode = BUS_CITY_CODE[cityName];
   if (!cityCode) return [];
   const entries = await getStopOfRouteList(cityCode);
-  const names = new Set(entries.map((e) => e.RouteName.Zh_tw));
+  const names = new Set(entries.map((e) => e.route));
   const q = query.trim();
   const filtered = q ? [...names].filter((n) => n.includes(q)) : [...names];
   return filtered.sort((a, b) => a.localeCompare(b, "zh-Hant")).slice(0, SUGGESTION_LIMIT);
@@ -94,7 +194,7 @@ export async function getNamedBusRoutes(cityName: string): Promise<string[]> {
   const cityCode = BUS_CITY_CODE[cityName];
   if (!cityCode) return [];
   const entries = await getStopOfRouteList(cityCode);
-  const names = new Set(entries.map((e) => e.RouteName.Zh_tw));
+  const names = new Set(entries.map((e) => e.route));
   return [...names].filter((n) => !/\d/.test(n)).sort((a, b) => a.localeCompare(b, "zh-Hant"));
 }
 
@@ -103,7 +203,7 @@ export async function searchBusStops(cityName: string, query: string): Promise<s
   if (!cityCode) return [];
   const entries = await getStopOfRouteList(cityCode);
   const names = new Set<string>();
-  for (const entry of entries) for (const s of entry.Stops) names.add(s.StopName.Zh_tw);
+  for (const entry of entries) for (const s of entry.stops) names.add(s.name);
   const q = query.trim();
   const filtered = q ? [...names].filter((n) => n.includes(q)) : [...names];
   return filtered.sort((a, b) => a.localeCompare(b, "zh-Hant")).slice(0, SUGGESTION_LIMIT);
@@ -124,14 +224,14 @@ export async function getRouteStops(cityName: string, routeName: string): Promis
   const [entries, etaList] = await Promise.all([getStopOfRouteList(cityCode), getEtaList(cityCode)]);
 
   function stopsForDirection(direction: 0 | 1): BusStopEta[] {
-    const entry = entries.find((e) => e.RouteName.Zh_tw === routeName && e.Direction === direction);
+    const entry = entries.find((e) => e.route === routeName && e.direction === direction);
     if (!entry) return [];
     const etaByStopUID = new Map(
       etaList.filter((r) => r.RouteName.Zh_tw === routeName && r.Direction === direction).map((r) => [r.StopUID, r]),
     );
-    return [...entry.Stops]
-      .sort((a, b) => a.StopSequence - b.StopSequence)
-      .map((s) => ({ name: s.StopName.Zh_tw, ...classifyEta(etaByStopUID.get(s.StopUID)) }));
+    return [...entry.stops]
+      .sort((a, b) => a.seq - b.seq)
+      .map((s) => ({ name: s.name, ...classifyEta(etaByStopUID.get(s.uid)) }));
   }
 
   return { 0: stopsForDirection(0), 1: stopsForDirection(1) };
@@ -154,39 +254,86 @@ export async function getStopRoutes(cityName: string, stopName: string): Promise
   const results: StopRouteEta[] = [];
   const seenRouteDirection = new Set<string>();
   for (const entry of entries) {
-    const stop = entry.Stops.find((s) => s.StopName.Zh_tw === stopName);
+    const stop = entry.stops.find((s) => s.name === stopName);
     if (!stop) continue;
-    const key = `${entry.RouteName.Zh_tw}|${entry.Direction}`;
+    const key = `${entry.route}|${entry.direction}`;
     if (seenRouteDirection.has(key)) continue;
     seenRouteDirection.add(key);
-    const row = etaByKey.get(`${key}|${stop.StopUID}`);
-    results.push({ routeName: entry.RouteName.Zh_tw, direction: entry.Direction as 0 | 1, ...classifyEta(row) });
+    const row = etaByKey.get(`${key}|${stop.uid}`);
+    results.push({ routeName: entry.route, direction: entry.direction as 0 | 1, ...classifyEta(row) });
   }
 
   return results.sort((a, b) => (a.etaMinutes ?? 9999) - (b.etaMinutes ?? 9999));
 }
 
-export interface BusStopLocation {
+export interface NearbyBusStop {
   stopUID: string;
   name: string;
-  lat: number;
-  lng: number;
+  cityName: string;
+  distanceMeters: number;
 }
 
-// 附近站牌：單一縣市內所有「實體站牌」的名稱＋座標，不含路線／方向／即時到站——附近
-// 站點本來就是用距離排序，不需要到站資訊。StopOfRoute 回傳的是「每條路線底下的站序」，
-// 同一個實體站牌會被好幾十條路線重複列出，這裡用 StopUID（不是站名）去重，同名但不同
-// 位置的站牌（例如雙向各一個牌子）StopUID 不同，不會被誤合併成一筆。
-export async function getCityBusStopLocations(cityName: string): Promise<BusStopLocation[]> {
-  const cityCode = BUS_CITY_CODE[cityName];
-  if (!cityCode) return [];
-  const entries = await getStopOfRouteList(cityCode);
-  const byUID = new Map<string, BusStopLocation>();
-  for (const entry of entries) {
-    for (const s of entry.Stops) {
-      if (byUID.has(s.StopUID)) continue;
-      byUID.set(s.StopUID, { stopUID: s.StopUID, name: s.StopName.Zh_tw, lat: s.StopPosition.PositionLat, lng: s.StopPosition.PositionLon });
-    }
+/** 使用者座標附近的縣市（依中心點距離粗篩），最多 NEARBY_CITY_LIMIT 個。 */
+function nearbyCityNames(lat: number, lng: number): string[] {
+  const ranked = Object.keys(BUS_CITY_CODE)
+    .map((city) => {
+      const center = BUS_CITY_CENTER[city];
+      return { city, distance: center ? distanceMeters(lat, lng, center.lat, center.lng) : Number.POSITIVE_INFINITY };
+    })
+    .sort((a, b) => a.distance - b.distance);
+
+  const within = ranked.filter((r) => r.distance <= NEARBY_CITY_RADIUS_M).slice(0, NEARBY_CITY_LIMIT);
+  // 全部縣市都在半徑外（使用者在花東、外島或國外）時，還是給最近的那一個，讓畫面至少
+  // 顯示得出「最近的站牌在很遠的地方」，不要變成一個沒有任何說明的空清單。
+  return (within.length > 0 ? within : ranked.slice(0, 1)).map((r) => r.city);
+}
+
+/**
+ * 附近站牌：使用者座標附近幾個縣市的實體站牌，依距離排序後取前 limit 筆。
+ *
+ * 排序、去重、裁切全部在伺服器端做完——附近站牌只需要前 20 筆，以前是把好幾個縣市
+ * 完整的站牌座標清單（幾 MB）送到瀏覽器端才開始算距離，流量跟時間都是白花的。
+ *
+ * 去重用「站名」而不是 StopUID：同一個站名常常掛著好幾支不同 UID 的牌子（路口兩側、
+ * 不同路線各立一支，甚至同一個實體站牌同時登記在兩個縣市的公車系統底下——例如台北車站
+ * 周邊很多站是台北市、新北市都有停，TDX 兩邊各自登記一次）。清單已經先按距離排序，
+ * 留下的一定是最近的那一支。
+ */
+export async function getNearbyBusStops(lat: number, lng: number, limit: number): Promise<NearbyBusStop[]> {
+  const cities = nearbyCityNames(lat, lng);
+  const lists = await Promise.all(
+    cities.map(async (city) => {
+      try {
+        const entries = await getStopOfRouteList(BUS_CITY_CODE[city]);
+        const byUID = new Map<string, NearbyBusStop>();
+        for (const entry of entries) {
+          for (const s of entry.stops) {
+            if (byUID.has(s.uid)) continue;
+            byUID.set(s.uid, {
+              stopUID: s.uid,
+              name: s.name,
+              cityName: city,
+              distanceMeters: distanceMeters(lat, lng, s.lat, s.lng),
+            });
+          }
+        }
+        return [...byUID.values()];
+      } catch {
+        // 某個縣市查失敗（例如 TDX 額度用完）不要讓整個附近站牌查詢跟著失敗，其他縣市
+        // 查到的結果照樣顯示得出來。
+        return [];
+      }
+    }),
+  );
+
+  const sorted = lists.flat().sort((a, b) => a.distanceMeters - b.distanceMeters);
+  const seen = new Set<string>();
+  const merged: NearbyBusStop[] = [];
+  for (const s of sorted) {
+    if (seen.has(s.name)) continue;
+    seen.add(s.name);
+    merged.push(s);
+    if (merged.length >= limit) break;
   }
-  return [...byUID.values()];
+  return merged;
 }

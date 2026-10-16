@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImageSlot } from "@/components/transit/image-slot";
-import { FaIcon } from "@/components/transit/fa-icon";
 import { ICON_PATHS } from "@/components/transit/icon-paths";
 import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY, destCitiesFor, type Mode } from "@/components/transit/stations-data";
 import { DISTRICTS_BY_CITY } from "@/lib/transit/cwa-districts";
@@ -15,12 +14,20 @@ import { BUS_CITIES } from "@/components/transit/bus-cities";
 import { MemoEditorModal, type MemoDraft } from "@/components/transit/memo-editor-modal";
 import { memoIconPath } from "@/components/transit/memo-icons";
 import { WeatherCarousel, WeatherCarouselSkeleton, type WeatherBlock } from "@/components/transit/weather-carousel";
-import { ListRowSkeleton } from "@/components/transit/list-row-skeleton";
+import { CardListSkeleton } from "@/components/transit/skeleton";
 import { loadSkeletonCount, saveSkeletonCount } from "@/components/transit/skeleton-count";
+import { fetchTrainStationCities } from "@/lib/transit/train-cities-client";
+import { Field, FieldRow, Hint, IconButton, ListCard, PrimaryButton, SectionTitle, SelectButton } from "@/components/transit/ui";
+import { copy, text } from "@/components/transit/theme";
+
 const DEFAULTS_KEY = "cpx-tools:transit:home-defaults";
-// 小小備忘錄是使用者自己增減的清單，筆數會變動，骨架列數用這個 key 記住上次實際筆數；
-// 完全沒存過（第一次使用）時先猜 2 則。
+// 備忘錄是使用者自己增減的清單，筆數會變動，骨架列數用這個 key 記住上次實際筆數；
+// 完全沒存過（第一次使用）時退回 0，由「載入中」文字頂著。
 const MEMOS_COUNT_KEY = "cpx-tools:transit:memos-count";
+// 天氣區塊數量也是使用者自己決定的（首頁設定可以新增任意多個），骨架卡片數量照上次
+// 實際的區塊數畫，不要寫死 2 張——不然設了 3 個區塊的人每次進首頁都會看到骨架 2 張、
+// 載入完變 3 張的跳動。還沒存過時退回 2（等於出廠預設的兩個區塊）。
+const WEATHER_BLOCKS_COUNT_KEY = "cpx-tools:transit:weather-blocks-count";
 function loadDefaults(): HomeDefaults | null {
   try {
     const raw = localStorage.getItem(DEFAULTS_KEY);
@@ -36,7 +43,7 @@ function saveDefaults(defaults: HomeDefaults) {
     // 私密瀏覽模式等情況下 localStorage 可能不可用，失敗就當作這次沒存，不影響當下操作。
   }
 }
-// 不再用「編輯首頁預設值」裡設定的固定預設運輸工具——那個值只有使用者自己回來改設定
+// 不再用「首頁設定」裡設定的固定預設運輸工具——那個值只有使用者自己回來改設定
 // 才會變，跟使用者實際常切換的分頁容易對不起來，每次重新整理都跳回設定值會讓人覺得
 // 「怎麼又切換了」。改成單純記住使用者最後一次停留的分頁，每次切換分頁就更新，重新
 // 整理後直接還原到離開前的狀態。
@@ -156,8 +163,7 @@ interface HeroBanner {
   image: string;
 }
 type RemindTone = "soon" | "later";
-// 跟我的行程頁面卡片徽章同一種「圓角淡色底」視覺語言，這裡獨立定義一份，不直接
-// import 那個檔案裡的常數（兩邊是不同頁面，不應該互相耦合）。
+// 跟我的行程頁面卡片徽章同一種「圓角淡色底」視覺語言。
 const REMIND_TONE_STYLE: Record<RemindTone, string> = {
   soon: "bg-[#DFF4EB] text-[#2FAE82]",
   later: "bg-[#F3EFFC] text-[#9C94C4]",
@@ -170,8 +176,8 @@ function formatRemindCountdown(remindAtIso: string): { text: string; tone: Remin
   const totalHours = Math.floor(diffMs / (60 * 60 * 1000));
   const days = Math.floor(totalHours / 24);
   const hours = totalHours % 24;
-  const text = days > 0 ? `還有 ${days} 天 ${hours} 小時` : `還有 ${hours} 小時`;
-  return { text, tone: days === 0 ? "soon" : "later" };
+  const label = days > 0 ? `還有 ${days} 天 ${hours} 小時` : `還有 ${hours} 小時`;
+  return { text: label, tone: days === 0 ? "soon" : "later" };
 }
 // 年月日格式跟 memo-editor-modal.tsx 選日期時顯示的 pickedDate.replaceAll("-", "/") 同一套
 // 斜線分隔慣例，不要另外發明一種格式；remindAt 存的是 UTC ISO 字串，直接餵進 Date 物件會
@@ -276,7 +282,7 @@ export function TransitHomeView() {
       cancelled = true;
     };
   }, []);
-  // 「週末小旅行」可選的文案＋背景圖，掛載時抓一次並隨機抽一則；使用者還沒在「其他」頁
+  // 「橫幅」可選的文案＋背景圖，掛載時抓一次並隨機抽一則；使用者還沒在「設定」頁
   // 設定過的話會是空陣列，畫面上退回原本寫死的那組（見下面 todayWeekendTrip）。
   useEffect(() => {
     let cancelled = false;
@@ -296,7 +302,7 @@ export function TransitHomeView() {
       cancelled = true;
     };
   }, []);
-  // 首頁最上方插畫 Banner 可選的文案＋背景圖，邏輯跟上面的週末小旅行完全一樣。
+  // 首頁最上方的「主視覺」可選的文案＋背景圖，邏輯跟上面的橫幅完全一樣。
   useEffect(() => {
     let cancelled = false;
     fetch("/api/transit/hero-banners")
@@ -343,7 +349,7 @@ export function TransitHomeView() {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [originPickerOpen, setOriginPickerOpen] = useState(false);
   const [destPickerOpen, setDestPickerOpen] = useState(false);
-  // 公車改成「路線優先」搜尋（UI 階段，見 bus-route-picker-modal.tsx），不是出發／抵達站
+  // 公車是「路線優先」搜尋（見 bus-route-picker-modal.tsx），不是出發／抵達站
   // 兩個下拉選單，所以另外用一組獨立的 state，不跟 origin/dest 共用。
   const [busSelection, setBusSelection] = useState<BusRouteSelection | null>(null);
   const [busPickerOpen, setBusPickerOpen] = useState(false);
@@ -354,7 +360,7 @@ export function TransitHomeView() {
   // 顯示剛選的縣市，不用等整個流程走完才回填；(2) 掛載時從 localStorage 還原上次用過的
   // 縣市（見 loadBusCity），讓首頁、彈窗都直接帶出使用者上次選的縣市，不用每次都挑一次。
   const [busCityPreview, setBusCityPreview] = useState<string | null>(null);
-  // 天氣卡改成使用者自訂、可新增任意多個「區塊」的清單（像「我的行程」的分類一樣），
+  // 天氣卡是使用者自訂、可新增任意多個「區塊」的清單（像我的行程的分類一樣），
   // 不是寫死出發／抵達兩個固定欄位；每個區塊是一個縣市＋行政區，會自動展開成「今天」
   // 「明天」兩張首頁輪播卡，不用另外選日期。剛創帳號、還沒存過任何偏好值時，預設兩個
   // 區塊（桃園市中壢區、臺北市南港區，各自今天＋明天共 4 張卡），不是隨便挑
@@ -367,28 +373,28 @@ export function TransitHomeView() {
     ];
   }
   const [weatherBlocks, setWeatherBlocks] = useState<WeatherBlock[]>(defaultWeatherBlocks);
-  // 剛掛載、還沒讀完 localStorage 偏好值之前，天氣卡先顯示「載入中…」，不要先顯示
+  // 剛掛載、還沒讀完 localStorage 偏好值之前，天氣卡先顯示骨架，不要先顯示
   // defaultWeatherBlocks() 算出來的預設值——不然會先閃一下這組預設值再被使用者實際
   // 存的偏好值蓋掉，看起來像資料閃爍。這個 state 故意不用 localStorage 同步讀（useState
   // 初始值裡讀），因為這個頁面會先在伺服器端渲染一次，伺服器端沒有 localStorage，會跟瀏覽器
-  // 端算出來的結果不一致、觸發 hydration 不匹配；用「掛載後才翻成 true」这个效果本身跟
+  // 端算出來的結果不一致、觸發 hydration 不匹配；用「掛載後才翻成 true」這個做法本身跟
   // hydration 無關，比較安全。
   const [weatherReady, setWeatherReady] = useState(false);
+  const [weatherSkeletonCount, setWeatherSkeletonCount] = useState(2);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const citiesForMode = mode === "train" ? trainCities : STATIONS_BY_CITY[mode];
   // 真實清單載入後 key 可能跟墊檔不一樣，保險起見擋一下，避免 undefined.map 當掉。
   const safeOriginCity = citiesForMode[originCity] ? originCity : Object.keys(citiesForMode)[0];
   const destCitiesForMode = destCitiesFor(mode, safeOriginCity, citiesForMode);
   const safeDestCity = destCitiesForMode[destCity] ? destCity : Object.keys(destCitiesForMode)[0];
+  // 火車站名清單走 fetchTrainStationCities 這層共用快取：首頁、常用行程編輯彈窗、搜尋
+  // 結果頁都要用同一份清單，整個分頁生命週期內只會真的請求一次。
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/transit/tra/stations")
-      .then((res) => res.json())
-      .then((data: { cities?: { city: string; stations: { name: string }[] }[] }) => {
-        if (cancelled || !data.cities?.length) return;
-        const map: Record<string, string[]> = {};
-        for (const c of data.cities) map[c.city] = c.stations.map((s) => s.name);
-        setTrainCities(map);
+    fetchTrainStationCities()
+      .then(({ byCity }) => {
+        if (cancelled || Object.keys(byCity).length === 0) return;
+        setTrainCities(byCity);
       })
       .catch(() => { });
     return () => {
@@ -401,10 +407,15 @@ export function TransitHomeView() {
   // 進頁面時套用使用者上次存的天氣地區設定（本機瀏覽器儲存，純前端偏好值，之後接
   // 資料庫/API 時這裡會換成真的使用者設定讀取）。
   useEffect(() => {
+    // 骨架卡片數量：先讀上次記住的區塊數，沒存過就退回 2（出廠預設的兩個區塊）。
+    // 這個 effect 裡的每個 setState 都是「掛載後才讀得到 localStorage，讀到就立刻套用」
+    // 的一次性初始化（不是訂閱外部事件、也不會連鎖觸發其他 effect），屬於這個規則容許
+    // 的例外；lint 只會標出 effect 裡第一個 setState，所以 disable 放在這裡。
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    setWeatherSkeletonCount(loadSkeletonCount(WEATHER_BLOCKS_COUNT_KEY, 2));
     const saved = loadDefaults();
     if (!saved) {
-      // 一樣是掛載時的一次性初始化，理由跟下面那一大段 disable 註解相同。
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // 一樣是掛載時的一次性初始化，理由同上。
       setWeatherReady(true);
       return;
     }
@@ -424,10 +435,12 @@ export function TransitHomeView() {
       : [];
     // 這個 setState 是故意同步呼叫的：頁面掛載後才讀得到 localStorage，讀到就要立刻套用
     // 這組預設值，不是在訂閱外部事件、也不會連鎖觸發其他 effect，屬於這個規則容許的例外。
-    setWeatherBlocks(validBlocks.length > 0 ? validBlocks : defaultWeatherBlocks());
+    const blocks = validBlocks.length > 0 ? validBlocks : defaultWeatherBlocks();
+    setWeatherBlocks(blocks);
+    saveSkeletonCount(WEATHER_BLOCKS_COUNT_KEY, blocks.length);
     setWeatherReady(true);
   }, []);
-  // 進頁面時還原使用者最後一次停留的運輸工具分頁，不是套用「編輯首頁預設值」裡的固定
+  // 進頁面時還原使用者最後一次停留的運輸工具分頁，不是套用「首頁設定」裡的固定
   // 設定——理由見 loadLastMode 旁的註解。跟上面天氣地區那個 effect 分開寫，因為這個只
   // 在掛載時跑一次、讀的是掛載當下的 mode 比對是否要切換，兩者各自獨立的初始化，合在
   // 一起反而容易互相牽扯。
@@ -449,6 +462,7 @@ export function TransitHomeView() {
   }, []);
   function saveSettings(defaults: HomeDefaults) {
     setWeatherBlocks(defaults.weatherBlocks);
+    saveSkeletonCount(WEATHER_BLOCKS_COUNT_KEY, defaults.weatherBlocks.length);
     saveDefaults(defaults);
     setSettingsOpen(false);
   }
@@ -550,7 +564,7 @@ export function TransitHomeView() {
   return (
     <div className="-mb-24 flex min-h-full flex-col bg-white pb-24">
       {(() => {
-        // 跟 todayWeekendTrip 同一套：還沒在「其他」頁設定過（heroBanners 是空陣列）就退回
+        // 跟 todayWeekendTrip 同一套：還沒在「設定」頁設定過（heroBanners 是空陣列）就退回
         // 原本寫死的那組文案＋圖片，連同原本固定 2 行的排版（<br/> 強制斷行）一起保留；
         // 使用者自己設定的文案不知道長度，改成不強制斷行的單行文字，讓它自然換行。
         const todayHeroBanner = heroBannerIndex !== null ? heroBanners[heroBannerIndex] : null;
@@ -568,32 +582,32 @@ export function TransitHomeView() {
             <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-transparent" />
             {/* 跟著首頁內容一起捲動，不是外殼層級的 fixed／absolute 覆蓋層，滑動時不會貼著螢幕
                 右上角不動。 */}
-            <button
-              type="button"
+            <IconButton
+              icon="pen"
+              tone="white"
+              size={36}
               onClick={openSettings}
               aria-label="編輯首頁設定"
-              className="absolute right-4 top-4 z-20 grid size-9 place-items-center rounded-full border border-[#ECE4FA] bg-white/80 text-[#6F5FD6] shadow-sm backdrop-blur"
-            >
-              <FaIcon icon="pen" size={14} />
-            </button>
+              className="absolute right-4 top-4 z-20"
+            />
             {/* 底圖現在是真的插畫照片，不是單純漸層，文字沒有夠深的陰影很容易被底圖的淺色
                 區域吃掉；drop-shadow-sm 太淡，改用自己調的 text-shadow 加深。 */}
             <div className="absolute left-5 top-6 right-5 text-white" style={{ textShadow: "0 1px 6px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.6)" }}>
               {!heroReady ? (
                 // fetch 還沒回來，先用骨架佔著位置，不要讓使用者先看到寫死的預設文案、
                 // fetch 回來後又突然跳成抽到的那組——避免文字內容中途變來變去。
-                <div className="animate-pulse">
-                  <div className="h-7 w-3/4 rounded-full bg-white/30" />
-                  <div className="mt-3 h-4 w-1/2 rounded-full bg-white/20" />
+                <div>
+                  <div className="h-7 w-3/4 animate-pulse rounded-full bg-white/30" />
+                  <div className="mt-3 h-4 w-1/2 animate-pulse rounded-full bg-white/20" />
                 </div>
               ) : todayHeroBanner ? (
                 <>
-                  <p className="text-2xl font-bold leading-snug">{todayHeroBanner.title}</p>
+                  <p className={text.heroTitle}>{todayHeroBanner.title}</p>
                   <p className="mt-2 text-sm opacity-90">{todayHeroBanner.caption}</p>
                 </>
               ) : (
                 <>
-                  <p className="text-2xl font-bold leading-snug">下一站，去看更大的世界</p>
+                  <p className={text.heroTitle}>下一站，去看更大的世界</p>
                   <p className="mt-2 text-sm opacity-90">一段旅程，都是生活的延伸</p>
                 </>
               )}
@@ -603,7 +617,7 @@ export function TransitHomeView() {
       })()}
       <div className="relative z-10 -mt-16 flex-1 rounded-t-[2rem] bg-white px-5 pb-6 pt-5 shadow-[0_-8px_24px_-8px_rgba(111,95,214,0.2)]">
         <div className="mb-2">
-          {weatherReady ? <WeatherCarousel blocks={weatherBlocks} /> : <WeatherCarouselSkeleton />}
+          {weatherReady ? <WeatherCarousel blocks={weatherBlocks} /> : <WeatherCarouselSkeleton count={weatherSkeletonCount} />}
         </div>
         <div className="flex items-center gap-2">
           {MODES.map((m) => {
@@ -629,94 +643,74 @@ export function TransitHomeView() {
             {/* 彈窗預設就是「站牌」優先（見 bus-route-picker-modal.tsx），首頁這塊預覽
                 跟著改成縣市＋站牌名稱這兩個使用者看得懂的欄位，不再秀路線色塊——選好的
                 路線本身還是存在 busSelection 裡，只是不在首頁這塊摘要上特別標出來。
-                縣市、站牌/路線編號兩個欄位都開同一個彈窗、停在同一個搜尋畫面——縣市不用
+                縣市、站牌／路線兩個欄位都開同一個彈窗、停在同一個搜尋畫面——縣市不用
                 另外跳一層專屬的選單，彈窗裡本來就有縣市下拉可以選。 */}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setBusPickerOpenNearby(false);
-                  setBusPickerOpen(true);
-                }}
-                className="flex flex-col gap-1.5 text-left"
-              >
-                <span className="text-xs font-medium text-[#9C94C4]">縣市</span>
-                <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                  {/* 跟彈窗內 cityName 的退回邏輯一致（見 bus-route-picker-modal.tsx 的
-                      initial?.cityName ?? BUS_CITIES[0]）：沒記住的值就退回第一個縣市，
-                      不要顯示「選擇縣市」——彈窗其實一直都有一個實際在運作的縣市，首頁
-                      顯示「還沒選」反而不準確，點進去才發現其實已經選好了。這裡只是顯示
-                      用的退回值，不會寫進 localStorage，縣市清單之後調整順序也不會卡住。 */}
-                  <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">
-                    {busCityPreview ?? busSelection?.cityName ?? BUS_CITIES[0]}
-                  </span>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setBusPickerOpenNearby(false);
-                  setBusPickerOpen(true);
-                }}
-                className="flex flex-col gap-1.5 text-left"
-              >
-                <span className="text-xs font-medium text-[#9C94C4]">站牌/路線編號</span>
-                <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                  <span className={`flex-1 truncate text-sm ${busSelection?.stopName ? "font-medium text-[#4A3B7C]" : "text-[#C7BFE6]"}`}>
-                    {busSelection?.stopName ?? "輸入站牌名稱"}
-                  </span>
-                </div>
-              </button>
-            </div>
+            <FieldRow>
+              <Field as="div" label="縣市">
+                {/* 跟彈窗內 cityName 的退回邏輯一致（見 bus-route-picker-modal.tsx 的
+                    initial?.cityName ?? BUS_CITIES[0]）：沒記住的值就退回第一個縣市，
+                    不要顯示「選擇縣市」——彈窗其實一直都有一個實際在運作的縣市，首頁
+                    顯示「還沒選」反而不準確，點進去才發現其實已經選好了。 */}
+                <SelectButton
+                  chevron={false}
+                  value={busCityPreview ?? busSelection?.cityName ?? BUS_CITIES[0]}
+                  onClick={() => {
+                    setBusPickerOpenNearby(false);
+                    setBusPickerOpen(true);
+                  }}
+                />
+              </Field>
+              <Field as="div" label="站牌／路線">
+                <SelectButton
+                  value={busSelection?.stopName ?? ""}
+                  placeholder="輸入站牌名稱"
+                  onClick={() => {
+                    setBusPickerOpenNearby(false);
+                    setBusPickerOpen(true);
+                  }}
+                />
+              </Field>
+            </FieldRow>
 
             {/* 其他車種這個位置都有一顆「搜尋OO班次」按鈕，公車選完站就自動導頁、沒有查詢
                 按鈕可以放，版面看起來會少一塊——用「附近站牌」這個捷徑補上，不是重複功能：
-                彈窗裡雖然也有附近站牌，但要先開彈窗、再點一次，這顆直接一步到位。樣式跟
-                火車/捷運/高鐵那顆「搜尋OO班次」同一套實心漸層＋箭頭，版面風格統一。 */}
-            <button
-              type="button"
+                彈窗裡雖然也有附近站牌，但要先開彈窗、再點一次，這顆直接一步到位。 */}
+            <PrimaryButton
+              size="block"
+              icon="location-dot"
+              trailingArrow
+              className="mt-1"
               onClick={() => {
                 setBusPickerOpenNearby(true);
                 setBusPickerOpen(true);
               }}
-              className="mt-1 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)]"
-              style={{ background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
             >
-              <FaIcon icon="location-dot" size={14} className="text-white" /> 搜尋附近站牌 <span aria-hidden>→</span>
-            </button>
+              搜尋附近站牌
+            </PrimaryButton>
           </div>
         ) : (
           <div className="mt-4 flex flex-col gap-3">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-[#9C94C4]">出發{stationLabel}</span>
-              <button type="button" onClick={() => setOriginPickerOpen(true)} className="grid grid-cols-2 gap-2 text-left">
-                <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                  <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{safeOriginCity}</span>
-                </div>
-                <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                  <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{origin}</span>
-                </div>
-              </button>
-            </label>
-            <button
-              type="button"
+            <Field as="div" label={`出發${stationLabel}`}>
+              <FieldRow>
+                <SelectButton chevron={false} value={safeOriginCity} onClick={() => setOriginPickerOpen(true)} />
+                <SelectButton value={origin} onClick={() => setOriginPickerOpen(true)} />
+              </FieldRow>
+            </Field>
+            <IconButton
+              icon="right-left"
+              tone="white"
+              size={36}
+              iconSize={13}
               onClick={swapStations}
               aria-label="交換出發站與抵達站"
-              className="absolute right-4 top-1/2 z-10 grid size-9 -translate-y-1/2 place-items-center rounded-full border border-[#ECE4FA] bg-white text-[#6F5FD6] shadow-[0_4px_12px_-4px_rgba(111,95,214,0.4)]"
-            >
-              ⇄
-            </button>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-[#9C94C4]">抵達{stationLabel}</span>
-              <button type="button" onClick={() => setDestPickerOpen(true)} className="grid grid-cols-2 gap-2 text-left">
-                <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                  <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{safeDestCity}</span>
-                </div>
-                <div className="flex items-center gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                  <span className="flex-1 truncate text-sm font-medium text-[#4A3B7C]">{dest}</span>
-                </div>
-              </button>
-            </label>
+              className="absolute right-4 top-1/2 z-10 -translate-y-1/2 bg-white"
+            />
+            <Field as="div" label={`抵達${stationLabel}`}>
+              <FieldRow>
+                <SelectButton chevron={false} value={safeDestCity} onClick={() => setDestPickerOpen(true)} />
+                <SelectButton value={dest} onClick={() => setDestPickerOpen(true)} />
+              </FieldRow>
+            </Field>
           </div>
         )}
         <BusRoutePickerModal
@@ -778,28 +772,14 @@ export function TransitHomeView() {
         )}
         {mode !== "bus" && (
           <>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-[#9C94C4]">日期</span>
-                <button
-                  type="button"
-                  onClick={() => setDatePickerOpen(true)}
-                  className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-left text-sm text-[#4A3B7C]"
-                >
-                  <span className="flex-1 truncate font-medium">{date.replaceAll("-", "/")}</span>
-                </button>
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-[#9C94C4]">時間</span>
-                <button
-                  type="button"
-                  onClick={() => setTimePickerOpen(true)}
-                  className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-left text-sm text-[#4A3B7C]"
-                >
-                  <span className="flex-1 font-medium">{time}</span>
-                </button>
-              </label>
-            </div>
+            <FieldRow className="mt-3 gap-3">
+              <Field as="div" label="日期">
+                <SelectButton chevron={false} value={date.replaceAll("-", "/")} onClick={() => setDatePickerOpen(true)} />
+              </Field>
+              <Field as="div" label="時間">
+                <SelectButton chevron={false} value={time} onClick={() => setTimePickerOpen(true)} />
+              </Field>
+            </FieldRow>
             <DatePickerModal
               key={datePickerOpen ? "date-open" : "date-closed"}
               open={datePickerOpen}
@@ -823,63 +803,54 @@ export function TransitHomeView() {
           </>
         )}
         {mode !== "bus" && (
-          <button
-            type="button"
-            onClick={searchTrains}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)]"
-            style={{ background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
-          >
-            <FaIcon icon="magnifying-glass" size={14} className="text-white" /> {`搜尋${MODES.find((m) => m.key === mode)?.label}班次`}{" "}
-            <span aria-hidden>→</span>
-          </button>
+          <PrimaryButton size="block" icon="magnifying-glass" trailingArrow className="mt-4" onClick={searchTrains}>
+            {`搜尋${MODES.find((m) => m.key === mode)?.label}班次`}
+          </PrimaryButton>
         )}
-        <p className="mt-6 flex items-center gap-1.5 text-sm font-semibold text-[#4A3B7C]">
-          <span aria-hidden className="text-[#C9A6F2]">
-            ♦
-          </span>
-          小小備忘錄
-          <button type="button" onClick={() => setMemoEditorOpen(true)} aria-label="編輯備忘錄" className="ml-auto">
-            <FaIcon icon="pen" size={14} />
-          </button>
-        </p>
+        <SectionTitle
+          diamond
+          className="mt-6"
+          action={<IconButton icon="pen" onClick={() => setMemoEditorOpen(true)} aria-label={`編輯${copy.memo}`} size={28} />}
+        >
+          {copy.memo}
+        </SectionTitle>
         {!memosReady ? (
           memosSkeletonCount === 0 ? (
-            <p className="mt-2 text-xs text-[#B3ABD4]">載入中…</p>
+            <Hint className="mt-2">{copy.loading}</Hint>
           ) : (
-            <div className="mt-2 flex flex-col gap-2.5">
-              {Array.from({ length: memosSkeletonCount }, (_, i) => (
-                <div key={i} className="rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
-                  <ListRowSkeleton iconSize={48} />
-                </div>
-              ))}
+            // 骨架張數＝上次實際的備忘錄筆數，卡片內部結構也跟真正的備忘錄卡一致。
+            <div className="mt-2">
+              <CardListSkeleton count={memosSkeletonCount} iconSize={48} />
             </div>
           )
         ) : memos.length === 0 ? (
-          <p className="mt-2 text-xs text-[#B3ABD4]">還沒有備忘錄，點右上角新增</p>
+          <Hint className="mt-2">還沒有{copy.memo}，點右邊的編輯新增</Hint>
         ) : (
           <div className="mt-2 flex flex-col gap-2.5">
             {memos.map((m) => {
               const countdown = m.remindAt ? formatRemindCountdown(m.remindAt) : null;
               return (
-                <div key={m.id} className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
-                  <ImageSlot src={memoIconPath(m.icon)} alt="備忘錄" className="size-12 shrink-0 rounded-xl" />
+                <ListCard key={m.id} className="flex items-center gap-3">
+                  <ImageSlot src={memoIconPath(m.icon)} alt={copy.memo} className="size-12 shrink-0 rounded-xl" />
                   <div className="min-w-0 flex-1">
-                    <p className="mt-0.5 truncate text-xs text-[#9C94C4]">{m.content}</p>
+                    {/* 備忘錄內容是這張卡真正的主要內容，字級要跟其他清單的主要內容一樣
+                        （設計系統的 body）——以前用 text-xs 的說明字級，看起來反而像附註。 */}
+                    <p className={`truncate ${text.body}`}>{m.content}</p>
                     {m.remindAt && countdown && (
                       <div className="mt-1.5 flex items-center justify-between gap-2">
-                        <span className={`inline-block w-fit shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${REMIND_TONE_STYLE[countdown.tone]}`}>
+                        <span className={`inline-block w-fit shrink-0 rounded-full px-2 py-0.5 font-medium ${text.micro} ${REMIND_TONE_STYLE[countdown.tone]}`}>
                           {countdown.text}
                         </span>
-                        <span className="truncate text-[10px] text-[#B3ABD4]">{formatRemindDateTime(m.remindAt)}</span>
+                        <span className={`truncate ${text.micro} text-[#B3ABD4]`}>{formatRemindDateTime(m.remindAt)}</span>
                       </div>
                     )}
                   </div>
-                </div>
+                </ListCard>
               );
             })}
           </div>
         )}
-        {/* 使用者在「其他」頁設定過幾組標題＋文案＋背景圖的話，每次進頁面／重新整理隨機挑
+        {/* 使用者在「設定」頁設定過幾組標題＋文案＋背景圖的話，每次進頁面／重新整理隨機挑
             一組（見掛載時那個 effect）；還沒設定過（weekendTrips 是空陣列）就退回原本寫死
             的那組，不影響舊有畫面。 */}
         {(() => {
@@ -898,11 +869,11 @@ export function TransitHomeView() {
               <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20" />
               <div className="relative z-10 flex h-full items-center px-5 py-4">
                 {!weekendReady ? (
-                  // 跟首頁最上方 Banner 同一套：fetch 回來前先用骨架佔位，不要先看到寫死的
+                  // 跟首頁最上方主視覺同一套：fetch 回來前先用骨架佔位，不要先看到寫死的
                   // 預設文案才又跳成抽到的那組。
-                  <div className="w-2/3 animate-pulse">
-                    <div className="h-4 w-full rounded-full bg-white/30" />
-                    <div className="mt-2 h-3 w-4/5 rounded-full bg-white/20" />
+                  <div className="w-2/3">
+                    <div className="h-4 w-full animate-pulse rounded-full bg-white/30" />
+                    <div className="mt-2 h-3 w-4/5 animate-pulse rounded-full bg-white/20" />
                   </div>
                 ) : (
                   <div style={{ textShadow: "0 1px 6px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.6)" }}>

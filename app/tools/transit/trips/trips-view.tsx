@@ -6,14 +6,28 @@ import { FrequentTripModal, type FrequentTripDraft } from "@/components/transit/
 import { frequentTripIconPath } from "@/components/transit/frequent-trip-icons";
 import { ImageSlot } from "@/components/transit/image-slot";
 import { routeBadgeStyle } from "@/components/transit/bus-route-picker-modal";
-import { FaIcon } from "@/components/transit/fa-icon";
-import { ListRowSkeleton } from "@/components/transit/list-row-skeleton";
-import { loadSkeletonCount, saveSkeletonCount } from "@/components/transit/skeleton-count";
+import { ListRowSkeleton, SkeletonBar } from "@/components/transit/skeleton";
+import { loadSkeletonShape, saveSkeletonCount, saveSkeletonShape } from "@/components/transit/skeleton-count";
 import { CenterToast } from "@/components/transit/center-toast";
+import {
+  AddButton,
+  Badge,
+  DragHandle,
+  Hint,
+  IconButton,
+  ListCard,
+  Note,
+  PageTitle,
+  PillButton,
+  SectionTitle,
+  SegmentedTabs,
+} from "@/components/transit/ui";
+import { copy, shadow, text } from "@/components/transit/theme";
+import { moveItem, useDragReorder } from "@/components/transit/use-drag-reorder";
 
 type Mode = "bus" | "train" | "metro" | "thsr";
 
-// 分類名稱（例如「啟程」「返程」「假日出去玩」）完全由使用者自訂、自由新增，不是寫死的
+// 分類名稱（例如「上班」「下班」「假日出去玩」）完全由使用者自訂、自由新增，不是寫死的
 // 兩種——每個分類是一份獨立的常用行程清單，使用者可以依車種各自新增任意多個分類。
 // 四種車種（公車／火車／捷運／高鐵）都是同一套做法，不另外寫死任何假資料的歷史行程清單。
 interface TripGroup {
@@ -57,16 +71,22 @@ function saveLastTab(tab: Mode) {
   }
 }
 
-// 分類、行程都是使用者自己增減的清單，每個車種各自的筆數會不一樣——骨架列數照目前
-// 選中的車種分別記住上次的分類數／行程數，不要固定寫死，猜錯的話資料回來那一刻畫面
-// 高度會跳一下。
+// 分類、行程都是使用者自己增減的清單，每個車種的筆數都不一樣——骨架要畫得跟載入完一模
+// 一樣，所以記的不是「總共幾個分類、總共幾筆行程」（那樣只能平均分配，分類筆數不平均時
+// 一定對不上），而是「每個分類各自有幾筆行程」這個形狀陣列，例如 [3, 1, 2]。
+const tripShapeKey = (mode: Mode) => `cpx-tools:transit:trip-shape:${mode}`;
+// 分類數量另外也存一份單純的數字：搜尋結果頁的「加入行程」彈窗要用同一個數字畫骨架
+// （見 components/transit/trip-group-picker-modal.tsx），那邊不需要知道每個分類底下幾筆。
 const tripGroupsCountKey = (mode: Mode) => `cpx-tools:transit:trip-groups-count:${mode}`;
-const tripItemsCountKey = (mode: Mode) => `cpx-tools:transit:trip-items-count:${mode}`;
 
-function saveTripSkeletonCounts(groups: TripGroup[], trips: FrequentTrip[]) {
+function saveTripSkeletonShape(groups: TripGroup[], trips: FrequentTrip[]) {
   for (const t of TABS) {
-    saveSkeletonCount(tripGroupsCountKey(t.key), groups.filter((g) => g.mode === t.key).length);
-    saveSkeletonCount(tripItemsCountKey(t.key), trips.filter((f) => f.mode === t.key).length);
+    const modeGroups = groups.filter((g) => g.mode === t.key);
+    saveSkeletonShape(
+      tripShapeKey(t.key),
+      modeGroups.map((g) => trips.filter((f) => f.groupId === g.id).length),
+    );
+    saveSkeletonCount(tripGroupsCountKey(t.key), modeGroups.length);
   }
 }
 
@@ -79,13 +99,12 @@ export function TripsView() {
   const [tripGroups, setTripGroups] = useState<TripGroup[]>([]);
   const [frequentTrips, setFrequentTrips] = useState<FrequentTrip[]>([]);
   const [tripsReady, setTripsReady] = useState(false);
-  // 初始值先給固定的 0（伺服器端渲染那一次沒有 localStorage，要跟瀏覽器端算出來的結果
-  // 一致才不會 hydration 不匹配），掛載後、以及切換車種分頁時才用下面的 effect 翻成
-  // 「目前這個車種上次實際筆數」的猜測值。完全沒存過（包含剛建立的新帳號、從來沒設定
-  // 過分類）才退回 0——不要猜「至少有 1 個分類」，不然新帳號會先閃一塊看起來像有資料
-  // 的骨架，之後才變成「還沒有任何分類」的空狀態，畫面跳動又誤導。
-  const [groupSkeletonCount, setGroupSkeletonCount] = useState(0);
-  const [tripSkeletonCount, setTripSkeletonCount] = useState(0);
+  // 骨架形狀的初始值只能先給 null（伺服器端渲染那一次沒有 localStorage，要跟瀏覽器端算
+  // 出來的結果一致才不會 hydration 不匹配），掛載後、以及切換車種分頁時才用下面的 effect
+  // 翻成「目前這個車種上次實際形狀」。完全沒存過（新帳號、這個車種從來沒設定過分類）是
+  // null——不要猜「至少有 1 個分類」，不然新帳號會先閃一塊看起來像有資料的骨架，之後才
+  // 變成「還沒有任何分類」的空狀態，畫面跳動又誤導。
+  const [skeletonShape, setSkeletonShape] = useState<number[] | null>(null);
   // null＝彈窗關閉；groupId 為 null 代表正在新增一個全新分類，否則是在編輯該 id 的既有分類。
   const [groupModal, setGroupModal] = useState<{ groupId: string | null; name: string } | null>(null);
   // 新增／儲存分類成功後的提示文字，跟結果頁「加入行程」同一個 CenterToast 元件。
@@ -109,10 +128,9 @@ export function TripsView() {
 
   useEffect(() => {
     // 跟首頁套用 localStorage 存的預設值同一種例外：掛載後、或 tab 換了才讀得到當下這個
-    // 車種上次記住的筆數，不是在訂閱外部事件、也不會連鎖觸發其他 effect。
+    // 車種上次記住的形狀，不是在訂閱外部事件、也不會連鎖觸發其他 effect。
     /* eslint-disable-next-line react-hooks/set-state-in-effect */
-    setGroupSkeletonCount(loadSkeletonCount(tripGroupsCountKey(tab), 0));
-    setTripSkeletonCount(loadSkeletonCount(tripItemsCountKey(tab), 0));
+    setSkeletonShape(loadSkeletonShape(tripShapeKey(tab)));
   }, [tab]);
 
   useEffect(() => {
@@ -128,7 +146,7 @@ export function TripsView() {
         setTripGroups(groups);
         setFrequentTrips(trips);
         setTripsReady(true);
-        saveTripSkeletonCounts(groups, trips);
+        saveTripSkeletonShape(groups, trips);
       })
       .catch(() => {
         if (!cancelled) setTripsReady(true);
@@ -137,6 +155,39 @@ export function TripsView() {
       cancelled = true;
     };
   }, []);
+
+  // 分類的顯示順序＝資料庫 order 欄位（見 lib/transit/trip-groups.ts）。以前 order 只有
+  // 新增當下寫一次，所以永遠是建立順序，想把「上班」固定在最上面只能砍掉重建；現在用
+  // 拖曳握把改順序，放手時把整個車種的 id 順序送回後端。
+  //
+  // 畫面上先樂觀更新（拖曳過程中就已經是新順序了），API 回來再用後端算出來的結果覆蓋，
+  // 失敗就維持畫面上的順序——下次重新整理會回到後端的真實順序，不會卡在一個假的狀態。
+  function moveGroup(from: number, to: number) {
+    setTripGroups((all) => {
+      const forTab = all.filter((g) => g.mode === tab);
+      const reordered = moveItem(forTab, from, to);
+      // 其他車種的分類原封不動留在原位，只有目前這個車種的那幾筆重新排。
+      const others = all.filter((g) => g.mode !== tab);
+      return [...reordered, ...others];
+    });
+  }
+
+  async function commitGroupOrder() {
+    const orderedIds = tripGroups.filter((g) => g.mode === tab).map((g) => g.id);
+    const data: { groups?: TripGroup[] } = await fetch("/api/transit/trip-groups", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: tab, orderedIds }),
+    })
+      .then((res) => res.json())
+      .catch(() => ({}));
+    if (data.groups) {
+      setTripGroups(data.groups);
+      saveTripSkeletonShape(data.groups, frequentTrips);
+    }
+  }
+
+  const drag = useDragReorder(groupsForTab.length, moveGroup, commitGroupOrder);
 
   // 分類名稱、底下的行程清單在同一個彈窗一次編輯：新增分類時先建立分類拿到 id，
   // 再用這個 id 把填好的行程存進去；編輯既有分類則是改名＋同步清單兩件事一起做。
@@ -206,9 +257,9 @@ export function TripsView() {
         }
       }
     }
-    saveTripSkeletonCounts(finalGroups, finalTrips);
+    saveTripSkeletonShape(finalGroups, finalTrips);
     setGroupModal(null);
-    setToast(isNewGroup ? "新增成功" : "儲存成功");
+    setToast(isNewGroup ? copy.created : copy.saved);
   }
 
   async function deleteGroup(groupId: string) {
@@ -221,16 +272,14 @@ export function TripsView() {
     const finalTrips = data.trips ?? frequentTrips;
     if (data.groups) setTripGroups(finalGroups);
     if (data.trips) setFrequentTrips(finalTrips);
-    saveTripSkeletonCounts(finalGroups, finalTrips);
+    saveTripSkeletonShape(finalGroups, finalTrips);
     setGroupModal(null);
-    if (data.groups) setToast("刪除成功");
+    if (data.groups) setToast(copy.deleted);
   }
 
   return (
     <div className="flex flex-col px-5 pb-6 pt-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-[#4A3B7C]">我的行程</h1>
-      </div>
+      <PageTitle>我的{copy.tripItem}</PageTitle>
 
       <FrequentTripModal
         key={groupModal ? `group-${groupModal.groupId ?? "new"}` : "group-closed"}
@@ -248,90 +297,79 @@ export function TripsView() {
         }
       />
 
-      <div className="mt-4 inline-flex items-center gap-1 self-start rounded-full bg-[#F3EFFC] p-1">
-        {TABS.map((t) => {
-          const active = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => selectTab(t.key)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                active ? "bg-white text-[#6F5FD6] shadow-[0_2px_8px_-2px_rgba(111,95,214,0.4)]" : "text-[#9C94C4]"
-              }`}
-            >
-              {t.label}
-            </button>
-          );
-        })}
+      <div className="mt-4 self-start">
+        <SegmentedTabs items={TABS} value={tab} onChange={selectTab} />
       </div>
 
       {!tripsReady ? (
-        groupSkeletonCount === 0 ? (
-          // 沒有上次記住的筆數可以猜（新帳號、或這個車種從來沒存過分類）時，骨架列數會是
-          // 0，Array.from 出來是空陣列、畫面上什麼都不會顯示——在真正查完之前會有一段空白，
-          // 容易讓人誤會頁面卡住，所以這裡額外補一個「載入中」文字，跟 trip-group-picker-modal
-          // 的清單載入中同一套文字樣式。
-          <p className="mt-5 text-xs text-[#B3ABD4]">載入中…</p>
+        skeletonShape === null ? (
+          // 沒有上次記住的形狀可以猜（新帳號、或這個車種從來沒存過分類）時，骨架會是空的，
+          // 畫面上什麼都不顯示——在真正查完之前會有一段空白，容易讓人誤會頁面卡住，所以
+          // 這裡額外補一個「載入中」文字。
+          <Hint className="mt-5">{copy.loading}</Hint>
         ) : (
-          // 骨架列數跟著目前車種上次記住的分類數／行程數猜，不是固定寫死——分類跟底下的
-          // 行程筆數把它平均分配到每個分類骨架下面，湊不滿一個分類至少顯示一列。
-          Array.from({ length: groupSkeletonCount }, (_, groupIndex) => (
+          // 骨架的分類數、每個分類底下的行程列數都跟上次實際的一模一樣（不是用總數平均
+          // 分配），資料回來那一刻版面高度不會跳。
+          skeletonShape.map((rows, groupIndex) => (
             <div key={groupIndex} className="mt-5 flex flex-col gap-2.5">
-              <div className="h-4 w-24 animate-pulse rounded-full bg-[#E4DBF9]" />
-              {Array.from({ length: Math.max(1, Math.round(tripSkeletonCount / groupSkeletonCount)) }, (_, i) => (
-                <div key={i} className="rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
-                  <ListRowSkeleton iconSize={48} />
-                </div>
-              ))}
+              <SkeletonBar width={96} height={16} />
+              {rows === 0 ? (
+                <SkeletonBar width="40%" height={12} />
+              ) : (
+                Array.from({ length: rows }, (_, i) => (
+                  <div key={i} className="rounded-2xl bg-white p-3" style={{ boxShadow: shadow.card }}>
+                    <ListRowSkeleton iconSize={48} />
+                  </div>
+                ))
+              )}
             </div>
           ))
         )
       ) : (
         <>
-          {groupsForTab.map((g) => {
+          {groupsForTab.length > 1 && <Note className="mt-4">按住分類名稱左邊的握把可以拖曳調整順序。</Note>}
+
+          {groupsForTab.map((g, groupIndex) => {
             const groupTrips = frequentTrips.filter((f) => f.groupId === g.id);
             return (
-              <div key={g.id}>
-                <p className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-[#4A3B7C]">
+              <div key={g.id} ref={drag.rowRef(groupIndex)} className={drag.rowClass(groupIndex)}>
+                <SectionTitle
+                  className="mt-5"
+                  action={
+                    <IconButton icon="pen" size={28} onClick={() => setGroupModal({ groupId: g.id, name: g.name })} aria-label={`編輯${g.name}`} />
+                  }
+                >
+                  {/* 只有兩個以上的分類才需要排序，單一分類時不顯示握把（拖也沒意義）。 */}
+                  {groupsForTab.length > 1 && <DragHandle label={`拖曳排序 ${g.name}`} {...drag.handleProps(groupIndex)} />}
                   <span className="truncate">{g.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => setGroupModal({ groupId: g.id, name: g.name })}
-                    aria-label={`編輯${g.name}`}
-                    className="ml-auto shrink-0"
-                  >
-                    <FaIcon icon="pen" size={14} />
-                  </button>
-                </p>
+                </SectionTitle>
                 {groupTrips.length === 0 ? (
-                  <p className="mt-2 text-xs text-[#B3ABD4]">還沒有行程，點右上角新增</p>
+                  <Hint className="mt-2">還沒有{copy.tripItem}，點{copy.group}右邊的編輯新增</Hint>
                 ) : (
                   <div className="mt-2 flex flex-col gap-2.5">
                     {groupTrips.map((f) => (
-                      <div key={f.id} className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
+                      <ListCard key={f.id} className="flex items-center gap-3">
                         <ImageSlot src={frequentTripIconPath(f.icon)} alt={`${f.origin}到${f.dest}`} className="size-12 shrink-0 rounded-xl" />
                         <div className="min-w-0 flex-1">
                           {tab === "bus" ? (
                             <>
-                              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${routeBadgeStyle(f.origin)}`}>{f.origin}</span>
-                              <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 truncate text-sm font-semibold text-[#4A3B7C]">
-                                <span className="text-xs font-normal text-[#9C94C4]">{f.busDirection === 1 ? "返程" : "去程"}</span>
+                              <Badge className={routeBadgeStyle(f.origin)}>{f.origin}</Badge>
+                              <p className={`mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 truncate ${text.cardTitle}`}>
+                                <span className={text.meta}>{f.busDirection === 1 ? "返程" : "去程"}</span>
                                 <span aria-hidden>·</span>
                                 {f.dest}
                               </p>
                             </>
                           ) : (
-                            <p className="truncate text-sm font-semibold text-[#4A3B7C]">
+                            <p className={`truncate ${text.cardTitle}`}>
                               {f.origin} <span aria-hidden>⇄</span> {f.dest}
                             </p>
                           )}
-                          <p className="mt-0.5 text-xs text-[#9C94C4]">
+                          <p className={`mt-0.5 ${text.meta}`}>
                             {f.startTime}–{f.endTime}
                           </p>
                         </div>
-                        <button
-                          type="button"
+                        <PillButton
                           onClick={() =>
                             router.push(
                               tab === "bus"
@@ -339,11 +377,10 @@ export function TripsView() {
                                 : `/tools/transit/results?origin=${encodeURIComponent(f.origin)}&dest=${encodeURIComponent(f.dest)}&mode=${tab}&startTime=${encodeURIComponent(f.startTime)}&endTime=${encodeURIComponent(f.endTime)}&from=trips`,
                             )
                           }
-                          className="shrink-0 rounded-full bg-[#F3EFFC] px-3 py-1.5 text-xs font-medium text-[#6F5FD6]"
                         >
                           搜尋班次 →
-                        </button>
-                      </div>
+                        </PillButton>
+                      </ListCard>
                     ))}
                   </div>
                 )}
@@ -351,17 +388,17 @@ export function TripsView() {
             );
           })}
 
-          {groupsForTab.length === 0 && <p className="mt-5 text-xs text-[#B3ABD4]">還沒有任何分類，點下方新增第一個分類</p>}
+          {groupsForTab.length === 0 && (
+            <Hint className="mt-5">
+              還沒有任何{copy.group}，點下方新增第一個{copy.group}
+            </Hint>
+          )}
         </>
       )}
 
-      <button
-        type="button"
-        onClick={() => setGroupModal({ groupId: null, name: "" })}
-        className="mt-4 w-full rounded-xl border border-dashed border-[#C7BFE6] py-2.5 text-sm font-medium text-[#6F5FD6]"
-      >
-        ＋ 新增分類
-      </button>
+      <AddButton className="mt-4" onClick={() => setGroupModal({ groupId: null, name: "" })}>
+        新增{copy.group}
+      </AddButton>
 
       {toast && <CenterToast message={toast} onDone={() => setToast(null)} />}
     </div>

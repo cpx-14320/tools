@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { tdxGet } from "@/lib/transit/tdx-client";
+import { tdxGet, TDX_TTL } from "@/lib/transit/tdx-client";
 import { getTraStations } from "@/lib/transit/tdx-stations";
 import { todayInTaipei, nowHHmmInTaipei, minutesBetween, formatDuration } from "@/lib/transit/tdx-time";
+import { API_CACHE, jsonCached } from "@/lib/transit/api-cache";
 
 interface StopTime {
   StationID: string;
@@ -38,7 +39,7 @@ function fullFareOf(entry: OdFareEntry): number | undefined {
 // 同一個起訖站 TDX 常常同時回傳「直達」跟「繞道環島」兩種距離完全不同的報價，
 // 只有距離最短的那組才是使用者真正會搭的這段票價。
 async function getFullFareByTrainType(originId: string, destId: string): Promise<Map<number, number>> {
-  const data = await tdxGet<{ ODFares: OdFareEntry[] }>(`/v3/Rail/TRA/ODFare/${originId}/to/${destId}`, 24 * 60 * 60 * 1000);
+  const data = await tdxGet<{ ODFares: OdFareEntry[] }>(`/v3/Rail/TRA/ODFare/${originId}/to/${destId}`, TDX_TTL.static);
   const minDistance = Math.min(...data.ODFares.map((f) => f.TravelDistance));
   const map = new Map<number, number>();
   for (const entry of data.ODFares) {
@@ -79,8 +80,14 @@ export async function GET(request: Request) {
     }
 
     const [timetable, liveBoard, fareByType] = await Promise.allSettled([
-      tdxGet<{ TrainTimetables: TrainTimetableEntry[] }>(`/v3/Rail/TRA/DailyTrainTimetable/OD/${originId}/to/${destId}/${date}`),
-      tdxGet<{ StationLiveBoards: StationLiveBoardRow[] }>(`/v3/Rail/TRA/StationLiveBoard/Station/${originId}`),
+      tdxGet<{ TrainTimetables: TrainTimetableEntry[] }>(
+        `/v3/Rail/TRA/DailyTrainTimetable/OD/${originId}/to/${destId}/${date}`,
+        // 某一天的時刻表公告後幾乎不會再變，用 60 秒的預設快取太浪費——同一組起訖站
+        // 重新查一次（回上一頁再進來、換個時間再查）就又占掉一次每分鐘 5 次的額度。
+        // 誤點是另外一支 StationLiveBoard 在管，維持 60 秒新鮮度，不受這裡影響。
+        TDX_TTL.dailyTimetable,
+      ),
+      tdxGet<{ StationLiveBoards: StationLiveBoardRow[] }>(`/v3/Rail/TRA/StationLiveBoard/Station/${originId}`, TDX_TTL.realtime),
       getFullFareByTrainType(originId, destId),
     ]);
 
@@ -119,8 +126,8 @@ export async function GET(request: Request) {
       .filter((row): row is NonNullable<typeof row> => row !== null)
       .sort((a, b) => a.time.localeCompare(b.time));
 
-    return NextResponse.json({ rows });
+    return jsonCached({ rows }, API_CACHE.timetable);
   } catch (err) {
-    return NextResponse.json({ rows: [], error: err instanceof Error ? err.message : "TDX 查詢失敗" }, { status: 502 });
+    return NextResponse.json({ rows: [], error: err instanceof Error ? err.message : "台鐵班次查詢失敗，請稍後再試" }, { status: 502 });
   }
 }

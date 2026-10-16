@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { requireTool } from "@/lib/auth";
-import { listTripGroups, createTripGroup, renameTripGroup, deleteTripGroup } from "@/lib/transit/trip-groups";
+import { listTripGroups, createTripGroup, renameTripGroup, reorderTripGroups, deleteTripGroup } from "@/lib/transit/trip-groups";
 import { listFrequentTrips } from "@/lib/transit/frequent-trips";
 
 export async function GET() {
@@ -30,6 +30,18 @@ export async function PUT(request: Request) {
   if (user instanceof NextResponse) return user;
 
   const body = await request.json().catch(() => null);
+
+  // 同一個 PUT 管兩件事：改名（帶 id＋name）跟重新排序（帶 mode＋orderedIds）。排序是
+  // 「整個車種底下的順序」這一件事，不是逐筆改某個分類的欄位，所以不塞進改名那組參數
+  // 裡，用不同的參數組合區分——先判斷排序，改名維持原本的行為不變。
+  if (Array.isArray(body?.orderedIds)) {
+    const mode = typeof body?.mode === "string" ? body.mode : "";
+    if (!mode) return NextResponse.json({ error: "缺少 mode" }, { status: 400 });
+    const orderedIds = (body.orderedIds as unknown[]).filter((id): id is string => typeof id === "string");
+    const groups = await reorderTripGroups(new ObjectId(user.id), mode, orderedIds);
+    return NextResponse.json({ groups });
+  }
+
   const id = typeof body?.id === "string" ? body.id : "";
   const name = typeof body?.name === "string" ? body.name.trim() : "";
   if (!id || !name) return NextResponse.json({ error: "缺少 id 或 name" }, { status: 400 });

@@ -6,7 +6,11 @@ import { BottomSheetModal } from "@/components/transit/bottom-sheet-modal";
 import { NearbyButton } from "@/components/transit/nearby-button";
 import { UBIKE_CITIES } from "@/components/transit/ubike-cities";
 import { scrollContainerToTop } from "@/lib/scroll-within";
-import { distanceMeters, formatDistance } from "@/lib/geo";
+import { formatDistance } from "@/lib/geo";
+import { DividedCard, ErrorText, Field, FieldRow, Hint, Note, PageTitle, PillButton, SelectButton, TextInput } from "@/components/transit/ui";
+import { copy, text } from "@/components/transit/theme";
+import { DividedRowsSkeleton } from "@/components/transit/skeleton";
+import { loadSkeletonCount, saveSkeletonCount } from "@/components/transit/skeleton-count";
 
 const CITIES = UBIKE_CITIES;
 
@@ -18,12 +22,21 @@ interface UbikeStation {
 }
 
 interface NearbyStation extends UbikeStation {
+  cityName?: string;
   distanceMeters: number;
 }
 
 // 「附近站點」顯示的筆數上限——定位一次之後附近幾十公尺到幾公里內的站點就夠用，
-// 不用把排序完的幾百筆全塞進畫面。
+// 不用把排序完的幾百筆全塞進畫面。排序、裁切都在伺服器端做完（見
+// app/api/transit/ubike/nearby），這裡只是告訴它要幾筆。
 const NEARBY_LIMIT = 20;
+
+// 骨架列數記憶：附近站點的筆數很固定（就是上面這個上限），依縣市瀏覽的筆數則是每個縣市
+// 自己的站點數——都記住上次的實際筆數，載入中畫出一樣多的列（設計系統規定骨架數量要跟
+// 載入完的實際數量一致；真的很長的清單會被 loadSkeletonCount 裁到 12 列，超出的部分本來
+// 就在第一屏之外，看不到高度跳動）。
+const NEARBY_COUNT_KEY = "cpx-tools:transit:ubike-nearby-count";
+const cityCountKey = (city: string) => `cpx-tools:transit:ubike-city-count:${city}`;
 
 function googleMapsHref(lat: number, lng: number): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`;
@@ -37,20 +50,15 @@ function StationRow({ station, distance }: { station: UbikeStation; distance?: s
         <FaIcon icon="bicycle" size={16} className="text-[#6F5FD6]" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-[#4A3B7C]">{station.name}</p>
-        {distance && <p className="mt-0.5 text-xs text-[#9C94C4]">{distance}</p>}
+        <p className={`truncate ${text.bodyStrong}`}>{station.name}</p>
+        {distance && <p className={`mt-0.5 ${text.meta}`}>{distance}</p>}
       </div>
       {/* 不自己畫地圖／路線，直接把使用者丟去 Google Maps 導航——這件事 Google Maps
           做得比自己刻一套好，見跟使用者討論過的理由。跟「我的行程」卡片右邊「搜尋
-          班次」按鈕同一套樣式，維持列表列尾按鈕的視覺語言一致。 */}
-      <a
-        href={googleMapsHref(station.lat, station.lng)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="shrink-0 rounded-full bg-[#F3EFFC] px-3 py-1.5 text-xs font-medium text-[#6F5FD6]"
-      >
+          班次」按鈕同一顆元件，維持列表列尾按鈕的視覺語言一致。 */}
+      <PillButton as="a" href={googleMapsHref(station.lat, station.lng)}>
         立即導航 →
-      </a>
+      </PillButton>
     </div>
   );
 }
@@ -61,6 +69,8 @@ export function UbikeView() {
   const [query, setQuery] = useState("");
   const [stations, setStations] = useState<UbikeStation[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [citySkeletonCount, setCitySkeletonCount] = useState(0);
+  const [nearbySkeletonCount, setNearbySkeletonCount] = useState(0);
 
   // 附近站點：GPS 定位會改變畫面顯示的資料，所以不在進頁面時自動要求權限，要使用者自己
   // 點按鈕才觸發——瀏覽器的定位權限彈窗跳出來時，使用者剛好知道「我要的就是這個」，
@@ -97,29 +107,46 @@ export function UbikeView() {
     setNearbyError(null);
   }
 
-  // 拿到座標後查全部縣市的站點（不是只查目前選的那個 tab）再依距離排序——使用者站的
-  // 位置可能剛好在兩個縣市交界，只查單一縣市會漏掉其實比較近的另一邊站點。
+  useEffect(() => {
+    // 掛載後才讀得到 localStorage（伺服器端渲染那一次沒有，初始值要跟瀏覽器端一致才不會
+    // hydration 不匹配）。
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    setNearbySkeletonCount(loadSkeletonCount(NEARBY_COUNT_KEY, 0));
+  }, []);
+
+  useEffect(() => {
+    if (!cityName) return;
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    setCitySkeletonCount(loadSkeletonCount(cityCountKey(cityName), 0));
+  }, [cityName]);
+
+  // 拿到座標後交給伺服器查——縣市粗篩（使用者的位置可能剛好在兩個縣市交界，只查單一縣市
+  // 會漏掉其實比較近的另一邊站點）、排序、裁切全部在伺服器端做完。以前是前端對 11 個
+  // 縣市各發一次請求，把整包站點座標拉回瀏覽器才開始算距離。
   useEffect(() => {
     if (!nearbyCoords) return;
     let cancelled = false;
     /* eslint-disable-next-line react-hooks/set-state-in-effect */
     setNearbyStations(null);
-    Promise.all(
-      CITIES.map((city) =>
-        fetch(`/api/transit/ubike/stations?city=${encodeURIComponent(city)}`)
-          .then((res) => res.json())
-          .then((data: { stations?: UbikeStation[] }) => data.stations ?? [])
-          .catch(() => []),
-      ),
-    ).then((lists) => {
-      if (cancelled) return;
-      const merged = lists
-        .flat()
-        .map((s) => ({ ...s, distanceMeters: distanceMeters(nearbyCoords.lat, nearbyCoords.lng, s.lat, s.lng) }))
-        .sort((a, b) => a.distanceMeters - b.distanceMeters)
-        .slice(0, NEARBY_LIMIT);
-      setNearbyStations(merged);
-    });
+    const qs = new URLSearchParams({ lat: String(nearbyCoords.lat), lng: String(nearbyCoords.lng), limit: String(NEARBY_LIMIT) });
+    fetch(`/api/transit/ubike/nearby?${qs.toString()}`)
+      .then((res) => res.json())
+      .then((data: { stations?: NearbyStation[]; error?: string }) => {
+        if (cancelled) return;
+        if (data.error) {
+          setNearbyError(data.error);
+          setNearbyStations([]);
+          return;
+        }
+        const list = data.stations ?? [];
+        setNearbyStations(list);
+        saveSkeletonCount(NEARBY_COUNT_KEY, list.length);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setNearbyError(copy.failed("附近站點"));
+        setNearbyStations([]);
+      });
     return () => {
       cancelled = true;
     };
@@ -153,10 +180,14 @@ export function UbikeView() {
             setError(data.error);
             return;
           }
-          setStations(data.stations ?? []);
+          const list = data.stations ?? [];
+          setStations(list);
+          // 只記「整個縣市」的筆數（沒有搜尋關鍵字時），打字篩選出來的筆數每次都不一樣，
+          // 記了反而讓下次的骨架更不準。
+          if (!trimmed) saveSkeletonCount(cityCountKey(cityName), list.length);
         })
         .catch(() => {
-          if (!cancelled) setError("查詢失敗，請稍後再試");
+          if (!cancelled) setError(copy.queryFailed);
         });
     }, 200);
     return () => {
@@ -167,24 +198,33 @@ export function UbikeView() {
 
   return (
     <div className="flex flex-col px-5 pb-6 pt-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-[#4A3B7C]">Ubike</h1>
-          <p className="mt-1 text-xs text-[#9C94C4]">查詢站點位置，不含即時可借還車輛數。</p>
-        </div>
-        <NearbyButton active={nearbyActive} locating={locating} label="附近站點" onClick={nearbyActive ? cancelNearby : requestNearby} />
-      </div>
-      {nearbyError && <p className="mt-2 text-center text-xs text-[#D1517E]">{nearbyError}</p>}
+      <PageTitle
+        actions={<NearbyButton active={nearbyActive} locating={locating} label="附近站點" onClick={nearbyActive ? cancelNearby : requestNearby} />}
+      >
+        Ubike
+      </PageTitle>
+      <Note className="mt-1">查詢站點位置，不含即時可借還車輛數。</Note>
+      {nearbyError && <ErrorText center className="mt-2">{nearbyError}</ErrorText>}
 
       {nearbyActive ? (
-        <div className="mt-4 flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl bg-white shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
-          {nearbyStations === null ? (
-            <p className="px-4 py-6 text-center text-sm text-[#B3ABD4]">查詢附近站點中…</p>
-          ) : nearbyStations.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-[#B3ABD4]">附近沒有查到站點</p>
-          ) : (
-            nearbyStations.map((s) => <StationRow key={s.id} station={s} distance={formatDistance(s.distanceMeters)} />)
-          )}
+        <div className="mt-4">
+          <DividedCard>
+            {nearbyStations === null ? (
+              nearbySkeletonCount === 0 ? (
+                <Hint center className="px-4 py-6">
+                  {copy.searching}
+                </Hint>
+              ) : (
+                <DividedRowsSkeleton count={nearbySkeletonCount} iconSize={36} lines={2} />
+              )
+            ) : nearbyStations.length === 0 ? (
+              <Hint center className="px-4 py-6">
+                附近沒有查到站點
+              </Hint>
+            ) : (
+              nearbyStations.map((s) => <StationRow key={s.id} station={s} distance={formatDistance(s.distanceMeters)} />)
+            )}
+          </DividedCard>
         </div>
       ) : (
         <>
@@ -192,55 +232,56 @@ export function UbikeView() {
               同一套「標籤＋按鈕開彈窗」寫法，點了跳出跟其他選擇器一樣的 BottomSheetModal，
               不用瀏覽器原生 <select>（展開樣式是系統內建的，跟這個 App 的視覺對不起來）。
               跟搜尋框並排成一排，兩個框線／圓角用同一套樣式，看起來是同一組篩選條件。 */}
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-[#9C94C4]">縣市</span>
-              <button
-                type="button"
-                onClick={() => setCityPickerOpen(true)}
-                className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3 text-left text-sm text-[#4A3B7C]"
-              >
-                <span className={`flex-1 truncate ${cityName ? "font-medium" : "text-[#C7BFE6]"}`}>{cityName || "請選擇"}</span>
-                <FaIcon icon="chevron-down" size={12} className="text-[#C7BFE6]" />
-              </button>
-            </label>
+          <FieldRow className="mt-4 gap-3">
+            <Field as="div" label="縣市">
+              <SelectButton value={cityName} placeholder="請選擇" onClick={() => setCityPickerOpen(true)} />
+            </Field>
 
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-[#9C94C4]">站名</span>
-              <div className="flex items-center gap-2 rounded-2xl border border-[#ECE4FA] bg-white px-3 py-3">
-                <input
-                  type="search"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="搜尋站名"
-                  className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-[#C7BFE6]"
-                />
-              </div>
-            </label>
-          </div>
+            <Field label="站名">
+              <TextInput type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜尋站名" className="px-3" />
+            </Field>
+          </FieldRow>
 
           {/* 還沒選縣市、或選了縣市但查詢還沒回來，都不要用跟搜尋結果一樣的白底卡片包著——
               那樣看起來像是「查過了、但是空的」，容易被誤會成查詢結果；單純文字置左、不加
-              卡片外框，才看得出來是「根本還沒開始查」或「正在查」。真的有東西要顯示（錯誤
-              訊息、查無結果、或站點清單）才用原本的卡片樣式。 */}
+              卡片外框，才看得出來是「根本還沒開始查」。真的有東西要顯示（錯誤訊息、查無
+              結果、或站點清單）才用原本的卡片樣式。 */}
           {!cityName ? (
-            <p className="mt-4 text-sm text-[#B3ABD4]">還沒有任何資料</p>
+            <Hint className="mt-4">還沒有任何資料</Hint>
           ) : error ? (
             // error 要排在 stations === null 前面檢查——查詢失敗時 stations 本來就會一直是
             // null（effect 裡失敗只設 error，沒有把 stations 設成別的值），放在後面的話
             // 下面那支 stations === null 分支永遠先成立，錯誤訊息永遠顯示不出來。
-            <div className="mt-4 flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
-              <p className="px-4 py-6 text-center text-sm text-[#D1517E]">{error}</p>
+            <div className="mt-4">
+              <DividedCard>
+                <ErrorText center className="px-4 py-6">
+                  {error}
+                </ErrorText>
+              </DividedCard>
             </div>
           ) : stations === null ? (
-            <p className="mt-4 text-sm text-[#B3ABD4]">載入中…</p>
-          ) : (
-            <div className="mt-4 flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl bg-white shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
-              {stations.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-[#B3ABD4]">沒有符合的站點</p>
+            // 骨架列數＝這個縣市上次實際的站點數（上限 12 列），不是一行「載入中」文字——
+            // 清單出現時版面才不會整塊往下推。
+            <div className="mt-4">
+              {citySkeletonCount === 0 ? (
+                <Hint>{copy.loading}</Hint>
               ) : (
-                stations.map((s) => <StationRow key={s.id} station={s} />)
+                <DividedCard>
+                  <DividedRowsSkeleton count={citySkeletonCount} iconSize={36} lines={1} />
+                </DividedCard>
               )}
+            </div>
+          ) : (
+            <div className="mt-4">
+              <DividedCard>
+                {stations.length === 0 ? (
+                  <Hint center className="px-4 py-6">
+                    沒有符合的站點
+                  </Hint>
+                ) : (
+                  stations.map((s) => <StationRow key={s.id} station={s} />)
+                )}
+              </DividedCard>
             </div>
           )}
         </>
