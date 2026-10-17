@@ -696,7 +696,10 @@ export function TransitHomeView() {
         ) : (
           <div className="mt-4 flex flex-col gap-3">
             {/* 縣市、站名兩個欄位都開同一個 StationPickerModal，互動方式一樣，都要有箭頭——
-                理由跟上面公車的縣市／站牌欄位一致，不要只留站名那一個有箭頭。 */}
+                理由跟上面公車的縣市／站牌欄位一致，不要只留站名那一個有箭頭。站名顯示值
+                保留原始字串（捷運會帶路線代碼，例如「BL12台北車站」）——同一個「台北車站」
+                在選擇器裡同時以 BL12／R10／A1 三種代碼並存，欄位上留著代碼才看得出來
+                目前選的是哪一個。 */}
             <Field as="div" label={`出發${stationLabel}`}>
               <FieldRow>
                 <SelectButton value={safeOriginCity} onClick={() => setOriginPickerOpen(true)} />
@@ -840,9 +843,11 @@ export function TransitHomeView() {
                 <ListCard key={m.id} className="flex items-center gap-3">
                   <ImageSlot src={memoIconPath(m.icon)} alt={copy.memo} className="size-12 shrink-0 rounded-xl" />
                   <div className="min-w-0 flex-1">
-                    {/* 備忘錄內容是這張卡真正的主要內容，字級要跟其他清單的主要內容一樣
-                        （設計系統的 body）——以前用 text-xs 的說明字級，看起來反而像附註。 */}
-                    <p className={`truncate ${text.body}`}>{m.content}</p>
+                    {/* 備忘錄內容是這張卡真正的主要內容，字級／字重要跟其他清單卡片
+                        （我的行程卡片、Ubike 站名）的主要內容一樣，用 cardTitle（14px
+                        font-semibold）——以前用 text.body 雖然大小一樣，但沒有字重，
+                        看起來比頁面上其他卡片的文字細一號，像是備註而不是主要內容。 */}
+                    <p className={`truncate ${text.cardTitle}`}>{m.content}</p>
                     {m.remindAt && countdown && (
                       <div className="mt-1.5 flex items-center justify-between gap-2">
                         <span className={`inline-block w-fit shrink-0 rounded-full px-2 py-0.5 font-medium ${text.micro} ${REMIND_TONE_STYLE[countdown.tone]}`}>

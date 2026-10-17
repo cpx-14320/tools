@@ -559,6 +559,19 @@ export function ResultsView({
     if (target) scrollWithin(target, "start");
   }, [visibleResults]);
 
+  // 公車站序同一套錨點效果：跳到「目前正在進站中」的那一站，不用自己往下滑過一排還沒
+  // 輪到的站。公車沒有「過站」這個概念（站序本來就是固定路線站點，不是逐班次列表），
+  // 對應的錨點是「現在哪一站正在進站」，不是「已經錯過哪一站」，所以跟上面火車／高鐵／
+  // 捷運的 isPast 錨點邏輯分開寫，不要硬套同一套判斷。找不到正在進站的站（例如整條路線
+  // 還沒發車，或都還在「尚有 N 分」的距離）就不特別捲動，留在最上面。
+  const busStopRefs = useRef<(HTMLDivElement | null)[]>([]);
+  useEffect(() => {
+    if (!busStops || busStops.length === 0) return;
+    const arrivingIndex = busStops.findIndex((s) => s.status === "arriving");
+    const target = arrivingIndex >= 0 ? busStopRefs.current[arrivingIndex] : null;
+    if (target) scrollWithin(target, "start");
+  }, [busStops]);
+
   return (
     <div className="flex flex-col">
       {/* 起訖站標題跟分類頁籤 sticky 固定在頂端——列表資料一多，使用者切換頁籤或想看
@@ -579,6 +592,9 @@ export function ResultsView({
               </p>
             ) : (
               <p className="flex items-center gap-3 truncate">
+                {/* 捷運的 origin/dest 保留原始的「路線代碼＋站碼＋站名」字串（例如
+                    「BL12台北車站」）——同一個「台北車站」在選擇器裡同時以 BL12／R10／A1
+                    三種不同代碼並存，標題保留代碼才看得出來現在用的是哪一個，不要清掉。 */}
                 <span className="text-base font-bold text-[#4A3B7C]">
                   {origin} <span aria-hidden>→</span> {dest}
                 </span>
@@ -643,10 +659,18 @@ export function ResultsView({
 
       {isBus && !loading && (
         <div className="mt-4 flex flex-col gap-2.5 px-5 pb-6">
-          {(busStops ?? []).map((s) => (
+          {(busStops ?? []).map((s, i) => (
             <div
               key={s.name}
-              className={`flex items-center justify-between gap-3 rounded-2xl bg-white p-4 ${s.name === busStop ? "ring-2 ring-[#6F5FD6]" : ""}`}
+              ref={(el) => {
+                busStopRefs.current[i] = el;
+              }}
+              // 未發車的站灰階處理，跟火車／高鐵「已過站」卡片同一個 opacity-50 效果——
+              // 都是「現在搭不到這班／這段」的意思，用同一套視覺語言使用者才看得出來
+              // 是同一種狀態，不用分別學兩種樣式。
+              className={`flex items-center justify-between gap-3 rounded-2xl bg-white p-4 ${
+                s.name === busStop ? "ring-2 ring-[#6F5FD6]" : ""
+              } ${s.status === "notStarted" ? "opacity-50" : ""}`}
               style={{ boxShadow: shadow.cardStrong }}
             >
               <span className={`truncate ${text.bodyStrong}`}>{s.name}</span>
@@ -672,30 +696,32 @@ export function ResultsView({
                 <p className={`truncate ${text.cardTitle}`}>
                   {r.time} <span aria-hidden>→</span> {r.arrive}
                 </p>
-                {/* 高鐵下方格線本來就有「車程時間」那一欄，這裡不用重複顯示一次；捷運如果
-                    需要轉乘，這裡改顯示轉乘明細（哪一站、轉哪條線），車程時間一樣看下面
-                    格線那欄就好，不用在這裡重複、也不用犧牲轉乘資訊的版面。 */}
-                {!isThsr &&
-                  (isMetro && r.transfer && r.transferSteps && r.transferSteps.length > 0 ? (
-                    <p className={`mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-1 ${text.meta}`}>
-                      {r.transferSteps.map((step, idx, arr) => (
-                        <span key={idx} className="inline-flex items-center gap-1">
-                          於{step.stationName}轉乘
-                          {step.lineNo && (
-                            <span
-                              className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
-                              style={{ backgroundColor: step.lineColor ? `${step.lineColor}1F` : "#E6EEFC", color: step.lineColor ?? "#4E7FE0" }}
-                            >
-                              {step.lineNo}
-                            </span>
-                          )}
-                          {idx < arr.length - 1 && "、"}
-                        </span>
-                      ))}
-                    </p>
-                  ) : (
-                    <p className={`mt-0.5 truncate ${text.meta}`}>{isTrain && r.operatingNote ? r.operatingNote : r.duration}</p>
-                  ))}
+                {/* 高鐵下方格線本來就有「車程時間」那一欄，這裡不用重複顯示一次。捷運如果
+                    需要轉乘，這裡改顯示轉乘明細（哪一站、轉哪條線）；不需要轉乘的話，
+                    這裡唯一能顯示的內容就是車程時間，跟下面格線那欄完全一樣，顯示兩次
+                    沒有意義，直接不顯示這一行。火車維持顯示「每日行駛」之類的行駛狀態
+                    說明——那是格線裡沒有的資訊，不是重複。 */}
+                {isMetro
+                  ? r.transfer && r.transferSteps && r.transferSteps.length > 0 && (
+                      <p className={`mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-1 ${text.meta}`}>
+                        {r.transferSteps.map((step, idx, arr) => (
+                          <span key={idx} className="inline-flex items-center gap-1">
+                            於{step.stationName}轉乘
+                            {step.lineNo && (
+                              <span
+                                className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+                                style={{ backgroundColor: step.lineColor ? `${step.lineColor}1F` : "#E6EEFC", color: step.lineColor ?? "#4E7FE0" }}
+                              >
+                                {step.lineNo}
+                              </span>
+                            )}
+                            {idx < arr.length - 1 && "、"}
+                          </span>
+                        ))}
+                      </p>
+                    )
+                  : isTrain &&
+                    r.operatingNote && <p className={`mt-0.5 truncate ${text.meta}`}>{r.operatingNote}</p>}
               </div>
 
               <div className="flex shrink-0 items-center gap-1.5">

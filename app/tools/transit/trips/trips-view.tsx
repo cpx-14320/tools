@@ -398,6 +398,9 @@ export function TripsView() {
                               </p>
                             </>
                           ) : (
+                            // 捷運存的 f.origin/f.dest 保留原始的「路線代碼＋站碼＋站名」
+                            // 字串——理由跟結果頁標題一致，同一個「台北車站」有 BL12／
+                            // R10／A1 三種代碼，卡片上留著代碼才看得出來存的是哪一個。
                             <p className={`truncate ${text.cardTitle}`}>
                               {f.origin} <span aria-hidden>⇄</span> {f.dest}
                             </p>

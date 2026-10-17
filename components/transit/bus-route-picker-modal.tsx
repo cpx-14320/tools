@@ -105,10 +105,13 @@ export function routeBadgeStyle(routeName: string): string {
 // 85 條路線完全沒有顏色開頭的，色塊鍵對它來說全部是廢的，所以乾脆不給，只留數字鍵。
 type KeypadKey = { label: string; insert: string; tone?: keyof typeof ROUTE_COLOR_PREFIX_STYLE };
 
-const DIGIT_KEYS: KeypadKey[] = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"].map((d) => ({ label: d, insert: d }));
 const BACKSPACE_KEY: KeypadKey = { label: "⌫", insert: "" };
+const digitKey = (d: string): KeypadKey => ({ label: d, insert: d });
 
 const KEYPAD_BY_CITY: Record<string, KeypadKey[]> = {
+  // 每個縣市陣列的前 5 個會依序對應固定版位裡「數字鍵以外」的 5 個空格（見下面
+  // buildKeypadGrid 的版位說明），順序決定視覺上排在哪一格；第 6 個開始的會自動換成
+  // 多出來的一整列，不用在這裡特別處理。
   台北市: [
     { label: "紅", insert: "紅", tone: "紅" },
     { label: "藍", insert: "藍", tone: "藍" },
@@ -132,10 +135,10 @@ const KEYPAD_BY_CITY: Record<string, KeypadKey[]> = {
     { label: "幹線", insert: "幹線", tone: "幹" },
   ],
   桃園市: [
-    { label: "F", insert: "F", tone: "F" },
     { label: "紅線", insert: "紅線", tone: "紅" },
-    { label: "黃線", insert: "黃線", tone: "黃" },
     { label: "綠線", insert: "綠線", tone: "綠" },
+    { label: "黃線", insert: "黃線", tone: "黃" },
+    { label: "F", insert: "F", tone: "F" },
   ],
   基隆市: [],
   // 新竹市：有「藍線」「綠線1區」這種整條線名稱（跟桃園一樣是線名不是前綴），也有
@@ -173,9 +176,45 @@ const KEYPAD_BY_CITY: Record<string, KeypadKey[]> = {
   ],
 };
 
+/**
+ * 固定版位的 4 欄鍵盤：數字鍵（計算機排列：7 8 9／4 5 6／1 2 3）、「0」、刪除鍵永遠是
+ * 整個鍵盤「最下面那一列」的最後一格——不管這個縣市有幾個快速鍵，使用者在不同縣市之間
+ * 切換時，刪除鍵永遠在右下角找得到，不會因為快速鍵數量不同就跑位。
+ *
+ * 版位（相對「最後一列」往上數，row 用負索引表示，col 是 1-based）：
+ *   倒數第4列：7 8 9      快速鍵①
+ *   倒數第3列：4 5 6      快速鍵②
+ *   倒數第2列：1 2 3      快速鍵③
+ *   最後一列：快速鍵④  0  快速鍵⑤  刪除   ←固定在右下角
+ * 快速鍵永遠先填滿這 5 個空格；縣市的快速鍵超過 5 個（目前只有台北／新北市的 9 個）才
+ * 會在「數字鍵區塊上方」多長出一整列（4 欄滿排）——長在上面，不是下面，這樣不管多出
+ * 幾列，數字／0／刪除這個固定區塊永遠貼齊鍵盤最下緣，刪除鍵永遠是整個鍵盤的最後一格。
+ * null 代表這個縣市沒有對應的快速鍵，渲染端會畫一顆看得到但不能點的空白按鈕撐住格子
+ * （見下面渲染那段），不是真的留一個完全空的洞。
+ */
+function buildKeypadGrid(extras: KeypadKey[]): (KeypadKey | null)[] {
+  const slot = (i: number) => extras[i] ?? null;
+  const fixedRows: (KeypadKey | null)[][] = [
+    [digitKey("7"), digitKey("8"), digitKey("9"), slot(0)],
+    [digitKey("4"), digitKey("5"), digitKey("6"), slot(1)],
+    [digitKey("1"), digitKey("2"), digitKey("3"), slot(2)],
+    [slot(3), digitKey("0"), slot(4), BACKSPACE_KEY],
+  ];
+
+  const overflow = extras.slice(5);
+  const overflowRows: (KeypadKey | null)[][] = [];
+  for (let i = 0; i < overflow.length; i += 4) {
+    const chunk = overflow.slice(i, i + 4);
+    overflowRows.push([chunk[0] ?? null, chunk[1] ?? null, chunk[2] ?? null, chunk[3] ?? null]);
+  }
+
+  // 多出來的整列擺在數字鍵區塊「上面」，不是下面——固定區塊才會永遠貼齊最下緣。
+  return [...overflowRows, ...fixedRows].flat();
+}
+
 /** 查不到對應縣市的快速鍵清單時退回空陣列（純數字鍵盤），不會整個壞掉。 */
-function keypadForCity(city: string): KeypadKey[] {
-  return [...DIGIT_KEYS, ...(KEYPAD_BY_CITY[city] ?? []), BACKSPACE_KEY];
+function keypadForCity(city: string): (KeypadKey | null)[] {
+  return buildKeypadGrid(KEYPAD_BY_CITY[city] ?? []);
 }
 
 // 路線查詢框的提示範例也依縣市換，不然基隆市這種沒有顏色字的縣市，看到「例如紅29」反而
@@ -731,18 +770,34 @@ export function BusRoutePickerModal({
                     </ScrollList>
 
                     <div className="grid grid-cols-4 gap-2">
-                      {keypadForCity(cityName).map((key, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => setQuery((q) => (key.label === "⌫" ? q.slice(0, -1) : q + key.insert))}
-                          className={`rounded-2xl py-3 text-center text-sm font-semibold transition-colors ${
-                            key.tone ? ROUTE_COLOR_PREFIX_STYLE[key.tone] : "bg-[#F8F6FD] text-[#4A3B7C] hover:bg-[#F3EFFC]"
-                          }`}
-                        >
-                          {key.label}
-                        </button>
-                      ))}
+                      {keypadForCity(cityName).map((key, i) =>
+                        key === null ? (
+                          // 這個縣市的快速鍵不夠填滿固定版位——留一顆跟其他鍵同樣結構／尺寸
+                          // 的按鈕佔住格子的位置（不要把後面的鍵往前擠，擠的話數字／刪除鍵
+                          // 的位置就會因縣市而跑掉，跟這整套版位設計的目的互相矛盾），樣式
+                          // 套用跟一般鍵相同的預設色（沒有 tone 時的那組 class），只是沒有
+                          // 文字內容；disabled 讓它點了沒反應。
+                          <button
+                            key={i}
+                            type="button"
+                            disabled
+                            aria-hidden="true"
+                            tabIndex={-1}
+                            className="rounded-2xl py-3 text-center text-sm font-semibold transition-colors bg-[#F8F6FD] text-[#4A3B7C] hover:bg-[#F3EFFC]"
+                          />
+                        ) : (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => setQuery((q) => (key.label === "⌫" ? q.slice(0, -1) : q + key.insert))}
+                            className={`rounded-2xl py-3 text-center text-sm font-semibold transition-colors ${
+                              key.tone ? ROUTE_COLOR_PREFIX_STYLE[key.tone] : "bg-[#F8F6FD] text-[#4A3B7C] hover:bg-[#F3EFFC]"
+                            }`}
+                          >
+                            {key.label}
+                          </button>
+                        ),
+                      )}
                     </div>
 
                     {/* 「東山咖啡線」「先導公車」這種名稱裡完全沒有數字的路線，上面的鍵盤（數字＋
