@@ -112,7 +112,7 @@ export function TripsView() {
   const [toast, setToast] = useState<string | null>(null);
   const groupsForTab = tripGroups.filter((g) => g.mode === tab);
 
-  // 標題旁「附近車站」：使用者只是想知道現在的位置離火車站、捷運站、高鐵站哪一個比較近，
+  // 標題旁「附近站點」：使用者只是想知道現在的位置離火車站、捷運站、高鐵站哪一個比較近，
   // 不需要查班次，所以不自己刻一套距離計算＋清單（那套要先幫火車/高鐵/捷運三種車種都
   // 補上真實座標，工程量不小）——直接定位完丟去 Google Maps，讓使用者在原生地圖上自己
   // 看附近有哪些站、距離多少，跟 Ubike「立即導航」同一個「不自己畫地圖」的理由。
@@ -314,7 +314,7 @@ export function TripsView() {
   return (
     <div className="flex flex-col px-5 pb-6 pt-6">
       <PageTitle
-        actions={<NearbyButton active={false} locating={locatingNearbyStation} label="附近車站" onClick={openNearbyStationsMap} />}
+        actions={<NearbyButton active={false} locating={locatingNearbyStation} label="附近站點" onClick={openNearbyStationsMap} />}
       >
         我的{copy.tripItem}
       </PageTitle>
