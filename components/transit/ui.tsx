@@ -1,6 +1,6 @@
 "use client";
 
-import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
 import { colors, gradient, shadow, text } from "./theme";
 import { FaIcon } from "./fa-icon";
 
@@ -278,8 +278,22 @@ export function SegmentedTabs<T extends string>({
 }
 
 /** 圓角徽章（路線色塊、車次、到站狀態）。配色由呼叫端傳既有的 class 字串進來。 */
-export function Badge({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <span className={`shrink-0 rounded-full px-2.5 py-0.5 ${text.badge} ${className}`}>{children}</span>;
+export function Badge({
+  children,
+  className = "",
+  style,
+}: {
+  children: ReactNode;
+  className?: string;
+  /** 只給「顏色是執行期才知道的值」用（例如捷運轉乘查到的官方路線色），寫死在 Tailwind
+   *  class 裡的配色一律走 className，不要兩種都傳。 */
+  style?: CSSProperties;
+}) {
+  return (
+    <span className={`shrink-0 rounded-full px-2.5 py-0.5 ${text.badge} ${className}`} style={style}>
+      {children}
+    </span>
+  );
 }
 
 /* ───────────────────── 輸入 / 選擇 ───────────────────── */

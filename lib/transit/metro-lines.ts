@@ -145,7 +145,18 @@ export function metroSystemOf(station: string): string | undefined {
   return Object.keys(METRO_STATIONS_BY_CITY).find((system) => METRO_STATIONS_BY_CITY[system].includes(station));
 }
 
-export function findCrossSystemTransferStation(originSystem: string, destSystem: string): string | undefined {
+export interface CrossSystemTransfer {
+  stationName: string;
+  /** 換乘之後實際會搭的那條線的代碼（例如「A」「V」）。METRO_TRANSFER_HUBS 的
+   *  hub.stations 本來就把「這個轉乘站在每個系統底下各自的站點 ID」都列出來了
+   *  （例如台北車站同時是 BL12／R10／A1），從裡面挑出屬於目的系統的那一筆、取開頭
+   *  字母就是答案——不需要額外打 TDX 查，也不需要跟同系統轉乘一樣走最短路徑演算法。
+   *  理論上 hub 裡一定有屬於 destSystem 的站（找不到的話是 hub 的資料本身不完整，
+   *  那種情況才會是 undefined）。 */
+  lineNo?: string;
+}
+
+export function findCrossSystemTransferStation(originSystem: string, destSystem: string): CrossSystemTransfer | undefined {
   if (originSystem === destSystem) return undefined;
 
   const hub = METRO_TRANSFER_HUBS.find((candidate) => {
@@ -157,6 +168,8 @@ export function findCrossSystemTransferStation(originSystem: string, destSystem:
 
     return systems.has(originSystem) && systems.has(destSystem);
   });
+  if (!hub) return undefined;
 
-  return hub?.name;
+  const destStation = hub.stations.find((station) => metroSystemOf(station) === destSystem);
+  return { stationName: hub.name, lineNo: destStation?.match(/^[A-Za-z]+/)?.[0] };
 }

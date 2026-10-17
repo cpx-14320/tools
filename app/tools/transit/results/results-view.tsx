@@ -187,16 +187,19 @@ function useMetroTrip(mode: Mode, origin: string, dest: string): MetroTripInfo |
     if (!originSystem || !destSystem) return;
 
     if (originSystem !== destSystem) {
-      // 跨系統沒有統一的站間行車時間資料查不出「轉乘之後要搭哪條線」，轉乘提示只能先
-      // 顯示到站名這一層，不像同系統那樣能附上線別代碼標籤。
-      const transferStation = findCrossSystemTransferStation(originSystem, destSystem);
+      // 跨系統沒有統一的站間行車時間資料，車程／站數／票價只能先用估計值撐著；但線別
+      // 代碼不需要那份資料也算得出來——findCrossSystemTransferStation 直接從
+      // METRO_TRANSFER_HUBS 的站點清單裡找出屬於目的系統的那一筆站碼。沒有 lineColor
+      // （沒有額外打 TDX 查官方色），畫面上退回固定的品牌色，不是同系統那種查到的
+      // 官方路線色。
+      const transfer = findCrossSystemTransferStation(originSystem, destSystem);
       /* eslint-disable-next-line react-hooks/set-state-in-effect */
       setTrip({
         durationMin: 40,
         stops: 12,
         fare: 30,
         transfer: true,
-        transferSteps: transferStation ? [{ stationName: transferStation }] : undefined,
+        transferSteps: transfer ? [{ stationName: transfer.stationName, lineNo: transfer.lineNo }] : undefined,
       });
       return;
     }
@@ -707,14 +710,15 @@ export function ResultsView({
                         {r.transferSteps.map((step, idx, arr) => (
                           <span key={idx} className="inline-flex items-center gap-1">
                             於{step.stationName}轉乘
-                            {step.lineNo && (
-                              <span
-                                className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
-                                style={{ backgroundColor: step.lineColor ? `${step.lineColor}1F` : "#E6EEFC", color: step.lineColor ?? "#4E7FE0" }}
-                              >
-                                {step.lineNo}
-                              </span>
-                            )}
+                            {step.lineNo &&
+                              (step.lineColor ? (
+                                // 同系統轉乘：lineColor 是真的從 TDX 查到的官方路線色，
+                                // 顏色是執行期才知道的值，走 Badge 的 style。
+                                <Badge style={{ backgroundColor: `${step.lineColor}1F`, color: step.lineColor }}>{step.lineNo}</Badge>
+                              ) : (
+                                // 跨系統轉乘：沒有官方色可查，固定用品牌色，走 Badge 的 className。
+                                <Badge className="bg-[#F3EFFC] text-[#6F5FD6]">{step.lineNo}</Badge>
+                              ))}
                             {idx < arr.length - 1 && "、"}
                           </span>
                         ))}
