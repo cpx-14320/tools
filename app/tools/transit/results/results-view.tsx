@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { FaIcon } from "@/components/transit/fa-icon";
-import { scrollContainerToTop, scrollWithin } from "@/lib/scroll-within";
+import { scrollWithin } from "@/lib/scroll-within";
+import { GoTopButton } from "@/components/transit/go-top-button";
 import { STATIONS_BY_CITY, FALLBACK_TRAIN_STATIONS_BY_CITY } from "@/components/transit/stations-data";
 import { TripGroupPickerModal } from "@/components/transit/trip-group-picker-modal";
 import { CenterToast } from "@/components/transit/center-toast";
@@ -778,23 +779,7 @@ export function ResultsView({
       </div>
       )}
 
-      {(visibleResults.length > 0 || (isBus && (busStops?.length ?? 0) > 0)) && (
-        // TransitMobileShell 的卡片容器本身有 transform，是這個 fixed 按鈕的定位基準
-        // （不是整個瀏覽器視窗），right-5／bottom 直接貼齊卡片邊界，不用再額外包一層
-        // mx-auto + max-w-[430px] 去手動對齊寬度。
-        <button
-          type="button"
-          onClick={() => {
-            const main = document.querySelector("main");
-            if (main) scrollContainerToTop(main, "smooth");
-          }}
-          aria-label="回到頂部"
-          style={{ bottom: "calc(env(safe-area-inset-bottom) + 5.5rem)", background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
-          className="fixed right-5 z-20 grid size-11 place-items-center rounded-full shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)] transition-opacity hover:opacity-90"
-        >
-          <FaIcon icon="arrow-up" size={18} className="text-white" />
-        </button>
-      )}
+      <GoTopButton visible={visibleResults.length > 0 || (isBus && (busStops?.length ?? 0) > 0)} />
 
       <TripGroupPickerModal
         open={pickerTarget !== null || busAddOpen}

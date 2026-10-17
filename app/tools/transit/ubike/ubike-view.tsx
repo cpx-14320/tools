@@ -5,7 +5,7 @@ import { FaIcon } from "@/components/transit/fa-icon";
 import { BottomSheetModal } from "@/components/transit/bottom-sheet-modal";
 import { NearbyButton } from "@/components/transit/nearby-button";
 import { UBIKE_CITIES } from "@/components/transit/ubike-cities";
-import { scrollContainerToTop } from "@/lib/scroll-within";
+import { GoTopButton } from "@/components/transit/go-top-button";
 import { formatDistance } from "@/lib/geo";
 import { Badge, DividedCard, ErrorText, Field, FieldRow, Hint, Note, PageTitle, PillButton, SelectButton, TextInput } from "@/components/transit/ui";
 import { copy, text } from "@/components/transit/theme";
@@ -326,23 +326,9 @@ export function UbikeView() {
         </>
       )}
 
-      {((nearbyActive && (nearbyStations?.length ?? 0) > 0) || (!nearbyActive && (stations?.length ?? 0) > 0)) && (
-        // 跟搜尋結果頁「回到頂部」同一顆按鈕：TransitMobileShell 卡片容器本身有 transform，
-        // 是這個 fixed 按鈕的定位基準（不是整個瀏覽器視窗），right-5／bottom 直接貼齊卡片
-        // 邊界。一個縣市動輒上百筆站點，捲到底下想回頂端重選縣市／搜尋時很需要這顆按鈕。
-        <button
-          type="button"
-          onClick={() => {
-            const main = document.querySelector("main");
-            if (main) scrollContainerToTop(main, "smooth");
-          }}
-          aria-label="回到頂部"
-          style={{ bottom: "calc(env(safe-area-inset-bottom) + 5.5rem)", background: "linear-gradient(90deg, #8A7CEE, #6F5FD6)" }}
-          className="fixed right-5 z-20 grid size-11 place-items-center rounded-full shadow-[0_8px_20px_-6px_rgba(111,95,214,0.6)] transition-opacity hover:opacity-90"
-        >
-          <FaIcon icon="arrow-up" size={18} className="text-white" />
-        </button>
-      )}
+      {/* 一個縣市動輒上百筆站點，捲到底下想回頂端重選縣市／搜尋時很需要這顆按鈕——
+          跟搜尋結果頁、我的行程同一份共用元件。 */}
+      <GoTopButton visible={(nearbyActive && (nearbyStations?.length ?? 0) > 0) || (!nearbyActive && (stations?.length ?? 0) > 0)} />
 
       <BottomSheetModal open={cityPickerOpen} title="選擇縣市" onClose={() => setCityPickerOpen(false)} bodyClassName="flex flex-col gap-2 px-5 py-4">
         {CITIES.map((city) => (

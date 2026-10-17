@@ -7,6 +7,7 @@ import { frequentTripIconPath } from "@/components/transit/frequent-trip-icons";
 import { ImageSlot } from "@/components/transit/image-slot";
 import { routeBadgeStyle } from "@/components/transit/bus-route-picker-modal";
 import { NearbyButton } from "@/components/transit/nearby-button";
+import { GoTopButton } from "@/components/transit/go-top-button";
 import { ListRowSkeleton, SkeletonBar } from "@/components/transit/skeleton";
 import { loadSkeletonShape, saveSkeletonCount, saveSkeletonShape } from "@/components/transit/skeleton-count";
 import { CenterToast } from "@/components/transit/center-toast";
@@ -439,6 +440,10 @@ export function TripsView() {
       <AddButton className="mt-4" onClick={() => setGroupModal({ groupId: null, name: "" })}>
         新增{copy.group}
       </AddButton>
+
+      {/* 分類、行程兩層清單疊起來很容易一拉就是好幾個螢幕高，跟搜尋結果頁、Ubike 同一顆
+          共用按鈕：資料載入完、這個車種底下至少有一個分類才顯示，載入中／空狀態都不用。 */}
+      <GoTopButton visible={tripsReady && groupsForTab.length > 0} />
 
       {toast && <CenterToast message={toast} onDone={() => setToast(null)} />}
     </div>
