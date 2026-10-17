@@ -645,6 +645,12 @@ export function TransitHomeView() {
                 路線本身還是存在 busSelection 裡，只是不在首頁這塊摘要上特別標出來。
                 縣市、站牌／路線兩個欄位都開同一個彈窗、停在同一個搜尋畫面——縣市不用
                 另外跳一層專屬的選單，彈窗裡本來就有縣市下拉可以選。 */}
+            {/* 縣市、站牌／路線兩個欄位都是按鈕（點了開同一個彈窗），不是原生輸入框，
+                兩個欄位的互動方式完全一樣——都要有箭頭標示「點了會跳出選擇畫面」，不要
+                只留最後一個有箭頭、第一個沒有，那樣會讓人誤以為兩者的互動方式不同。
+                站牌／路線欄位的 placeholder 故意不寫「輸入站牌名稱」（那是彈窗裡面真的
+                輸入框才會用的字，寫在這顆按鈕上會讓人以為可以直接在首頁打字），改用
+                「選擇」開頭跟縣市欄位一致。 */}
             <FieldRow>
               <Field as="div" label="縣市">
                 {/* 跟彈窗內 cityName 的退回邏輯一致（見 bus-route-picker-modal.tsx 的
@@ -652,7 +658,6 @@ export function TransitHomeView() {
                     不要顯示「選擇縣市」——彈窗其實一直都有一個實際在運作的縣市，首頁
                     顯示「還沒選」反而不準確，點進去才發現其實已經選好了。 */}
                 <SelectButton
-                  chevron={false}
                   value={busCityPreview ?? busSelection?.cityName ?? BUS_CITIES[0]}
                   onClick={() => {
                     setBusPickerOpenNearby(false);
@@ -663,7 +668,7 @@ export function TransitHomeView() {
               <Field as="div" label="站牌／路線">
                 <SelectButton
                   value={busSelection?.stopName ?? ""}
-                  placeholder="輸入站牌名稱"
+                  placeholder="選擇站牌或路線"
                   onClick={() => {
                     setBusPickerOpenNearby(false);
                     setBusPickerOpen(true);
@@ -690,9 +695,11 @@ export function TransitHomeView() {
           </div>
         ) : (
           <div className="mt-4 flex flex-col gap-3">
+            {/* 縣市、站名兩個欄位都開同一個 StationPickerModal，互動方式一樣，都要有箭頭——
+                理由跟上面公車的縣市／站牌欄位一致，不要只留站名那一個有箭頭。 */}
             <Field as="div" label={`出發${stationLabel}`}>
               <FieldRow>
-                <SelectButton chevron={false} value={safeOriginCity} onClick={() => setOriginPickerOpen(true)} />
+                <SelectButton value={safeOriginCity} onClick={() => setOriginPickerOpen(true)} />
                 <SelectButton value={origin} onClick={() => setOriginPickerOpen(true)} />
               </FieldRow>
             </Field>
@@ -707,7 +714,7 @@ export function TransitHomeView() {
             />
             <Field as="div" label={`抵達${stationLabel}`}>
               <FieldRow>
-                <SelectButton chevron={false} value={safeDestCity} onClick={() => setDestPickerOpen(true)} />
+                <SelectButton value={safeDestCity} onClick={() => setDestPickerOpen(true)} />
                 <SelectButton value={dest} onClick={() => setDestPickerOpen(true)} />
               </FieldRow>
             </Field>

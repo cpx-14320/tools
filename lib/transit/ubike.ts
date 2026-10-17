@@ -53,15 +53,47 @@ export interface UbikeStation {
   lng: number;
 }
 
+/** 即時可借／可還車輛數——null 代表這一站查不到即時資料（TDX 沒回傳、或站點暫停營運），
+ *  不要顯示成「0」，那會被誤會成「真的沒車」而不是「資料拿不到」。 */
+export interface UbikeAvailability {
+  availableRent: number;
+  availableReturn: number;
+}
+
 export interface NearbyUbikeStation extends UbikeStation {
   cityName: string;
   distanceMeters: number;
+  /** 只有「附近站點」這個查詢路徑才會帶這個欄位；依縣市瀏覽（getUbikeStations）故意
+   *  不查即時資料，見下面 getUbikeStations 的說明。 */
+  availability: UbikeAvailability | null;
 }
 
 // 只查站點本身（名稱、座標），不查即時可借/可還車輛數——這兩個是 TDX 分開的端點，站點
-// 清單幾乎不會變，比照車站清單用 24 小時快取；不查即時車輛數也省一份額度，之後真的要顯示
-// 車輛數再另外加 /v2/Bike/Availability/City/{cityCode} 這個端點即可，不影響這裡的站點清單。
+// 清單幾乎不會變，比照車站清單用 24 小時快取。依縣市瀏覽（整個縣市上百站）刻意不查即時
+// 資料：使用者通常是在規劃階段瀏覽，不是站在路邊要立刻決定，而且一次秀上百站的車輛數
+// 沒有意義，只有「附近站點」這種真的要馬上出發的情境才需要（見 getNearbyUbikeStations），
+// 查詢量也小（最多 3 個縣市，不是逐站查），才不會額外吃掉太多 TDX 每分鐘 5 次的額度。
 const STATION_TTL_MS = TDX_TTL.static;
+
+interface TdxBikeAvailabilityRow {
+  StationUID: string;
+  AvailableRentBikes: number;
+  AvailableReturnBikes: number;
+  // TDX 服務狀態碼：1＝正常營運，非 1（暫停營運／數據異常等）都不該顯示車輛數——站點
+  // 本身可能在維護、或資料本身不可信，顯示一個看起來正常的數字反而會誤導使用者過去了
+  // 卻發現站點是壞的。
+  ServiceStatus: number;
+}
+
+async function getUbikeAvailability(cityCode: string): Promise<Map<string, UbikeAvailability>> {
+  const rows = await tdxGet<TdxBikeAvailabilityRow[]>(`/v2/Bike/Availability/City/${cityCode}`, TDX_TTL.realtime);
+  const map = new Map<string, UbikeAvailability>();
+  for (const r of rows) {
+    if (r.ServiceStatus !== 1) continue;
+    map.set(r.StationUID, { availableRent: r.AvailableRentBikes, availableReturn: r.AvailableReturnBikes });
+  }
+  return map;
+}
 
 export async function getUbikeStations(cityCode: string): Promise<UbikeStation[]> {
   const rows = await tdxGet<TdxBikeStationRow[]>(`/v2/Bike/Station/City/${cityCode}?%24top=1000`, STATION_TTL_MS);
@@ -88,17 +120,26 @@ function nearbyCityNames(lat: number, lng: number): string[] {
   return (within.length > 0 ? within : ranked.slice(0, 1)).map((r) => r.city);
 }
 
-/** 附近站點：排序、裁切都在伺服器端做完，前端只拿得到要顯示的那 limit 筆。 */
+/** 附近站點：排序、裁切都在伺服器端做完，前端只拿得到要顯示的那 limit 筆。
+ *  只有這個查詢路徑會附上即時可借／可還車輛數——查詢範圍本來就已經被「附近」限制在
+ *  最多 3 個縣市（見 nearbyCityNames），多查一個 Availability 端點不會讓額度消耗
+ *  隨站點數或使用者數放大，跟查站點清單是同一個「整個縣市一次查完」的成本結構。 */
 export async function getNearbyUbikeStations(lat: number, lng: number, limit: number): Promise<NearbyUbikeStation[]> {
   const cities = nearbyCityNames(lat, lng);
   const lists = await Promise.all(
     cities.map(async (city) => {
       try {
-        const stations = await getUbikeStations(UBIKE_CITY_CODE[city]);
+        const [stations, availability] = await Promise.all([
+          getUbikeStations(UBIKE_CITY_CODE[city]),
+          // 即時車輛數查失敗（例如剛好撞到額度上限）不該讓整個附近站點查詢跟著失敗——
+          // 退回空 Map，畫面上這一批站點就是沒有車輛數可顯示，站點本身還是查得到。
+          getUbikeAvailability(UBIKE_CITY_CODE[city]).catch(() => new Map<string, UbikeAvailability>()),
+        ]);
         return stations.map((s) => ({
           ...s,
           cityName: city,
           distanceMeters: distanceMeters(lat, lng, s.lat, s.lng),
+          availability: availability.get(s.id) ?? null,
         }));
       } catch {
         // 某個縣市查失敗不要讓整個附近站點查詢跟著失敗（跟公車附近站牌同一個理由）。

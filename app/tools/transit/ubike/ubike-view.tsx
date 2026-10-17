@@ -7,7 +7,7 @@ import { NearbyButton } from "@/components/transit/nearby-button";
 import { UBIKE_CITIES } from "@/components/transit/ubike-cities";
 import { scrollContainerToTop } from "@/lib/scroll-within";
 import { formatDistance } from "@/lib/geo";
-import { DividedCard, ErrorText, Field, FieldRow, Hint, Note, PageTitle, PillButton, SelectButton, TextInput } from "@/components/transit/ui";
+import { Badge, DividedCard, ErrorText, Field, FieldRow, Hint, Note, PageTitle, PillButton, SelectButton, TextInput } from "@/components/transit/ui";
 import { copy, text } from "@/components/transit/theme";
 import { DividedRowsSkeleton } from "@/components/transit/skeleton";
 import { loadSkeletonCount, saveSkeletonCount } from "@/components/transit/skeleton-count";
@@ -21,9 +21,16 @@ interface UbikeStation {
   lng: number;
 }
 
+/** null＝這一站查不到即時資料（TDX 沒回傳、或站點暫停營運），不要顯示成「0」。 */
+interface UbikeAvailability {
+  availableRent: number;
+  availableReturn: number;
+}
+
 interface NearbyStation extends UbikeStation {
   cityName?: string;
   distanceMeters: number;
+  availability: UbikeAvailability | null;
 }
 
 // 「附近站點」顯示的筆數上限——定位一次之後附近幾十公尺到幾公里內的站點就夠用，
@@ -42,8 +49,23 @@ function googleMapsHref(lat: number, lng: number): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`;
 }
 
-/** 站點清單的單一列，附近站點／依縣市瀏覽兩種模式共用同一份外觀，只差要不要顯示距離。 */
-function StationRow({ station, distance }: { station: UbikeStation; distance?: string }) {
+function availabilityBadgeTone(count: number): string {
+  return count > 0 ? "bg-[#E3F6EC] text-[#2FAE82]" : "bg-[#FDEEF0] text-[#D1517E]";
+}
+
+/** 站點清單的單一列，附近站點／依縣市瀏覽兩種模式共用同一份外觀。
+ *  availability 故意用三態：undefined＝這個模式根本沒查即時資料（依縣市瀏覽），不顯示
+ *  這一塊；null＝查了但這一站沒有資料（可能暫停營運），顯示提示文字；物件＝正常顯示
+ *  可借／可還數字——跟畫面上「查無資料」跟「真的是 0」要分清楚是同一個理由。 */
+function StationRow({
+  station,
+  distance,
+  availability,
+}: {
+  station: UbikeStation;
+  distance?: string;
+  availability?: UbikeAvailability | null;
+}) {
   return (
     <div className="flex items-center gap-3 px-4 py-3">
       <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#F3EFFC]">
@@ -52,6 +74,15 @@ function StationRow({ station, distance }: { station: UbikeStation; distance?: s
       <div className="min-w-0 flex-1">
         <p className={`truncate ${text.bodyStrong}`}>{station.name}</p>
         {distance && <p className={`mt-0.5 ${text.meta}`}>{distance}</p>}
+        {availability !== undefined &&
+          (availability ? (
+            <div className="mt-1 flex items-center gap-1.5">
+              <Badge className={availabilityBadgeTone(availability.availableRent)}>可借 {availability.availableRent}</Badge>
+              <Badge className={availabilityBadgeTone(availability.availableReturn)}>可還 {availability.availableReturn}</Badge>
+            </div>
+          ) : (
+            <p className={`mt-1 ${text.meta}`}>目前無即時車輛資料</p>
+          ))}
       </div>
       {/* 不自己畫地圖／路線，直接把使用者丟去 Google Maps 導航——這件事 Google Maps
           做得比自己刻一套好，見跟使用者討論過的理由。跟「我的行程」卡片右邊「搜尋
@@ -203,7 +234,11 @@ export function UbikeView() {
       >
         Ubike
       </PageTitle>
-      <Note className="mt-1">查詢站點位置，不含即時可借還車輛數。</Note>
+      {/* 即時可借／可還車輛數只有「附近站點」才查（見 lib/transit/ubike.ts 的說明：依縣市
+          瀏覽動輒上百站，一次性查詢車輛數對這個情境沒意義，只有真的要馬上出發的「附近」
+          才需要）——所以這句說明只在依縣市瀏覽模式顯示，附近站點模式不顯示（因為那裡
+          本來就有車輛數可看，這句話在那個情境下會變成錯誤資訊）。 */}
+      {!nearbyActive && <Note className="mt-1">查詢站點位置，不含即時可借還車輛數。</Note>}
       {nearbyError && <ErrorText center className="mt-2">{nearbyError}</ErrorText>}
 
       {nearbyActive ? (
@@ -215,14 +250,18 @@ export function UbikeView() {
                   {copy.searching}
                 </Hint>
               ) : (
-                <DividedRowsSkeleton count={nearbySkeletonCount} iconSize={36} lines={2} />
+                // 附近站點現在多了第三行車輛數徽章，骨架列數跟著加到 3 行，不然資料
+                // 回來時列高會變高、版面往下跳一截。
+                <DividedRowsSkeleton count={nearbySkeletonCount} iconSize={36} lines={3} />
               )
             ) : nearbyStations.length === 0 ? (
               <Hint center className="px-4 py-6">
                 附近沒有查到站點
               </Hint>
             ) : (
-              nearbyStations.map((s) => <StationRow key={s.id} station={s} distance={formatDistance(s.distanceMeters)} />)
+              nearbyStations.map((s) => (
+                <StationRow key={s.id} station={s} distance={formatDistance(s.distanceMeters)} availability={s.availability} />
+              ))
             )}
           </DividedCard>
         </div>

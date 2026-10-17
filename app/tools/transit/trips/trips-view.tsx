@@ -6,6 +6,7 @@ import { FrequentTripModal, type FrequentTripDraft } from "@/components/transit/
 import { frequentTripIconPath } from "@/components/transit/frequent-trip-icons";
 import { ImageSlot } from "@/components/transit/image-slot";
 import { routeBadgeStyle } from "@/components/transit/bus-route-picker-modal";
+import { NearbyButton } from "@/components/transit/nearby-button";
 import { ListRowSkeleton, SkeletonBar } from "@/components/transit/skeleton";
 import { loadSkeletonShape, saveSkeletonCount, saveSkeletonShape } from "@/components/transit/skeleton-count";
 import { CenterToast } from "@/components/transit/center-toast";
@@ -13,10 +14,10 @@ import {
   AddButton,
   Badge,
   DragHandle,
+  ErrorText,
   Hint,
   IconButton,
   ListCard,
-  Note,
   PageTitle,
   PillButton,
   SectionTitle,
@@ -110,6 +111,39 @@ export function TripsView() {
   // 新增／儲存分類成功後的提示文字，跟結果頁「加入行程」同一個 CenterToast 元件。
   const [toast, setToast] = useState<string | null>(null);
   const groupsForTab = tripGroups.filter((g) => g.mode === tab);
+
+  // 標題旁「附近車站」：使用者只是想知道現在的位置離火車站、捷運站、高鐵站哪一個比較近，
+  // 不需要查班次，所以不自己刻一套距離計算＋清單（那套要先幫火車/高鐵/捷運三種車種都
+  // 補上真實座標，工程量不小）——直接定位完丟去 Google Maps，讓使用者在原生地圖上自己
+  // 看附近有哪些站、距離多少，跟 Ubike「立即導航」同一個「不自己畫地圖」的理由。
+  // 這是一次性動作（開新分頁），不是可以切換開關的「附近模式」，所以不用 NearbyButton
+  // 的 active/取消 狀態，active 固定傳 false。
+  const [locatingNearbyStation, setLocatingNearbyStation] = useState(false);
+  const [nearbyStationError, setNearbyStationError] = useState<string | null>(null);
+
+  function openNearbyStationsMap() {
+    if (!navigator.geolocation) {
+      setNearbyStationError("這個瀏覽器不支援定位功能");
+      return;
+    }
+    setLocatingNearbyStation(true);
+    setNearbyStationError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocatingNearbyStation(false);
+        const { latitude, longitude } = pos.coords;
+        // 16z 這個縮放層級剛好會顯示附近的車站圖示（太近看不到幾個站、太遠圖示會擠在
+        // 一起分不清楚），不帶搜尋關鍵字——故意不篩「只看火車站」或「只看捷運站」，
+        // 使用者原本就是想同時比較兩種車種哪個比較近，篩掉其中一種反而少了可以比較的資訊。
+        window.open(`https://www.google.com/maps/@${latitude},${longitude},16z`, "_blank", "noopener,noreferrer");
+      },
+      (err) => {
+        setLocatingNearbyStation(false);
+        setNearbyStationError(err.code === err.PERMISSION_DENIED ? "請到瀏覽器設定開啟定位權限" : "定位失敗，請稍後再試");
+      },
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+  }
 
   function selectTab(key: Mode) {
     setTab(key);
@@ -279,7 +313,12 @@ export function TripsView() {
 
   return (
     <div className="flex flex-col px-5 pb-6 pt-6">
-      <PageTitle>我的{copy.tripItem}</PageTitle>
+      <PageTitle
+        actions={<NearbyButton active={false} locating={locatingNearbyStation} label="附近車站" onClick={openNearbyStationsMap} />}
+      >
+        我的{copy.tripItem}
+      </PageTitle>
+      {nearbyStationError && <ErrorText className="mt-2">{nearbyStationError}</ErrorText>}
 
       <FrequentTripModal
         key={groupModal ? `group-${groupModal.groupId ?? "new"}` : "group-closed"}
@@ -327,8 +366,6 @@ export function TripsView() {
         )
       ) : (
         <>
-          {groupsForTab.length > 1 && <Note className="mt-4">按住分類名稱左邊的握把可以拖曳調整順序。</Note>}
-
           {groupsForTab.map((g, groupIndex) => {
             const groupTrips = frequentTrips.filter((f) => f.groupId === g.id);
             return (
