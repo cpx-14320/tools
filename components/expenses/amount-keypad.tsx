@@ -66,11 +66,14 @@ export function AmountKeypad({
   expr,
   onExprChange,
   color = "#D1517E",
+  label = "金額",
 }: {
   expr: string;
   onExprChange: (expr: string) => void;
   /** NT$ 字樣的顏色——支出/轉出習慣用紅色，收入習慣用綠色，呼叫端自己決定。 */
   color?: string;
+  /** 左上角的小標，預設「金額」；鍵盤被拿去編輯明細項目時會換成「明細：本薪」這種。 */
+  label?: string;
 }) {
   function pressDigit(d: string) {
     const seg = lastSegment(expr);
@@ -103,7 +106,7 @@ export function AmountKeypad({
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-medium text-[#9C94C4]">金額</span>
+        <span className="truncate text-xs font-medium text-[#9C94C4]">{label}</span>
         <button type="button" onClick={pressBackspace} aria-label="刪除一位數" className="text-sm text-[#9C94C4] hover:text-[#6F5FD6]">
           ⌫
         </button>

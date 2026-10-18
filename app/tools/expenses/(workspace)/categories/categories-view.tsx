@@ -16,7 +16,6 @@ import {
   type CategoryDTO,
   type CategoryKind,
 } from "@/lib/expenses/categories";
-import { formatCurrency } from "@/lib/format";
 
 /** 編輯既有分類／子分類用（點清單裡的一列開啟）；新增（不管頂層還是子分類）都走下面的
  *  batchTarget／CategoryBatchModal，兩種彈窗各自管各自的狀態。 */
@@ -267,7 +266,6 @@ export function CategoriesView() {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className={`block ${text.body}`}>{c.name}</span>
-                    {!!c.budgetAmount && <span className={`block ${text.muted}`}>預算 {formatCurrency(c.budgetAmount)}／月</span>}
                   </span>
                   <span className={`shrink-0 ${text.muted}`}>{count} 筆紀錄</span>
                 </button>

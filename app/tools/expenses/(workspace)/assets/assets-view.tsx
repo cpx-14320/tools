@@ -8,21 +8,46 @@ import { Card, CardBody } from "@/components/expenses/card";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { DonutChart, type DonutSlice } from "@/components/expenses/donut-chart";
-import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
-import { text } from "@/components/expenses/theme";
+import { KpiCard, DeltaText, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
+import { AssetComparePicker } from "@/components/expenses/asset-compare-picker";
+import { text, gradient, shadow } from "@/components/expenses/theme";
 import { AccountModal, type AccountModalDraft } from "@/components/expenses/account-modal";
-import { AccountTypeBatchModal, type AccountTypeBatchItem } from "@/components/expenses/account-type-batch-modal";
 import { TransferModal, type TransferModalDraft } from "@/components/expenses/transfer-modal";
-import { accountsByKind, accountBalance, totalByKind, netWorth, type AccountDTO } from "@/lib/expenses/accounts";
-import { accountTypeById, type AccountKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
+import { accountsByKind, accountBalance, balanceDelta, totalByKind, netWorth, type AccountDTO } from "@/lib/expenses/accounts";
+import { accountTypeById, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { categoryColorHex, type CategoryDTO } from "@/lib/expenses/categories";
 import { type TransactionDTO } from "@/lib/expenses/transactions";
 import { type TransferDTO } from "@/lib/expenses/transfers";
+import { assetCompareDate, defaultAssetCompareSetting, type AssetCompareSetting } from "@/lib/expenses/asset-compare";
 import { formatCurrency } from "@/lib/format";
 
 // 帳戶類型沒有自己的顏色欄位（只有圖示），資產配置圖借用分類佔比圖同一組色票循環上色，
 // 不是另外配的新色票。
 const ASSET_TYPE_COLORS = Object.values(categoryColorHex);
+
+const COMPARE_STORAGE_KEY = "cpx-tools:expenses-asset-compare";
+
+function loadSavedCompare(): AssetCompareSetting | null {
+  try {
+    const raw = localStorage.getItem(COMPARE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && typeof parsed.mode === "string") return parsed as AssetCompareSetting;
+  } catch {
+    /* 私密視窗等情況或資料壞掉，忽略，用預設值 */
+  }
+  return null;
+}
+
+/** 依帳戶類型加總餘額——「資產配置」現在跟過去都要算一次（見下面比較基準的說明），
+ *  拆成函式避免兩份幾乎一樣的迴圈。 */
+function sumByAccountType(assets: AccountDTO[], accountTypes: AccountTypeDTO[], tx: TransactionDTO[], categories: CategoryDTO[], transfers: TransferDTO[]) {
+  const totals = new Map<string, number>();
+  for (const a of assets) {
+    totals.set(a.accountTypeId, (totals.get(a.accountTypeId) ?? 0) + accountBalance(a, accountTypes, tx, categories, transfers));
+  }
+  return totals;
+}
 
 export function AssetsView() {
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
@@ -32,9 +57,23 @@ export function AssetsView() {
   const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [ready, setReady] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [typeModalOpen, setTypeModalOpen] = useState(false);
-  const [typeModalKind, setTypeModalKind] = useState<AccountKind>("asset");
   const [transferOpen, setTransferOpen] = useState(false);
+  const [compareSetting, setCompareSettingState] = useState<AssetCompareSetting>(() => loadSavedCompare() ?? defaultAssetCompareSetting());
+  // 掛載時算一次固定住（本地日期，不是 UTC）——在 render 當中讀時鐘是不純的，
+  // toISOString() 在台灣時區的凌晨又會跳回前一天，兩個理由都要避開。
+  const [todayISO] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
+
+  function setCompareSetting(setting: AssetCompareSetting) {
+    setCompareSettingState(setting);
+    try {
+      localStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(setting));
+    } catch {
+      /* 忽略 */
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -82,29 +121,6 @@ export function AssetsView() {
     setCreateOpen(false);
   }
 
-  function openTypeModal(kind: AccountKind) {
-    setTypeModalKind(kind);
-    setTypeModalOpen(true);
-  }
-
-  // 逐筆依序 POST、不是 Promise.all 併發——跟 account-types-view.tsx 的 handleBatchSave
-  // 同一個理由：新類型的 order 是用當下已存在筆數算出來的，併發送出會拿到同一個 order。
-  async function handleCreateTypes(items: AccountTypeBatchItem[]) {
-    let latest = accountTypes;
-    for (const item of items) {
-      const data: { accountTypes?: AccountTypeDTO[] } = await fetch("/api/expenses/account-types", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(item),
-      })
-        .then((res) => res.json())
-        .catch(() => ({}));
-      if (data.accountTypes) latest = data.accountTypes;
-    }
-    setAccountTypes(latest);
-    setTypeModalOpen(false);
-  }
-
   async function handleCreateTransfer(draft: TransferModalDraft) {
     const data: { transfers?: TransferDTO[] } = await fetch("/api/expenses/transfers", {
       method: "POST",
@@ -120,19 +136,33 @@ export function AssetsView() {
   const assets = accountsByKind(accounts, accountTypes, "asset");
   const liabilities = accountsByKind(accounts, accountTypes, "liability");
   const net = netWorth(accounts, accountTypes, transactions, categories, transfers);
+  const totalAssets = totalByKind(accounts, accountTypes, transactions, categories, transfers, "asset");
+  const totalLiabilities = totalByKind(accounts, accountTypes, transactions, categories, transfers, "liability");
+
+  // 比較基準：淨資產沒有「這個月的淨資產」這種區間加總的概念，只有「某一天當時是多少」，
+  // 所以算法是把交易／轉帳都篩成「日期 <= 基準日」的子集合，餘額函式本來就是「傳進去
+  // 哪些資料就算哪些」，直接重算一次即可（見 lib/expenses/asset-compare.ts 的說明）。
+  const compareDate = assetCompareDate(compareSetting, todayISO);
+  const compareTx = compareDate ? transactions.filter((t) => t.date <= compareDate) : [];
+  const compareTransfers = compareDate ? transfers.filter((t) => t.date <= compareDate) : [];
+  const netDelta = compareDate ? balanceDelta(net, netWorth(accounts, accountTypes, compareTx, categories, compareTransfers)) : null;
+  const assetsDelta = compareDate
+    ? balanceDelta(totalAssets, totalByKind(accounts, accountTypes, compareTx, categories, compareTransfers, "asset"))
+    : null;
+  const liabilitiesDelta = compareDate
+    ? balanceDelta(totalLiabilities, totalByKind(accounts, accountTypes, compareTx, categories, compareTransfers, "liability"))
+    : null;
 
   // 資產配置：依帳戶類型（股票、黃金…）加總餘額，算出各類型佔總資產的百分比。
-  const assetTypeTotals = new Map<string, number>();
-  for (const a of assets) {
-    assetTypeTotals.set(
-      a.accountTypeId,
-      (assetTypeTotals.get(a.accountTypeId) ?? 0) + accountBalance(a, accountTypes, transactions, categories, transfers),
-    );
-  }
+  const assetTypeTotals = sumByAccountType(assets, accountTypes, transactions, categories, transfers);
+  const assetTypeTotalsBefore = compareDate ? sumByAccountType(assets, accountTypes, compareTx, categories, compareTransfers) : null;
   const assetTypeSum = [...assetTypeTotals.values()].reduce((sum, v) => sum + v, 0) || 1;
   const assetTypeBreakdown = [...assetTypeTotals.entries()]
     .map(([typeId, amount], i) => {
       const type = accountTypeById(accountTypes, typeId);
+      // 比較基準開著的話，顯示這一類「比基準那天」增加／減少了多少——沒出現在
+      // before 這份 Map 裡（當時這類資產還沒有任何帳戶）就當作從 0 開始。
+      const before = assetTypeTotalsBefore?.get(typeId) ?? (assetTypeTotalsBefore ? 0 : undefined);
       return {
         id: typeId,
         name: type?.name ?? "（未知類型）",
@@ -140,6 +170,7 @@ export function AssetsView() {
         amount,
         pct: (amount / assetTypeSum) * 100,
         colorHex: ASSET_TYPE_COLORS[i % ASSET_TYPE_COLORS.length],
+        changeAmount: before === undefined ? null : amount - before,
       };
     })
     .sort((a, b) => b.amount - a.amount);
@@ -148,9 +179,10 @@ export function AssetsView() {
 
   return (
     <div>
+      {/* 新增帳戶搬到右下角的浮動按鈕，跟首頁新增交易同一招——標題列只留「帳戶類型」
+          跟「轉帳」兩個比較少按、不需要隨手可點的操作。 */}
       <PageHeader
         title="資產總表"
-        description="帳戶餘額依期初餘額加總掛在帳戶上的交易即時算出，跟消費紀錄連動；點帳戶可以看明細"
         actions={
           <div className="flex items-center gap-2">
             <ButtonLink href="/tools/expenses/account-types" variant="secondary">
@@ -159,10 +191,23 @@ export function AssetsView() {
             <Button variant="secondary" onClick={() => setTransferOpen(true)} disabled={accounts.length < 2}>
               ⇄ 轉帳
             </Button>
-            <Button onClick={() => setCreateOpen(true)}>＋ 新增帳戶</Button>
           </div>
         }
       />
+
+      <div className="mb-4 flex justify-end">
+        <AssetComparePicker setting={compareSetting} onChange={setCompareSetting} />
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setCreateOpen(true)}
+        aria-label="新增帳戶"
+        className="fixed right-5 z-20 grid size-14 place-items-center rounded-full text-3xl font-bold leading-none text-white"
+        style={{ background: gradient.primary, boxShadow: shadow.cta, bottom: "calc(env(safe-area-inset-bottom) + 86px)" }}
+      >
+        ＋
+      </button>
 
       <AccountModal
         open={createOpen}
@@ -171,13 +216,6 @@ export function AssetsView() {
         onClose={() => setCreateOpen(false)}
         onSave={handleCreate}
         onAccountTypesChange={setAccountTypes}
-      />
-      <AccountTypeBatchModal
-        open={typeModalOpen}
-        defaultKind={typeModalKind}
-        accountTypes={accountTypes}
-        onClose={() => setTypeModalOpen(false)}
-        onSave={handleCreateTypes}
       />
       <TransferModal
         open={transferOpen}
@@ -193,7 +231,7 @@ export function AssetsView() {
       {!ready ? (
         <p className={text.faint}>載入中…</p>
       ) : accounts.length === 0 ? (
-        <p className={text.faint}>還沒有任何帳戶，點上方新增第一個</p>
+        <p className={text.faint}>還沒有任何帳戶，點右下角的＋新增第一個</p>
       ) : (
         <>
           <div className="mb-5 flex flex-col gap-3">
@@ -201,17 +239,20 @@ export function AssetsView() {
               label="淨資產"
               value={`${net >= 0 ? "" : "－"}${formatCurrency(Math.abs(net))}`}
               valueColor={net < 0 ? KPI_NEGATIVE : "#4A3B7C"}
+              delta={netDelta && <DeltaText delta={netDelta.delta} pct={netDelta.pct} goodWhenUp />}
             />
             <div className="grid grid-cols-2 gap-3">
               <KpiCard
                 label="資產"
-                value={formatCurrency(totalByKind(accounts, accountTypes, transactions, categories, transfers, "asset"))}
+                value={formatCurrency(totalAssets)}
                 valueColor="#4A3B7C"
+                delta={assetsDelta && <DeltaText delta={assetsDelta.delta} pct={assetsDelta.pct} goodWhenUp />}
               />
               <KpiCard
                 label="負債"
-                value={formatCurrency(totalByKind(accounts, accountTypes, transactions, categories, transfers, "liability"))}
+                value={formatCurrency(totalLiabilities)}
                 valueColor="#4A3B7C"
+                delta={liabilitiesDelta && <DeltaText delta={liabilitiesDelta.delta} pct={liabilitiesDelta.pct} goodWhenUp={false} />}
               />
             </div>
           </div>
@@ -229,7 +270,17 @@ export function AssetsView() {
                           <span className="size-2.5 shrink-0 rounded-full" style={{ background: r.colorHex }} />
                           {r.name}
                         </span>
-                        <span className={`tabular-nums ${text.muted}`}>{r.pct.toFixed(1)}%</span>
+                        <span className="flex items-center gap-2">
+                          {/* 這一類比基準日增加／減少多少——沒有變化（0）或還沒選比較基準
+                              就不顯示，不然每一列都掛一個「＋0」反而是噪音。 */}
+                          {r.changeAmount !== null && r.changeAmount !== 0 && (
+                            <span className="tabular-nums font-medium" style={{ color: r.changeAmount > 0 ? "#2FAE82" : "#D1517E" }}>
+                              {r.changeAmount > 0 ? "▲" : "▼"}
+                              {formatCurrency(Math.abs(r.changeAmount))}
+                            </span>
+                          )}
+                          <span className={`tabular-nums ${text.muted}`}>{r.pct.toFixed(1)}%</span>
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -238,14 +289,12 @@ export function AssetsView() {
             </Card>
           )}
 
+          {/* 這兩個區塊原本各自有一顆「＋新增」，開的也是「新增帳戶類型」彈窗——跟
+              「新增帳戶」彈窗裡本來就有的那兩格「＋新增」（見 AccountModal）功能重複，
+              拿掉後新增類型只保留一個入口，不用分散在兩個地方維護同一個操作。 */}
           {assets.length > 0 && (
             <div className="mb-5">
-              <div className="mb-2 flex items-center justify-between px-1">
-                <p className={text.sectionHeading}>資產</p>
-                <button type="button" onClick={() => openTypeModal("asset")} className="text-xs font-medium text-[#6F5FD6]">
-                  ＋ 新增
-                </button>
-              </div>
+              <p className={`mb-2 px-1 ${text.sectionHeading}`}>資產</p>
               <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
                 {assets.map((a) => {
                   const balance = accountBalance(a, accountTypes, transactions, categories, transfers);
@@ -269,12 +318,7 @@ export function AssetsView() {
 
           {liabilities.length > 0 && (
             <div>
-              <div className="mb-2 flex items-center justify-between px-1">
-                <p className={text.sectionHeading}>負債</p>
-                <button type="button" onClick={() => openTypeModal("liability")} className="text-xs font-medium text-[#6F5FD6]">
-                  ＋ 新增
-                </button>
-              </div>
+              <p className={`mb-2 px-1 ${text.sectionHeading}`}>負債</p>
               <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
                 {liabilities.map((a) => (
                   <Link key={a.id} href={`/tools/expenses/assets/${a.id}`} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">

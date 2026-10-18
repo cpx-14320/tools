@@ -98,16 +98,9 @@ export function TransferModal({
       }
     >
       <Field label="從（轉出帳戶）">
-        <button
-          type="button"
-          onClick={() => setPickingFrom(true)}
-          className={`${fieldInputClass} flex items-center justify-between gap-2 text-left`}
-        >
+        <button type="button" onClick={() => setPickingFrom(true)} className={`${fieldInputClass} text-left`}>
           <span className={fromAccountId ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}>
             {fromAccountId ? accountLabel(fromAccountId) : "選擇帳戶"}
-          </span>
-          <span aria-hidden className="shrink-0 text-[#9C94C4]">
-            🏦
           </span>
         </button>
       </Field>
@@ -117,15 +110,8 @@ export function TransferModal({
       </p>
 
       <Field label="到（轉入帳戶）">
-        <button
-          type="button"
-          onClick={() => setPickingTo(true)}
-          className={`${fieldInputClass} flex items-center justify-between gap-2 text-left`}
-        >
+        <button type="button" onClick={() => setPickingTo(true)} className={`${fieldInputClass} text-left`}>
           <span className={toAccountId ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}>{toAccountId ? accountLabel(toAccountId) : "選擇帳戶"}</span>
-          <span aria-hidden className="shrink-0 text-[#9C94C4]">
-            🏦
-          </span>
         </button>
       </Field>
 

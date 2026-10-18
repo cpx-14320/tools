@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/expenses/page-header";
-import { ButtonLink, IconButton } from "@/components/expenses/button";
+import { IconButton } from "@/components/expenses/button";
+import { BackLink } from "@/components/expenses/back-link";
 import { Card, CardBody } from "@/components/expenses/card";
 import { DeltaBadge } from "@/components/expenses/delta-badge";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
@@ -11,15 +12,18 @@ import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { text } from "@/components/expenses/theme";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
+import { ComparePicker } from "@/components/expenses/compare-picker";
 import { AccountModal, type AccountModalDraft } from "@/components/expenses/account-modal";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { TransferModal, type TransferModalDraft } from "@/components/expenses/transfer-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
-import { dateFilterRange, previousPeriodSuffix } from "@/lib/expenses/date-filter";
+import { ReconcileModal } from "@/components/expenses/reconcile-modal";
+import { BreakdownToggle, TransactionBreakdown } from "@/components/expenses/transaction-breakdown";
+import { compareDateFilter, compareLabel, dateFilterRange } from "@/lib/expenses/date-filter";
 import { categoryById, categoryColorClass, categoryPath, type CategoryDTO } from "@/lib/expenses/categories";
 import { totalsForRange, rangeDelta, transactionsInDateRange, transactionDisplayName, type TransactionDTO } from "@/lib/expenses/transactions";
 import { inDateRange } from "@/lib/expenses/date-filter";
-import { accountBalance, type AccountDTO } from "@/lib/expenses/accounts";
+import { accountBalance, transactionBalancesByAccount, type AccountDTO } from "@/lib/expenses/accounts";
 import { accountTypeById, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { transfersForAccount, type TransferDTO } from "@/lib/expenses/transfers";
 import { formatCurrency } from "@/lib/format";
@@ -28,7 +32,7 @@ type TxModalState = { mode: "create" } | { mode: "edit"; transaction: Transactio
 
 export function AccountDetailView({ accountId }: { accountId: string }) {
   const router = useRouter();
-  const { filter } = useDateFilter();
+  const { filter, compare } = useDateFilter();
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
@@ -36,9 +40,17 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
   const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [ready, setReady] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [reconcileOpen, setReconcileOpen] = useState(false);
+  // 掛載時算一次固定住——在 render 當中讀時鐘是不純的。
+  const [todayISO] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
   const [txModal, setTxModal] = useState<TxModalState | null>(null);
   const [transferModal, setTransferModal] = useState<TransferDTO | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ inUseCount: number } | null>(null);
+  // 哪幾筆的明細是展開的——預設全部收起來，只有有明細的那幾筆才看得到展開箭頭。
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -119,6 +131,19 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
     setTxModal(null);
   }
 
+  // 對帳補的就是一般的交易，只是金額跟分類是對帳彈窗算好的，一律掛在這個帳戶上。
+  async function handleReconcile(draft: { categoryId: string; amount: number; date: string; note: string }) {
+    const data: { transactions?: TransactionDTO[] } = await fetch("/api/expenses/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...draft, accountId }),
+    })
+      .then((res) => res.json())
+      .catch(() => ({}));
+    if (data.transactions) setTransactions(data.transactions);
+    setReconcileOpen(false);
+  }
+
   async function handleTxDelete() {
     if (txModal?.mode !== "edit") return;
     const data: { transactions?: TransactionDTO[] } = await fetch(`/api/expenses/transactions?id=${txModal.transaction.id}`, {
@@ -143,6 +168,15 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
     setTransferModal(null);
   }
 
+  function toggleExpanded(id: string) {
+    setExpandedIds((set) => {
+      const next = new Set(set);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   async function handleTransferDelete() {
     if (!transferModal) return;
     const data: { transfers?: TransferDTO[] } = await fetch(`/api/expenses/transfers?id=${transferModal.id}`, { method: "DELETE" })
@@ -155,9 +189,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
   if (!ready) {
     return (
       <div className="flex flex-col gap-4">
-        <ButtonLink href="/tools/expenses/assets" variant="ghost">
-          ‹ 回資產總表
-        </ButtonLink>
+        <BackLink href="/tools/expenses/assets" label="返回資產總表" />
         <p className={text.faint}>載入中…</p>
       </div>
     );
@@ -166,9 +198,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
   if (!account) {
     return (
       <div className="flex flex-col gap-4">
-        <ButtonLink href="/tools/expenses/assets" variant="ghost">
-          ‹ 回資產總表
-        </ButtonLink>
+        <BackLink href="/tools/expenses/assets" label="返回資產總表" />
         <p className={text.faint}>找不到這個帳戶，可能已經被刪除</p>
       </div>
     );
@@ -179,11 +209,13 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
   const range = dateFilterRange(filter);
   const hasPriorData = (r: ReturnType<typeof dateFilterRange>) => transactionsInDateRange(accountTx, r).length > 0;
 
+  // 「跟誰比」由使用者選的比較基準決定，徽章後綴也跟著換（vs 上期／vs 去年同期…）。
+  const baseline = compareDateFilter(filter, compare);
+  const deltaSuffix = compareLabel(filter, compare);
   const { totalIncome, totalExpense, balance, expenseTx, incomeTx } = totalsForRange(accountTx, categories, range);
-  const incomeDelta = rangeDelta((r) => totalsForRange(accountTx, categories, r).totalIncome, filter, hasPriorData);
-  const expenseDelta = rangeDelta((r) => totalsForRange(accountTx, categories, r).totalExpense, filter, hasPriorData);
-  const balanceDelta = rangeDelta((r) => totalsForRange(accountTx, categories, r).balance, filter, hasPriorData);
-  const deltaSuffix = previousPeriodSuffix(filter.mode);
+  const incomeDelta = rangeDelta((r) => totalsForRange(accountTx, categories, r).totalIncome, filter, hasPriorData, baseline);
+  const expenseDelta = rangeDelta((r) => totalsForRange(accountTx, categories, r).totalExpense, filter, hasPriorData, baseline);
+  const balanceDelta = rangeDelta((r) => totalsForRange(accountTx, categories, r).balance, filter, hasPriorData, baseline);
 
   const accountTransfers = transfersForAccount(transfers, account.id).filter((t) => inDateRange(t.date, range));
 
@@ -203,6 +235,9 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
 
   const kind = accountTypeById(accountTypes, account.accountTypeId)?.kind ?? "asset";
   const currentBalance = accountBalance(account, accountTypes, transactions, categories, transfers);
+  // 每一筆交易／轉帳「發生後」這個帳戶變成多少——跟上面的日期篩選器無關，一律用全部
+  // 資料算，不然篩選器切到別的區間時，顯示出來的「交易後餘額」會跟著篩選範圍錯亂。
+  const accountBalances = transactionBalancesByAccount(accounts, accountTypes, transactions, categories, transfers);
 
   return (
     <div className="flex flex-col gap-4">
@@ -211,12 +246,10 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
         description={type ? `${type.icon} ${type.name}` : "（未知類型）"}
         actions={
           <div className="flex items-center gap-2">
-            <ButtonLink href="/tools/expenses/assets" variant="ghost">
-              ‹ 回資產總表
-            </ButtonLink>
             <IconButton aria-label="編輯帳戶資料" onClick={() => setEditOpen(true)}>
               ✏️
             </IconButton>
+            <BackLink href="/tools/expenses/assets" label="返回資產總表" />
           </div>
         }
       />
@@ -272,18 +305,44 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
       />
 
       <Card>
-        <CardBody className="flex items-center justify-between py-3.5">
-          <div>
-            <p className={text.muted}>目前{kind === "liability" ? "欠款" : "餘額"}</p>
-            <p className={`mt-0.5 text-2xl font-bold tabular-nums ${kind === "liability" ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>
-              {formatCurrency(currentBalance)}
-            </p>
+        <CardBody className="py-3.5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={text.muted}>目前{kind === "liability" ? "欠款" : "餘額"}</p>
+              <p className={`mt-0.5 text-2xl font-bold tabular-nums ${kind === "liability" ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>
+                {formatCurrency(currentBalance)}
+              </p>
+            </div>
+            <IconAvatar icon={type?.icon ?? "❓"} />
           </div>
-          <IconAvatar icon={type?.icon ?? "❓"} />
+          {/* 餘額是從交易即時加總出來的，漏記一筆就會跟實際差一輩子——對帳讓使用者輸入
+              真正的餘額，差額補成一筆調整交易，不用回頭翻整份紀錄找是哪裡少記。 */}
+          <button
+            type="button"
+            onClick={() => setReconcileOpen(true)}
+            className="mt-3 w-full rounded-xl border border-[#ECE4FA] py-2 text-xs font-medium text-[#6F5FD6]"
+          >
+            對帳：輸入實際{kind === "liability" ? "欠款" : "餘額"}，差額自動補一筆
+          </button>
         </CardBody>
       </Card>
 
+      <ReconcileModal
+        key={reconcileOpen ? `reconcile-${currentBalance}` : "reconcile-closed"}
+        open={reconcileOpen}
+        accountName={account.name}
+        accountKind={kind}
+        currentBalance={currentBalance}
+        categories={categories}
+        date={todayISO}
+        onClose={() => setReconcileOpen(false)}
+        onSave={handleReconcile}
+      />
+
       <DateFilterPicker />
+      <div className="-mt-1 mb-2 flex justify-end">
+        <ComparePicker />
+      </div>
 
       <KpiCard
         label="這段期間收入"
@@ -322,29 +381,47 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
                         const t = e.tx;
                         const category = categoryById(categories, t.categoryId);
                         const isIncome = category?.kind === "收入";
+                        const breakdown = t.breakdown ?? [];
+                        const expanded = expandedIds.has(t.id);
+                        // 這一頁本身就是這個帳戶的明細，不用再標帳戶名稱——只標「這筆
+                        // 記完之後」這個帳戶變成多少。
+                        const balanceAfter = accountBalances.get(`tx:${t.id}`);
                         return (
-                          <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => setTxModal({ mode: "edit", transaction: t })}
-                            className="flex w-full items-center gap-3 px-3 py-3 text-left"
-                          >
-                            <IconAvatar icon={category?.icon ?? ""} size="sm" className={category ? categoryColorClass[category.color] : undefined} />
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-medium text-[#4A3B7C]">{transactionDisplayName(t, categories)}</p>
-                              <p className={`truncate ${text.muted}`}>{categoryPath(categories, t.categoryId)}</p>
+                          <div key={t.id}>
+                            <div className="flex w-full items-center gap-1 px-3 py-3">
+                              <button
+                                type="button"
+                                onClick={() => setTxModal({ mode: "edit", transaction: t })}
+                                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                              >
+                                <IconAvatar
+                                  icon={category?.icon ?? ""}
+                                  size="sm"
+                                  className={category ? categoryColorClass[category.color] : undefined}
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-medium text-[#4A3B7C]">{transactionDisplayName(t, categories)}</p>
+                                  <p className={`truncate ${text.muted}`}>{categoryPath(categories, t.categoryId)}</p>
+                                </div>
+                                <div className="flex shrink-0 flex-col items-end">
+                                  <span className={`tabular-nums font-semibold text-[#4A3B7C] ${isIncome ? "text-[#2FAE82]" : ""}`}>
+                                    {isIncome ? "＋" : "－"}
+                                    {formatCurrency(t.amount)}
+                                  </span>
+                                  {balanceAfter !== undefined && <span className={`mt-0.5 tabular-nums ${text.faint}`}>餘額 {formatCurrency(balanceAfter)}</span>}
+                                </div>
+                              </button>
+                              {breakdown.length > 0 && <BreakdownToggle expanded={expanded} onClick={() => toggleExpanded(t.id)} />}
                             </div>
-                            <span className={`shrink-0 tabular-nums font-semibold text-[#4A3B7C] ${isIncome ? "text-[#2FAE82]" : ""}`}>
-                              {isIncome ? "＋" : "－"}
-                              {formatCurrency(t.amount)}
-                            </span>
-                          </button>
+                            {expanded && breakdown.length > 0 && <TransactionBreakdown items={breakdown} />}
+                          </div>
                         );
                       }
 
                       const transfer = e.transfer;
                       const isOutgoing = transfer.fromAccountId === account.id;
                       const otherAccount = accounts.find((a) => a.id === (isOutgoing ? transfer.toAccountId : transfer.fromAccountId));
+                      const transferBalanceAfter = accountBalances.get(`transfer:${transfer.id}`);
                       return (
                         <button
                           key={transfer.id}
@@ -361,10 +438,15 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
                             </p>
                             <p className={`truncate ${text.muted}`}>{transfer.note || "轉帳"}</p>
                           </div>
-                          <span className="shrink-0 tabular-nums font-semibold text-[#6F5FD6]">
-                            {isOutgoing ? "－" : "＋"}
-                            {formatCurrency(transfer.amount)}
-                          </span>
+                          <div className="flex shrink-0 flex-col items-end">
+                            <span className="tabular-nums font-semibold text-[#6F5FD6]">
+                              {isOutgoing ? "－" : "＋"}
+                              {formatCurrency(transfer.amount)}
+                            </span>
+                            {transferBalanceAfter !== undefined && (
+                              <span className={`mt-0.5 tabular-nums ${text.faint}`}>餘額 {formatCurrency(transferBalanceAfter)}</span>
+                            )}
+                          </div>
                         </button>
                       );
                     })}

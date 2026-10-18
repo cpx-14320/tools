@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
 import { Card, CardBody } from "@/components/expenses/card";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
+import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { SegmentedControl } from "@/components/expenses/button";
 import { DeltaBadge } from "@/components/expenses/delta-badge";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
@@ -21,6 +22,7 @@ import {
   transactionsInDateRange,
   type TransactionDTO,
   type TrendGranularity,
+  type TrendPoint,
 } from "@/lib/expenses/transactions";
 import { dateFilterRange, previousPeriodSuffix } from "@/lib/expenses/date-filter";
 import { formatCurrency } from "@/lib/format";
@@ -55,6 +57,8 @@ export function ReportsView() {
   const [expanded, setExpanded] = useState(false);
   const [granularity, setGranularity] = useState<TrendGranularity>("month");
   const [periods, setPeriods] = useState(6);
+  // 趨勢圖目前展開細項的那一期（用 TrendPoint.start 當 key）；null＝沒有展開任何一根。
+  const [selectedTrendStart, setSelectedTrendStart] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,6 +83,12 @@ export function ReportsView() {
     setGranularity(next);
     const options = PERIOD_OPTIONS_BY_GRANULARITY[next];
     if (!options.includes(periods)) setPeriods(options[Math.min(1, options.length - 1)]);
+    setSelectedTrendStart(null); // 頻率一變，每一根長條代表的區間就全部不一樣了，展開的細項沒有意義
+  }
+
+  function changePeriods(next: number) {
+    setPeriods(next);
+    setSelectedTrendStart(null);
   }
 
   const range = dateFilterRange(filter);
@@ -174,6 +184,33 @@ export function ReportsView() {
     });
   }, [trendPoints, trendSeries, kind]);
 
+  // 點某一根長條展開的細項——故意用 trendPoints 的原始 byCategory（不是上面併過「其他」
+  // 的 trendPointsWithOther），展開細項就是要看「其他」裡到底藏了哪些分類，不應該連
+  // 展開之後都還是收在一起。
+  function categoryRows(point: TrendPoint): { id: string; name: string; icon: string; colorClass: string; amount: number }[] {
+    return point.byCategory
+      .map((b) => {
+        const category = categories.find((c) => c.id === b.categoryId);
+        return {
+          id: b.categoryId,
+          name: category?.name ?? "（已刪除分類）",
+          icon: category?.icon ?? "❓",
+          colorClass: category ? categoryColorClass[category.color] : "bg-[#F3EFFC] text-[#9C94C4]",
+          amount: b.amount,
+        };
+      })
+      .filter((r) => r.amount > 0)
+      .sort((a, b) => b.amount - a.amount);
+  }
+
+  function periodRangeLabel(point: TrendPoint): string {
+    return point.start === point.end ? point.start : `${point.start} ～ ${point.end}`;
+  }
+
+  const selectedPoint = kind !== "淨額" ? (trendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
+  const selectedIncomePoint = kind === "淨額" ? (incomeTrendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
+  const selectedExpensePoint = kind === "淨額" ? (expenseTrendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
+
   if (!ready) {
     return (
       <div className="flex flex-col gap-4">
@@ -192,6 +229,7 @@ export function ReportsView() {
         onChange={(v) => {
           setKind(v);
           setExpanded(false);
+          setSelectedTrendStart(null);
         }}
         fullWidth
         size="lg"
@@ -278,7 +316,7 @@ export function ReportsView() {
               <button
                 key={n}
                 type="button"
-                onClick={() => setPeriods(n)}
+                onClick={() => changePeriods(n)}
                 className={`rounded-full px-3 py-1 text-xs font-medium ${periods === n ? "bg-[#6F5FD6] text-white" : "bg-[#F3EFFC] text-[#9C94C4]"}`}
               >
                 近 {n}
@@ -288,11 +326,90 @@ export function ReportsView() {
           </div>
           <div className="mt-5">
             {kind === "淨額" ? (
-              <NetTrendChart incomePoints={incomeTrendPoints} expensePoints={expenseTrendPoints} formatValue={formatCurrency} />
+              <NetTrendChart
+                incomePoints={incomeTrendPoints}
+                expensePoints={expenseTrendPoints}
+                formatValue={formatCurrency}
+                selected={selectedTrendStart}
+                onSelect={(start) => setSelectedTrendStart((cur) => (cur === start ? null : start))}
+              />
             ) : (
-              <TrendBarChart points={trendPointsWithOther} series={trendSeries} formatValue={formatCurrency} />
+              <TrendBarChart
+                points={trendPointsWithOther}
+                series={trendSeries}
+                formatValue={formatCurrency}
+                selected={selectedTrendStart}
+                onSelect={(start) => setSelectedTrendStart((cur) => (cur === start ? null : start))}
+              />
             )}
           </div>
+
+          {/* 點長條展開：這一期的年月日範圍、各分類的花費細項（原始分類，不是圖上
+              併進「其他」的那份收合版）、跟總計——手機沒辦法 hover 看明細，點開
+              才是唯一能看到完整拆項的地方。 */}
+          {(selectedPoint || selectedIncomePoint || selectedExpensePoint) && (
+            <div className="mt-4 rounded-2xl border border-[#ECE4FA] bg-[#F9F7FE] p-4">
+              {selectedPoint && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <p className={text.body}>{periodRangeLabel(selectedPoint)}</p>
+                    <p className="text-sm font-semibold tabular-nums text-[#4A3B7C]">{formatCurrency(selectedPoint.total)}</p>
+                  </div>
+                  <div className="mt-3 flex flex-col divide-y divide-[#ECE4FA]">
+                    {categoryRows(selectedPoint).map((r) => (
+                      <div key={r.id} className="flex items-center gap-3 py-2">
+                        <IconAvatar icon={r.icon} size="sm" className={r.colorClass} />
+                        <span className={`min-w-0 flex-1 truncate ${text.body}`}>{r.name}</span>
+                        <span className="shrink-0 tabular-nums text-sm font-medium text-[#4A3B7C]">{formatCurrency(r.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {(selectedIncomePoint || selectedExpensePoint) && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <p className={text.body}>{periodRangeLabel(selectedIncomePoint ?? selectedExpensePoint!)}</p>
+                    <p
+                      className="text-sm font-semibold tabular-nums"
+                      style={{ color: (selectedIncomePoint?.total ?? 0) - (selectedExpensePoint?.total ?? 0) < 0 ? "#D1517E" : "#2FAE82" }}
+                    >
+                      淨額 {formatCurrency((selectedIncomePoint?.total ?? 0) - (selectedExpensePoint?.total ?? 0))}
+                    </p>
+                  </div>
+                  {selectedIncomePoint && selectedIncomePoint.byCategory.length > 0 && (
+                    <div className="mt-3">
+                      <p className={`mb-1.5 ${text.label}`}>收入 {formatCurrency(selectedIncomePoint.total)}</p>
+                      <div className="flex flex-col divide-y divide-[#ECE4FA]">
+                        {categoryRows(selectedIncomePoint).map((r) => (
+                          <div key={r.id} className="flex items-center gap-3 py-2">
+                            <IconAvatar icon={r.icon} size="sm" className={r.colorClass} />
+                            <span className={`min-w-0 flex-1 truncate ${text.body}`}>{r.name}</span>
+                            <span className="shrink-0 tabular-nums text-sm font-medium text-[#2FAE82]">{formatCurrency(r.amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {selectedExpensePoint && selectedExpensePoint.byCategory.length > 0 && (
+                    <div className="mt-3">
+                      <p className={`mb-1.5 ${text.label}`}>支出 {formatCurrency(selectedExpensePoint.total)}</p>
+                      <div className="flex flex-col divide-y divide-[#ECE4FA]">
+                        {categoryRows(selectedExpensePoint).map((r) => (
+                          <div key={r.id} className="flex items-center gap-3 py-2">
+                            <IconAvatar icon={r.icon} size="sm" className={r.colorClass} />
+                            <span className={`min-w-0 flex-1 truncate ${text.body}`}>{r.name}</span>
+                            <span className="shrink-0 tabular-nums text-sm font-medium text-[#D1517E]">{formatCurrency(r.amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </CardBody>
       </Card>
     </div>

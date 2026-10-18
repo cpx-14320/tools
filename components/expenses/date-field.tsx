@@ -18,12 +18,15 @@ export function DateField({
   granularity = "day",
   placeholder = "選擇日期",
   disabled = false,
+  className = "",
 }: {
   value: string;
   onChange: (value: string) => void;
   granularity?: DateGranularity;
   placeholder?: string;
   disabled?: boolean;
+  /** 外層要控制寬度時用（例如跟「今天／昨天」快捷鍵排在同一列要 flex-1）。 */
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const label = value ? formatLabel(value, granularity) : "";
@@ -34,12 +37,9 @@ export function DateField({
         type="button"
         disabled={disabled}
         onClick={() => setOpen(true)}
-        className={`${fieldInputClass} flex items-center justify-between gap-2 text-left disabled:opacity-60`}
+        className={`${fieldInputClass} text-left disabled:opacity-60 ${className}`}
       >
         <span className={label ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}>{label || placeholder}</span>
-        <span aria-hidden className="shrink-0 text-[#9C94C4]">
-          📅
-        </span>
       </button>
       <DatePickerModal
         open={open}

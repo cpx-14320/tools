@@ -218,6 +218,10 @@ export function RecurringView() {
             return (
               <Card key={rule.id}>
                 <CardBody>
+                  {/* 左圖右文：圖示固定在左邊，標題／金額／週期說明／進度／下次入帳全部都在
+                      右邊這一欄裡，文字左緣才會通通對齊。金額跟標題擺在同一列（不是跟整個
+                      文字區塊並排），下面那行「每月・無限期循環・起訖」就能吃滿整欄寬度、
+                      不會被金額擠到換行。 */}
                   <div className="flex items-start gap-3">
                     {selecting ? (
                       <button type="button" onClick={() => toggleSelected(rule.id)} className="shrink-0 pt-1">
@@ -226,60 +230,62 @@ export function RecurringView() {
                     ) : (
                       <IconAvatar icon={category?.icon ?? ""} size="sm" className={category ? categoryColorClass[category.color] : undefined} />
                     )}
+
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {selecting ? (
-                          <span className={text.sectionHeading}>{category?.name ?? "（已刪除分類）"}</span>
-                        ) : (
-                          <button type="button" onClick={() => setModal({ mode: "edit", rule })} className={`${text.sectionHeading} hover:underline`}>
-                            {category?.name ?? "（已刪除分類）"}
-                          </button>
-                        )}
-                        {!rule.active && <Badge>已暫停</Badge>}
-                        {rule.active && finished && <Badge tone="positive">已完成</Badge>}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                          {selecting ? (
+                            <span className={text.sectionHeading}>{category?.name ?? "（已刪除分類）"}</span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setModal({ mode: "edit", rule })}
+                              className={`${text.sectionHeading} hover:underline`}
+                            >
+                              {category?.name ?? "（已刪除分類）"}
+                            </button>
+                          )}
+                          {!rule.active && <Badge>已暫停</Badge>}
+                          {rule.active && finished && <Badge tone="positive">已完成</Badge>}
+                        </div>
+                        <span className={`shrink-0 tabular-nums font-semibold text-[#4A3B7C] ${isIncome ? "text-[#2FAE82]" : ""}`}>
+                          {isIncome ? "＋" : "－"}
+                          {formatCurrency(rule.amount)}
+                          <span className={`ml-1 font-normal ${text.muted}`}>／期</span>
+                        </span>
                       </div>
+
                       {rule.note && <p className={`mt-0.5 ${text.muted}`}>{rule.note}</p>}
-                      <p className={`mt-0.5 ${text.muted}`}>
+                      <p className={`mt-0.5 truncate ${text.muted}`}>
                         {describeFrequency(rule)}・{describeCycle(rule)}・{rule.startDate} ～ {endDate ?? "無限期"}
                       </p>
-                      {linkedGoal && (
-                        <p className={`mt-0.5 ${text.muted}`}>
-                          🎯 同時存入「{linkedGoal.name}」
-                        </p>
+                      {linkedGoal && <p className={`mt-0.5 ${text.muted}`}>🎯 同時存入「{linkedGoal.name}」</p>}
+
+                      {rule.cycleCount ? (
+                        <div className="mt-3">
+                          <p className={text.statValue}>
+                            {confirmedCount}
+                            <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {rule.cycleCount} 期已入帳</span>
+                          </p>
+                          <div className="mt-2">
+                            <ProgressBar pct={(confirmedCount / rule.cycleCount) * 100} tone={finished ? "positive" : "brand"} />
+                          </div>
+                        </div>
+                      ) : (
+                        <p className={`mt-2 ${text.muted}`}>已入帳 {confirmedCount} 期（無限期循環）</p>
+                      )}
+
+                      {nextDate && <p className={`mt-1 ${text.muted}`}>下次預計入帳：{nextDate}</p>}
+
+                      {!selecting && (
+                        <div className="mt-2 flex items-center justify-end">
+                          <Button variant="ghost" onClick={() => handleToggleActive(rule)}>
+                            {rule.active ? "暫停" : "恢復"}
+                          </Button>
+                        </div>
                       )}
                     </div>
-                    <span className={`shrink-0 tabular-nums font-semibold text-[#4A3B7C] ${isIncome ? "text-[#2FAE82]" : ""}`}>
-                      {isIncome ? "＋" : "－"}
-                      {formatCurrency(rule.amount)}
-                      <span className={`ml-1 font-normal ${text.muted}`}>／期</span>
-                    </span>
                   </div>
-
-                  {rule.cycleCount ? (
-                    <div className="mt-4">
-                      <div className="flex items-end justify-between">
-                        <p className={text.statValue}>
-                          {confirmedCount}
-                          <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {rule.cycleCount} 期已入帳</span>
-                        </p>
-                      </div>
-                      <div className="mt-2">
-                        <ProgressBar pct={(confirmedCount / rule.cycleCount) * 100} tone={finished ? "positive" : "brand"} />
-                      </div>
-                    </div>
-                  ) : (
-                    <p className={`mt-3 ${text.muted}`}>已入帳 {confirmedCount} 期（無限期循環）</p>
-                  )}
-
-                  {nextDate && <p className={`mt-3 ${text.muted}`}>下次預計入帳：{nextDate}</p>}
-
-                  {!selecting && (
-                    <div className="mt-3 flex items-center justify-end gap-1">
-                      <Button variant="ghost" onClick={() => handleToggleActive(rule)}>
-                        {rule.active ? "暫停" : "恢復"}
-                      </Button>
-                    </div>
-                  )}
                 </CardBody>
               </Card>
             );

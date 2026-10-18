@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button, SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass } from "./modal";
+import { CategoryNamePresets, CategoryIconPicker } from "./category-field-pickers";
 import { categoryFillClass, categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 
 const COLORS: CategoryColor[] = ["a", "b", "c", "d", "e", "f"];
@@ -115,12 +116,11 @@ export function CategoryBatchModal({
           <Field label="名稱">
             <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} placeholder="例如「餐飲」" className={fieldInputClass} />
           </Field>
+          <CategoryNamePresets value={item.name} onPick={(name) => updateItem(i, { name })} />
           {isDuplicateDraft(items, i, categories, parentId) && (
             <p className="text-xs text-[#D1517E]">已經有同樣名稱的分類了，換一個名稱吧。</p>
           )}
-          <Field label="圖示（輸入一個表情符號）">
-            <input value={item.icon} onChange={(e) => updateItem(i, { icon: e.target.value })} className={fieldInputClass} />
-          </Field>
+          <CategoryIconPicker value={item.icon} onChange={(icon) => updateItem(i, { icon })} />
 
           {!isSubcategory && (
             <>

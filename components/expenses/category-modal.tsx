@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button, SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass } from "./modal";
+import { CategoryNamePresets, CategoryIconPicker } from "./category-field-pickers";
 import { categoryFillClass, categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 
 const COLORS: CategoryColor[] = ["a", "b", "c", "d", "e", "f"];
@@ -12,7 +13,6 @@ export interface CategoryModalDraft {
   icon: string;
   color: CategoryColor;
   kind: CategoryKind;
-  budgetAmount?: number;
 }
 
 export function CategoryModal({
@@ -28,7 +28,7 @@ export function CategoryModal({
   onDelete,
 }: {
   open: boolean;
-  /** 子分類不能自己選顏色／收支類型／預算，跟父分類一致。 */
+  /** 子分類不能自己選顏色／收支類型，跟父分類一致。 */
   isSubcategory: boolean;
   parentName?: string;
   /** 子分類時用來圈定「同一個父分類底下」的名稱重複檢查範圍。 */
@@ -39,16 +39,13 @@ export function CategoryModal({
   excludeId?: string;
   initial?: CategoryModalDraft;
   onClose: () => void;
-  onSave: (
-    draft: Pick<CategoryModalDraft, "name" | "icon"> & Partial<Pick<CategoryModalDraft, "color" | "kind">> & { budgetAmount?: number | null },
-  ) => void;
+  onSave: (draft: Pick<CategoryModalDraft, "name" | "icon"> & Partial<Pick<CategoryModalDraft, "color" | "kind">>) => void;
   onDelete?: () => void;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [icon, setIcon] = useState(initial?.icon ?? "🏷️");
   const [color, setColor] = useState<CategoryColor>(initial?.color ?? "a");
   const [kind, setKind] = useState<CategoryKind>(initial?.kind ?? "支出");
-  const [budgetAmount, setBudgetAmount] = useState(initial?.budgetAmount ? String(initial.budgetAmount) : "");
 
   const title = initial ? "編輯分類" : isSubcategory ? `新增「${parentName}」的子分類` : "新增分類";
   const isDuplicate = categoryNameTaken(categories, name, { kind, parentId }, excludeId);
@@ -78,15 +75,7 @@ export function CategoryModal({
                 onSave(
                   isSubcategory
                     ? { name: name.trim(), icon: icon.trim() }
-                    : {
-                        name: name.trim(),
-                        icon: icon.trim(),
-                        color,
-                        kind,
-                        // 只有「支出」分類有預算的概念；切到「收入」或本來就是收入分類時一律清空，
-                        // 不讓一個收入分類底下殘留一個永遠用不到的預算數字。
-                        budgetAmount: kind === "支出" && budgetAmount.trim() ? Number(budgetAmount) : null,
-                      },
+                    : { name: name.trim(), icon: icon.trim(), color, kind },
                 )
               }
             >
@@ -99,10 +88,10 @@ export function CategoryModal({
       <Field label="名稱">
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如「餐飲」" className={fieldInputClass} />
       </Field>
+      <CategoryNamePresets value={name} onPick={setName} />
       {isDuplicate && <p className="text-xs text-[#D1517E]">已經有同樣名稱的分類了，換一個名稱吧。</p>}
-      <Field label="圖示（輸入一個表情符號）">
-        <input value={icon} onChange={(e) => setIcon(e.target.value)} className={fieldInputClass} />
-      </Field>
+
+      <CategoryIconPicker value={icon} onChange={setIcon} />
 
       {!isSubcategory && (
         <>
@@ -130,20 +119,9 @@ export function CategoryModal({
               ))}
             </div>
           </Field>
-          {kind === "支出" && (
-            <Field label="每月預算（可不填）">
-              <input
-                type="number"
-                min={1}
-                placeholder="例如 3000"
-                value={budgetAmount}
-                onChange={(e) => setBudgetAmount(e.target.value)}
-                className={fieldInputClass}
-              />
-            </Field>
-          )}
         </>
       )}
+      {/* 每月預算已經搬到獨立的「預算設定」頁（可以按月份分別設定），不在這裡輸入。 */}
     </Modal>
   );
 }

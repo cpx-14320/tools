@@ -93,10 +93,12 @@ export async function deleteTransaction(userId: ObjectId, id: string): Promise<T
   return listTransactions(userId);
 }
 
-/** 匯入流程專用的批次新增——前端已經用 parseTransactionsCSV 驗證過格式，這裡只負責寫入。 */
+/** 匯入流程專用的批次新增——前端已經用 parseTransactionsCSV 驗證過格式、API route 再
+ *  驗一次，這裡只負責寫入。有帶明細的話金額一律以明細淨額為準（跟 createTransaction
+ *  的 resolveAmount 同一個規則），不信任 CSV 裡那個可能跟明細兜不起來的總額。 */
 export async function commitImportedTransactions(
   userId: ObjectId,
-  rows: { categoryId: string; amount: number; date: string; note?: string }[],
+  rows: { categoryId: string; amount: number; date: string; note?: string; breakdown?: BreakdownItem[] }[],
 ): Promise<number> {
   if (rows.length === 0) return 0;
   const col = await collection();
@@ -104,9 +106,10 @@ export async function commitImportedTransactions(
     _id: new ObjectId(),
     userId,
     categoryId: new ObjectId(r.categoryId),
-    amount: r.amount,
+    amount: r.breakdown && r.breakdown.length > 0 ? breakdownNet(r.breakdown) : r.amount,
     date: r.date,
     note: r.note,
+    breakdown: r.breakdown,
     createdAt: new Date(),
   }));
   const result = await col.insertMany(docs);

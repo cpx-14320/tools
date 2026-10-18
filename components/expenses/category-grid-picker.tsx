@@ -35,30 +35,30 @@ export function CategoryGridPicker({
 
   return (
     <div className={`${maxHeightClass} overflow-y-auto`}>
-      <div className="grid grid-cols-4 gap-1.5">
+      {/* 一列五欄、不畫外框：選中與否靠圖示外圈的強調色環表示，格子本身沒有邊線，
+          畫面才不會被一堆方框切得很碎。 */}
+      <div className="grid grid-cols-5 gap-x-1 gap-y-2.5">
         {onAddClick && (
-          <button
-            type="button"
-            onClick={onAddClick}
-            className="flex flex-col items-center gap-1 rounded-xl border border-dashed border-[#C7BFE6] bg-white px-1 py-2 transition-colors hover:bg-[#F3EFFC]"
-          >
+          <button type="button" onClick={onAddClick} className="flex flex-col items-center gap-1 py-0.5">
             <IconAvatar icon="＋" size="sm" className="bg-[#F3EFFC] text-[#6F5FD6]" />
-            <span className="line-clamp-1 text-[11px] font-medium text-[#6F5FD6]">新增</span>
+            <span className="line-clamp-1 w-full text-center text-[11px] font-medium text-[#6F5FD6]">新增</span>
           </button>
         )}
-        {topCategories.map((cat) => (
-          <button
-            key={cat.id}
-            type="button"
-            onClick={() => onChange(cat.id)}
-            className={`flex flex-col items-center gap-1 rounded-xl border px-1 py-2 transition-colors ${
-              cat.id === activeParentId ? "border-[#6F5FD6] bg-[#F3EFFC]" : "border-[#ECE4FA] bg-white"
-            }`}
-          >
-            <IconAvatar icon={cat.icon} size="sm" className={categoryColorClass[cat.color]} />
-            <span className="line-clamp-1 text-[11px] font-medium text-[#4A3B7C]">{cat.name}</span>
-          </button>
-        ))}
+        {topCategories.map((cat) => {
+          const active = cat.id === activeParentId;
+          return (
+            <button key={cat.id} type="button" onClick={() => onChange(cat.id)} className="flex flex-col items-center gap-1 py-0.5">
+              <IconAvatar
+                icon={cat.icon}
+                size="sm"
+                className={`${categoryColorClass[cat.color]} ${active ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`}
+              />
+              <span className={`line-clamp-1 w-full text-center text-[11px] ${active ? "font-semibold text-[#6F5FD6]" : "font-medium text-[#4A3B7C]"}`}>
+                {cat.name}
+              </span>
+            </button>
+          );
+        })}
       </div>
       {subcategories.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">

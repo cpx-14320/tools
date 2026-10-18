@@ -70,6 +70,13 @@ export function topLevelCategoryId(categories: CategoryDTO[], id: string): strin
   return cat?.parentId ?? id;
 }
 
+/** 一筆紀錄在畫面上該用哪個圖示／顏色——子分類沿用它大分類的（「下午茶」就用「餐飲」
+ *  那顆圖示跟顏色），子分類不需要各自設一組圖示，列表看起來也才有一致的色塊分群。
+ *  分類已被刪除時回 undefined，呼叫端自己決定要顯示什麼。 */
+export function displayCategoryOf(categories: CategoryDTO[], id: string): CategoryDTO | undefined {
+  return categoryById(categories, topLevelCategoryId(categories, id));
+}
+
 /** 同一個父分類底下（頂層分類比對 kind，子分類比對 parentId）名稱不能重複——重複的話
  *  分類格子、下拉路徑都分不出是哪一個。excludeId 讓編輯既有分類時不會把自己當成跟
  *  自己撞名。 */

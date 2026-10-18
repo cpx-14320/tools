@@ -1,14 +1,24 @@
 "use client";
 
 import { createContext, useContext, useState, type ReactNode } from "react";
-import { defaultDateFilter, type DateFilter, type DateFilterMode } from "@/lib/expenses/date-filter";
+import {
+  defaultCompareSetting,
+  defaultDateFilter,
+  type CompareSetting,
+  type DateFilter,
+  type DateFilterMode,
+} from "@/lib/expenses/date-filter";
 
 const STORAGE_KEY = "cpx-tools:expenses-date-filter";
+const COMPARE_STORAGE_KEY = "cpx-tools:expenses-compare";
 
 const DateFilterContext = createContext<{
   filter: DateFilter;
   setFilter: (f: DateFilter) => void;
   setMode: (mode: DateFilterMode) => void;
+  /** 「跟哪一段比」——跟 filter 分開存，切換看的月份時不會把比較基準也重設掉。 */
+  compare: CompareSetting;
+  setCompare: (c: CompareSetting) => void;
 } | null>(null);
 
 function loadSaved(): DateFilter | null {
@@ -23,11 +33,26 @@ function loadSaved(): DateFilter | null {
   return null;
 }
 
+function loadSavedCompare(): CompareSetting | null {
+  try {
+    const raw = localStorage.getItem(COMPARE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && typeof parsed.mode === "string" && typeof parsed.year === "number") {
+      return parsed as CompareSetting;
+    }
+  } catch {
+    /* 同上 */
+  }
+  return null;
+}
+
 /** 總覽／消費紀錄／薪資紀錄共用同一個日期篩選器（年／月／日／全部／自訂），切一次三頁都跟著換。
  *  用 useState 的 lazy initializer 讀 localStorage，比 useEffect+setState 省一次重新算繪，
  *  也不會有畫面先閃預設值、再跳成上次選擇的問題（這個 context 本身就是 client-only）。 */
 export function DateFilterProvider({ children }: { children: ReactNode }) {
   const [filter, setFilterState] = useState<DateFilter>(() => loadSaved() ?? defaultDateFilter());
+  const [compare, setCompareState] = useState<CompareSetting>(() => loadSavedCompare() ?? defaultCompareSetting());
 
   function setFilter(f: DateFilter) {
     setFilterState(f);
@@ -38,11 +63,20 @@ export function DateFilterProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  function setCompare(c: CompareSetting) {
+    setCompareState(c);
+    try {
+      localStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(c));
+    } catch {
+      /* 忽略 */
+    }
+  }
+
   function setMode(mode: DateFilterMode) {
     setFilter({ ...filter, mode });
   }
 
-  return <DateFilterContext.Provider value={{ filter, setFilter, setMode }}>{children}</DateFilterContext.Provider>;
+  return <DateFilterContext.Provider value={{ filter, setFilter, setMode, compare, setCompare }}>{children}</DateFilterContext.Provider>;
 }
 
 export function useDateFilter() {

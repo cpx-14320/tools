@@ -2,6 +2,7 @@
 
 import { dateFilterRange, inDateRange, previousDateFilter, type DateFilter, type DateRange } from "./date-filter";
 import { categoryById, topLevelCategories, topLevelCategoryId, type CategoryDTO, type CategoryKind } from "./categories";
+import { budgetForMonth, type BudgetRuleDTO } from "./budgets";
 
 export type BreakdownKind = "加項" | "扣項";
 
@@ -52,6 +53,46 @@ export function transactionDisplayName(t: TransactionDTO, categories: CategoryDT
   return t.note || categoryById(categories, t.categoryId)?.name || "（未分類）";
 }
 
+/** 新增交易時置頂的「常用組合」——從最近的紀錄裡統計最常出現的「分類＋帳戶」配對，
+ *  點一下就把兩個欄位一起填好。只看最近 RECENT_WINDOW 筆，生活型態變了（換工作、搬家）
+ *  之後舊習慣會自然淡出，不用另外做一組「我的最愛」讓使用者維護。
+ *
+ *  刻意連帳戶一起當成組合的一部分：同樣是「餐飲」，用現金付跟刷卡是兩種不同的習慣，
+ *  分開列出來才真的省到選帳戶那一步；沒掛帳戶的紀錄也算一種組合（accountId 為空）。 */
+const RECENT_WINDOW = 120;
+
+export interface FrequentCombo {
+  categoryId: string;
+  accountId?: string;
+  count: number;
+}
+
+export function frequentCombos(
+  transactions: TransactionDTO[],
+  categories: CategoryDTO[],
+  kind: CategoryKind,
+  limit = 4,
+): FrequentCombo[] {
+  const recent = [...transactions]
+    .filter((t) => categoryById(categories, t.categoryId)?.kind === kind)
+    .sort((a, b) => (a.date < b.date ? 1 : -1))
+    .slice(0, RECENT_WINDOW);
+
+  const counts = new Map<string, FrequentCombo>();
+  for (const t of recent) {
+    const key = `${t.categoryId}|${t.accountId ?? ""}`;
+    const hit = counts.get(key);
+    if (hit) hit.count++;
+    else counts.set(key, { categoryId: t.categoryId, accountId: t.accountId, count: 1 });
+  }
+
+  // 只出現過一次的不算「常用」，列出來只是把雜訊推到最上面。
+  return [...counts.values()]
+    .filter((c) => c.count > 1)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}
+
 export function transactionsInDateRange(transactions: TransactionDTO[], range: DateRange | null): TransactionDTO[] {
   return transactions.filter((t) => inDateRange(t.date, range)).sort((a, b) => (a.date < b.date ? -1 : 1));
 }
@@ -85,15 +126,19 @@ export interface MonthDelta {
   pct: number | null; // 上一期是 0 的話百分比沒意義，回傳 null，畫面上只顯示金額差
 }
 
-/** 某個彙總指標「這期 vs 上一期」的差——全部／自訂模式沒有「上一期」就回傳 null；
- *  上一期完全沒有資料（不是 0，是沒資料）也回傳 null，代表沒東西可比，由呼叫端的
- *  hasPriorData 判斷（通常是消費紀錄或薪資紀錄在上一期區間內是否存在）。 */
+/** 某個彙總指標「這期 vs 比較基準那一期」的差——沒有可比的區間就回傳 null；
+ *  比較的那一期完全沒有資料（不是 0，是沒資料）也回傳 null，代表沒東西可比，由呼叫端的
+ *  hasPriorData 判斷（通常是消費紀錄或薪資紀錄在那段區間內是否存在）。
+ *
+ *  compareFilter 不傳就沿用舊行為（比上一期）；傳了就以它為準，讓呼叫端可以依使用者
+ *  選的比較基準（去年同期、指定年份同期）決定要跟誰比。 */
 export function rangeDelta(
   getValue: (range: DateRange | null) => number,
   filter: DateFilter,
   hasPriorData: (range: DateRange | null) => boolean,
+  compareFilter?: DateFilter | null,
 ): MonthDelta | null {
-  const prevFilter = previousDateFilter(filter);
+  const prevFilter = compareFilter === undefined ? previousDateFilter(filter) : compareFilter;
   if (!prevFilter) return null;
   const prevRange = dateFilterRange(prevFilter);
   if (!hasPriorData(prevRange)) return null;
@@ -149,21 +194,27 @@ export interface BudgetSummary {
   pct: number;
 }
 
-/** 本月預算使用狀況：只看有設定 budgetAmount 的頂層支出分類，用同一個月的 expenseTx
- *  （呼叫端自己先依日期篩選器篩過）比對實際花了多少。完全沒有分類設過預算時
+/** 某個月的預算使用狀況：預算來自「生效月份」規則（見 budgets.ts 的 budgetForMonth），
+ *  不是分類身上的固定值——所以同一個分類在不同月份可以是不同金額。expenseTx 要由呼叫端
+ *  先篩成同一個月的，yearMonth 則決定要查哪個月的預算規則。完全沒有分類編過預算時
  *  rows 是空陣列，畫面據此顯示「還沒設定預算」，不會顯示一個全是 0 的空殼卡片。 */
-export function budgetSummary(expenseTx: TransactionDTO[], categories: CategoryDTO[]): BudgetSummary {
+export function budgetSummary(
+  expenseTx: TransactionDTO[],
+  categories: CategoryDTO[],
+  budgetRules: BudgetRuleDTO[],
+  yearMonth: string,
+): BudgetSummary {
   const spentByCategory = new Map<string, number>();
   for (const t of expenseTx) {
     const topId = topLevelCategoryId(categories, t.categoryId);
     spentByCategory.set(topId, (spentByCategory.get(topId) ?? 0) + t.amount);
   }
-  const budgeted = topLevelCategories(categories, "支出").filter((c) => (c.budgetAmount ?? 0) > 0);
-  const rows: BudgetRow[] = budgeted
-    .map((category) => {
-      const budgetAmount = category.budgetAmount as number;
+  const rows: BudgetRow[] = topLevelCategories(categories, "支出")
+    .flatMap((category) => {
+      const budgetAmount = budgetForMonth(budgetRules, category.id, yearMonth) ?? 0;
+      if (budgetAmount <= 0) return [];
       const spent = spentByCategory.get(category.id) ?? 0;
-      return { category, budgetAmount, spent, remaining: budgetAmount - spent, pct: Math.round((spent / budgetAmount) * 100) };
+      return [{ category, budgetAmount, spent, remaining: budgetAmount - spent, pct: Math.round((spent / budgetAmount) * 100) }];
     })
     .sort((a, b) => b.pct - a.pct);
   const totalBudget = rows.reduce((sum, r) => sum + r.budgetAmount, 0);

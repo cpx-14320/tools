@@ -72,6 +72,73 @@ export function accountBalance(
     .reduce((sum, tr) => sum + signedTransferDelta(tr, account.id, kind), txTotal);
 }
 
+/** 每一筆掛帳戶的交易／轉帳，「發生後」那個帳戶變成多少——消費紀錄列表想在金額下方
+ *  多顯示一行「這筆記完，帳戶變成多少」，跟銀行月結單的「交易後餘額」同一個概念。
+ *
+ *  排序用「日期，同一天再比 id」：這裡沒有記到秒的時間戳記，但 Mongo 的 ObjectId 本身
+ *  就是依建立時間遞增的十六進位字串，直接字串比較就等於真正的建立順序，不用另外存一個
+ *  序號欄位。回傳的 key 用 `tx:<id>` / `transfer:<id>` 前綴區分兩種來源，交易跟轉帳的
+ *  id 本來就來自不同的 collection，理論上不會撞，前綴純粹是防禦性的。 */
+export function transactionBalancesByAccount(
+  accounts: AccountDTO[],
+  types: AccountTypeDTO[],
+  transactions: TransactionDTO[],
+  categories: CategoryDTO[],
+  transfers: TransferDTO[],
+): Map<string, number> {
+  const result = new Map<string, number>();
+  for (const account of accounts) {
+    const kind = accountKind(types, account);
+    const entries: { key: string; date: string; id: string; delta: number }[] = [];
+    for (const t of transactions) {
+      if (t.accountId === account.id) entries.push({ key: `tx:${t.id}`, date: t.date, id: t.id, delta: signedDelta(t, kind, categories) });
+    }
+    for (const tr of transfers) {
+      if (tr.fromAccountId === account.id || tr.toAccountId === account.id) {
+        entries.push({ key: `transfer:${tr.id}`, date: tr.date, id: tr.id, delta: signedTransferDelta(tr, account.id, kind) });
+      }
+    }
+    entries.sort((a, b) => (a.date === b.date ? (a.id < b.id ? -1 : 1) : a.date < b.date ? -1 : 1));
+    let running = account.openingBalance;
+    for (const e of entries) {
+      running += e.delta;
+      result.set(e.key, running);
+    }
+  }
+  return result;
+}
+
+/** 對帳：算出要補哪一筆交易，才能讓系統算出來的餘額等於使用者輸入的實際餘額。
+ *
+ *  餘額是「期初＋所有交易」即時算出來的，所以只要有漏記／多記，差額就會一直累積下去。
+ *  與其叫使用者回頭翻完整份紀錄找出是哪一筆，不如補一筆「對帳調整」把帳拉回實際值——
+ *  這也是一般記帳軟體對帳的做法。
+ *
+ *  方向依帳戶種類而定：資產帳戶實際比系統多＝少記了收入，少＝少記了支出；負債帳戶
+ *  相反（餘額代表欠款，欠得比系統多＝少記了刷卡消費）。沒有差額時回傳 null。 */
+export function reconcileAdjustment(
+  kind: AccountKind,
+  currentBalance: number,
+  actualBalance: number,
+): { kind: "支出" | "收入"; amount: number } | null {
+  const diff = Math.round((actualBalance - currentBalance) * 100) / 100;
+  if (diff === 0) return null;
+  const increasesBalance = diff > 0;
+  const needsIncome = kind === "asset" ? increasesBalance : !increasesBalance;
+  return { kind: needsIncome ? "收入" : "支出", amount: Math.abs(diff) };
+}
+
+export interface BalanceDelta {
+  delta: number;
+  pct: number | null; // 基準那一天是 0 的話百分比沒意義，回傳 null，畫面上只顯示金額差
+}
+
+/** 兩個時間點的餘額差——跟 transactions.ts 的 rangeDelta 回傳同一種形狀（{delta, pct}），
+ *  這樣資產頁也能直接用 KpiCard／DeltaText 這組既有元件，不用另外刻一份。 */
+export function balanceDelta(current: number, baseline: number): BalanceDelta {
+  return { delta: current - baseline, pct: baseline === 0 ? null : ((current - baseline) / baseline) * 100 };
+}
+
 export function totalByKind(
   accounts: AccountDTO[],
   types: AccountTypeDTO[],

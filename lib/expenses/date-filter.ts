@@ -109,6 +109,72 @@ export function previousPeriodSuffix(mode: DateFilterMode): string {
   return "vs 上期";
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// 比較基準
+// 「跟什麼比」跟「看哪一段」是兩件獨立的事：看的區間由上面的 DateFilter 決定，要拿它
+// 跟誰比則由這裡的 CompareMode 決定。這樣才問得出「今年十月 vs 去年十月」這種同期比較
+// ——原本固定比上一期的話，十月永遠只能跟九月比，而九月跟十月的消費本來就不同性質
+// （中秋、雙十），比起來沒什麼意義。
+//
+// 基準一律是「把現在看的這段期間整個平移到另一個年份／往前一期」，不是自己另外選一段
+// 任意區間：平移才保證兩邊的天數、落在一年裡的位置是對齊的，比出來的數字才可比。
+// ────────────────────────────────────────────────────────────────────────────
+
+export type CompareMode = "previous" | "lastYear" | "year" | "none";
+
+export interface CompareSetting {
+  mode: CompareMode;
+  /** mode === "year" 時要比的那個年份（例如 2024）。 */
+  year: number;
+}
+
+export function defaultCompareSetting(): CompareSetting {
+  return { mode: "previous", year: new Date().getFullYear() - 1 };
+}
+
+function shiftFilterToYear(f: DateFilter, year: number): DateFilter | null {
+  if (f.mode === "all") return null;
+  const delta = year - f.year;
+  if (delta === 0) return null;
+  if (f.mode === "custom") {
+    const shift = (d: string) => {
+      const [y, m, day] = d.split("-").map(Number);
+      return `${y + delta}-${pad2(m)}-${pad2(day)}`;
+    };
+    return { ...f, year, customStart: shift(f.customStart), customEnd: shift(f.customEnd) };
+  }
+  return { ...f, year };
+}
+
+/** 依照比較設定算出「要拿來比的那一段」——回傳 null 代表這個組合沒有可比的區間
+ *  （例如選了不比較、或「全部」模式下沒有同期的概念），畫面上就不顯示漲跌。 */
+export function compareDateFilter(f: DateFilter, setting: CompareSetting): DateFilter | null {
+  switch (setting.mode) {
+    case "none":
+      return null;
+    case "previous":
+      return previousDateFilter(f);
+    case "lastYear":
+      return shiftFilterToYear(f, f.year - 1);
+    case "year":
+      return shiftFilterToYear(f, setting.year);
+  }
+}
+
+/** 漲跌幅旁邊那行小字要寫什麼——使用者要一眼知道現在比的是誰，不然 ▲12% 沒有意義。 */
+export function compareLabel(f: DateFilter, setting: CompareSetting): string {
+  switch (setting.mode) {
+    case "none":
+      return "";
+    case "previous":
+      return previousPeriodSuffix(f.mode);
+    case "lastYear":
+      return "vs 去年同期";
+    case "year":
+      return `vs ${setting.year} 年同期`;
+  }
+}
+
 export function inDateRange(date: string, range: DateRange | null): boolean {
   if (!range) return true;
   return date >= range.start && date <= range.end;

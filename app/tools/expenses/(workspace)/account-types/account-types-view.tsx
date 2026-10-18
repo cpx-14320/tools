@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
-import { Button, ButtonLink } from "@/components/expenses/button";
-import { text } from "@/components/expenses/theme";
+import { Button } from "@/components/expenses/button";
+import { BackLink } from "@/components/expenses/back-link";
+import { text, gradient, shadow } from "@/components/expenses/theme";
 import { AccountTypeModal, type AccountTypeModalDraft } from "@/components/expenses/account-type-modal";
 import { AccountTypeBatchModal, type AccountTypeBatchItem } from "@/components/expenses/account-type-batch-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
@@ -136,23 +137,32 @@ export function AccountTypesView() {
 
   return (
     <div>
+      {/* 標題列只留「套用常見類型／選取」跟返回箭頭——新增搬到右下角的浮動按鈕（跟首頁
+          新增交易同一招），四顆按鈕擠一列在手機上會換行成兩排，很難看也很難點。 */}
       <PageHeader
         title="帳戶類型"
         actions={
           <div className="flex items-center gap-2">
-            <ButtonLink href="/tools/expenses/assets" variant="secondary">
-              ‹ 回資產總表
-            </ButtonLink>
             <Button variant="secondary" onClick={handleApplyDefaults}>
               套用常見類型
             </Button>
             <Button variant="secondary" onClick={() => setSelecting((v) => !v)}>
               {selecting ? "完成" : "選取"}
             </Button>
-            <Button onClick={() => setBatchOpen(true)}>＋ 新增類型</Button>
+            <BackLink href="/tools/expenses/assets" label="返回資產總表" />
           </div>
         }
       />
+
+      <button
+        type="button"
+        onClick={() => setBatchOpen(true)}
+        aria-label="新增帳戶類型"
+        className="fixed right-5 z-20 grid size-14 place-items-center rounded-full text-3xl font-bold leading-none text-white"
+        style={{ background: gradient.primary, boxShadow: shadow.cta, bottom: "calc(env(safe-area-inset-bottom) + 86px)" }}
+      >
+        ＋
+      </button>
 
       <AccountTypeModal
         key={modal ? modal.id : "closed"}
@@ -193,7 +203,7 @@ export function AccountTypesView() {
       {!ready ? (
         <p className={text.faint}>載入中…</p>
       ) : accountTypes.length === 0 ? (
-        <p className={text.faint}>還沒有任何帳戶類型，點上方新增或套用常見類型</p>
+        <p className={text.faint}>還沒有任何帳戶類型，點右下角的＋新增，或用上方的「套用常見類型」一次建好</p>
       ) : (
         <div className="flex flex-col gap-5">
           {assetTypes.length > 0 && (

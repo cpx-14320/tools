@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import { categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "./categories";
+import { deleteBudgetRulesForCategories } from "./budgets.server";
 
 interface CategoryDoc {
   _id: ObjectId;
@@ -200,6 +201,10 @@ export async function deleteCategory(
       ]);
     }
   }
+
+  // 連這個分類（跟它的子分類）的預算規則一起清掉，不留下指向不存在分類的孤兒設定。
+  const subsForBudget = await col.find({ userId, parentId: target }, { projection: { _id: 1 } }).toArray();
+  await deleteBudgetRulesForCategories(userId, [target, ...subsForBudget.map((s) => s._id)]);
 
   await col.deleteMany({ userId, $or: [{ _id: target }, { parentId: target }] });
   return { categories: await listCategories(userId) };

@@ -28,12 +28,20 @@ export function Modal({
   title,
   children,
   footer,
+  /** 內容很多的彈窗（例如新增交易：分類格子＋小鍵盤＋一堆欄位）可以撐到滿版高度，
+   *  不要卡在 80% 讓可視區太短。 */
+  fullHeight = false,
+  /** 固定在內容區下方、不跟著捲動的那一塊（新增交易的小鍵盤用）——放在這裡而不是
+   *  children 裡面，使用者捲動上面的資訊時鍵盤才會一直留在原地。 */
+  stickyBottom,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
   footer?: ReactNode;
+  fullHeight?: boolean;
+  stickyBottom?: ReactNode;
 }) {
   // createPortal 需要 document 存在，伺服器端渲染時還沒有，掛載後才真的 portal 出去，
   // 避免 SSR／CSR 的輸出不一致——跟 BottomSheetModal 同一招。
@@ -51,7 +59,7 @@ export function Modal({
       <div className="relative flex h-full w-full justify-center px-0 py-0 sm:px-4 sm:py-6">
         <div className="flex h-dvh w-full max-w-[430px] items-end sm:h-[850px]">
           <div
-            className="flex max-h-[80%] w-full flex-col overflow-hidden rounded-t-[1.75rem] bg-white"
+            className={`flex w-full flex-col overflow-hidden rounded-t-[1.75rem] bg-white ${fullHeight ? "h-full max-h-full" : "max-h-[80%]"}`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex shrink-0 items-center justify-between border-b border-[#ECE4FA] px-5 py-4">
@@ -66,9 +74,11 @@ export function Modal({
               </button>
             </div>
 
-            {/* 標題跟 footer 固定不動，只有這一段內容自己捲動——不然表單一長，連「取消／
-                儲存」都會被捲出畫面外。 */}
+            {/* 標題、stickyBottom 跟 footer 固定不動，只有這一段內容自己捲動——不然表單一長，
+                連「取消／儲存」都會被捲出畫面外。 */}
             <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-5">{children}</div>
+
+            {stickyBottom && <div className="shrink-0 border-t border-[#ECE4FA] px-5 py-3">{stickyBottom}</div>}
 
             {footer && <div className="flex shrink-0 items-center justify-between gap-2 border-t border-[#ECE4FA] px-5 py-4">{footer}</div>}
           </div>

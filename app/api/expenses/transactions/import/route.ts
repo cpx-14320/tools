@@ -3,12 +3,29 @@ import { ObjectId } from "mongodb";
 import { requireTool } from "@/lib/auth";
 import { listCategories } from "@/lib/expenses/categories.server";
 import { commitImportedTransactions, listTransactions } from "@/lib/expenses/transactions.server";
+import type { BreakdownItem } from "@/lib/expenses/transactions";
 
 interface ImportRow {
   categoryId: string;
   amount: number;
   date: string;
   note?: string;
+  breakdown?: BreakdownItem[];
+}
+
+/** 明細是前端從 CSV 的明細欄解析出來的，這裡重新驗證一次型別跟數值，壞掉的項目直接丟掉
+ *  （不讓整列進不來），全部都壞掉就當成這筆沒有明細。 */
+function sanitizeBreakdown(value: unknown): BreakdownItem[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const items = value.flatMap((raw): BreakdownItem[] => {
+    const item = raw as { label?: unknown; kind?: unknown; amount?: unknown };
+    const label = typeof item.label === "string" ? item.label.trim() : "";
+    const amount = Number(item.amount);
+    const kind = item.kind === "扣項" ? "扣項" : "加項";
+    if (!label || !Number.isFinite(amount) || amount <= 0) return [];
+    return [{ label, kind, amount }];
+  });
+  return items.length > 0 ? items : undefined;
 }
 
 /** 日期、分類、金額、備註完全一樣就視為同一筆——用來跟現有紀錄比對、也用來抓同一份
@@ -33,16 +50,25 @@ export async function POST(request: Request) {
   const categories = await listCategories(userId);
   const categoryIds = new Set(categories.map((c) => c.id));
 
-  const valid = rows.filter((row): row is ImportRow => {
-    const r = row as { categoryId?: unknown; amount?: unknown; date?: unknown };
-    return (
+  const valid = rows.flatMap((row): ImportRow[] => {
+    const r = row as { categoryId?: unknown; amount?: unknown; date?: unknown; note?: unknown; breakdown?: unknown };
+    const ok =
       typeof r.categoryId === "string" &&
       categoryIds.has(r.categoryId) &&
       Number.isFinite(Number(r.amount)) &&
       Number(r.amount) > 0 &&
       typeof r.date === "string" &&
-      /^\d{4}-\d{2}-\d{2}$/.test(r.date)
-    );
+      /^\d{4}-\d{2}-\d{2}$/.test(r.date);
+    if (!ok) return [];
+    return [
+      {
+        categoryId: r.categoryId as string,
+        amount: Number(r.amount),
+        date: r.date as string,
+        note: typeof r.note === "string" && r.note.trim() ? r.note.trim() : undefined,
+        breakdown: sanitizeBreakdown(r.breakdown),
+      },
+    ];
   });
 
   const existing = await listTransactions(userId);

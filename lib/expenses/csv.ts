@@ -21,18 +21,57 @@ function csvEscape(value: string | number): string {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+export interface CSVBreakdownItem {
+  label: string;
+  kind: "加項" | "扣項";
+  amount: number;
+}
+
 export interface CSVTransactionRow {
   date: string;
   categoryId: string;
   amount: number;
   note?: string;
+  breakdown?: CSVBreakdownItem[];
 }
 
-/** 消費紀錄轉成 CSV 文字（含標題列）；日期統一用純文字格式，避免 Excel 自動轉成日期序號跑版。 */
+/** 明細（薪資的本薪／勞健保那種加項扣項）在 CSV 裡壓成一欄文字：
+ *  `本薪:+50000;勞健保:-6000`——加項前面是 +、扣項是 -，項目之間用分號隔開。
+ *  用分號不用逗號，才不會跟 CSV 本身的欄位分隔打架；真的有逗號的標籤還是會被
+ *  csvEscape 正確加引號包起來。 */
+export function breakdownToText(breakdown: CSVBreakdownItem[] | undefined): string {
+  if (!breakdown || breakdown.length === 0) return "";
+  return breakdown.map((b) => `${b.label}:${b.kind === "扣項" ? "-" : "+"}${b.amount}`).join(";");
+}
+
+/** breakdownToText 的反向解析。格式不對的項目直接跳過，不會整筆爆掉——匯入時
+ *  寧可少一個明細項目，也不要讓整列紀錄進不來。標籤本身可能含有冒號，所以用
+ *  最後一個冒號切，不是第一個。 */
+export function parseBreakdownText(text: string | undefined): CSVBreakdownItem[] {
+  if (!text || !text.trim()) return [];
+  const items: CSVBreakdownItem[] = [];
+  for (const chunk of text.split(";")) {
+    const piece = chunk.trim();
+    if (!piece) continue;
+    const sep = piece.lastIndexOf(":");
+    if (sep <= 0) continue;
+    const label = piece.slice(0, sep).trim();
+    const valueText = piece.slice(sep + 1).trim();
+    const amount = Math.abs(Number(valueText));
+    if (!label || !Number.isFinite(amount) || amount <= 0) continue;
+    items.push({ label, kind: valueText.startsWith("-") ? "扣項" : "加項", amount });
+  }
+  return items;
+}
+
+/** 消費紀錄轉成 CSV 文字（含標題列）；日期統一用純文字格式，避免 Excel 自動轉成日期序號跑版。
+ *  最後一欄是明細，沒有明細的紀錄就是空字串，匯入時可以原樣還原回來。 */
 export function transactionsToCSV(rows: CSVTransactionRow[], categories: CategoryLookupItem[]): string {
-  const header = ["日期", "分類", "金額", "備註"];
+  const header = ["日期", "分類", "金額", "備註", "明細"];
   const lines = rows.map((t) =>
-    [t.date, categoryPathOf(categories, t.categoryId), t.amount, t.note ?? ""].map(csvEscape).join(","),
+    [t.date, categoryPathOf(categories, t.categoryId), t.amount, t.note ?? "", breakdownToText(t.breakdown)]
+      .map(csvEscape)
+      .join(","),
   );
   return [header.join(","), ...lines].join("\r\n");
 }
@@ -111,9 +150,12 @@ export interface ImportRowResult {
   transaction?: CSVTransactionRow;
 }
 
-/** 解析匯入用 CSV：欄位順序比照匯出格式（日期,分類,金額,備註）。分類欄接受
- *  「大分類 › 子分類」路徑格式、也接受只填子分類或大分類名稱；每一列都會驗證，格式不對
- *  的列不會擋住其他列，一起回傳讓畫面列出哪幾列有問題、為什麼。 */
+/** 解析匯入用 CSV：欄位順序比照匯出格式（日期,分類,金額,備註,明細）。分類欄接受
+ *  「大分類 › 子分類」路徑格式、也接受只填子分類或大分類名稱；明細欄可以留空，有填的話
+ *  用 `本薪:+50000;勞健保:-6000` 這種格式。每一列都會驗證，格式不對的列不會擋住其他列，
+ *  一起回傳讓畫面列出哪幾列有問題、為什麼。
+ *
+ *  相容舊檔：沒有「明細」那一欄的舊匯出檔（只有四欄）一樣可以匯入，明細就是空的。 */
 export function parseTransactionsCSV(
   text: string,
   categories: CategoryLookupItem[],
@@ -122,7 +164,7 @@ export function parseTransactionsCSV(
   const dataRows = rows.slice(1); // 跳過標題列
   const results: ImportRowResult[] = dataRows.map((cols, idx) => {
     const rowNum = idx + 2;
-    const [date, categoryText, amountText, note] = cols;
+    const [date, categoryText, amountText, note, breakdownText] = cols;
 
     if (!date || !isValidISODate(date.trim())) {
       return { row: rowNum, ok: false, error: "日期格式不正確，需要 YYYY-MM-DD 且是存在的日期" };
@@ -136,12 +178,294 @@ export function parseTransactionsCSV(
     if (!category) {
       return { row: rowNum, ok: false, error: `找不到分類「${categoryText?.trim() || "（空白）"}」` };
     }
+    const breakdown = parseBreakdownText(breakdownText);
     return {
       row: rowNum,
       ok: true,
-      transaction: { categoryId: category.id, amount, date: date.trim(), note: note?.trim() || undefined },
+      transaction: {
+        categoryId: category.id,
+        amount,
+        date: date.trim(),
+        note: note?.trim() || undefined,
+        breakdown: breakdown.length > 0 ? breakdown : undefined,
+      },
     };
   });
+  return {
+    results,
+    validCount: results.filter((r) => r.ok).length,
+    invalidCount: results.filter((r) => !r.ok).length,
+  };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 分類／帳戶類型的匯出入
+//
+// 消費紀錄的 CSV 只能引用「已經存在」的分類（見 parseTransactionsCSV 找不到分類就報錯），
+// 所以換新環境／還原備份時順序是：先匯入分類跟帳戶類型，再匯入消費紀錄。這兩種
+// 主檔各自有自己的欄位格式，跟消費紀錄分開三種檔案，不用一個檔案塞類型欄位去分流。
+// ────────────────────────────────────────────────────────────────────────────
+
+export type CSVCategoryKind = "支出" | "收入";
+export type CSVAccountKind = "資產" | "負債";
+
+export interface CSVCategoryItem {
+  name: string;
+  kind: CSVCategoryKind;
+  icon: string;
+  color: string;
+  /** 空字串＝頂層分類；有值＝這是那個大分類底下的子分類（用名稱對應）。 */
+  parentName: string;
+}
+
+export interface CSVAccountTypeItem {
+  name: string;
+  kind: CSVAccountKind;
+  icon: string;
+}
+
+/** 分類（含子分類）轉成 CSV。頂層分類排在前面、子分類排在後面——匯入時要先有父分類
+ *  才建得出子分類，排好順序匯入端就不用再自己拓撲排序。 */
+export function categoriesToCSV(
+  categories: { id: string; name: string; kind: CSVCategoryKind; icon: string; color: string; parentId?: string }[],
+): string {
+  const header = ["名稱", "收支類型", "圖示", "顏色", "上層分類"];
+  const nameById = new Map(categories.map((c) => [c.id, c.name]));
+  const ordered = [...categories.filter((c) => !c.parentId), ...categories.filter((c) => c.parentId)];
+  const lines = ordered.map((c) =>
+    [c.name, c.kind, c.icon, c.color, c.parentId ? (nameById.get(c.parentId) ?? "") : ""].map(csvEscape).join(","),
+  );
+  return [header.join(","), ...lines].join("\r\n");
+}
+
+export interface CategoryImportRowResult {
+  row: number;
+  ok: boolean;
+  error?: string;
+  category?: CSVCategoryItem;
+}
+
+/** 解析分類匯入 CSV（名稱,收支類型,圖示,顏色,上層分類）。顏色留空或填不認得的
+ *  值一律當成 a，圖示留空給一個預設標籤圖示——這兩個欄位缺了不影響分類本身能不能用，
+ *  不值得為了它們擋下整列。同一批裡自己人撞名、或是跟系統裡已經存在的分類撞名都會被擋下
+ *  （同一個父分類底下、同一種收支類型不能有兩個同名分類，跟畫面上的新增規則一致）。 */
+export function parseCategoriesCSV(
+  text: string,
+  existing: { name: string; kind: string; parentId?: string }[],
+  existingNameById: Map<string, string>,
+): { results: CategoryImportRowResult[]; validCount: number; invalidCount: number } {
+  const rows = parseCSV(text);
+  const dataRows = rows.slice(1);
+  const seen = new Set<string>();
+  const existingKeys = new Set(
+    existing.map((c) => `${c.kind}::${c.parentId ? (existingNameById.get(c.parentId) ?? "") : ""}::${c.name}`),
+  );
+
+  const results: CategoryImportRowResult[] = dataRows.map((cols, idx) => {
+    const rowNum = idx + 2;
+    const [nameText, kindText, iconText, colorText, parentText] = cols;
+    const name = (nameText ?? "").trim();
+    const kind = (kindText ?? "").trim();
+    const parentName = (parentText ?? "").trim();
+
+    if (!name) return { row: rowNum, ok: false, error: "分類名稱不能空白" };
+    if (kind !== "支出" && kind !== "收入") {
+      return { row: rowNum, ok: false, error: `收支類型要填「支出」或「收入」，目前是「${kind || "（空白）"}」` };
+    }
+
+    const key = `${kind}::${parentName}::${name}`;
+    if (existingKeys.has(key)) {
+      return { row: rowNum, ok: false, error: `「${name}」已經存在，略過不重複建立` };
+    }
+    if (seen.has(key)) {
+      return { row: rowNum, ok: false, error: `這個檔案裡「${name}」重複出現，只會建立一次` };
+    }
+    seen.add(key);
+
+    const color = (colorText ?? "").trim().toLowerCase();
+
+    return {
+      row: rowNum,
+      ok: true,
+      category: {
+        name,
+        kind,
+        icon: (iconText ?? "").trim() || "🏷️",
+        color: /^[a-f]$/.test(color) ? color : "a",
+        parentName,
+      },
+    };
+  });
+
+  return {
+    results,
+    validCount: results.filter((r) => r.ok).length,
+    invalidCount: results.filter((r) => !r.ok).length,
+  };
+}
+
+export function accountTypesToCSV(types: { name: string; kind: CSVAccountKind; icon: string }[]): string {
+  const header = ["名稱", "資產負債", "圖示"];
+  const lines = types.map((t) => [t.name, t.kind, t.icon].map(csvEscape).join(","));
+  return [header.join(","), ...lines].join("\r\n");
+}
+
+export interface AccountTypeImportRowResult {
+  row: number;
+  ok: boolean;
+  error?: string;
+  accountType?: CSVAccountTypeItem;
+}
+
+/** 解析帳戶類型匯入 CSV（名稱,資產負債,圖示）。資產/負債建立後不能改（見
+ *  account-types.server.ts），所以這一欄填錯會直接擋下，不自動猜。 */
+export function parseAccountTypesCSV(
+  text: string,
+  existing: { name: string; kind: CSVAccountKind }[],
+): { results: AccountTypeImportRowResult[]; validCount: number; invalidCount: number } {
+  const rows = parseCSV(text);
+  const dataRows = rows.slice(1);
+  const seen = new Set<string>();
+  const existingKeys = new Set(existing.map((t) => `${t.kind}::${t.name}`));
+
+  const results: AccountTypeImportRowResult[] = dataRows.map((cols, idx) => {
+    const rowNum = idx + 2;
+    const [nameText, kindText, iconText] = cols;
+    const name = (nameText ?? "").trim();
+    const kind = (kindText ?? "").trim();
+
+    if (!name) return { row: rowNum, ok: false, error: "類型名稱不能空白" };
+    if (kind !== "資產" && kind !== "負債") {
+      return { row: rowNum, ok: false, error: `資產負債要填「資產」或「負債」，目前是「${kind || "（空白）"}」` };
+    }
+
+    const key = `${kind}::${name}`;
+    if (existingKeys.has(key)) return { row: rowNum, ok: false, error: `「${name}」已經存在，略過不重複建立` };
+    if (seen.has(key)) return { row: rowNum, ok: false, error: `這個檔案裡「${name}」重複出現，只會建立一次` };
+    seen.add(key);
+
+    return { row: rowNum, ok: true, accountType: { name, kind, icon: (iconText ?? "").trim() || "🏦" } };
+  });
+
+  return {
+    results,
+    validCount: results.filter((r) => r.ok).length,
+    invalidCount: results.filter((r) => !r.ok).length,
+  };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// CSV 範本
+// 給「還沒有任何資料、想先用試算表把分類跟預算規劃好再一次匯入」的情境用：每一種檔案
+// 給一份含標頭跟幾列範例的空白檔，使用者照著改就好，不用自己猜欄位順序跟允許的值。
+// 範例列故意用最常見的那幾個分類，直接匯入也是一組能用的起手式。
+// ────────────────────────────────────────────────────────────────────────────
+
+export type CSVTemplateKind = "transactions" | "categories" | "budgets" | "accountTypes";
+
+const CSV_TEMPLATES: Record<CSVTemplateKind, string[][]> = {
+  transactions: [
+    ["日期", "分類", "金額", "備註", "明細"],
+    ["2026-01-05", "餐飲", "120", "早餐", ""],
+    ["2026-01-05", "交通", "30", "公車", ""],
+    ["2026-01-10", "薪資", "44000", "一月薪資", "本薪:+50000;勞健保:-6000"],
+  ],
+  categories: [
+    ["名稱", "收支類型", "圖示", "顏色", "上層分類"],
+    ["餐飲", "支出", "🍜", "a", ""],
+    ["交通", "支出", "🚌", "b", ""],
+    ["薪資", "收入", "💰", "c", ""],
+    ["早餐", "支出", "🥐", "a", "餐飲"],
+  ],
+  budgets: [
+    ["分類", "生效月份", "每月預算"],
+    ["餐飲", "2026-01", "8000"],
+    ["交通", "2026-01", "2000"],
+    ["餐飲", "2026-07", "9000"],
+  ],
+  accountTypes: [
+    ["名稱", "資產負債", "圖示"],
+    ["現金", "資產", "💵"],
+    ["銀行帳戶", "資產", "🏦"],
+    ["信用卡", "負債", "💳"],
+  ],
+};
+
+export function csvTemplate(kind: CSVTemplateKind): string {
+  return CSV_TEMPLATES[kind].map((row) => row.map(csvEscape).join(",")).join("\r\n");
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 預算設定
+// 預算是「從某個月開始生效、之後沿用到下一次調整」的規則，不是每個月各填一次，
+// 所以匯出的是「調整紀錄」本身（分類＋生效月份＋金額），不是每月一列的快照。
+// 金額 0 代表「從這個月起不設預算」，所以這裡允許 0，只擋負數。
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface CSVBudgetRuleItem {
+  categoryName: string;
+  effectiveFrom: string;
+  amount: number;
+}
+
+export function budgetRulesToCSV(
+  rules: { categoryId: string; effectiveFrom: string; amount: number }[],
+  categoryNameById: Map<string, string>,
+): string {
+  const header = ["分類", "生效月份", "每月預算"];
+  const ordered = [...rules]
+    .filter((r) => categoryNameById.has(r.categoryId))
+    .sort((a, b) => {
+      const an = categoryNameById.get(a.categoryId) ?? "";
+      const bn = categoryNameById.get(b.categoryId) ?? "";
+      return an === bn ? a.effectiveFrom.localeCompare(b.effectiveFrom) : an.localeCompare(bn);
+    });
+  const lines = ordered.map((r) =>
+    [categoryNameById.get(r.categoryId) ?? "", r.effectiveFrom, r.amount].map(csvEscape).join(","),
+  );
+  return [header.join(","), ...lines].join("\r\n");
+}
+
+export interface BudgetRuleImportRowResult {
+  row: number;
+  ok: boolean;
+  error?: string;
+  rule?: CSVBudgetRuleItem;
+}
+
+/** 解析預算匯入 CSV（分類,生效月份,每月預算）。分類用名稱對應系統裡既有的分類，
+ *  對不到就擋下那一列——預算一定掛在某個已經存在的分類上，不會順手幫忙建分類
+ *  （要建分類請先匯入分類檔）。同一個分類同一個月份重複出現時以最後一列為準，
+ *  因為後端本來就是用 (分類, 生效月份) 做 upsert。 */
+export function parseBudgetRulesCSV(
+  text: string,
+  categoryIdByName: Map<string, string>,
+): { results: BudgetRuleImportRowResult[]; validCount: number; invalidCount: number } {
+  const rows = parseCSV(text);
+  const dataRows = rows.slice(1);
+
+  const results: BudgetRuleImportRowResult[] = dataRows.map((cols, idx) => {
+    const rowNum = idx + 2;
+    const [nameText, monthText, amountText] = cols;
+    const categoryName = (nameText ?? "").trim();
+    const effectiveFrom = (monthText ?? "").trim();
+    const amountRaw = (amountText ?? "").trim();
+
+    if (!categoryName) return { row: rowNum, ok: false, error: "分類名稱不能空白" };
+    if (!categoryIdByName.has(categoryName)) {
+      return { row: rowNum, ok: false, error: `找不到分類「${categoryName}」，請先匯入分類` };
+    }
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(effectiveFrom)) {
+      return { row: rowNum, ok: false, error: `生效月份要是 YYYY-MM，目前是「${effectiveFrom || "（空白）"}」` };
+    }
+    const amount = Number(amountRaw);
+    if (!amountRaw || !Number.isFinite(amount) || amount < 0) {
+      return { row: rowNum, ok: false, error: "每月預算不是有效數字（0 代表取消預算）" };
+    }
+
+    return { row: rowNum, ok: true, rule: { categoryName, effectiveFrom, amount } };
+  });
+
   return {
     results,
     validCount: results.filter((r) => r.ok).length,
