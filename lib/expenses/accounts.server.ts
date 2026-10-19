@@ -9,10 +9,18 @@ interface AccountDoc {
   accountTypeId: ObjectId;
   openingBalance: number;
   createdAt: Date;
+  /** 系統預設建立的帳戶（見 presets.server.ts）——「清除全部資料」會略過。 */
+  isPreset?: boolean;
 }
 
 function toDTO(doc: AccountDoc): AccountDTO {
-  return { id: doc._id.toHexString(), name: doc.name, accountTypeId: doc.accountTypeId.toHexString(), openingBalance: doc.openingBalance };
+  return {
+    id: doc._id.toHexString(),
+    name: doc.name,
+    accountTypeId: doc.accountTypeId.toHexString(),
+    openingBalance: doc.openingBalance,
+    isPreset: doc.isPreset,
+  };
 }
 
 function collection() {

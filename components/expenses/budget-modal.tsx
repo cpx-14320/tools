@@ -40,7 +40,7 @@ export function BudgetModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={category ? `${category.icon} ${category.name} 的預算` : "設定預算"}
+      title={category ? `${category.name} 的預算` : "設定預算"}
       footer={
         <>
           <span />

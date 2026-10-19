@@ -18,6 +18,12 @@ const ALL_COLLECTIONS = [
   "expenses.budgets",
 ];
 
+/** 系統預設建立的分類／帳戶類型／帳戶（isPreset: true）不會被「清除全部資料」刪掉——
+ *  預設資料是每個人記帳的起點，清空重來的目的是清掉自己記的東西，不是把起點也拆了。
+ *  這三個 collection 之外的（交易、轉帳、目標、固定收支、預算）沒有預設資料，整個清掉。
+ *  expenses.meta（記錄「預設資料建過了」的標記）刻意不在清除清單裡，清完也不會重建。 */
+const COLLECTIONS_WITH_PRESETS = new Set(["expenses.categories", "expenses.accounts", "expenses.accountTypes"]);
+
 /** 清除記帳本資料。只會刪掉目前登入這個使用者自己的資料（每個 collection 都帶 userId
  *  條件），不會動到別人的，也不會動到其他工具（transit.* 那些）。刪掉就沒了，沒有
  *  還原機制，所以畫面上要先讓使用者打字確認過才會呼叫這支。 */
@@ -35,7 +41,8 @@ export async function POST(request: Request) {
 
   const deleted: Record<string, number> = {};
   for (const name of targets) {
-    const result = await db.collection(name).deleteMany({ userId });
+    const filter = COLLECTIONS_WITH_PRESETS.has(name) ? { userId, isPreset: { $ne: true } } : { userId };
+    const result = await db.collection(name).deleteMany(filter);
     deleted[name] = result.deletedCount;
   }
 

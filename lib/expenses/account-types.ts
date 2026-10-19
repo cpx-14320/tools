@@ -11,29 +11,9 @@ export interface AccountTypeDTO {
   name: string;
   icon: string;
   kind: AccountKind;
+  /** 系統預設建立的類型——「清除全部資料」不會刪掉它們。 */
+  isPreset?: boolean;
 }
-
-export interface DefaultAccountTypeSeed {
-  name: string;
-  icon: string;
-  kind: AccountKind;
-}
-
-/** 比照 DEFAULT_CATEGORIES，讓使用者一鍵套用常見帳戶類型，不用從零一個個手動建。 */
-export const DEFAULT_ACCOUNT_TYPES: DefaultAccountTypeSeed[] = [
-  { name: "現金", icon: "💵", kind: "asset" },
-  { name: "銀行帳戶", icon: "🏦", kind: "asset" },
-  { name: "定存", icon: "🔒", kind: "asset" },
-  { name: "股票", icon: "📈", kind: "asset" },
-  { name: "基金", icon: "📊", kind: "asset" },
-  { name: "加密貨幣", icon: "🪙", kind: "asset" },
-  { name: "黃金", icon: "🥇", kind: "asset" },
-  { name: "電子錢包", icon: "📱", kind: "asset" },
-  { name: "不動產", icon: "🏠", kind: "asset" },
-  { name: "信用卡", icon: "💳", kind: "liability" },
-  { name: "貸款", icon: "📄", kind: "liability" },
-  { name: "房貸", icon: "🏡", kind: "liability" },
-];
 
 export function accountTypesByKind(types: AccountTypeDTO[], kind: AccountKind): AccountTypeDTO[] {
   return types.filter((t) => t.kind === kind);

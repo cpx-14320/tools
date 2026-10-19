@@ -126,7 +126,7 @@ export function MoreView() {
             </button>
             <button type="button" onClick={() => setResetScope("all")} className="px-4 py-3.5 text-left active:bg-[#FDEEF0]">
               <span className="block text-sm font-medium text-[#D1517E]">清除全部資料</span>
-              <span className={`block ${text.muted}`}>連分類、帳戶、類型、目標、固定收支、預算一起清空</span>
+              <span className={`block ${text.muted}`}>連自己加的分類、帳戶、類型、目標、固定收支、預算一起清空（預設的不會刪）</span>
             </button>
           </div>
         </div>
@@ -137,7 +137,7 @@ export function MoreView() {
         title={resetScope === "all" ? "清除全部資料" : "清除所有消費紀錄"}
         message={
           resetScope === "all"
-            ? "會把記帳本底下所有東西清空：交易、轉帳、分類、帳戶、帳戶類型、存錢目標、固定收支、預算。刪掉就沒了，沒有還原機制，建議先去「匯出資料」備份一份。"
+            ? "會把記帳本底下的東西清空：交易、轉帳、你自己新增的分類／帳戶／帳戶類型、存錢目標、固定收支、預算。系統預設的分類跟「現金錢包」「銀行帳戶」會保留下來。刪掉就沒了，沒有還原機制，建議先去「匯出資料」備份一份。"
             : "會刪掉所有交易與轉帳紀錄，分類、帳戶、帳戶類型、目標、固定收支、預算都會保留。刪掉就沒了，沒有還原機制，建議先去「匯出資料」備份一份。"
         }
         confirmLabel="確定清除"

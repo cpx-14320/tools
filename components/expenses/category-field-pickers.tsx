@@ -1,54 +1,52 @@
 "use client";
 
-import { Field, fieldInputClass } from "./modal";
+import { IconAvatar } from "./icon-avatar";
 import { text } from "./theme";
-import { CATEGORY_NAME_PRESETS, CATEGORY_ICON_OPTIONS } from "./category-presets";
+import { ACCOUNT_ICON_OPTIONS, EXPENSE_ICON_OPTIONS, INCOME_ICON_OPTIONS, ICON_OTHER, type IconOption } from "@/lib/expenses/presets";
+import type { CategoryKind } from "@/lib/expenses/categories";
 
-/** 名稱欄位下方那排可以直接點的常用分類名稱——點了就把名稱填進去，照樣可以自己改成
- *  別的。新增分類彈窗跟批次新增彈窗共用。 */
-export function CategoryNamePresets({ value, onPick }: { value: string; onPick: (name: string) => void }) {
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {CATEGORY_NAME_PRESETS.map((preset) => (
-        <button
-          key={preset}
-          type="button"
-          onClick={() => onPick(preset)}
-          className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-            value.trim() === preset ? "border-[#6F5FD6] bg-[#6F5FD6] text-white" : "border-[#ECE4FA] bg-white text-[#9C94C4]"
-          }`}
-        >
-          {preset}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/** 圖示格子選擇器——常用表情符號排成格子直接點，最後一格是自行輸入（格子裡沒有想要的
- *  圖示時，照樣可以貼上任何一個表情符號）。 */
-export function CategoryIconPicker({ value, onChange }: { value: string; onChange: (icon: string) => void }) {
+/** 圖示選擇器——從已經有圖檔的那幾張裡挑，不是自己輸入表情符號。
+ *
+ *  圖是一張張畫出來放進 public/expenses 的，使用者沒辦法「自己輸入一個路徑」（打錯就是
+ *  破圖），所以這裡是封閉的清單；還沒有專屬圖的分類就選最後那張「其他」頂著，之後補了
+ *  圖再回來改。清單隨著 lib/expenses/presets.ts 裡的圖變多而加長，這個元件不用改。 */
+function IconPicker({ options, value, onChange }: { options: IconOption[]; value: string; onChange: (icon: string) => void }) {
   return (
     <div className="flex flex-col gap-2">
       <span className={text.label}>圖示</span>
-      <div className="grid grid-cols-8 gap-1.5">
-        {CATEGORY_ICON_OPTIONS.map((option) => (
+      <div className="grid grid-cols-5 gap-2">
+        {options.map((option) => (
           <button
-            key={option}
+            key={option.path}
             type="button"
-            onClick={() => onChange(option)}
-            aria-label={`圖示 ${option}`}
-            className={`grid aspect-square place-items-center rounded-xl text-lg transition-colors ${
-              value === option ? "bg-[#6F5FD6]" : "bg-[#F3EFFC] hover:bg-[#EFEAFC]"
-            }`}
+            onClick={() => onChange(option.path)}
+            aria-label={`圖示 ${option.label}`}
+            className="flex flex-col items-center gap-1"
           >
-            {option}
+            <IconAvatar
+              icon={option.path}
+              size="sm"
+              className={`bg-[#F3EFFC] ${value === option.path ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`}
+            />
+            <span className={`line-clamp-1 w-full text-center text-[11px] ${value === option.path ? "font-semibold text-[#6F5FD6]" : text.muted}`}>
+              {option.label}
+            </span>
           </button>
         ))}
       </div>
-      <Field label="或自行輸入一個表情符號">
-        <input value={value} onChange={(e) => onChange(e.target.value)} className={fieldInputClass} />
-      </Field>
     </div>
   );
 }
+
+/** 分類用的圖示選擇器——支出跟收入各有自己的一組圖。 */
+export function CategoryIconPicker({ kind, value, onChange }: { kind: CategoryKind; value: string; onChange: (icon: string) => void }) {
+  return <IconPicker options={kind === "收入" ? INCOME_ICON_OPTIONS : EXPENSE_ICON_OPTIONS} value={value} onChange={onChange} />;
+}
+
+/** 帳戶類型用的圖示選擇器。 */
+export function AccountIconPicker({ value, onChange }: { value: string; onChange: (icon: string) => void }) {
+  return <IconPicker options={ACCOUNT_ICON_OPTIONS} value={value} onChange={onChange} />;
+}
+
+/** 新增分類／帳戶類型時的預設圖示——還沒選之前就先放共用的「其他」，不會有空白圖示。 */
+export const DEFAULT_PICKER_ICON = ICON_OTHER;

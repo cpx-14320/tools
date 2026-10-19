@@ -8,6 +8,7 @@ import { AccountPickerModal } from "./account-picker-modal";
 import { CategoryGridPicker } from "./category-grid-picker";
 import { CategoryBatchModal, type CategoryBatchItem } from "./category-batch-modal";
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
+import { InlineIcon } from "./icon-avatar";
 import { text } from "./theme";
 import { categoryById, categoryPath, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 import { breakdownNet, frequentCombos, type BreakdownItem, type BreakdownKind, type TransactionDTO } from "@/lib/expenses/transactions";
@@ -100,9 +101,7 @@ export function TransactionModal({
 
   const combos = frequentCombos(transactions, categories, kind);
   const selectedAccount = accounts.find((a) => a.id === accountId);
-  const selectedAccountLabel = selectedAccount
-    ? `${accountTypeById(accountTypes, selectedAccount.accountTypeId)?.icon ?? ""} ${selectedAccount.name}`
-    : "";
+  const selectedAccountIcon = selectedAccount ? (accountTypeById(accountTypes, selectedAccount.accountTypeId)?.icon ?? "") : "";
 
   // 編到一半的明細項目被刪掉時，鍵盤要退回編交易金額，不然 target.index 會指向不存在
   // 的項目（或指到被往前遞補的另一筆，改到不該改的地方）。
@@ -240,7 +239,7 @@ export function TransactionModal({
                     active ? "border-[#6F5FD6] bg-[#6F5FD6] text-white" : "border-[#ECE4FA] bg-white text-[#4A3B7C]"
                   }`}
                 >
-                  <span aria-hidden>{cat.icon}</span>
+                  <InlineIcon icon={cat.icon} className="size-3.5" />
                   <span>{cat.name}</span>
                   {acc && <span className={active ? "text-white/70" : "text-[#9C94C4]"}>· {acc.name}</span>}
                 </button>
@@ -286,7 +285,10 @@ export function TransactionModal({
       </Field>
       <Field label="帳戶（可不填）">
         <button type="button" onClick={() => setAccountPickerOpen(true)} className={`${fieldInputClass} text-left`}>
-          <span className={selectedAccount ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}>{selectedAccount ? selectedAccountLabel : "不指定帳戶"}</span>
+          <span className={`flex items-center gap-1.5 ${selectedAccount ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}`}>
+            {selectedAccountIcon && <InlineIcon icon={selectedAccountIcon} />}
+            {selectedAccount ? selectedAccount.name : "不指定帳戶"}
+          </span>
         </button>
       </Field>
       <Field label="備註（可不填）">

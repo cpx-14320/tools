@@ -7,7 +7,7 @@ import { IconButton } from "@/components/expenses/button";
 import { BackLink } from "@/components/expenses/back-link";
 import { Card, CardBody } from "@/components/expenses/card";
 import { DeltaBadge } from "@/components/expenses/delta-badge";
-import { IconAvatar } from "@/components/expenses/icon-avatar";
+import { IconAvatar, InlineIcon } from "@/components/expenses/icon-avatar";
 import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { text } from "@/components/expenses/theme";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
@@ -243,7 +243,16 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
     <div className="flex flex-col gap-4">
       <PageHeader
         title={account.name}
-        description={type ? `${type.icon} ${type.name}` : "（未知類型）"}
+        description={
+          type ? (
+            <span className="flex items-center gap-1.5">
+              <InlineIcon icon={type.icon} />
+              {type.name}
+            </span>
+          ) : (
+            "（未知類型）"
+          )
+        }
         actions={
           <div className="flex items-center gap-2">
             <IconButton aria-label="編輯帳戶資料" onClick={() => setEditOpen(true)}>

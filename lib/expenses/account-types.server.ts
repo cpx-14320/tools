@@ -10,10 +10,12 @@ interface AccountTypeDoc {
   kind: AccountKind;
   order: number;
   createdAt: Date;
+  /** 系統預設建立的類型（見 presets.server.ts）——「清除全部資料」會略過。 */
+  isPreset?: boolean;
 }
 
 function toDTO(doc: AccountTypeDoc): AccountTypeDTO {
-  return { id: doc._id.toHexString(), name: doc.name, icon: doc.icon, kind: doc.kind };
+  return { id: doc._id.toHexString(), name: doc.name, icon: doc.icon, kind: doc.kind, isPreset: doc.isPreset };
 }
 
 function collection() {

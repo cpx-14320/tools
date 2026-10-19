@@ -8,14 +8,8 @@ import { CategoryModal, type CategoryModalDraft } from "@/components/expenses/ca
 import { CategoryBatchModal, type CategoryBatchItem } from "@/components/expenses/category-batch-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { SelectionBar, SelectionDot } from "@/components/expenses/selection-bar";
-import {
-  topLevelCategories,
-  subCategoriesOf,
-  categoryColorClass,
-  DEFAULT_CATEGORIES,
-  type CategoryDTO,
-  type CategoryKind,
-} from "@/lib/expenses/categories";
+import { topLevelCategories, subCategoriesOf, categoryColorClass, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
+import { IconAvatar } from "@/components/expenses/icon-avatar";
 
 /** 編輯既有分類／子分類用（點清單裡的一列開啟）；新增（不管頂層還是子分類）都走下面的
  *  batchTarget／CategoryBatchModal，兩種彈窗各自管各自的狀態。 */
@@ -147,27 +141,6 @@ export function CategoriesView() {
     setBatchTarget(null);
   }
 
-  // 套用常見分類：跳過名稱（同收支類型下）已經存在的項目，不會建出重複分類；可以
-  // 重複點，缺哪個補哪個，不是只有第一次沒分類時才能用。一樣依序送出，理由跟批次
-  // 新增相同。
-  async function handleApplyDefaults() {
-    const existingNames = new Set(categories.map((c) => `${c.kind}:${c.name}`));
-    const toCreate = DEFAULT_CATEGORIES.filter((d) => !existingNames.has(`${d.kind}:${d.name}`));
-    if (toCreate.length === 0) return;
-    let latest = categories;
-    for (const item of toCreate) {
-      const data: { categories?: CategoryDTO[] } = await fetch("/api/expenses/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(item),
-      })
-        .then((res) => res.json())
-        .catch(() => ({}));
-      if (data.categories) latest = data.categories;
-    }
-    setCategories(latest);
-  }
-
   const parents = topLevelCategories(categories, kind);
 
   return (
@@ -177,9 +150,6 @@ export function CategoriesView() {
         description="分類底下可以再開子分類，方便細看同一種消費裡哪種類型花最多"
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={handleApplyDefaults}>
-              套用常見分類
-            </Button>
             <Button variant="secondary" onClick={() => setSelecting((v) => !v)}>
               {selecting ? "完成" : "選取"}
             </Button>
@@ -247,7 +217,7 @@ export function CategoriesView() {
       {!ready ? (
         <p className={text.faint}>載入中…</p>
       ) : parents.length === 0 ? (
-        <p className={text.faint}>還沒有任何{kind}分類，點上方新增第一個，或直接套用常見分類</p>
+        <p className={text.faint}>還沒有任何{kind}分類，點上方「＋ 新增分類」建立第一個</p>
       ) : (
         <div className="flex flex-col gap-3">
           {parents.map((c) => {
@@ -261,9 +231,7 @@ export function CategoriesView() {
                   className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
                 >
                   {selecting && <SelectionDot selected={selectedIds.has(c.id)} />}
-                  <span className={`grid size-10 shrink-0 place-items-center rounded-xl text-lg ${categoryColorClass[c.color]}`}>
-                    {c.icon}
-                  </span>
+                  <IconAvatar icon={c.icon} size="sm" className={categoryColorClass[c.color]} />
                   <span className="min-w-0 flex-1">
                     <span className={`block ${text.body}`}>{c.name}</span>
                   </span>
@@ -284,9 +252,7 @@ export function CategoriesView() {
                           <span aria-hidden className="text-[#9C94C4]">
                             ↳
                           </span>
-                          <span className={`grid size-8 shrink-0 place-items-center rounded-lg text-sm ${categoryColorClass[sub.color]}`}>
-                            {sub.icon}
-                          </span>
+                          <IconAvatar icon={sub.icon} size="sm" className={categoryColorClass[sub.color]} />
                           <span className="min-w-0 flex-1 text-sm font-medium text-[#4A3B7C]">{sub.name}</span>
                           <span className={`shrink-0 ${text.muted}`}>{subCount} 筆</span>
                         </button>

@@ -17,6 +17,9 @@ interface CategoryDoc {
   order: number;
   createdAt: Date;
   budgetAmount?: number;
+  /** 系統第一次幫使用者建立的預設分類（見 presets.server.ts）——「清除全部資料」會
+   *  略過這些，不會把每個人記帳的起點也一起拆掉。 */
+  isPreset?: boolean;
   /** 刪除分類時，既有紀錄被強制歸類到「未分類」留下的標記——純粹讓畫面知道這是系統
    *  自動生成的歸宿分類，不是使用者自己建的，目前還沒有特殊 UI 處理，先記著備用。 */
   isUncategorized?: boolean;
@@ -31,6 +34,7 @@ function toDTO(doc: CategoryDoc): CategoryDTO {
     kind: doc.kind,
     parentId: doc.parentId?.toHexString(),
     budgetAmount: doc.budgetAmount,
+    isPreset: doc.isPreset,
   };
 }
 

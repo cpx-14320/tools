@@ -1,6 +1,6 @@
 "use client";
 
-import { IconAvatar } from "./icon-avatar";
+import { IconAvatar, InlineIcon } from "./icon-avatar";
 import {
   topLevelCategories,
   subCategoriesOf,
@@ -67,11 +67,12 @@ export function CategoryGridPicker({
               key={sub.id}
               type="button"
               onClick={() => onChange(sub.id)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                 sub.id === value ? "border-[#6F5FD6] bg-[#6F5FD6] text-white" : "border-[#ECE4FA] bg-white text-[#4A3B7C]"
               }`}
             >
-              {sub.icon} {sub.name}
+              <InlineIcon icon={sub.icon} className="size-3.5" />
+              {sub.name}
             </button>
           ))}
         </div>

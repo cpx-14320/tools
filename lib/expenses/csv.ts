@@ -1,6 +1,8 @@
 // 消費紀錄 CSV 匯出／匯入的純文字處理邏輯。不碰資料庫，伺服器端（import API route 重新
 // 驗證一次）跟 client component（匯入頁預覽、匯出頁下載）都直接 import 同一份。
 
+import { ICON_OTHER } from "./presets";
+
 export interface CategoryLookupItem {
   id: string;
   name: string;
@@ -290,7 +292,8 @@ export function parseCategoriesCSV(
       category: {
         name,
         kind,
-        icon: (iconText ?? "").trim() || "🏷️",
+        // 圖示欄留空時給共用的「其他」佔位圖——分類的圖示現在是圖片路徑，不是表情符號。
+        icon: (iconText ?? "").trim() || ICON_OTHER,
         color: /^[a-f]$/.test(color) ? color : "a",
         parentName,
       },
@@ -344,7 +347,7 @@ export function parseAccountTypesCSV(
     if (seen.has(key)) return { row: rowNum, ok: false, error: `這個檔案裡「${name}」重複出現，只會建立一次` };
     seen.add(key);
 
-    return { row: rowNum, ok: true, accountType: { name, kind, icon: (iconText ?? "").trim() || "🏦" } };
+    return { row: rowNum, ok: true, accountType: { name, kind, icon: (iconText ?? "").trim() || ICON_OTHER } };
   });
 
   return {

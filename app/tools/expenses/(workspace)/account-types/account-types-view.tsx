@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
 import { Button } from "@/components/expenses/button";
 import { BackLink } from "@/components/expenses/back-link";
+import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { text, gradient, shadow } from "@/components/expenses/theme";
 import { AccountTypeModal, type AccountTypeModalDraft } from "@/components/expenses/account-type-modal";
 import { AccountTypeBatchModal, type AccountTypeBatchItem } from "@/components/expenses/account-type-batch-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { SelectionBar, SelectionDot } from "@/components/expenses/selection-bar";
-import { accountTypesByKind, DEFAULT_ACCOUNT_TYPES, type AccountTypeDTO } from "@/lib/expenses/account-types";
+import { accountTypesByKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
 
 export function AccountTypesView() {
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
@@ -113,39 +114,18 @@ export function AccountTypesView() {
     setBatchOpen(false);
   }
 
-  // 套用常見類型：跳過名稱（同資產/負債下）已經存在的項目，可以重複點，缺哪個補哪個。
-  async function handleApplyDefaults() {
-    const existingNames = new Set(accountTypes.map((t) => `${t.kind}:${t.name}`));
-    const toCreate = DEFAULT_ACCOUNT_TYPES.filter((d) => !existingNames.has(`${d.kind}:${d.name}`));
-    if (toCreate.length === 0) return;
-    let latest = accountTypes;
-    for (const item of toCreate) {
-      const data: { accountTypes?: AccountTypeDTO[] } = await fetch("/api/expenses/account-types", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(item),
-      })
-        .then((res) => res.json())
-        .catch(() => ({}));
-      if (data.accountTypes) latest = data.accountTypes;
-    }
-    setAccountTypes(latest);
-  }
-
   const assetTypes = accountTypesByKind(accountTypes, "asset");
   const liabilityTypes = accountTypesByKind(accountTypes, "liability");
 
   return (
     <div>
-      {/* 標題列只留「套用常見類型／選取」跟返回箭頭——新增搬到右下角的浮動按鈕（跟首頁
-          新增交易同一招），四顆按鈕擠一列在手機上會換行成兩排，很難看也很難點。 */}
+      {/* 標題列只留「選取」跟返回箭頭——新增搬到右下角的浮動按鈕（跟首頁新增交易同一招），
+          按鈕一多擠一列在手機上會換行成兩排，很難看也很難點。常見類型現在是第一次進
+          記帳本時就自動建好的（見 lib/expenses/presets.server.ts），不再需要套用按鈕。 */}
       <PageHeader
         title="帳戶類型"
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={handleApplyDefaults}>
-              套用常見類型
-            </Button>
             <Button variant="secondary" onClick={() => setSelecting((v) => !v)}>
               {selecting ? "完成" : "選取"}
             </Button>
@@ -203,7 +183,7 @@ export function AccountTypesView() {
       {!ready ? (
         <p className={text.faint}>載入中…</p>
       ) : accountTypes.length === 0 ? (
-        <p className={text.faint}>還沒有任何帳戶類型，點右下角的＋新增，或用上方的「套用常見類型」一次建好</p>
+        <p className={text.faint}>還沒有任何帳戶類型，點右下角的＋新增</p>
       ) : (
         <div className="flex flex-col gap-5">
           {assetTypes.length > 0 && (
@@ -218,7 +198,7 @@ export function AccountTypesView() {
                     className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
                   >
                     {selecting && <SelectionDot selected={selectedIds.has(t.id)} />}
-                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#F3EFFC] text-lg">{t.icon}</span>
+                    <IconAvatar icon={t.icon} size="sm" />
                     <span className={`min-w-0 flex-1 ${text.body}`}>{t.name}</span>
                   </button>
                 ))}
@@ -238,7 +218,7 @@ export function AccountTypesView() {
                     className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
                   >
                     {selecting && <SelectionDot selected={selectedIds.has(t.id)} />}
-                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#F3EFFC] text-lg">{t.icon}</span>
+                    <IconAvatar icon={t.icon} size="sm" />
                     <span className={`min-w-0 flex-1 ${text.body}`}>{t.name}</span>
                   </button>
                 ))}

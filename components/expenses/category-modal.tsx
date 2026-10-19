@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button, SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass } from "./modal";
-import { CategoryNamePresets, CategoryIconPicker } from "./category-field-pickers";
+import { CategoryIconPicker, DEFAULT_PICKER_ICON } from "./category-field-pickers";
 import { categoryFillClass, categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 
 const COLORS: CategoryColor[] = ["a", "b", "c", "d", "e", "f"];
@@ -43,7 +43,7 @@ export function CategoryModal({
   onDelete?: () => void;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
-  const [icon, setIcon] = useState(initial?.icon ?? "🏷️");
+  const [icon, setIcon] = useState(initial?.icon ?? DEFAULT_PICKER_ICON);
   const [color, setColor] = useState<CategoryColor>(initial?.color ?? "a");
   const [kind, setKind] = useState<CategoryKind>(initial?.kind ?? "支出");
 
@@ -88,10 +88,9 @@ export function CategoryModal({
       <Field label="名稱">
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如「餐飲」" className={fieldInputClass} />
       </Field>
-      <CategoryNamePresets value={name} onPick={setName} />
       {isDuplicate && <p className="text-xs text-[#D1517E]">已經有同樣名稱的分類了，換一個名稱吧。</p>}
 
-      <CategoryIconPicker value={icon} onChange={setIcon} />
+      <CategoryIconPicker kind={kind} value={icon} onChange={setIcon} />
 
       {!isSubcategory && (
         <>

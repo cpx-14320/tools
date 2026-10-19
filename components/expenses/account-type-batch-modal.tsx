@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button, SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass } from "./modal";
+import { AccountIconPicker, DEFAULT_PICKER_ICON } from "./category-field-pickers";
 import { accountTypeNameTaken, type AccountKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
 
 interface Draft {
@@ -12,7 +13,7 @@ interface Draft {
 }
 
 function blankDraft(kind: AccountKind = "asset"): Draft {
-  return { name: "", icon: "🏷️", kind };
+  return { name: "", icon: DEFAULT_PICKER_ICON, kind };
 }
 
 export type AccountTypeBatchItem = Draft;
@@ -107,9 +108,7 @@ export function AccountTypeBatchModal({
           {isDuplicateDraft(items, i, accountTypes) && (
             <p className="text-xs text-[#D1517E]">已經有同樣名稱的{item.kind === "asset" ? "資產" : "負債"}類型了，換一個名稱吧。</p>
           )}
-          <Field label="圖示（輸入一個表情符號）">
-            <input value={item.icon} onChange={(e) => updateItem(i, { icon: e.target.value })} className={fieldInputClass} />
-          </Field>
+          <AccountIconPicker value={item.icon} onChange={(icon) => updateItem(i, { icon })} />
           <Field label="類型">
             <SegmentedControl
               className="self-start"

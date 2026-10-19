@@ -15,6 +15,8 @@ export interface AccountDTO {
   id: string;
   name: string;
   accountTypeId: string;
+  /** 系統預設建立的帳戶——「清除全部資料」不會刪掉它們。 */
+  isPreset?: boolean;
   /** 建立帳戶時的起始金額，一律存正數——跟即時算出來的「目前餘額」是兩個不同數字，
    *  見 accountBalance()。 */
   openingBalance: number;

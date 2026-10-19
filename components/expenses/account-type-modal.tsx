@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "./button";
 import { Modal, Field, fieldInputClass } from "./modal";
+import { AccountIconPicker, DEFAULT_PICKER_ICON } from "./category-field-pickers";
 import { accountTypeNameTaken, type AccountKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
 
 export interface AccountTypeModalDraft {
@@ -35,7 +36,7 @@ export function AccountTypeModal({
   onDelete?: () => void;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
-  const [icon, setIcon] = useState(initial?.icon ?? "🏷️");
+  const [icon, setIcon] = useState(initial?.icon ?? DEFAULT_PICKER_ICON);
   const isDuplicate = accountTypeNameTaken(accountTypes, kind, name, excludeId);
   const canSave = name.trim() && icon.trim() && !isDuplicate;
 
@@ -68,9 +69,7 @@ export function AccountTypeModal({
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如「定存」" className={fieldInputClass} />
       </Field>
       {isDuplicate && <p className="text-xs text-[#D1517E]">已經有同樣名稱的{kind === "asset" ? "資產" : "負債"}類型了，換一個名稱吧。</p>}
-      <Field label="圖示（輸入一個表情符號）">
-        <input value={icon} onChange={(e) => setIcon(e.target.value)} className={fieldInputClass} />
-      </Field>
+      <AccountIconPicker value={icon} onChange={setIcon} />
       <p className="text-xs text-[#9C94C4]">資產／負債建立後不能更改，要改的話請刪除後重新新增。</p>
     </Modal>
   );
