@@ -65,7 +65,7 @@ export function AccountTypeModal({
         </>
       }
     >
-      <Field label="名稱">
+      <Field label="類型名稱">
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如「定存」" className={fieldInputClass} />
       </Field>
       {isDuplicate && <p className="text-xs text-[#D1517E]">已經有同樣名稱的{kind === "asset" ? "資產" : "負債"}類型了，換一個名稱吧。</p>}
