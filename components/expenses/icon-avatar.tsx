@@ -26,7 +26,7 @@ export function IconAvatar({ icon, size = "md", className }: { icon: string; siz
         <span
           role="img"
           aria-hidden
-          className="size-[68%] bg-contain bg-center bg-no-repeat"
+          className="size-full bg-contain bg-center bg-no-repeat"
           style={{ backgroundImage: `url("${icon}")` }}
         />
       </span>

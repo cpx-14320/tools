@@ -13,8 +13,10 @@ const tabs = [
 ];
 
 /** 比照搭乘車 TransitMobileNav 的樣式：固定貼齊卡片正下方、滿版橫列、只有上邊框，不是
- *  浮動的膠囊列。外殼（ExpensesMobileShell）的卡片容器本身有 transform，fixed 子孫會以
- *  卡片為定位基準，inset-x-0 直接貼齊卡片左右邊界，理由跟搭乘車那邊一樣。
+ *  浮動的膠囊列；圖示 32px、未選取文字用同一個淡紫灰 #B3ABD4，跟搭乘車那份完全一致
+ *  （兩邊故意不共用元件，只是刻意對齊視覺規格，色票各自獨立維護）。外殼
+ *  （ExpensesMobileShell）的卡片容器本身有 transform，fixed 子孫會以卡片為定位基準，
+ *  inset-x-0 直接貼齊卡片左右邊界，理由跟搭乘車那邊一樣。
  *  圖示改走 public/expenses/ 底下的圖檔（見 icon-paths.ts），圖還沒放上去之前 IconImg
  *  會用漸層佔位，不會壞版。 */
 export function ExpensesMobileNav() {
@@ -23,8 +25,8 @@ export function ExpensesMobileNav() {
   return (
     <div className="fixed inset-x-0 bottom-0 z-10">
       <nav
-        className="flex items-center justify-around border-t bg-white px-2 py-2.5"
-        style={{ borderColor: "#ECE4FA", paddingBottom: "calc(env(safe-area-inset-bottom) + 10px)" }}
+        className="flex items-center justify-around border-t border-[#ECE4FA] bg-white px-2 py-2.5"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 10px)" }}
       >
         {tabs.map((tab) => {
           const active =
@@ -39,8 +41,8 @@ export function ExpensesMobileNav() {
                   : pathname.startsWith(tab.href);
           return (
             <Link key={tab.href} href={tab.href} className="flex flex-1 flex-col items-center gap-0.5 py-1 text-[11px]">
-              <IconImg src={tab.icon} alt={tab.label} size={28} background={false} className={active ? "" : "opacity-50"} />
-              <span style={{ color: active ? "#6F5FD6" : "#9C94C4", fontWeight: active ? 600 : 400 }}>{tab.label}</span>
+              <IconImg src={tab.icon} alt={tab.label} size={32} background={false} className={active ? "" : "opacity-50"} />
+              <span className={active ? "font-semibold text-[#6F5FD6]" : "text-[#B3ABD4]"}>{tab.label}</span>
             </Link>
           );
         })}

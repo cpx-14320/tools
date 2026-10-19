@@ -21,7 +21,7 @@
 import type { CategoryColor } from "./categories";
 
 /** 沒有專屬圖檔時共用的佔位圖——收入分類、支出分類、帳戶類型三種情境共用這一張。 */
-export const ICON_OTHER = "/expenses/expenses-icon-other.png";
+export const ICON_OTHER = "/expenses/category-other.png";
 
 export const expenseCategoryIcon = (slug: string) => `/expenses/expenses-category-${slug}.png`;
 export const incomeCategoryIcon = (slug: string) => `/expenses/income-category-${slug}.png`;
