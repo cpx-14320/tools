@@ -14,7 +14,7 @@ import { IconAvatar } from "@/components/expenses/icon-avatar";
 
 /** 編輯既有分類／子分類用（點清單裡的一列開啟）；新增（不管頂層還是子分類）都走下面的
  *  batchTarget／CategoryBatchModal，兩種彈窗各自管各自的狀態。 */
-type BatchTarget = { parentId?: string; parentName?: string };
+type BatchTarget = { parentId?: string };
 
 export function CategoriesView() {
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
@@ -168,7 +168,6 @@ export function CategoriesView() {
         key={batchTarget ? (batchTarget.parentId ?? "top") : "closed"}
         open={batchTarget !== null}
         isSubcategory={!!batchTarget?.parentId}
-        parentName={batchTarget?.parentName}
         parentId={batchTarget?.parentId}
         categories={categories}
         defaultKind={kind}
@@ -257,10 +256,10 @@ export function CategoriesView() {
                 <div className="border-t border-[#ECE4FA] px-4 py-2">
                   <button
                     type="button"
-                    onClick={() => setBatchTarget({ parentId: c.id, parentName: c.name })}
+                    onClick={() => setBatchTarget({ parentId: c.id })}
                     className="text-xs font-medium text-[#6F5FD6] hover:underline"
                   >
-                    ＋ 新增「{c.name}」的子分類
+                    ＋ 新增子分類
                   </button>
                 </div>
               </div>

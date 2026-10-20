@@ -12,7 +12,7 @@ import { TransactionModal, type TransactionModalDraft } from "@/components/expen
 import { text } from "@/components/expenses/theme";
 import { compareDateFilter, dateFilterRange, defaultDateFilter, referenceYearMonth } from "@/lib/expenses/date-filter";
 import { ComparePicker } from "@/components/expenses/compare-picker";
-import { IconAvatar } from "@/components/expenses/icon-avatar";
+import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
 import { categoryColorClass, categoryFillClass, displayCategoryOf, type CategoryDTO } from "@/lib/expenses/categories";
 import {
   totalsForRange,
@@ -347,11 +347,12 @@ export function DashboardView() {
                     const isIncome = cat?.kind === "收入";
                     return (
                       <li key={`${item.rule.id}-${item.date}`} className="flex items-center gap-3 py-2.5 text-sm">
-                        <IconAvatar icon={cat?.icon ?? "🔁"} size="sm" className={cat ? categoryColorClass[cat.color] : undefined} />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[#4A3B7C]">{item.rule.note || cat?.name || "固定收支"}</p>
-                          <p className={text.muted}>{item.date}</p>
-                        </div>
+                        <TransactionRowLabel
+                          icon={cat?.icon ?? "🔁"}
+                          iconClassName={cat ? categoryColorClass[cat.color] : undefined}
+                          title={item.rule.note || cat?.name || "固定收支"}
+                          subtitle={item.date}
+                        />
                         <span className="shrink-0 tabular-nums font-medium" style={{ color: isIncome ? "#2FAE82" : "#4A3B7C" }}>
                           {isIncome ? "＋" : "－"}
                           {formatCurrency(item.rule.amount)}
@@ -385,11 +386,12 @@ export function DashboardView() {
                 const cat = displayCategoryOf(categories, t.categoryId);
                 return (
                   <li key={t.id} className="flex items-center gap-3 py-2.5 text-sm">
-                    <IconAvatar icon={cat?.icon ?? "🏷️"} size="sm" className={cat ? categoryColorClass[cat.color] : undefined} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[#4A3B7C]">{transactionDisplayName(t, categories)}</p>
-                      <p className={text.muted}>{t.date}</p>
-                    </div>
+                    <TransactionRowLabel
+                      icon={cat?.icon ?? "🏷️"}
+                      iconClassName={cat ? categoryColorClass[cat.color] : undefined}
+                      title={transactionDisplayName(t, categories)}
+                      subtitle={t.date}
+                    />
                     <span className="shrink-0 tabular-nums font-medium text-[#4A3B7C]">－{formatCurrency(t.amount)}</span>
                   </li>
                 );

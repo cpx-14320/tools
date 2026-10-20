@@ -37,8 +37,10 @@ export function ListProgressRow({
     <>
       <IconAvatar icon={icon} size="sm" className={iconClassName} />
       <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between text-sm">
-          <span className={text.body}>{name}</span>
+        {/* name 跟 amount 同一列並排——name 要有 min-w-0 才能在 flex 裡被截斷，不然名稱
+            一長（例如帳戶名稱）就會把這一列撐開或擠成兩行，不會乖乖顯示「…」省略。 */}
+        <div className="flex items-center justify-between gap-2 text-sm">
+          <span className={`min-w-0 flex-1 truncate ${text.body}`}>{name}</span>
           <span className="shrink-0 tabular-nums font-semibold text-[#4A3B7C]">{amount}</span>
         </div>
         <div className="mt-1.5 flex items-center gap-2">

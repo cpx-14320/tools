@@ -40,7 +40,6 @@ function isDuplicateDraft(items: Draft[], index: number, existing: CategoryDTO[]
 export function CategoryBatchModal({
   open,
   isSubcategory,
-  parentName,
   parentId,
   categories,
   defaultKind = "支出",
@@ -50,7 +49,6 @@ export function CategoryBatchModal({
 }: {
   open: boolean;
   isSubcategory: boolean;
-  parentName?: string;
   /** 子分類時用來圈定「同一個父分類底下」的名稱重複檢查範圍。 */
   parentId?: string;
   /** 現有的所有分類，用來擋名稱重複。 */
@@ -87,7 +85,7 @@ export function CategoryBatchModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={isSubcategory ? `新增「${parentName}」的子分類` : "新增分類"}
+      title={isSubcategory ? "新增子分類" : "新增分類"}
       footer={
         <ModalFooter
           onClose={onClose}

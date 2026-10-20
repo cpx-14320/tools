@@ -6,6 +6,7 @@ import { SegmentedControl, PillButton } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { DeltaBadge } from "@/components/expenses/delta-badge";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
+import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
 import { text } from "@/components/expenses/theme";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
@@ -325,15 +326,12 @@ export function TransactionsView() {
                         <div key={t.id}>
                           <div className="flex w-full items-center gap-1 px-4 py-3">
                             <button type="button" onClick={() => setModal(t)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                              <IconAvatar
+                              <TransactionRowLabel
                                 icon={category?.icon ?? ""}
-                                size="sm"
-                                className={category ? categoryColorClass[category.color] : undefined}
+                                iconClassName={category ? categoryColorClass[category.color] : undefined}
+                                title={transactionDisplayName(t, categories)}
+                                subtitle={categoryPath(categories, t.categoryId)}
                               />
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-medium text-[#4A3B7C]">{transactionDisplayName(t, categories)}</p>
-                                <p className={`truncate ${text.muted}`}>{categoryPath(categories, t.categoryId)}</p>
-                              </div>
                               <div className="flex shrink-0 flex-col items-end">
                                 <span className={`tabular-nums font-semibold text-[#4A3B7C] ${kind === "收入" ? "text-[#2FAE82]" : ""}`}>
                                   {kind === "收入" ? "＋" : "－"}

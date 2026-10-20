@@ -18,7 +18,6 @@ export interface CategoryModalDraft {
 export function CategoryModal({
   open,
   isSubcategory,
-  parentName,
   parentId,
   categories,
   excludeId,
@@ -30,7 +29,6 @@ export function CategoryModal({
   open: boolean;
   /** 子分類不能自己選顏色／收支類型，跟父分類一致。 */
   isSubcategory: boolean;
-  parentName?: string;
   /** 子分類時用來圈定「同一個父分類底下」的名稱重複檢查範圍。 */
   parentId?: string;
   /** 現有的所有分類，用來擋同一個父分類（或同一種收支類型的頂層）底下名稱重複。 */
@@ -47,7 +45,7 @@ export function CategoryModal({
   const [color, setColor] = useState<CategoryColor>(initial?.color ?? "a");
   const [kind, setKind] = useState<CategoryKind>(initial?.kind ?? "支出");
 
-  const title = initial ? "編輯分類" : isSubcategory ? `新增「${parentName}」的子分類` : "新增分類";
+  const title = initial ? "編輯分類" : isSubcategory ? "新增子分類" : "新增分類";
   const isDuplicate = categoryNameTaken(categories, name, { kind, parentId }, excludeId);
   const canSave = name.trim().length > 0 && icon.trim().length > 0 && !isDuplicate;
 

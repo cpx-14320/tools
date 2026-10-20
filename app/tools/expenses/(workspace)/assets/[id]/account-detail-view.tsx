@@ -8,6 +8,7 @@ import { BackLink } from "@/components/expenses/back-link";
 import { Card, CardBody } from "@/components/expenses/card";
 import { DeltaBadge } from "@/components/expenses/delta-badge";
 import { IconAvatar, InlineIcon } from "@/components/expenses/icon-avatar";
+import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
 import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { text } from "@/components/expenses/theme";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
@@ -403,15 +404,12 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
                                 onClick={() => setTxModal({ mode: "edit", transaction: t })}
                                 className="flex min-w-0 flex-1 items-center gap-3 text-left"
                               >
-                                <IconAvatar
+                                <TransactionRowLabel
                                   icon={category?.icon ?? ""}
-                                  size="sm"
-                                  className={category ? categoryColorClass[category.color] : undefined}
+                                  iconClassName={category ? categoryColorClass[category.color] : undefined}
+                                  title={transactionDisplayName(t, categories)}
+                                  subtitle={categoryPath(categories, t.categoryId)}
                                 />
-                                <div className="min-w-0 flex-1">
-                                  <p className="truncate text-sm font-medium text-[#4A3B7C]">{transactionDisplayName(t, categories)}</p>
-                                  <p className={`truncate ${text.muted}`}>{categoryPath(categories, t.categoryId)}</p>
-                                </div>
                                 <div className="flex shrink-0 flex-col items-end">
                                   <span className={`tabular-nums font-semibold text-[#4A3B7C] ${isIncome ? "text-[#2FAE82]" : ""}`}>
                                     {isIncome ? "＋" : "－"}
@@ -438,15 +436,11 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
                           onClick={() => setTransferModal(transfer)}
                           className="flex w-full items-center gap-3 px-3 py-3 text-left"
                         >
-                          <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#F3EFFC] text-lg">
-                            ⇄
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-[#4A3B7C]">
-                              {isOutgoing ? `轉帳至 ${otherAccount?.name ?? "（未知帳戶）"}` : `轉帳自 ${otherAccount?.name ?? "（未知帳戶）"}`}
-                            </p>
-                            <p className={`truncate ${text.muted}`}>{transfer.note || "轉帳"}</p>
-                          </div>
+                          <TransactionRowLabel
+                            icon="⇄"
+                            title={isOutgoing ? `轉帳至 ${otherAccount?.name ?? "（未知帳戶）"}` : `轉帳自 ${otherAccount?.name ?? "（未知帳戶）"}`}
+                            subtitle={transfer.note || "轉帳"}
+                          />
                           <div className="flex shrink-0 flex-col items-end">
                             <span className="tabular-nums font-semibold text-[#6F5FD6]">
                               {isOutgoing ? "－" : "＋"}

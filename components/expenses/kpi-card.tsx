@@ -19,19 +19,23 @@ export function DeltaText({ delta, pct, goodWhenUp }: { delta: number; pct: numb
   );
 }
 
-/** KPI 卡片：標籤在上、金額＋漲跌幅同一行在下，不放圖示——總覽頁（本月收入/支出/結餘）
- *  跟資產總表（淨資產/資產/負債）共用同一套樣式，不要兩邊各自手刻。 */
+/** KPI 卡片：標籤跟漲跌幅同一行（標籤左、漲跌幅右），金額自己獨立一行在下面——
+ *  漲跌幅緊貼大數字那排的話，百分比一大（例如 ▲850%）就會跟金額擠在一起、甚至把
+ *  數字擠到換行；跟小標題同一排右對齊，不管百分比多長都不影響金額本身的排版，
+ *  也統一跟其他小標題區塊（資產/負債小標旁邊放操作、首頁卡片旁邊放「查看全部」）
+ *  同一種「小標左、附加資訊右」的版型。總覽頁（本月收入/支出/結餘）跟資產總表
+ *  （淨資產/資產/負債）共用同一套樣式，不要兩邊各自手刻。 */
 export function KpiCard({ label, value, valueColor, delta }: { label: string; value: string; valueColor: string; delta?: ReactNode }) {
   return (
     <Card>
       <CardBody className="p-3">
-        <p className={text.muted}>{label}</p>
-        <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5">
-          <p className="text-lg font-bold tabular-nums" style={{ color: valueColor }}>
-            {value}
-          </p>
+        <div className="flex items-start justify-between gap-2">
+          <p className={text.muted}>{label}</p>
           {delta}
         </div>
+        <p className="mt-0.5 text-lg font-bold tabular-nums" style={{ color: valueColor }}>
+          {value}
+        </p>
       </CardBody>
     </Card>
   );
