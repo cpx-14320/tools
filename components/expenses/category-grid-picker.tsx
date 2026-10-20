@@ -1,6 +1,7 @@
 "use client";
 
-import { IconAvatar, InlineIcon } from "./icon-avatar";
+import { InlineIcon } from "./icon-avatar";
+import { OptionGrid } from "./option-grid";
 import {
   topLevelCategories,
   subCategoriesOf,
@@ -10,10 +11,10 @@ import {
   type CategoryKind,
 } from "@/lib/expenses/categories";
 
-/** 分類格子選擇器——取代原生 `<select>`：頂層分類排成格子，選到的如果有子分類會在下面
- *  展開一排子分類圓角選項可以再選更細的。新增交易彈窗、固定收支彈窗都共用這一個，
- *  不要兩邊各刻一份幾乎一樣的格子。`onAddClick` 不給的話就不顯示「＋新增」那一格
- *  （目前兩邊呼叫端都有給，但保留彈性給之後可能不需要就地新增分類的情境）。 */
+/** 分類格子選擇器——取代原生 `<select>`：頂層分類排成格子（共用的 OptionGrid，跟新增
+ *  帳戶的類型格子同一個元件），選到的如果有子分類會在下面展開一排圓角選項可以再選
+ *  更細的。新增交易彈窗、固定收支彈窗都共用這一個，不要兩邊各刻一份幾乎一樣的格子。
+ *  `onAddClick` 不給的話就不顯示「＋新增」那一格。 */
 export function CategoryGridPicker({
   categories,
   kind,
@@ -29,37 +30,22 @@ export function CategoryGridPicker({
   onAddClick?: () => void;
   maxHeightClass?: string;
 }) {
-  const topCategories = topLevelCategories(categories, kind);
   const activeParentId = value ? topLevelCategoryId(categories, value) : "";
   const subcategories = activeParentId ? subCategoriesOf(categories, activeParentId) : [];
 
   return (
     <div className={`${maxHeightClass} overflow-y-auto`}>
-      {/* 一列五欄、不畫外框：選中與否靠圖示外圈的強調色環表示，格子本身沒有邊線，
-          畫面才不會被一堆方框切得很碎。 */}
-      <div className="grid grid-cols-5 gap-x-1 gap-y-2.5">
-        {onAddClick && (
-          <button type="button" onClick={onAddClick} className="flex flex-col items-center gap-1 py-0.5">
-            <IconAvatar icon="＋" size="sm" className="bg-[#F3EFFC] text-[#6F5FD6]" />
-            <span className="line-clamp-1 w-full text-center text-[11px] font-medium text-[#6F5FD6]">新增</span>
-          </button>
-        )}
-        {topCategories.map((cat) => {
-          const active = cat.id === activeParentId;
-          return (
-            <button key={cat.id} type="button" onClick={() => onChange(cat.id)} className="flex flex-col items-center gap-1 py-0.5">
-              <IconAvatar
-                icon={cat.icon}
-                size="sm"
-                className={`${categoryColorClass[cat.color]} ${active ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`}
-              />
-              <span className={`line-clamp-1 w-full text-center text-[11px] ${active ? "font-semibold text-[#6F5FD6]" : "font-medium text-[#4A3B7C]"}`}>
-                {cat.name}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      <OptionGrid
+        options={topLevelCategories(categories, kind).map((c) => ({
+          id: c.id,
+          name: c.name,
+          icon: c.icon,
+          colorClass: categoryColorClass[c.color],
+        }))}
+        value={activeParentId}
+        onChange={onChange}
+        onAddClick={onAddClick}
+      />
       {subcategories.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
           {subcategories.map((sub) => (

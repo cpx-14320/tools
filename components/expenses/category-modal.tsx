@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Button, SegmentedControl } from "./button";
-import { Modal, Field, fieldInputClass } from "./modal";
+import { SegmentedControl } from "./button";
+import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
 import { CategoryIconPicker, DEFAULT_PICKER_ICON } from "./category-field-pickers";
 import { categoryFillClass, categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 
@@ -57,32 +57,14 @@ export function CategoryModal({
       onClose={onClose}
       title={title}
       footer={
-        <>
-          {onDelete ? (
-            <Button variant="ghost" className="text-[#D1517E] hover:text-[#D1517E]" onClick={onDelete}>
-              刪除
-            </Button>
-          ) : (
-            <span />
-          )}
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={onClose}>
-              取消
-            </Button>
-            <Button
-              disabled={!canSave}
-              onClick={() =>
-                onSave(
-                  isSubcategory
-                    ? { name: name.trim(), icon: icon.trim() }
-                    : { name: name.trim(), icon: icon.trim(), color, kind },
-                )
-              }
-            >
-              儲存
-            </Button>
-          </div>
-        </>
+        <ModalFooter
+          onClose={onClose}
+          onConfirm={() =>
+            onSave(isSubcategory ? { name: name.trim(), icon: icon.trim() } : { name: name.trim(), icon: icon.trim(), color, kind })
+          }
+          confirmDisabled={!canSave}
+          onDelete={onDelete}
+        />
       }
     >
       <Field label="名稱">

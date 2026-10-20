@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
+import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { Button } from "@/components/expenses/button";
 import { BackLink } from "@/components/expenses/back-link";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
-import { text, gradient, shadow } from "@/components/expenses/theme";
+import { text } from "@/components/expenses/theme";
 import { AccountTypeModal, type AccountTypeModalDraft } from "@/components/expenses/account-type-modal";
 import { AccountTypeBatchModal, type AccountTypeBatchItem } from "@/components/expenses/account-type-batch-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
@@ -134,15 +135,7 @@ export function AccountTypesView() {
         }
       />
 
-      <button
-        type="button"
-        onClick={() => setBatchOpen(true)}
-        aria-label="新增帳戶類型"
-        className="fixed right-5 z-20 grid size-14 place-items-center rounded-full text-3xl font-bold leading-none text-white"
-        style={{ background: gradient.primary, boxShadow: shadow.cta, bottom: "calc(env(safe-area-inset-bottom) + 86px)" }}
-      >
-        ＋
-      </button>
+      <FloatingAddButton onClick={() => setBatchOpen(true)} label="新增帳戶類型" />
 
       <AccountTypeModal
         key={modal ? modal.id : "closed"}

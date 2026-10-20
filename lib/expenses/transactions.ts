@@ -222,20 +222,6 @@ export function budgetSummary(
   return { rows, totalBudget, totalSpent, pct: totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0 };
 }
 
-/** 單一大分類底下，每個子分類在這個區間各花多少——分類管理頁展開大分類時用。 */
-export function subcategoryBreakdown(expenseTx: TransactionDTO[], categories: CategoryDTO[], parentId: string) {
-  const subs = categories.filter((c) => c.parentId === parentId);
-  const byCategory = new Map<string, number>();
-  for (const t of expenseTx) {
-    if (t.categoryId === parentId || subs.some((s) => s.id === t.categoryId)) {
-      byCategory.set(t.categoryId, (byCategory.get(t.categoryId) ?? 0) + t.amount);
-    }
-  }
-  return [{ id: parentId, name: "（未分子分類）" }, ...subs]
-    .map((c) => ({ id: c.id, name: c.name, amount: byCategory.get(c.id) ?? 0 }))
-    .filter((row) => row.amount > 0)
-    .sort((a, b) => b.amount - a.amount);
-}
 
 export type TrendGranularity = "day" | "week" | "month" | "year";
 

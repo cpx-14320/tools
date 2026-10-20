@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, SegmentedControl } from "./button";
-import { Modal, Field, fieldInputClass } from "./modal";
+import { SegmentedControl } from "./button";
+import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
+import { BatchDraftList } from "./batch-draft-list";
 import { AccountIconPicker, DEFAULT_PICKER_ICON } from "./category-field-pickers";
 import { accountTypeNameTaken, type AccountKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
 
@@ -76,70 +77,51 @@ export function AccountTypeBatchModal({
       onClose={onClose}
       title="新增帳戶類型"
       footer={
-        <>
-          <span />
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={onClose}>
-              取消
-            </Button>
-            <Button
-              disabled={!canSave}
-              onClick={() => {
-                const valid = items
-                  .map((it, i) => ({ ...it, name: it.name.trim(), icon: it.icon.trim(), _dup: isDuplicateDraft(items, i, accountTypes) }))
-                  .filter((it) => it.name && it.icon && !it._dup)
-                  .map(({ name, icon, kind }) => ({ name, icon, kind }));
-                onSave(valid);
-              }}
-            >
-              儲存
-            </Button>
-          </div>
-        </>
+        <ModalFooter
+          onClose={onClose}
+          onConfirm={() =>
+            onSave(
+              items
+                .map((it, i) => ({ ...it, name: it.name.trim(), icon: it.icon.trim(), _dup: isDuplicateDraft(items, i, accountTypes) }))
+                .filter((it) => it.name && it.icon && !it._dup)
+                .map(({ name, icon, kind }) => ({ name, icon, kind })),
+            )
+          }
+          confirmDisabled={!canSave}
+        />
       }
     >
-      {items.map((item, i) => (
-        <div key={i} className="flex flex-col gap-2.5 rounded-2xl border border-[#ECE4FA] p-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#9C94C4]">第 {i + 1} 則</span>
-            {items.length > 1 && (
-              <button type="button" onClick={() => removeItem(i)} className="text-xs font-medium text-[#D1517E]">
-                刪除
-              </button>
-            )}
-          </div>
-          <Field label="類型名稱">
-            <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} placeholder="例如「定存」" className={fieldInputClass} />
-          </Field>
-          {isDuplicateDraft(items, i, accountTypes) && (
-            <p className="text-xs text-[#D1517E]">已經有同樣名稱的{item.kind === "asset" ? "資產" : "負債"}類型了，換一個名稱吧。</p>
-          )}
-          <AccountIconPicker value={item.icon} onChange={(icon) => updateItem(i, { icon })} />
-          {/* 鎖定 kind 時（從「新增帳戶」彈窗裡開啟）不顯示這個切換——資產/負債在
-              上一層已經選過了，這裡再問一次只是多餘的欄位。 */}
-          {!lockedKind && (
-            <Field label="類型">
-              <SegmentedControl
-                className="self-start"
-                value={item.kind}
-                onChange={(kind) => updateItem(i, { kind })}
-                options={[
-                  { value: "asset", label: "資產" },
-                  { value: "liability", label: "負債" },
-                ]}
-              />
+      <BatchDraftList
+        items={items}
+        onRemove={removeItem}
+        onAdd={() => setItems((list) => [...list, blankDraft(effectiveKind)])}
+        renderItem={(item, i) => (
+          <>
+            <Field label="類型名稱">
+              <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} placeholder="例如「定存」" className={fieldInputClass} />
             </Field>
-          )}
-        </div>
-      ))}
-
-      <button
-        type="button"
-        onClick={() => setItems((list) => [...list, blankDraft(effectiveKind)])}
-        className="rounded-xl border border-dashed border-[#C7BFE6] py-2.5 text-sm font-medium text-[#6F5FD6]"
-      >
-        ＋ 新增一則
-      </button>
+            {isDuplicateDraft(items, i, accountTypes) && (
+              <p className="text-xs text-[#D1517E]">已經有同樣名稱的{item.kind === "asset" ? "資產" : "負債"}類型了，換一個名稱吧。</p>
+            )}
+            <AccountIconPicker value={item.icon} onChange={(icon) => updateItem(i, { icon })} />
+            {/* 鎖定 kind 時（從「新增帳戶」彈窗裡開啟）不顯示這個切換——資產/負債在
+                上一層已經選過了，這裡再問一次只是多餘的欄位。 */}
+            {!lockedKind && (
+              <Field label="類型">
+                <SegmentedControl
+                  className="self-start"
+                  value={item.kind}
+                  onChange={(kind) => updateItem(i, { kind })}
+                  options={[
+                    { value: "asset", label: "資產" },
+                    { value: "liability", label: "負債" },
+                  ]}
+                />
+              </Field>
+            )}
+          </>
+        )}
+      />
     </Modal>
   );
 }

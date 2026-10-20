@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "./button";
-import { Modal } from "./modal";
+import { Modal, ModalFooter } from "./modal";
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { text } from "./theme";
 import { isLegacyRule, rulesForCategory, type BudgetRuleDTO } from "@/lib/expenses/budgets";
@@ -42,17 +41,11 @@ export function BudgetModal({
       onClose={onClose}
       title={category ? `${category.name} 的預算` : "設定預算"}
       footer={
-        <>
-          <span />
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={onClose}>
-              取消
-            </Button>
-            <Button disabled={!Number.isFinite(amount) || amount < 0} onClick={() => onSave(amount)}>
-              儲存
-            </Button>
-          </div>
-        </>
+        <ModalFooter
+          onClose={onClose}
+          onConfirm={() => onSave(amount)}
+          confirmDisabled={!Number.isFinite(amount) || amount < 0}
+        />
       }
     >
       <p className={`${text.muted} leading-relaxed`}>

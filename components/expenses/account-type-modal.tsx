@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "./button";
-import { Modal, Field, fieldInputClass } from "./modal";
+import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
 import { AccountIconPicker, DEFAULT_PICKER_ICON } from "./category-field-pickers";
 import { accountTypeNameTaken, type AccountKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
 
@@ -46,23 +45,12 @@ export function AccountTypeModal({
       onClose={onClose}
       title="編輯帳戶類型"
       footer={
-        <>
-          {onDelete ? (
-            <Button variant="ghost" className="text-[#D1517E] hover:text-[#D1517E]" onClick={onDelete}>
-              刪除
-            </Button>
-          ) : (
-            <span />
-          )}
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={onClose}>
-              取消
-            </Button>
-            <Button disabled={!canSave} onClick={() => onSave({ name: name.trim(), icon: icon.trim() })}>
-              儲存
-            </Button>
-          </div>
-        </>
+        <ModalFooter
+          onClose={onClose}
+          onConfirm={() => onSave({ name: name.trim(), icon: icon.trim() })}
+          confirmDisabled={!canSave}
+          onDelete={onDelete}
+        />
       }
     >
       <Field label="類型名稱">

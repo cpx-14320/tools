@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/expenses/page-header";
-import { Button, ButtonLink } from "@/components/expenses/button";
+import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { DonutChart, type DonutSlice } from "@/components/expenses/donut-chart";
 import { KpiCard, DeltaText, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { AssetComparePicker } from "@/components/expenses/asset-compare-picker";
-import { text, gradient, shadow } from "@/components/expenses/theme";
+import { text } from "@/components/expenses/theme";
 import { AccountModal, type AccountModalDraft } from "@/components/expenses/account-modal";
 import { TransferModal, type TransferModalDraft } from "@/components/expenses/transfer-modal";
 import { accountsByKind, accountBalance, balanceDelta, totalByKind, netWorth, type AccountDTO } from "@/lib/expenses/accounts";
@@ -181,33 +181,16 @@ export function AssetsView() {
     <div>
       {/* 新增帳戶搬到右下角的浮動按鈕，跟首頁新增交易同一招——標題列只留「帳戶類型」
           跟「轉帳」兩個比較少按、不需要隨手可點的操作。 */}
-      <PageHeader
-        title="資產總表"
-        actions={
-          <div className="flex items-center gap-2">
-            <ButtonLink href="/tools/expenses/account-types" variant="secondary">
-              帳戶類型
-            </ButtonLink>
-            <Button variant="secondary" onClick={() => setTransferOpen(true)} disabled={accounts.length < 2}>
-              ⇄ 轉帳
-            </Button>
-          </div>
-        }
-      />
+      {/* 標題列不放按鈕：「帳戶類型」從設定頁 › 帳戶與資產 進去就好（同一個入口不用開兩個），
+          「轉帳」移到下面「資產」區塊的標題旁邊——轉帳本來就是在動帳戶的錢，放在帳戶
+          清單上方比放在整頁最上面更接近操作對象。 */}
+      <PageHeader title="資產總表" />
 
       <div className="mb-4 flex justify-end">
         <AssetComparePicker setting={compareSetting} onChange={setCompareSetting} />
       </div>
 
-      <button
-        type="button"
-        onClick={() => setCreateOpen(true)}
-        aria-label="新增帳戶"
-        className="fixed right-5 z-20 grid size-14 place-items-center rounded-full text-3xl font-bold leading-none text-white"
-        style={{ background: gradient.primary, boxShadow: shadow.cta, bottom: "calc(env(safe-area-inset-bottom) + 86px)" }}
-      >
-        ＋
-      </button>
+      <FloatingAddButton onClick={() => setCreateOpen(true)} label="新增帳戶" />
 
       <AccountModal
         open={createOpen}
@@ -299,7 +282,17 @@ export function AssetsView() {
               拿掉後新增類型只保留一個入口，不用分散在兩個地方維護同一個操作。 */}
           {assets.length > 0 && (
             <div className="mb-5">
-              <p className={`mb-2 px-1 ${text.sectionHeading}`}>資產</p>
+              <div className="mb-2 flex items-center justify-between px-1">
+                <p className={text.sectionHeading}>資產</p>
+                <button
+                  type="button"
+                  onClick={() => setTransferOpen(true)}
+                  disabled={accounts.length < 2}
+                  className="text-xs font-medium text-[#6F5FD6] disabled:text-[#C7BFE6]"
+                >
+                  ⇄ 轉帳
+                </button>
+              </div>
               <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
                 {assets.map((a) => {
                   const balance = accountBalance(a, accountTypes, transactions, categories, transfers);

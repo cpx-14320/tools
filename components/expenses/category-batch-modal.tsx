@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, SegmentedControl } from "./button";
-import { Modal, Field, fieldInputClass } from "./modal";
+import { SegmentedControl } from "./button";
+import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
+import { BatchDraftList } from "./batch-draft-list";
 import { CategoryIconPicker, DEFAULT_PICKER_ICON } from "./category-field-pickers";
 import { categoryFillClass, categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 
@@ -88,87 +89,69 @@ export function CategoryBatchModal({
       onClose={onClose}
       title={isSubcategory ? `新增「${parentName}」的子分類` : "新增分類"}
       footer={
-        <>
-          <span />
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={onClose}>
-              取消
-            </Button>
-            <Button
-              disabled={!canSave}
-              onClick={() => {
-                const valid = items
-                  .map((it, i) => ({ ...it, name: it.name.trim(), icon: it.icon.trim(), _dup: isDuplicateDraft(items, i, categories, parentId) }))
-                  .filter((it) => it.name && it.icon && !it._dup);
-                onSave(isSubcategory ? valid.map(({ name, icon }) => ({ name, icon })) : valid.map(({ name, icon, color, kind }) => ({ name, icon, color, kind })));
-              }}
-            >
-              儲存
-            </Button>
-          </div>
-        </>
+        <ModalFooter
+          onClose={onClose}
+          onConfirm={() => {
+            const valid = items
+              .map((it, i) => ({ ...it, name: it.name.trim(), icon: it.icon.trim(), _dup: isDuplicateDraft(items, i, categories, parentId) }))
+              .filter((it) => it.name && it.icon && !it._dup);
+            onSave(
+              isSubcategory
+                ? valid.map(({ name, icon }) => ({ name, icon }))
+                : valid.map(({ name, icon, color, kind }) => ({ name, icon, color, kind })),
+            );
+          }}
+          confirmDisabled={!canSave}
+        />
       }
     >
-      {items.map((item, i) => (
-        <div key={i} className="flex flex-col gap-2.5 rounded-2xl border border-[#ECE4FA] p-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[#9C94C4]">第 {i + 1} 則</span>
-            {items.length > 1 && (
-              <button type="button" onClick={() => removeItem(i)} className="text-xs font-medium text-[#D1517E]">
-                刪除
-              </button>
-            )}
-          </div>
-          <Field label="名稱">
-            <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} placeholder="例如「餐飲」" className={fieldInputClass} />
-          </Field>
-          {isDuplicateDraft(items, i, categories, parentId) && (
-            <p className="text-xs text-[#D1517E]">已經有同樣名稱的分類了，換一個名稱吧。</p>
-          )}
-          <CategoryIconPicker kind={item.kind} value={item.icon} onChange={(icon) => updateItem(i, { icon })} />
+      <BatchDraftList
+        items={items}
+        onRemove={removeItem}
+        onAdd={() => setItems((list) => [...list, blankDraft(effectiveKind)])}
+        renderItem={(item, i) => (
+          <>
+            <Field label="名稱">
+              <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} placeholder="例如「餐飲」" className={fieldInputClass} />
+            </Field>
+            {isDuplicateDraft(items, i, categories, parentId) && <p className="text-xs text-[#D1517E]">已經有同樣名稱的分類了，換一個名稱吧。</p>}
+            <CategoryIconPicker kind={item.kind} value={item.icon} onChange={(icon) => updateItem(i, { icon })} />
 
-          {!isSubcategory && (
-            <>
-              {/* 鎖定收支類型時（從新增交易彈窗的某個分頁點進來）不顯示這個切換——
-                  上一層已經選過支出還是收入了，這裡再問一次只會建出對不上的分類。 */}
-              {!lockedKind && (
-                <Field label="收支類型">
-                  <SegmentedControl
-                    className="self-start"
-                    value={item.kind}
-                    onChange={(kind) => updateItem(i, { kind })}
-                    options={[
-                      { value: "支出", label: "支出" },
-                      { value: "收入", label: "收入" },
-                    ]}
-                  />
-                </Field>
-              )}
-              <Field label="顏色">
-                <div className="flex gap-2">
-                  {COLORS.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      aria-label={`顏色 ${c}`}
-                      onClick={() => updateItem(i, { color: c })}
-                      className={`size-8 rounded-full ${categoryFillClass[c]} ${item.color === c ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`}
+            {!isSubcategory && (
+              <>
+                {/* 鎖定收支類型時（從新增交易彈窗的某個分頁點進來）不顯示這個切換——
+                    上一層已經選過支出還是收入了，這裡再問一次只會建出對不上的分類。 */}
+                {!lockedKind && (
+                  <Field label="收支類型">
+                    <SegmentedControl
+                      className="self-start"
+                      value={item.kind}
+                      onChange={(kind) => updateItem(i, { kind })}
+                      options={[
+                        { value: "支出", label: "支出" },
+                        { value: "收入", label: "收入" },
+                      ]}
                     />
-                  ))}
-                </div>
-              </Field>
-            </>
-          )}
-        </div>
-      ))}
-
-      <button
-        type="button"
-        onClick={() => setItems((list) => [...list, blankDraft(effectiveKind)])}
-        className="rounded-xl border border-dashed border-[#C7BFE6] py-2.5 text-sm font-medium text-[#6F5FD6]"
-      >
-        ＋ 新增一則
-      </button>
+                  </Field>
+                )}
+                <Field label="顏色">
+                  <div className="flex gap-2">
+                    {COLORS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        aria-label={`顏色 ${c}`}
+                        onClick={() => updateItem(i, { color: c })}
+                        className={`size-8 rounded-full ${categoryFillClass[c]} ${item.color === c ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`}
+                      />
+                    ))}
+                  </div>
+                </Field>
+              </>
+            )}
+          </>
+        )}
+      />
     </Modal>
   );
 }

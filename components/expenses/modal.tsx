@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { Button } from "./button";
 import { text } from "./theme";
 
 export const fieldInputClass =
@@ -86,5 +87,46 @@ export function Modal({
       </div>
     </div>,
     document.body,
+  );
+}
+
+/** 彈窗底部那排按鈕：左邊（可選）刪除、右邊取消＋主要動作。
+ *
+ *  記帳本十幾個彈窗本來各自手刻同一段「onDelete ? 刪除 : <span />，右邊再放取消跟儲存」，
+ *  連紅色刪除字的色碼都是各自複製的。集中成這一個，之後要調整按鈕順序或樣式只要改一次。 */
+export function ModalFooter({
+  onClose,
+  onConfirm,
+  confirmLabel = "儲存",
+  confirmDisabled = false,
+  onDelete,
+  deleteLabel = "刪除",
+}: {
+  onClose: () => void;
+  onConfirm: () => void;
+  confirmLabel?: string;
+  confirmDisabled?: boolean;
+  /** 有給才顯示左下角的刪除；新增用的彈窗不給，位置用空元素佔著維持左右分佈。 */
+  onDelete?: () => void;
+  deleteLabel?: string;
+}) {
+  return (
+    <>
+      {onDelete ? (
+        <Button variant="ghost" className="text-[#D1517E] hover:text-[#D1517E]" onClick={onDelete}>
+          {deleteLabel}
+        </Button>
+      ) : (
+        <span />
+      )}
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" onClick={onClose}>
+          取消
+        </Button>
+        <Button disabled={confirmDisabled} onClick={onConfirm}>
+          {confirmLabel}
+        </Button>
+      </div>
+    </>
   );
 }

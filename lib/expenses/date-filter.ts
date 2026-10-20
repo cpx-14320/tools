@@ -61,20 +61,6 @@ export function dateFilterRange(f: DateFilter): DateRange | null {
   }
 }
 
-export function dateFilterLabel(f: DateFilter): string {
-  switch (f.mode) {
-    case "all":
-      return "全部";
-    case "year":
-      return `${f.year} 年`;
-    case "month":
-      return `${f.year} 年 ${f.month} 月`;
-    case "day":
-      return `${f.year}-${pad2(f.month)}-${pad2(f.day)}`;
-    case "custom":
-      return `${f.customStart} ～ ${f.customEnd}`;
-  }
-}
 
 export function shiftYearMonth(yearMonth: string, delta: number): string {
   const [y, m] = yearMonth.split("-").map(Number);

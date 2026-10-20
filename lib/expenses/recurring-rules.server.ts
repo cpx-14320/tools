@@ -111,7 +111,7 @@ export async function deleteRecurringRule(userId: ObjectId, id: string): Promise
 /** 這條規則目前已經入帳的那幾期——key 是發生日期（YYYY-MM-DD），value 是對應的
  *  expenses.transactions _id。用來跟 lib/expenses/recurring-rules.ts 的 occurrenceStatuses
  *  比對出「已入帳 vs 還沒入帳」。 */
-export async function listConfirmedOccurrences(userId: ObjectId, ruleId: string): Promise<Map<string, string>> {
+async function listConfirmedOccurrences(userId: ObjectId, ruleId: string): Promise<Map<string, string>> {
   const db = await getDb();
   const docs = await db
     .collection("expenses.transactions")

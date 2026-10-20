@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "./button";
-import { Modal, Field } from "./modal";
+import { Modal, Field, ModalFooter } from "./modal";
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { CategoryGridPicker } from "./category-grid-picker";
 import { text } from "./theme";
@@ -52,23 +51,15 @@ export function ReconcileModal({
       fullHeight
       stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} color="#6F5FD6" label="實際餘額" />}
       footer={
-        <>
-          <span />
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={onClose}>
-              取消
-            </Button>
-            <Button
-              disabled={!canSave}
-              onClick={() => {
-                if (!adjustment) return;
-                onSave({ categoryId, amount: adjustment.amount, date, note: "對帳調整" });
-              }}
-            >
-              補上調整
-            </Button>
-          </div>
-        </>
+        <ModalFooter
+          onClose={onClose}
+          onConfirm={() => {
+            if (!adjustment) return;
+            onSave({ categoryId, amount: adjustment.amount, date, note: "對帳調整" });
+          }}
+          confirmDisabled={!canSave}
+          confirmLabel="補上調整"
+        />
       }
     >
       <div className="rounded-2xl bg-[#F9F7FE] p-4">

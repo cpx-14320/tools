@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "./button";
-import { Modal, Field, fieldInputClass } from "./modal";
+import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
 import { DateField } from "./date-field";
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { InlineIcon } from "./icon-avatar";
@@ -93,26 +92,20 @@ export function TransferModal({
       onClose={onClose}
       title={initial ? "編輯轉帳" : "新增轉帳"}
       footer={
-        <>
-          {onDelete ? (
-            <Button variant="ghost" className="text-[#D1517E] hover:text-[#D1517E]" onClick={onDelete}>
-              刪除
-            </Button>
-          ) : (
-            <span />
-          )}
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={onClose}>
-              取消
-            </Button>
-            <Button
-              disabled={!canSave}
-              onClick={() => onSave({ fromAccountId, toAccountId, amount: amountNum, date, note: note.trim() || undefined })}
-            >
-              儲存
-            </Button>
-          </div>
-        </>
+        <ModalFooter
+          onClose={onClose}
+          onConfirm={() =>
+            onSave({
+              fromAccountId,
+              toAccountId,
+              amount: amountNum,
+              date,
+              note: note.trim() || undefined,
+            })
+          }
+          confirmDisabled={!canSave}
+          onDelete={onDelete}
+        />
       }
     >
       <Field label="從（轉出帳戶）">

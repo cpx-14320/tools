@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
+import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { Button, Badge, SegmentedControl, PillButton } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ProgressBar } from "@/components/expenses/progress-bar";
-import { text, gradient, shadow } from "@/components/expenses/theme";
+import { text } from "@/components/expenses/theme";
 import { RecurringRuleModal, type RecurringRuleModalDraft } from "@/components/expenses/recurring-rule-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { SelectionBar, SelectionDot } from "@/components/expenses/selection-bar";
@@ -144,15 +145,7 @@ export function RecurringView() {
       <PageHeader title="固定收支" description="每月電話費、房租這種會重複出現的收支，到期會在你下次打開記帳本時自動入帳" />
 
       {/* 新增搬到右下角的浮動按鈕，跟首頁新增交易、消費分類頁同一招。 */}
-      <button
-        type="button"
-        onClick={() => setModal({ mode: "create" })}
-        aria-label="新增固定收支"
-        className="fixed right-5 z-20 grid size-14 place-items-center rounded-full text-3xl font-bold leading-none text-white"
-        style={{ background: gradient.primary, boxShadow: shadow.cta, bottom: "calc(env(safe-area-inset-bottom) + 86px)" }}
-      >
-        ＋
-      </button>
+      <FloatingAddButton onClick={() => setModal({ mode: "create" })} label="新增固定收支" />
 
       <div className="mb-4 flex items-center justify-between gap-2">
         <SegmentedControl

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "./button";
-import { Modal, Field, fieldInputClass } from "./modal";
+import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
 import { DateField } from "./date-field";
 
 export interface GoalModalDraft {
@@ -47,35 +46,21 @@ export function GoalModal({
       onClose={onClose}
       title={isEdit ? "編輯存錢目標" : "新增存錢目標"}
       footer={
-        <>
-          {onDelete ? (
-            <Button variant="ghost" className="text-[#D1517E] hover:text-[#D1517E]" onClick={onDelete}>
-              刪除
-            </Button>
-          ) : (
-            <span />
-          )}
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={onClose}>
-              取消
-            </Button>
-            <Button
-              disabled={!canSave}
-              onClick={() =>
-                onSave({
-                  name: name.trim(),
-                  icon: icon.trim(),
-                  targetAmount: targetAmountNum,
-                  currentAmount: currentAmountNum,
-                  startDate: startDate || undefined,
-                  targetDate: targetDate || undefined,
-                })
-              }
-            >
-              儲存
-            </Button>
-          </div>
-        </>
+        <ModalFooter
+          onClose={onClose}
+          onConfirm={() =>
+            onSave({
+              name: name.trim(),
+              icon: icon.trim(),
+              targetAmount: targetAmountNum,
+              currentAmount: currentAmountNum,
+              startDate: startDate || undefined,
+              targetDate: targetDate || undefined,
+            })
+          }
+          confirmDisabled={!canSave}
+          onDelete={onDelete}
+        />
       }
     >
       <Field label="名稱">
@@ -113,17 +98,12 @@ export function ContributeModal({ open, onClose, onSave }: { open: boolean; onCl
       onClose={onClose}
       title="存入"
       footer={
-        <>
-          <span />
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={onClose}>
-              取消
-            </Button>
-            <Button disabled={!canSave} onClick={() => onSave(amountNum)}>
-              確認存入
-            </Button>
-          </div>
-        </>
+        <ModalFooter
+          onClose={onClose}
+          onConfirm={() => onSave(amountNum)}
+          confirmDisabled={!canSave}
+          confirmLabel="確認存入"
+        />
       }
     >
       <Field label="這次要存入多少">

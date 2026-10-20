@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
+import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { SegmentedControl, PillButton } from "@/components/expenses/button";
-import { text, gradient, shadow } from "@/components/expenses/theme";
+import { text } from "@/components/expenses/theme";
 import { CategoryModal, type CategoryModalDraft } from "@/components/expenses/category-modal";
 import { CategoryBatchModal, type CategoryBatchItem } from "@/components/expenses/category-batch-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
@@ -148,15 +149,7 @@ export function CategoriesView() {
       <PageHeader title="消費分類" description="分類底下可以再開子分類，方便細看同一種消費裡哪種類型花最多" />
 
       {/* 新增搬到右下角的浮動按鈕（跟首頁新增交易、帳戶類型頁同一招），標題列空出來。 */}
-      <button
-        type="button"
-        onClick={() => setBatchTarget({})}
-        aria-label="新增分類"
-        className="fixed right-5 z-20 grid size-14 place-items-center rounded-full text-3xl font-bold leading-none text-white"
-        style={{ background: gradient.primary, boxShadow: shadow.cta, bottom: "calc(env(safe-area-inset-bottom) + 86px)" }}
-      >
-        ＋
-      </button>
+      <FloatingAddButton onClick={() => setBatchTarget({})} label="新增分類" />
 
       <CategoryModal
         key={modal ? modal.id : "closed"}
@@ -243,7 +236,7 @@ export function CategoriesView() {
                 </button>
 
                 {subs.length > 0 && (
-                  <div className="flex flex-col divide-y divide-[#F2EEFA] border-t border-[#ECE4FA] bg-[#F9F7FE] pl-6">
+                  <div className="flex flex-col divide-y divide-[#F2EEFA] border-t border-[#ECE4FA] bg-[#F9F7FE]">
                     {subs.map((sub) => {
                       const subCount = counts[sub.id] ?? 0;
                       return (
@@ -251,11 +244,8 @@ export function CategoriesView() {
                           key={sub.id}
                           type="button"
                           onClick={() => setModal(sub)}
-                          className="flex w-full items-center gap-3 py-2.5 pr-4 text-left"
+                          className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
                         >
-                          <span aria-hidden className="text-[#9C94C4]">
-                            ↳
-                          </span>
                           <span className="min-w-0 flex-1 text-sm font-medium text-[#4A3B7C]">{sub.name}</span>
                           <span className={`shrink-0 ${text.muted}`}>{subCount} 筆</span>
                         </button>

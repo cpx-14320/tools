@@ -5,10 +5,11 @@ import Link from "next/link";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { Card, CardBody } from "@/components/expenses/card";
+import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { KpiCard, DeltaText, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
-import { text, gradient, shadow } from "@/components/expenses/theme";
+import { text } from "@/components/expenses/theme";
 import { compareDateFilter, dateFilterRange, defaultDateFilter, referenceYearMonth } from "@/lib/expenses/date-filter";
 import { ComparePicker } from "@/components/expenses/compare-picker";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
@@ -181,15 +182,7 @@ export function DashboardView() {
       {/* 新增交易的入口搬到首頁，固定在卡片右下角（底部導覽列上方）——跟搭乘車同一招，
           fixed 子孫以外殼卡片容器（有 transform）為定位基準，不是整個瀏覽器視窗。用純
           「＋」而不是其他 emoji，跟選單圖示區分開，一眼就看得出是「新增」的動作。 */}
-      <button
-        type="button"
-        onClick={() => setAddOpen(true)}
-        aria-label="新增交易"
-        className="fixed right-5 z-20 grid size-14 place-items-center rounded-full text-3xl font-bold leading-none text-white"
-        style={{ background: gradient.primary, boxShadow: shadow.cta, bottom: "calc(env(safe-area-inset-bottom) + 86px)" }}
-      >
-        ＋
-      </button>
+      <FloatingAddButton onClick={() => setAddOpen(true)} label="新增交易" />
 
       {/* 收入獨立一整排、支出跟結餘並排各半——收入是看整體財務狀況時最先想看的數字，
           拉成滿版比較醒目；支出跟結餘互相比較的意義比較大（花了多少、剩多少），並排

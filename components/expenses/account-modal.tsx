@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Button, SegmentedControl } from "./button";
-import { Modal, Field, fieldInputClass } from "./modal";
-import { IconAvatar } from "./icon-avatar";
+import { SegmentedControl } from "./button";
+import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
+import { OptionGrid } from "./option-grid";
 import { ConfirmModal } from "./confirm-modal";
 import { AccountTypeBatchModal, type AccountTypeBatchItem } from "./account-type-batch-modal";
 import { accountNameTaken, type AccountDTO } from "@/lib/expenses/accounts";
@@ -107,58 +107,18 @@ export function AccountModal({
     }
   }
 
-  function TypeTile({ type }: { type: AccountTypeDTO }) {
-    return (
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setAccountTypeId(type.id)}
-          className={`flex w-full flex-col items-center gap-1.5 rounded-2xl border px-2 py-2.5 transition-colors ${
-            type.id === accountTypeId ? "border-[#6F5FD6] bg-[#F3EFFC]" : "border-[#ECE4FA] bg-white"
-          }`}
-        >
-          <IconAvatar icon={type.icon} size="sm" />
-          <span className="line-clamp-1 text-xs font-medium text-[#4A3B7C]">{type.name}</span>
-        </button>
-        {/* 獨立的小叉叉——跟上面選取用的按鈕是兩個並排的元素，不是疊在同一顆按鈕裡
-            （按鈕裡面不能再放按鈕），點這裡刪除不會連帶選到這個類型。 */}
-        <button
-          type="button"
-          onClick={() => setDeleteTarget(type)}
-          aria-label={`刪除「${type.name}」類型`}
-          className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full border border-[#ECE4FA] bg-white text-[#D1517E] shadow-sm"
-        >
-          <span aria-hidden className="text-[10px] leading-none">
-            ✕
-          </span>
-        </button>
-      </div>
-    );
-  }
-
   return (
     <Modal
       open={open}
       onClose={onClose}
       title={initial ? "編輯帳戶" : "新增帳戶"}
       footer={
-        <>
-          {onDelete ? (
-            <Button variant="ghost" className="text-[#D1517E] hover:text-[#D1517E]" onClick={onDelete}>
-              刪除
-            </Button>
-          ) : (
-            <span />
-          )}
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={onClose}>
-              取消
-            </Button>
-            <Button disabled={!canSave} onClick={() => onSave({ name: name.trim(), accountTypeId, openingBalance: balanceNum })}>
-              儲存
-            </Button>
-          </div>
-        </>
+        <ModalFooter
+          onClose={onClose}
+          onConfirm={() => onSave({ name: name.trim(), accountTypeId, openingBalance: balanceNum })}
+          confirmDisabled={!canSave}
+          onDelete={onDelete}
+        />
       }
     >
       <div>
@@ -173,19 +133,16 @@ export function AccountModal({
             ]}
           />
         </div>
-        <div className="grid grid-cols-4 gap-2">
-          {visibleTypes.map((t) => (
-            <TypeTile key={t.id} type={t} />
-          ))}
-          <button
-            type="button"
-            onClick={() => setTypeBatchOpen(true)}
-            className="flex flex-col items-center gap-1.5 rounded-2xl border border-dashed border-[#C7BFE6] bg-white px-2 py-2.5 transition-colors hover:bg-[#F3EFFC]"
-          >
-            <IconAvatar icon="＋" size="sm" className="bg-[#F3EFFC] text-[#6F5FD6]" />
-            <span className="line-clamp-1 text-xs font-medium text-[#6F5FD6]">新增</span>
-          </button>
-        </div>
+        {/* 跟新增消費紀錄的分類格子同一個元件（OptionGrid）——欄數、選取樣式、
+            「＋新增」的位置都一致，不再兩邊各長一個樣。 */}
+        <OptionGrid
+          options={visibleTypes.map((t) => ({ id: t.id, name: t.name, icon: t.icon }))}
+          value={accountTypeId}
+          onChange={setAccountTypeId}
+          onAddClick={() => setTypeBatchOpen(true)}
+          onDelete={(option) => setDeleteTarget(accountTypes.find((t) => t.id === option.id) ?? null)}
+          deleteLabelOf={(option) => `刪除「${option.name}」類型`}
+        />
       </div>
 
       <Field label="名稱">

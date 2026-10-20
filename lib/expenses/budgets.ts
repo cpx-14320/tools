@@ -41,14 +41,6 @@ export function budgetForMonth(rules: BudgetRuleDTO[], categoryId: string, yearM
   return best?.amount;
 }
 
-/** 指定月份「所有有編預算的分類」——畫面上列預算清單時用，只列真的有金額的
- *  （amount 為 0 代表刻意不編，不會出現在這份清單裡）。 */
-export function budgetsForMonth(rules: BudgetRuleDTO[], yearMonth: string): { categoryId: string; amount: number }[] {
-  const categoryIds = [...new Set(rules.map((r) => r.categoryId))];
-  return categoryIds
-    .map((categoryId) => ({ categoryId, amount: budgetForMonth(rules, categoryId, yearMonth) ?? 0 }))
-    .filter((row) => row.amount > 0);
-}
 
 /** 這個分類目前這一串生效規則，照月份排好——預算設定頁展開某個分類時列出
  *  「哪個月開始改成多少」的變更歷史用。 */

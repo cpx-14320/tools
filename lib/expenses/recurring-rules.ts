@@ -114,12 +114,6 @@ export function occurrenceStatuses(rule: RuleSpan, confirmedByDate: Map<string, 
   }));
 }
 
-/** 目前最早一筆「已經到期、但還沒自動入帳」的那一期——正常情況下，使用者只要進過一次
- *  記帳本任何頁面，到期的期數就會被 autoConfirmDueOccurrences 補上，這裡幾乎都會是
- *  null；只有在補上的當下跟畫面查詢的當下有時間差時才可能短暫出現。 */
-export function nextPendingOccurrence(statuses: OccurrenceStatus[]): OccurrenceStatus | null {
-  return statuses.find((s) => !s.confirmed) ?? null;
-}
 
 /** 下一次「預計」發生的日期，不限於是否已經到期——用來顯示「下次預計入帳：2026-11-05」
  *  這種資訊性文字。假設期數都是依序自動入帳、不會有缺漏（auto-confirm 的實作保證這點），

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Button, SegmentedControl } from "./button";
-import { Modal, Field, fieldInputClass } from "./modal";
+import { SegmentedControl } from "./button";
+import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
 import { DateField } from "./date-field";
 import { AccountPickerModal } from "./account-picker-modal";
 import { CategoryGridPicker } from "./category-grid-picker";
@@ -173,35 +173,21 @@ export function TransactionModal({
       // 一邊隨時按數字；按明細項目的金額時這個鍵盤會改成編那一項（見 keypadLabel）。
       stickyBottom={<AmountKeypad expr={keypadExpr} onExprChange={handleKeypadChange} color={kind === "收入" ? "#2FAE82" : "#D1517E"} label={keypadLabel} />}
       footer={
-        <>
-          {onDelete ? (
-            <Button variant="ghost" className="text-[#D1517E] hover:text-[#D1517E]" onClick={onDelete}>
-              刪除
-            </Button>
-          ) : (
-            <span />
-          )}
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={onClose}>
-              取消
-            </Button>
-            <Button
-              disabled={!canSave}
-              onClick={() =>
-                onSave({
-                  categoryId,
-                  amount: amountNum,
-                  date,
-                  note: note.trim() || undefined,
-                  breakdown: hasBreakdown ? breakdown : undefined,
-                  accountId: accountId || undefined,
-                })
-              }
-            >
-              儲存
-            </Button>
-          </div>
-        </>
+        <ModalFooter
+          onClose={onClose}
+          onConfirm={() =>
+            onSave({
+              categoryId,
+              amount: amountNum,
+              date,
+              note: note.trim() || undefined,
+              breakdown: hasBreakdown ? breakdown : undefined,
+              accountId: accountId || undefined,
+            })
+          }
+          confirmDisabled={!canSave}
+          onDelete={onDelete}
+        />
       }
     >
       <SegmentedControl
