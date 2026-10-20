@@ -161,7 +161,11 @@ export function DashboardView() {
         <ComparePicker />
       </div>
 
+      {/* key 跟著開關變動＝每次打開都重新掛載一個乾淨的彈窗：不這樣做的話，上一筆填過的
+          金額、分類會原封不動留著，使用者得自己一個一個清掉才能記下一筆。其他頁面的
+          編輯彈窗本來就是用 key 帶 id 達到同樣效果，這裡補齊。 */}
       <TransactionModal
+        key={addOpen ? "add-open" : "add-closed"}
         open={addOpen}
         categories={categories}
         accounts={accounts}

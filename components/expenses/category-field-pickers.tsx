@@ -14,23 +14,23 @@ function IconPicker({ options, value, onChange }: { options: IconOption[]; value
   return (
     <div className="flex flex-col gap-2">
       <span className={text.label}>圖示</span>
-      <div className="grid grid-cols-5 gap-2">
+      {/* 只排圖、不寫名稱——這裡挑的是「長什麼樣子」，不是在選一個已經定義好的分類，
+          圖下面掛一行名稱反而會讓人以為選了圖就等於選了那個分類。名稱留在 aria-label
+          給讀螢幕軟體用。 */}
+      <div className="grid grid-cols-6 gap-2">
         {options.map((option) => (
           <button
             key={option.path}
             type="button"
             onClick={() => onChange(option.path)}
             aria-label={`圖示 ${option.label}`}
-            className="flex flex-col items-center gap-1"
+            className="flex items-center justify-center"
           >
             <IconAvatar
               icon={option.path}
               size="sm"
               className={`bg-[#F3EFFC] ${value === option.path ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`}
             />
-            <span className={`line-clamp-1 w-full text-center text-[11px] ${value === option.path ? "font-semibold text-[#6F5FD6]" : text.muted}`}>
-              {option.label}
-            </span>
           </button>
         ))}
       </div>

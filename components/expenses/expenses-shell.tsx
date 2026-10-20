@@ -1,28 +1,17 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { LayoutModeProvider, useLayoutMode } from "@/components/layout-mode-context";
 import { DateFilterProvider } from "@/components/expenses/date-filter-context";
 import { ExpensesMobileShell } from "@/components/expenses/expenses-mobile-shell";
-import { ExpensesDesktopShell } from "@/components/expenses/expenses-desktop-shell";
 
-function ExpensesShellInner({ children }: { children: ReactNode }) {
-  const { mode } = useLayoutMode();
-  return mode === "mobile" ? (
-    <ExpensesMobileShell>{children}</ExpensesMobileShell>
-  ) : (
-    <ExpensesDesktopShell>{children}</ExpensesDesktopShell>
-  );
-}
-
-/** 記帳本工具的外殼：手機／電腦版佈局用按鈕手動切換（跟實際螢幕寬度無關），見
- *  layout-mode-context.tsx。目前預設手機版，工具頁面先以手機版為主設計。 */
+/** 記帳本工具的外殼。只有手機版版面——記帳本整套畫面（底部導覽列、浮動新增按鈕、
+ *  底部彈出的彈窗）都是照手機操作設計的，原本那個切到電腦版的按鈕只會把同一批元件
+ *  塞進一個側邊欄版面，兩邊維護成本翻倍、實際上也沒在用，所以連同電腦版外殼一起移除。
+ *  （共用的 LayoutModeProvider 還在，hub 跟搭乘車仍然有自己的電腦版。） */
 export function ExpensesShell({ children }: { children: ReactNode }) {
   return (
-    <LayoutModeProvider>
-      <DateFilterProvider>
-        <ExpensesShellInner>{children}</ExpensesShellInner>
-      </DateFilterProvider>
-    </LayoutModeProvider>
+    <DateFilterProvider>
+      <ExpensesMobileShell>{children}</ExpensesMobileShell>
+    </DateFilterProvider>
   );
 }

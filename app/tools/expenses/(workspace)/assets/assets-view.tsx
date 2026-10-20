@@ -264,22 +264,27 @@ export function AssetsView() {
                 <div className="mt-4 flex items-center gap-5">
                   <DonutChart data={assetTypeDonutData} size={120} />
                   <div className="flex flex-1 flex-col gap-2">
+                    {/* 左邊類型名稱、右邊金額，百分比收到金額下面那一行——三個東西擠同
+                        一列的話，名稱稍長或金額位數一多就會換行，變成高高低低的兩層。 */}
                     {assetTypeBreakdown.map((r) => (
-                      <div key={r.id} className="flex items-center justify-between text-xs">
-                        <span className="flex items-center gap-1.5 text-[#4A3B7C]">
+                      <div key={r.id} className="flex items-start justify-between gap-2 text-xs">
+                        <span className="flex min-w-0 items-center gap-1.5 text-[#4A3B7C]">
                           <span className="size-2.5 shrink-0 rounded-full" style={{ background: r.colorHex }} />
-                          {r.name}
+                          <span className="truncate">{r.name}</span>
                         </span>
-                        <span className="flex items-center gap-2">
-                          {/* 這一類比基準日增加／減少多少——沒有變化（0）或還沒選比較基準
-                              就不顯示，不然每一列都掛一個「＋0」反而是噪音。 */}
-                          {r.changeAmount !== null && r.changeAmount !== 0 && (
-                            <span className="tabular-nums font-medium" style={{ color: r.changeAmount > 0 ? "#2FAE82" : "#D1517E" }}>
-                              {r.changeAmount > 0 ? "▲" : "▼"}
-                              {formatCurrency(Math.abs(r.changeAmount))}
-                            </span>
-                          )}
-                          <span className={`tabular-nums ${text.muted}`}>{r.pct.toFixed(1)}%</span>
+                        <span className="shrink-0 text-right">
+                          <span className="block tabular-nums font-semibold text-[#4A3B7C]">{formatCurrency(r.amount)}</span>
+                          <span className="mt-0.5 flex items-center justify-end gap-1.5">
+                            {/* 這一類比基準日增加／減少多少——沒有變化（0）或還沒選比較基準
+                                就不顯示，不然每一列都掛一個「＋0」反而是噪音。 */}
+                            {r.changeAmount !== null && r.changeAmount !== 0 && (
+                              <span className="tabular-nums font-medium" style={{ color: r.changeAmount > 0 ? "#2FAE82" : "#D1517E" }}>
+                                {r.changeAmount > 0 ? "▲" : "▼"}
+                                {formatCurrency(Math.abs(r.changeAmount))}
+                              </span>
+                            )}
+                            <span className={`tabular-nums ${text.muted}`}>{r.pct.toFixed(1)}%</span>
+                          </span>
                         </span>
                       </div>
                     ))}

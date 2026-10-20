@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
-import { Button, SegmentedControl } from "@/components/expenses/button";
-import { text } from "@/components/expenses/theme";
+import { SegmentedControl, PillButton } from "@/components/expenses/button";
+import { text, gradient, shadow } from "@/components/expenses/theme";
 import { CategoryModal, type CategoryModalDraft } from "@/components/expenses/category-modal";
 import { CategoryBatchModal, type CategoryBatchItem } from "@/components/expenses/category-batch-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
@@ -145,18 +145,18 @@ export function CategoriesView() {
 
   return (
     <div>
-      <PageHeader
-        title="消費分類"
-        description="分類底下可以再開子分類，方便細看同一種消費裡哪種類型花最多"
-        actions={
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={() => setSelecting((v) => !v)}>
-              {selecting ? "完成" : "選取"}
-            </Button>
-            <Button onClick={() => setBatchTarget({})}>＋ 新增分類</Button>
-          </div>
-        }
-      />
+      <PageHeader title="消費分類" description="分類底下可以再開子分類，方便細看同一種消費裡哪種類型花最多" />
+
+      {/* 新增搬到右下角的浮動按鈕（跟首頁新增交易、帳戶類型頁同一招），標題列空出來。 */}
+      <button
+        type="button"
+        onClick={() => setBatchTarget({})}
+        aria-label="新增分類"
+        className="fixed right-5 z-20 grid size-14 place-items-center rounded-full text-3xl font-bold leading-none text-white"
+        style={{ background: gradient.primary, boxShadow: shadow.cta, bottom: "calc(env(safe-area-inset-bottom) + 86px)" }}
+      >
+        ＋
+      </button>
 
       <CategoryModal
         key={modal ? modal.id : "closed"}
@@ -191,15 +191,19 @@ export function CategoriesView() {
         onClose={() => setDeleteConfirm(null)}
       />
 
-      <SegmentedControl
-        className="mb-4"
-        value={kind}
-        onChange={setKind}
-        options={[
-          { value: "支出", label: "支出" },
-          { value: "收入", label: "收入" },
-        ]}
-      />
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <SegmentedControl
+          value={kind}
+          onChange={setKind}
+          options={[
+            { value: "支出", label: "支出" },
+            { value: "收入", label: "收入" },
+          ]}
+        />
+        <PillButton onClick={() => setSelecting((v) => !v)} active={selecting}>
+          {selecting ? "完成" : "選取"}
+        </PillButton>
+      </div>
 
       {selecting && (
         <SelectionBar
@@ -217,7 +221,7 @@ export function CategoriesView() {
       {!ready ? (
         <p className={text.faint}>載入中…</p>
       ) : parents.length === 0 ? (
-        <p className={text.faint}>還沒有任何{kind}分類，點上方「＋ 新增分類」建立第一個</p>
+        <p className={text.faint}>還沒有任何{kind}分類，點右下角的＋建立第一個</p>
       ) : (
         <div className="flex flex-col gap-3">
           {parents.map((c) => {
@@ -252,7 +256,6 @@ export function CategoriesView() {
                           <span aria-hidden className="text-[#9C94C4]">
                             ↳
                           </span>
-                          <IconAvatar icon={sub.icon} size="sm" className={categoryColorClass[sub.color]} />
                           <span className="min-w-0 flex-1 text-sm font-medium text-[#4A3B7C]">{sub.name}</span>
                           <span className={`shrink-0 ${text.muted}`}>{subCount} 筆</span>
                         </button>

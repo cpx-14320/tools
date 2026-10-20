@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Modal } from "./modal";
+import { PillButton } from "./button";
 import { DatePickerModal } from "./date-picker-modal";
 import { text } from "./theme";
 import { assetCompareLabel, type AssetCompareMode, type AssetCompareSetting } from "@/lib/expenses/asset-compare";
@@ -30,16 +31,10 @@ export function AssetComparePicker({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className={`flex shrink-0 items-center gap-1 rounded-full border border-[#ECE4FA] bg-white px-3 py-1.5 text-xs font-medium text-[#6F5FD6] ${className}`}
-      >
-        <span>{assetCompareLabel(setting)}</span>
-        <span aria-hidden className="text-[#C7BFE6]">
-          ▾
-        </span>
-      </button>
+      <PillButton onClick={() => setOpen(true)} className={className}>
+        <span className="max-w-[112px] truncate">{assetCompareLabel(setting)}</span>
+        <span aria-hidden>▾</span>
+      </PillButton>
 
       <Modal open={open} onClose={() => setOpen(false)} title="比較基準">
         <p className={`${text.muted} leading-relaxed`}>淨資產／資產／負債旁邊的漲跌幅，以及資產配置每一類的增減，都是拿現在的餘額跟下面選的這一天相比。</p>

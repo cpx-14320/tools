@@ -66,13 +66,15 @@ export function AmountKeypad({
   expr,
   onExprChange,
   color = "#D1517E",
-  label = "金額",
+  label,
 }: {
   expr: string;
   onExprChange: (expr: string) => void;
   /** NT$ 字樣的顏色——支出/轉出習慣用紅色，收入習慣用綠色，呼叫端自己決定。 */
   color?: string;
-  /** 左上角的小標，預設「金額」；鍵盤被拿去編輯明細項目時會換成「明細：本薪」這種。 */
+  /** 數字上方的小標，只有在「這個鍵盤現在不是在編一般金額」時才需要（例如改某一筆
+   *  明細項目的金額）；平常不傳，因為旁邊就是一個大大的 NT$ 金額，再寫一次「金額」
+   *  是多餘的。 */
   label?: string;
 }) {
   function pressDigit(d: string) {
@@ -105,17 +107,19 @@ export function AmountKeypad({
 
   return (
     <div>
-      <div className="mb-2 flex items-center justify-between">
-        <span className="truncate text-xs font-medium text-[#9C94C4]">{label}</span>
-        <button type="button" onClick={pressBackspace} aria-label="刪除一位數" className="text-sm text-[#9C94C4] hover:text-[#6F5FD6]">
+      {label && <p className="mb-1 truncate text-xs font-medium text-[#9C94C4]">{label}</p>}
+      {/* 刪除鍵跟金額同一列（靠右）——上面不再另外放一行「金額」小標，那行字旁邊就是
+          這個大大的 NT$ 數字，再標一次是多餘的。 */}
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex min-w-0 items-baseline gap-1.5">
+          <span className="text-xl font-bold" style={{ color }}>
+            NT$
+          </span>
+          <span className="truncate text-3xl font-bold tabular-nums text-[#4A3B7C]">{expr || "0"}</span>
+        </span>
+        <button type="button" onClick={pressBackspace} aria-label="刪除一位數" className="shrink-0 text-lg text-[#9C94C4] hover:text-[#6F5FD6]">
           ⌫
         </button>
-      </div>
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-xl font-bold" style={{ color }}>
-          NT$
-        </span>
-        <span className="truncate text-3xl font-bold tabular-nums text-[#4A3B7C]">{expr || "0"}</span>
       </div>
       <div className="mt-3 grid grid-cols-4 gap-2">
         <KeyButton label="1" onClick={() => pressDigit("1")} />

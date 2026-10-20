@@ -2,7 +2,6 @@
 
 import type { ReactNode } from "react";
 import { ExpensesMobileNav } from "@/components/expenses/expenses-mobile-nav";
-import { LayoutToggle } from "@/components/layout-toggle";
 
 /** 記帳本手機版外殼——視覺上參考搭乘車的 TransitMobileShell（固定高度卡片、內容區自己
  *  捲動、漸層底、底部導覽列同一套樣式），但是獨立檔案、獨立元件，不共用搭乘車那邊的
@@ -11,7 +10,8 @@ import { LayoutToggle } from "@/components/layout-toggle";
  *  外觀」，不是電腦版本身。
  *
  *  不放固定的頂部 header——每個頁面本身的 PageHeader 已經有標題，疊一層外殼 header
- *  只會重複顯示同一個標題。LayoutToggle 改成浮在卡片右上角的小按鈕，不跟著內容捲動。 */
+ *  只會重複顯示同一個標題。也沒有切換電腦版的按鈕：記帳本只有手機版版面（見
+ *  ExpensesShell）。 */
 export function ExpensesMobileShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex justify-center bg-[#EFE9FB] px-0 py-0 sm:px-4 sm:py-6">
@@ -23,8 +23,6 @@ export function ExpensesMobileShell({ children }: { children: ReactNode }) {
         className="relative flex h-dvh w-full max-w-[430px] flex-col overflow-hidden sm:h-[850px] sm:rounded-[2.25rem] sm:border-[6px] sm:border-white sm:shadow-2xl"
         style={{ background: "linear-gradient(180deg, #EDE6FB 0%, #F3E7F3 45%, #E7DEF9 100%)", transform: "translateZ(0)" }}
       >
-        <LayoutToggle className="absolute right-3 top-3 z-10 border-[#ECE4FA] bg-white/80 text-[#4A3B7C] shadow-none backdrop-blur hover:text-[#6F5FD6]" />
-
         {/* main 本身的間距比照搭乘車 TransitMobileShell 那份（min-h-0 flex-1 overflow-y-auto
             pb-24，見 transit-mobile-shell.tsx）——pb-24 留給底部導覽列（fixed、不佔版面流動
             空間），左右／上下留白搬進內層這個 div，main 本身保持跟搭乘車一致、不吃 padding。 */}

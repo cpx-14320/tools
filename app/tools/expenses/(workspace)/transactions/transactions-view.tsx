@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { SegmentedControl } from "@/components/expenses/button";
+import { SegmentedControl, PillButton } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { DeltaBadge } from "@/components/expenses/delta-badge";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
@@ -183,10 +183,7 @@ export function TransactionsView() {
 
   return (
     <div>
-      <DateFilterPicker />
-      <div className="-mt-1 mb-4 flex justify-end">
-        <ComparePicker />
-      </div>
+      <DateFilterPicker className="mb-4" />
 
       <TransactionModal
         key={modal ? modal.id : "closed"}
@@ -247,7 +244,9 @@ export function TransactionsView() {
         </div>
       </Modal>
 
-      <div className="mb-4 flex items-center justify-between gap-2">
+      {/* 支出／收入切換、分類篩選、比較基準排同一列——三個都是「這份清單要看什麼」的
+          開關，拆成兩三列反而要找。PillButton 跟 SegmentedControl 等高，並排不會一高一低。 */}
+      <div className="mb-4 flex items-center gap-2">
         <SegmentedControl
           value={kind}
           onChange={setKind}
@@ -256,18 +255,14 @@ export function TransactionsView() {
             { value: "收入", label: "收入" },
           ]}
         />
-        {/* 分類篩選：有選的時候按鈕本身會變成實心＋顯示分類名稱，一眼看得出現在的
-            清單是被篩過的，不是全部。 */}
-        <button
-          type="button"
-          onClick={() => setFilterOpen(true)}
-          className={`flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-            filterCategory ? "border-[#6F5FD6] bg-[#6F5FD6] text-white" : "border-[#ECE4FA] bg-white text-[#9C94C4]"
-          }`}
-        >
-          <span aria-hidden>⌕</span>
-          <span className="max-w-[72px] truncate">{filterCategory ? filterCategory.name : "篩選"}</span>
-        </button>
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+          {/* 分類篩選：有選的時候按鈕變實心＋顯示分類名稱，一眼看得出清單是被篩過的。 */}
+          <PillButton onClick={() => setFilterOpen(true)} active={!!filterCategory}>
+            <span aria-hidden>⌕</span>
+            <span className="max-w-[64px] truncate">{filterCategory ? filterCategory.name : "篩選"}</span>
+          </PillButton>
+          <ComparePicker />
+        </div>
       </div>
 
       <label className="mb-4 flex items-center gap-2 rounded-full border border-[#ECE4FA] bg-white px-4 py-2.5">

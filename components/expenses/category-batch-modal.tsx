@@ -43,6 +43,7 @@ export function CategoryBatchModal({
   parentId,
   categories,
   defaultKind = "支出",
+  lockedKind,
   onClose,
   onSave,
 }: {
@@ -53,18 +54,23 @@ export function CategoryBatchModal({
   parentId?: string;
   /** 現有的所有分類，用來擋名稱重複。 */
   categories: CategoryDTO[];
-  /** 從新增交易彈窗點分類格子裡的「＋新增」開這個彈窗時，直接預選目前支出/收入分頁。 */
+  /** 從新增交易彈窗點分類格子裡的「＋新增」開這個彈窗時，直接預選目前支出/收入分頁。
+   *  有 lockedKind 時這個只是初始值，實際上每一則都會被鎖定成 lockedKind。 */
   defaultKind?: CategoryKind;
+  /** 呼叫端已經決定好要建哪一種（例如從新增交易彈窗的「支出」分頁點進來）時傳這個——
+   *  這裡就不再顯示收支類型切換，避免在支出分頁底下卻建出一個收入分類，兩邊對不起來。 */
+  lockedKind?: CategoryKind;
   onClose: () => void;
   /** 只會收到名稱與圖示都有填、且名稱沒有撞名的草稿。 */
   onSave: (items: CategoryBatchItem[]) => void;
 }) {
-  const [items, setItems] = useState<Draft[]>([blankDraft(defaultKind)]);
+  const effectiveKind = lockedKind ?? defaultKind;
+  const [items, setItems] = useState<Draft[]>([blankDraft(effectiveKind)]);
 
   useEffect(() => {
     /* eslint-disable-next-line react-hooks/set-state-in-effect */
-    if (open) setItems([blankDraft(defaultKind)]);
-  }, [open, defaultKind]);
+    if (open) setItems([blankDraft(effectiveKind)]);
+  }, [open, effectiveKind]);
 
   function updateItem(index: number, patch: Partial<Draft>) {
     setItems((list) => list.map((it, i) => (i === index ? { ...it, ...patch } : it)));
@@ -123,17 +129,21 @@ export function CategoryBatchModal({
 
           {!isSubcategory && (
             <>
-              <Field label="收支類型">
-                <SegmentedControl
-                  className="self-start"
-                  value={item.kind}
-                  onChange={(kind) => updateItem(i, { kind })}
-                  options={[
-                    { value: "支出", label: "支出" },
-                    { value: "收入", label: "收入" },
-                  ]}
-                />
-              </Field>
+              {/* 鎖定收支類型時（從新增交易彈窗的某個分頁點進來）不顯示這個切換——
+                  上一層已經選過支出還是收入了，這裡再問一次只會建出對不上的分類。 */}
+              {!lockedKind && (
+                <Field label="收支類型">
+                  <SegmentedControl
+                    className="self-start"
+                    value={item.kind}
+                    onChange={(kind) => updateItem(i, { kind })}
+                    options={[
+                      { value: "支出", label: "支出" },
+                      { value: "收入", label: "收入" },
+                    ]}
+                  />
+                </Field>
+              )}
               <Field label="顏色">
                 <div className="flex gap-2">
                   {COLORS.map((c) => (
@@ -154,7 +164,7 @@ export function CategoryBatchModal({
 
       <button
         type="button"
-        onClick={() => setItems((list) => [...list, blankDraft()])}
+        onClick={() => setItems((list) => [...list, blankDraft(effectiveKind)])}
         className="rounded-xl border border-dashed border-[#C7BFE6] py-2.5 text-sm font-medium text-[#6F5FD6]"
       >
         ＋ 新增一則

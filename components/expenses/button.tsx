@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, ComponentPropsWithoutRef, ReactNode } from "react";
 import Link from "next/link";
 import { gradient } from "./theme";
 
@@ -140,5 +140,36 @@ export function SegmentedControl<T extends string>({
         </button>
       ))}
     </div>
+  );
+}
+
+/** 跟 SegmentedControl（size="sm"）等高（36px）的獨立膠囊按鈕——要跟分頁切換並排在
+ *  同一列時用（消費紀錄的「篩選」、比較基準、分類頁的「選取」…）。SegmentedControl 是
+ *  「一定會有一個選中」的互斥切換，這個則是單獨一顆可開可關的按鈕，兩者外觀一致、
+ *  高度一致，並排起來才不會一高一低。 */
+export function PillButton({
+  children,
+  onClick,
+  active = false,
+  className = "",
+  ...rest
+}: {
+  children: ReactNode;
+  onClick: () => void;
+  /** 選中／篩選生效時反白成實心紫底，一眼看得出目前是被套用的狀態。 */
+  active?: boolean;
+  className?: string;
+} & Omit<ComponentPropsWithoutRef<"button">, "children" | "onClick" | "className">) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-3.5 text-xs font-medium transition-colors ${
+        active ? "bg-[#6F5FD6] text-white" : "bg-[#F3EFFC] text-[#9C94C4] hover:text-[#6F5FD6]"
+      } ${className}`}
+      {...rest}
+    >
+      {children}
+    </button>
   );
 }

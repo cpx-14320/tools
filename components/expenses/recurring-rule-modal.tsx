@@ -145,8 +145,7 @@ export function RecurringRuleModal({
       }
     >
       <SegmentedControl
-        fullWidth
-        size="lg"
+        className="self-start"
         value={kind}
         onChange={(k) => {
           setKind(k);
@@ -235,7 +234,7 @@ export function RecurringRuleModal({
         open={categoryBatchOpen}
         isSubcategory={false}
         categories={categories}
-        defaultKind={kind}
+        lockedKind={kind}
         onClose={() => setCategoryBatchOpen(false)}
         onSave={handleCreateCategories}
       />

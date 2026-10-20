@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
-import { Button, Badge } from "@/components/expenses/button";
+import { Button, Badge, SegmentedControl, PillButton } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ProgressBar } from "@/components/expenses/progress-bar";
-import { text } from "@/components/expenses/theme";
+import { text, gradient, shadow } from "@/components/expenses/theme";
 import { RecurringRuleModal, type RecurringRuleModalDraft } from "@/components/expenses/recurring-rule-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { SelectionBar, SelectionDot } from "@/components/expenses/selection-bar";
-import { categoryById, categoryColorClass, type CategoryDTO } from "@/lib/expenses/categories";
+import { categoryById, categoryColorClass, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 import type { TransactionDTO } from "@/lib/expenses/transactions";
 import type { SavingsGoalDTO } from "@/lib/expenses/goals";
 import {
@@ -40,6 +40,9 @@ export function RecurringView() {
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // 跟消費分類頁一樣用支出／收入分頁切換——固定收支兩種都會有（房租 vs 薪水），
+  // 混在同一份清單裡要自己用金額顏色分辨，分頁之後一次只看一種。
+  const [kind, setKind] = useState<CategoryKind>("支出");
 
   useEffect(() => {
     let cancelled = false;
@@ -133,28 +136,44 @@ export function RecurringView() {
   }
 
   const today = todayISO();
+  // 分類被刪掉的孤兒規則當成支出，跟 totalsForRange 對查無分類的處理方式一致。
+  const visibleRules = rules.filter((r) => (categoryById(categories, r.categoryId)?.kind ?? "支出") === kind);
 
   return (
     <div>
-      <PageHeader
-        title="固定收支"
-        description="每月電話費、房租這種會重複出現的收支，到期會在你下次打開記帳本時自動入帳"
-        actions={
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={() => setSelecting((v) => !v)}>
-              {selecting ? "完成" : "選取"}
-            </Button>
-            <Button onClick={() => setModal({ mode: "create" })}>＋ 新增固定收支</Button>
-          </div>
-        }
-      />
+      <PageHeader title="固定收支" description="每月電話費、房租這種會重複出現的收支，到期會在你下次打開記帳本時自動入帳" />
+
+      {/* 新增搬到右下角的浮動按鈕，跟首頁新增交易、消費分類頁同一招。 */}
+      <button
+        type="button"
+        onClick={() => setModal({ mode: "create" })}
+        aria-label="新增固定收支"
+        className="fixed right-5 z-20 grid size-14 place-items-center rounded-full text-3xl font-bold leading-none text-white"
+        style={{ background: gradient.primary, boxShadow: shadow.cta, bottom: "calc(env(safe-area-inset-bottom) + 86px)" }}
+      >
+        ＋
+      </button>
+
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <SegmentedControl
+          value={kind}
+          onChange={setKind}
+          options={[
+            { value: "支出", label: "支出" },
+            { value: "收入", label: "收入" },
+          ]}
+        />
+        <PillButton onClick={() => setSelecting((v) => !v)} active={selecting}>
+          {selecting ? "完成" : "選取"}
+        </PillButton>
+      </div>
 
       <RecurringRuleModal
         key={modal ? JSON.stringify(modal) : "closed"}
         open={modal !== null}
         categories={categories}
         goals={goals}
-        defaultKind="支出"
+        defaultKind={kind}
         initial={
           modal?.mode === "edit"
             ? {
@@ -186,8 +205,10 @@ export function RecurringView() {
       {selecting && (
         <SelectionBar
           count={selectedIds.size}
-          total={rules.length}
-          onToggleAll={() => setSelectedIds((set) => (set.size === rules.length ? new Set() : new Set(rules.map((r) => r.id))))}
+          total={visibleRules.length}
+          onToggleAll={() =>
+            setSelectedIds((set) => (set.size === visibleRules.length ? new Set() : new Set(visibleRules.map((r) => r.id))))
+          }
           onCancel={() => {
             setSelecting(false);
             setSelectedIds(new Set());
@@ -198,11 +219,11 @@ export function RecurringView() {
 
       {!ready ? (
         <p className={text.faint}>載入中…</p>
-      ) : rules.length === 0 ? (
-        <p className={text.faint}>還沒有任何固定收支，點上方新增第一筆</p>
+      ) : visibleRules.length === 0 ? (
+        <p className={text.faint}>還沒有任何固定{kind}，點右下角的＋新增第一筆</p>
       ) : (
         <div className="flex flex-col gap-4">
-          {rules.map((rule) => {
+          {visibleRules.map((rule) => {
             const category = categoryById(categories, rule.categoryId);
             const linkedGoal = rule.linkedGoalId ? goals.find((g) => g.id === rule.linkedGoalId) : undefined;
             const confirmedByDate = new Map(

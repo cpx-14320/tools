@@ -107,11 +107,13 @@ export function TransactionModal({
   // 的項目（或指到被往前遞補的另一筆，改到不該改的地方）。
   const activeBreakdownIndex = target.kind === "breakdown" && target.index < breakdown.length ? target.index : null;
   const keypadExpr = activeBreakdownIndex === null ? amountExpr : scratchExpr;
+  // 一般情況不給標題（鍵盤上面就是一個大大的 NT$ 金額，再寫一次「金額」是多餘的）；
+  // 只有在「金額是明細加總出來的」或「正在編某一筆明細」這兩種需要解釋的情況才標。
   const keypadLabel =
     activeBreakdownIndex === null
       ? hasBreakdown
         ? "金額（由明細加總算出，點下方明細項目修改）"
-        : "金額"
+        : undefined
       : `明細：${breakdown[activeBreakdownIndex].label.trim() || `第 ${activeBreakdownIndex + 1} 項`}`;
 
   function handleKeypadChange(next: string) {
@@ -203,8 +205,7 @@ export function TransactionModal({
       }
     >
       <SegmentedControl
-        fullWidth
-        size="lg"
+        className="self-start"
         value={kind}
         onChange={(k) => {
           setKind(k);
@@ -264,23 +265,17 @@ export function TransactionModal({
       <Field label="日期">
         <div className="flex items-center gap-2">
           <DateField value={date} onChange={setDate} className="min-w-0 flex-1" />
-          {(
-            [
-              { label: "今天", value: todayISO() },
-              { label: "昨天", value: yesterdayISO() },
-            ] as const
-          ).map((quick) => (
-            <button
-              key={quick.label}
-              type="button"
-              onClick={() => setDate(quick.value)}
-              className={`shrink-0 rounded-full border px-3 py-2 text-xs font-medium transition-colors ${
-                date === quick.value ? "border-[#6F5FD6] bg-[#6F5FD6] text-white" : "border-[#ECE4FA] bg-white text-[#6F5FD6]"
-              }`}
-            >
-              {quick.label}
-            </button>
-          ))}
+          {/* 直接用 SegmentedControl（跟收支類型同一個元件）：value 傳目前的日期，挑了
+              更早的日期時兩顆都不會亮，剛好就是「今天／昨天都不是」該有的樣子。 */}
+          <SegmentedControl
+            className="shrink-0"
+            value={date}
+            onChange={setDate}
+            options={[
+              { value: todayISO(), label: "今天" },
+              { value: yesterdayISO(), label: "昨天" },
+            ]}
+          />
         </div>
       </Field>
       <Field label="帳戶（可不填）">
@@ -392,7 +387,7 @@ export function TransactionModal({
         open={categoryBatchOpen}
         isSubcategory={false}
         categories={categories}
-        defaultKind={kind}
+        lockedKind={kind}
         onClose={() => setCategoryBatchOpen(false)}
         onSave={handleCreateCategories}
       />
