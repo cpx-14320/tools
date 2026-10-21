@@ -5,6 +5,7 @@ import Link from "next/link";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { ListCard } from "@/components/expenses/list-row";
+import { Carousel } from "@/components/expenses/carousel";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { KpiCard, DeltaText, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
@@ -195,20 +196,40 @@ export function DashboardView() {
         valueColor="#4A3B7C"
         delta={incomeDelta && <DeltaText delta={incomeDelta.delta} pct={incomeDelta.pct} goodWhenUp />}
       />
-      <div className="grid grid-cols-2 gap-3">
-        <KpiCard
-          label="本月支出"
-          value={formatCurrency(totalExpense)}
-          valueColor="#4A3B7C"
-          delta={expenseDelta && <DeltaText delta={expenseDelta.delta} pct={expenseDelta.pct} goodWhenUp={false} />}
-        />
-        <KpiCard
-          label="本月結餘"
-          value={`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`}
-          valueColor={balance >= 0 ? "#4A3B7C" : KPI_NEGATIVE}
-          delta={balanceDelta && <DeltaText delta={balanceDelta.delta} pct={balanceDelta.pct} goodWhenUp />}
-        />
-      </div>
+      {/* 支出／結餘／固定收支改成左右滑動的輪播：三張卡資訊量都不小，並排會把字擠到
+          換行，疊成三張又會把首頁拉長。下方圓點同時也是在告訴使用者「這裡可以滑」。
+          固定收支本來是下面獨立一整區，收進這裡之後首頁少一個區塊，想看每一期的明細
+          仍然可以從設定 › 固定收支進去。 */}
+      <Carousel
+        slides={[
+          <KpiCard
+            key="expense"
+            label="本月支出"
+            value={formatCurrency(totalExpense)}
+            valueColor="#4A3B7C"
+            delta={expenseDelta && <DeltaText delta={expenseDelta.delta} pct={expenseDelta.pct} goodWhenUp={false} />}
+          />,
+          <KpiCard
+            key="balance"
+            label="本月結餘"
+            value={`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`}
+            valueColor={balance >= 0 ? "#4A3B7C" : KPI_NEGATIVE}
+            delta={balanceDelta && <DeltaText delta={balanceDelta.delta} pct={balanceDelta.pct} goodWhenUp />}
+          />,
+          <KpiCard
+            key="recurring"
+            label="固定收支"
+            value={formatCurrency(recurringThisMonthTotal)}
+            valueColor="#4A3B7C"
+            delta={
+              <span className="shrink-0 text-xs font-medium text-[#9C94C4]">
+                {recurringThisMonth.length > 0 ? `本月已入帳 ${recurringThisMonth.length} 筆` : "本月尚未入帳"}
+                {upcoming.length > 0 && `・${UPCOMING_DAYS} 天內還有 ${upcoming.length} 筆`}
+              </span>
+            }
+          />,
+        ]}
+      />
 
       {/* 小標在白框外面、清單在框裡——跟資產總表的「資產」區塊同一種結構。 */}
       <div>
@@ -310,53 +331,6 @@ export function DashboardView() {
                 />
               </Link>
             ))}
-          </ListCard>
-        </div>
-      )}
-
-      {/* 固定收支的入口：到期的期數在進任何記帳本頁面時就已經自動入帳了（見
-          app/tools/expenses/layout.tsx），所以這裡不是「待你確認」的待辦清單，而是
-          「這個月已經自動記了什麼」加上「接下來幾天還會自動記什麼」——錢會自己動的那幾筆
-          本來就最容易被忘記，首頁要看得到，才不會月底才發現錢少了一塊。 */}
-      {(recurringThisMonth.length > 0 || upcoming.length > 0) && (
-        <div>
-          <div className="mb-2 flex items-center justify-between px-1">
-            <p className={text.sectionHeading}>固定收支</p>
-            <Link href="/tools/expenses/recurring" className="text-xs font-medium text-[#6F5FD6]">
-              查看全部
-            </Link>
-          </div>
-          <ListCard>
-            {recurringThisMonth.length > 0 && (
-              <p className={`px-4 py-3.5 ${text.muted}`}>
-                本月已自動入帳 <span className="font-semibold text-[#4A3B7C]">{recurringThisMonth.length}</span> 筆・
-                <span className="font-semibold text-[#4A3B7C]">{formatCurrency(recurringThisMonthTotal)}</span>
-              </p>
-            )}
-
-            {upcoming.length > 0 && (
-              <>
-                <p className={`px-4 pb-1 pt-3 ${text.label}`}>接下來 {UPCOMING_DAYS} 天</p>
-                {upcoming.slice(0, SUMMARY_LIMIT).map((item) => {
-                  const cat = displayCategoryOf(categories, item.rule.categoryId);
-                  const isIncome = cat?.kind === "收入";
-                  return (
-                    <div key={`${item.rule.id}-${item.date}`} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
-                      <TransactionRowLabel
-                        icon={cat?.icon ?? "🔁"}
-                        iconClassName={cat ? categoryColorClass[cat.color] : undefined}
-                        title={item.rule.note || cat?.name || "固定收支"}
-                        subtitle={item.date}
-                      />
-                      <span className="shrink-0 tabular-nums font-medium" style={{ color: isIncome ? "#2FAE82" : "#4A3B7C" }}>
-                        {isIncome ? "＋" : "－"}
-                        {formatCurrency(item.rule.amount)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </>
-            )}
           </ListCard>
         </div>
       )}
