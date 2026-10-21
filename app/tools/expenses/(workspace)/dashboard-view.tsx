@@ -5,6 +5,7 @@ import Link from "next/link";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { Card, CardBody } from "@/components/expenses/card";
+import { ListCard } from "@/components/expenses/list-row";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { KpiCard, DeltaText, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
@@ -210,111 +211,108 @@ export function DashboardView() {
         />
       </div>
 
-      <Card>
-        <CardBody>
-          <div className="flex items-center justify-between">
-            <p className={text.sectionHeading}>{isCurrentMonth ? "本月預算" : `${budgetYearMonth} 預算`}</p>
-            <Link href={`/tools/expenses/transactions?${budgetDetailQuery}`} className="text-xs font-medium text-[#6F5FD6]">
-              查看全部
-            </Link>
-          </div>
-          {budget.rows.length === 0 ? (
-            <p className={`mt-3 ${text.muted}`}>還沒有分類編預算，到「設定 › 預算設定」可以按月份設定。</p>
-          ) : (
-            <>
-              <div className="mt-3 flex items-end justify-between">
-                <p className={text.statValue}>
-                  {formatCurrency(budget.totalSpent)}
-                  <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {formatCurrency(budget.totalBudget)}</span>
-                </p>
-                <span className={`text-xs font-semibold ${budget.pct > 100 ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>{budget.pct}%</span>
-              </div>
-              {/* 每一列都可以點，直接跳到紀錄頁、而且已經幫你篩好那個分類的明細。 */}
-              <div className="mt-4 flex flex-col gap-3">
-                {budget.rows.slice(0, SUMMARY_LIMIT).map((row) => (
-                  <Link
-                    key={row.category.id}
-                    href={`/tools/expenses/transactions?${budgetDetailQuery}&categoryId=${row.category.id}`}
-                    className="flex items-center gap-3"
-                  >
-                    <ListProgressRow
-                      icon={row.category.icon}
-                      iconClassName={categoryColorClass[row.category.color]}
-                      name={row.category.name}
-                      amount={`${formatCurrency(row.spent)} / ${formatCurrency(row.budgetAmount)}`}
-                      pct={row.pct}
-                      pctLabel={<span className={row.pct > 100 ? "text-[#D1517E]" : undefined}>{row.pct}%</span>}
-                      barColorClass={row.pct > 100 ? "bg-[#D1517E]" : categoryFillClass[row.category.color]}
-                    />
-                  </Link>
-                ))}
-              </div>
-            </>
-          )}
-        </CardBody>
-      </Card>
-
-      <Card>
-        <CardBody>
-          <div className="flex items-center justify-between">
-            <p className={text.sectionHeading}>消費分類佔比</p>
-            <Link href="/tools/expenses/transactions?kind=支出" className="text-xs font-medium text-[#6F5FD6]">
-              查看全部
-            </Link>
-          </div>
-          {breakdown.length === 0 ? (
-            <p className={`mt-3 ${text.muted}`}>這段期間還沒有消費紀錄。</p>
-          ) : (
-            // 點某一類（例如「居家」）直接跳到紀錄頁、而且已經篩好只剩那一類的明細。
-            <div className="mt-4 flex flex-col gap-3">
-              {breakdown.slice(0, SUMMARY_LIMIT).map((row) => (
-                <Link
-                  key={row.category.id}
-                  href={`/tools/expenses/transactions?kind=支出&categoryId=${row.category.id}`}
-                  className="flex items-center gap-3"
-                >
-                  <ListProgressRow
-                    icon={row.category.icon}
-                    iconClassName={categoryColorClass[row.category.color]}
-                    name={row.category.name}
-                    amount={formatCurrency(row.amount)}
-                    pct={row.pct}
-                    barColorClass={categoryFillClass[row.category.color]}
-                  />
-                </Link>
-              ))}
+      {/* 小標在白框外面、清單在框裡——跟資產總表的「資產」區塊同一種結構。 */}
+      <div>
+        <div className="mb-2 flex items-center justify-between px-1">
+          <p className={text.sectionHeading}>{isCurrentMonth ? "本月預算" : `${budgetYearMonth} 預算`}</p>
+          <Link href={`/tools/expenses/transactions?${budgetDetailQuery}`} className="text-xs font-medium text-[#6F5FD6]">
+            查看全部
+          </Link>
+        </div>
+        {budget.rows.length === 0 ? (
+          <p className={`px-1 ${text.muted}`}>還沒有分類編預算，到「設定 › 預算設定」可以按月份設定。</p>
+        ) : (
+          <ListCard>
+            <div className="flex items-end justify-between px-4 py-3.5">
+              <p className={text.statValue}>
+                {formatCurrency(budget.totalSpent)}
+                <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {formatCurrency(budget.totalBudget)}</span>
+              </p>
+              <span className={`text-xs font-semibold ${budget.pct > 100 ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>{budget.pct}%</span>
             </div>
-          )}
-        </CardBody>
-      </Card>
+            {/* 每一列都可以點，直接跳到紀錄頁、而且已經幫你篩好那個分類的明細。 */}
+            {budget.rows.slice(0, SUMMARY_LIMIT).map((row) => (
+              <Link
+                key={row.category.id}
+                href={`/tools/expenses/transactions?${budgetDetailQuery}&categoryId=${row.category.id}`}
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+              >
+                <ListProgressRow
+                  icon={row.category.icon}
+                  iconClassName={categoryColorClass[row.category.color]}
+                  name={row.category.name}
+                  amount={`${formatCurrency(row.spent)} / ${formatCurrency(row.budgetAmount)}`}
+                  pct={row.pct}
+                  pctLabel={<span className={row.pct > 100 ? "text-[#D1517E]" : undefined}>{row.pct}%</span>}
+                  barColorClass={row.pct > 100 ? "bg-[#D1517E]" : categoryFillClass[row.category.color]}
+                />
+              </Link>
+            ))}
+          </ListCard>
+        )}
+      </div>
+
+      <div>
+        <div className="mb-2 flex items-center justify-between px-1">
+          <p className={text.sectionHeading}>消費分類佔比</p>
+          <Link href="/tools/expenses/transactions?kind=支出" className="text-xs font-medium text-[#6F5FD6]">
+            查看全部
+          </Link>
+        </div>
+        {breakdown.length === 0 ? (
+          <p className={`px-1 ${text.muted}`}>這段期間還沒有消費紀錄。</p>
+        ) : (
+          // 點某一類（例如「居家」）直接跳到紀錄頁、而且已經篩好只剩那一類的明細。
+          <ListCard>
+            {breakdown.slice(0, SUMMARY_LIMIT).map((row) => (
+              <Link
+                key={row.category.id}
+                href={`/tools/expenses/transactions?kind=支出&categoryId=${row.category.id}`}
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+              >
+                <ListProgressRow
+                  icon={row.category.icon}
+                  iconClassName={categoryColorClass[row.category.color]}
+                  name={row.category.name}
+                  amount={formatCurrency(row.amount)}
+                  pct={row.pct}
+                  barColorClass={categoryFillClass[row.category.color]}
+                />
+              </Link>
+            ))}
+          </ListCard>
+        )}
+      </div>
 
       {incomeRows.length > 0 && (
-        <Card>
-          <CardBody>
-            <div className="flex items-center justify-between">
-              <p className={text.sectionHeading}>收入來源</p>
-              {/* 導去紀錄頁的「收入」分頁看每一天的細項（薪資那種有明細的還可以展開看
-                  本薪/勞健保），不是跳到只有彙總圖表的報表頁。 */}
-              <Link href="/tools/expenses/transactions?kind=收入" className="text-xs font-medium text-[#6F5FD6]">
-                查看全部
+        <div>
+          <div className="mb-2 flex items-center justify-between px-1">
+            <p className={text.sectionHeading}>收入來源</p>
+            {/* 導去紀錄頁的「收入」分頁看每一天的細項（薪資那種有明細的還可以展開看
+                本薪/勞健保），不是跳到只有彙總圖表的報表頁。 */}
+            <Link href="/tools/expenses/transactions?kind=收入" className="text-xs font-medium text-[#6F5FD6]">
+              查看全部
+            </Link>
+          </div>
+          <ListCard>
+            {incomeRows.slice(0, SUMMARY_LIMIT).map((row) => (
+              <Link
+                key={row.id}
+                href={`/tools/expenses/transactions?kind=收入&categoryId=${row.id}`}
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+              >
+                <ListProgressRow
+                  icon={row.icon}
+                  iconClassName="bg-[#E3F6EC] text-[#2FAE82]"
+                  name={row.name}
+                  amount={formatCurrency(row.amount)}
+                  pct={row.pct}
+                  barColorClass="bg-[#2FAE82]"
+                />
               </Link>
-            </div>
-            <div className="mt-4 flex flex-col gap-3">
-              {incomeRows.slice(0, SUMMARY_LIMIT).map((row) => (
-                <Link key={row.id} href={`/tools/expenses/transactions?kind=收入&categoryId=${row.id}`} className="flex items-center gap-3">
-                  <ListProgressRow
-                    icon={row.icon}
-                    iconClassName="bg-[#E3F6EC] text-[#2FAE82]"
-                    name={row.name}
-                    amount={formatCurrency(row.amount)}
-                    pct={row.pct}
-                    barColorClass="bg-[#2FAE82]"
-                  />
-                </Link>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
+            ))}
+          </ListCard>
+        </div>
       )}
 
       {/* 固定收支的入口：到期的期數在進任何記帳本頁面時就已經自動入帳了（見
