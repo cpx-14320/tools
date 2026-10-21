@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { requireTool } from "@/lib/auth";
-import { buyOutfit, equipOutfit, feedPet, settlePetRewards } from "@/lib/expenses/pet.server";
+import { buyFood, buyOutfit, equipOutfit, feedPet, settlePetRewards } from "@/lib/expenses/pet.server";
+import { petItemById } from "@/lib/expenses/pet";
 
 /** GET 會順便結算一次獎勵——養成頁本身就是使用者會回來看「我賺到幾顆星星幣」的地方，
  *  在這裡結算最直覺（layout 也會結算，兩邊都是冪等的，重複跑不會重複發）。
@@ -28,11 +29,16 @@ export async function POST(request: Request) {
   if (!itemId) return NextResponse.json({ error: "缺少 itemId" }, { status: 400 });
 
   const userId = new ObjectId(user.id);
+  // 「買」這個動作食物跟服裝是兩條不同的路：食物買了先進背包（buyFood），服裝買了
+  // 直接穿上（buyOutfit）——由品項自己的 kind 決定要呼叫哪一個，前端不用分開傳。
+  const item = petItemById(itemId);
   const result =
     action === "feed"
       ? await feedPet(userId, itemId)
       : action === "buy"
-        ? await buyOutfit(userId, itemId)
+        ? item?.kind === "食物"
+          ? await buyFood(userId, itemId)
+          : await buyOutfit(userId, itemId)
         : action === "equip"
           ? await equipOutfit(userId, itemId)
           : { error: "action 只能是 feed、buy 或 equip" };

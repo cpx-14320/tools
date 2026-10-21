@@ -5,11 +5,13 @@ import { PageHeader } from "@/components/expenses/page-header";
 import { Card, CardBody } from "@/components/expenses/card";
 import { PillButton } from "@/components/expenses/button";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
+import { Modal } from "@/components/expenses/modal";
 import { ProgressBar } from "@/components/expenses/progress-bar";
 import { PetSprite, type PetMood } from "@/components/expenses/pet-sprite";
 import { PetShopModal } from "@/components/expenses/pet-shop";
+import { IconImg } from "@/components/expenses/icon-img";
 import { text } from "@/components/expenses/theme";
-import { DAILY_LOG_COINS, BUDGET_KEPT_COINS, levelFromXp, petItemById, wealthTier } from "@/lib/expenses/pet";
+import { DAILY_LOG_COINS, BUDGET_KEPT_COINS, PET_ITEMS, levelFromXp, petItemById, wealthTier } from "@/lib/expenses/pet";
 import { netWorth, type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type CategoryDTO } from "@/lib/expenses/categories";
@@ -22,6 +24,7 @@ interface PetState {
   xp: number;
   outfitId: string;
   ownedOutfitIds: string[];
+  foodCounts: Record<string, number>;
   justEarned: { key: string; coins: number; label: string }[];
 }
 
@@ -34,6 +37,7 @@ export function PetView() {
   const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [ready, setReady] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const [mood, setMood] = useState<PetMood>("idle");
   const [message, setMessage] = useState<string | null>(null);
   // 「今天」掛載時算一次固定住（本地日期，不是 UTC）——伺服器時區不一定跟使用者同一個，
@@ -97,7 +101,15 @@ export function PetView() {
     if (data.pet) {
       setPet(data.pet);
       const item = petItemById(itemId);
-      setMessage(action === "feed" ? `餵了${item?.name}，經驗值 +${item?.xp}` : action === "buy" ? `買了${item?.name}，已經換上` : `換上${item?.name}`);
+      setMessage(
+        action === "feed"
+          ? `餵了${item?.name}，經驗值 +${item?.xp}`
+          : action === "buy"
+            ? item?.kind === "食物"
+              ? `買了${item?.name}，放進背包了`
+              : `買了${item?.name}，已經換上`
+            : `換上${item?.name}`,
+      );
     }
   }
 
@@ -157,6 +169,33 @@ export function PetView() {
         </button>
       )}
 
+      {/* 食物背包——固定顯示三種食物的持有數量，直接點了就吃（消耗一份、換成經驗值）。
+          在商店買的食物進的是這裡，不是點了商店格子就直接吃掉；兩個動作分開。 */}
+      <Card className="mb-4">
+        <CardBody className="flex items-center justify-between gap-2">
+          {PET_ITEMS.filter((i) => i.kind === "食物").map((item) => {
+            const count = pet?.foodCounts?.[item.id] ?? 0;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => count > 0 && act("feed", item.id)}
+                disabled={count === 0}
+                className={`relative flex flex-1 flex-col items-center gap-1 rounded-xl py-1 ${count === 0 ? "opacity-40" : ""}`}
+              >
+                {count > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 grid min-w-5 place-items-center rounded-full bg-[#4A3B7C] px-1 text-[10px] font-semibold leading-4 text-white">
+                    ×{count}
+                  </span>
+                )}
+                <IconImg src={item.image} alt={item.name} size={40} />
+                <span className="text-[11px] font-medium text-[#4A3B7C]">{item.name}</span>
+              </button>
+            );
+          })}
+        </CardBody>
+      </Card>
+
       {/* 商店入口——真正的格狀選購版面放在彈窗裡（PetShopModal），這裡只是一個
           像手遊「進商店」的入口列，平常不佔版面。 */}
       <button type="button" onClick={() => setShopOpen(true)} className="mb-4 w-full">
@@ -182,24 +221,29 @@ export function PetView() {
       <PetShopModal
         open={shopOpen}
         onClose={() => setShopOpen(false)}
-        pet={{ coins: pet?.coins ?? 0, outfitId: pet?.outfitId ?? "", ownedOutfitIds: pet?.ownedOutfitIds ?? [] }}
+        pet={{ coins: pet?.coins ?? 0, outfitId: pet?.outfitId ?? "", ownedOutfitIds: pet?.ownedOutfitIds ?? [], foodCounts: pet?.foodCounts ?? {} }}
         message={message}
         onAct={act}
       />
 
-      {/* 把賺幣規則直接寫出來——使用者要知道「做什麼會有星星幣」才可能被誘導去做，
-          藏在說明頁裡等於沒有。 */}
-      <div className="mb-2 px-1">
-        <p className={text.sectionHeading}>怎麼賺星星幣</p>
+      {/* 賺幣規則收進彈窗，比照首頁「vs 去年同期」那顆比較基準按鈕——平常只留一顆
+          小按鈕，頁面才不會被說明文字占掉版面，想看的人自己點開。 */}
+      <div className="flex justify-center">
+        <PillButton onClick={() => setRulesOpen(true)}>
+          <span aria-hidden>❓</span> 怎麼賺星星幣
+        </PillButton>
       </div>
-      <ListCard>
-        <ListRow name="當天有記帳" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ {DAILY_LOG_COINS}</span>} />
-        <ListRow name="連續記帳 3／7／14／30 天" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ 10～100</span>} />
-        <ListRow name="上個月每個分類都沒超支" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ {BUDGET_KEPT_COINS}</span>} />
-      </ListCard>
-      <p className={`mt-2 px-1 ${text.faint}`}>
-        星星幣只看記帳習慣，不看你有多少錢——淨資產只拿來算上面那個理財段位，才不會因為一筆大額支出就讓角色跟著「變窮」。
-      </p>
+
+      <Modal open={rulesOpen} onClose={() => setRulesOpen(false)} title="怎麼賺星星幣">
+        <ListCard>
+          <ListRow name="當天有記帳" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ {DAILY_LOG_COINS}</span>} />
+          <ListRow name="連續記帳 3／7／14／30 天" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ 10～100</span>} />
+          <ListRow name="上個月每個分類都沒超支" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ {BUDGET_KEPT_COINS}</span>} />
+        </ListCard>
+        <p className={`${text.faint} leading-relaxed`}>
+          星星幣只看記帳習慣，不看你有多少錢——淨資產只拿來算上面那個理財段位，才不會因為一筆大額支出就讓角色跟著「變窮」。
+        </p>
+      </Modal>
     </div>
   );
 }

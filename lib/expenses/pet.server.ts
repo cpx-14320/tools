@@ -13,8 +13,11 @@ interface PetDoc {
   xp: number;
   /** 目前穿在身上的服裝 id。 */
   outfitId: string;
-  /** 已經買過的服裝（食物是消耗品，買了直接吃掉，不進這裡）。 */
+  /** 已經買過的服裝（一次性購買，可以重複換穿，不會用掉）。 */
   ownedOutfitIds: string[];
+  /** 食物庫存：買了先進背包，要自己點了餵才會消耗、換成經驗值——不是買了就直接吃掉。
+   *  舊文件可能沒有這個欄位（這個欄位加進來之前建的），讀出來時用 ?? {} 補齊。 */
+  foodCounts?: Record<string, number>;
   /** 已經發過的獎勵 key——結算每次進記帳本都會跑，靠這個確保同一筆獎勵只發一次。 */
   claimedKeys: string[];
   createdAt: Date;
@@ -25,6 +28,7 @@ export interface PetStateDTO {
   xp: number;
   outfitId: string;
   ownedOutfitIds: string[];
+  foodCounts: Record<string, number>;
   /** 這一次結算剛發出去的獎勵，給畫面上跳提示用。 */
   justEarned: PetReward[];
 }
@@ -34,7 +38,7 @@ function collection() {
 }
 
 function toDTO(doc: PetDoc, justEarned: PetReward[] = []): PetStateDTO {
-  return { coins: doc.coins, xp: doc.xp, outfitId: doc.outfitId, ownedOutfitIds: doc.ownedOutfitIds, justEarned };
+  return { coins: doc.coins, xp: doc.xp, outfitId: doc.outfitId, ownedOutfitIds: doc.ownedOutfitIds, foodCounts: doc.foodCounts ?? {}, justEarned };
 }
 
 /** 讀取（沒有就建一個初始狀態）。第一次進養成頁的人直接有一套預設服裝、0 幣 0 經驗。 */
@@ -49,6 +53,7 @@ async function ensurePet(userId: ObjectId): Promise<PetDoc> {
     xp: 0,
     outfitId: DEFAULT_OUTFIT_ID,
     ownedOutfitIds: [DEFAULT_OUTFIT_ID],
+    foodCounts: {},
     claimedKeys: [],
     createdAt: new Date(),
   };
@@ -112,17 +117,31 @@ export async function getPetState(userId: ObjectId): Promise<PetStateDTO> {
   return toDTO(await ensurePet(userId));
 }
 
-/** 買食物並立刻餵——食物是消耗品，不進背包，直接換成經驗值。 */
-export async function feedPet(userId: ObjectId, itemId: string): Promise<PetStateDTO | { error: string }> {
+/** 買食物——先進背包，不會立刻吃掉，要另外呼叫 feedPet 才會消耗。 */
+export async function buyFood(userId: ObjectId, itemId: string): Promise<PetStateDTO | { error: string }> {
   const item = petItemById(itemId);
-  if (!item || item.kind !== "食物" || !item.xp) return { error: "找不到這個食物" };
+  if (!item || item.kind !== "食物") return { error: "找不到這個食物" };
 
   const pet = await ensurePet(userId);
   if (pet.coins < item.price) return { error: "星星幣不夠" };
 
   const col = await collection();
-  await col.updateOne({ _id: pet._id }, { $inc: { coins: -item.price, xp: item.xp } });
-  return toDTO({ ...pet, coins: pet.coins - item.price, xp: pet.xp + item.xp });
+  await col.updateOne({ _id: pet._id }, { $inc: { coins: -item.price, [`foodCounts.${itemId}`]: 1 } });
+  return toDTO({ ...pet, coins: pet.coins - item.price, foodCounts: { ...pet.foodCounts, [itemId]: (pet.foodCounts?.[itemId] ?? 0) + 1 } });
+}
+
+/** 餵食——只能餵背包裡已經買好的，吃掉一份換成經驗值，不另外扣星星幣（買的時候已經扣過了）。 */
+export async function feedPet(userId: ObjectId, itemId: string): Promise<PetStateDTO | { error: string }> {
+  const item = petItemById(itemId);
+  if (!item || item.kind !== "食物" || !item.xp) return { error: "找不到這個食物" };
+
+  const pet = await ensurePet(userId);
+  const owned = pet.foodCounts?.[itemId] ?? 0;
+  if (owned <= 0) return { error: "背包裡沒有這個食物，先去商店買" };
+
+  const col = await collection();
+  await col.updateOne({ _id: pet._id }, { $inc: { xp: item.xp, [`foodCounts.${itemId}`]: -1 } });
+  return toDTO({ ...pet, xp: pet.xp + item.xp, foodCounts: { ...pet.foodCounts, [itemId]: owned - 1 } });
 }
 
 /** 買服裝（已經有的不能重複買），買完直接穿上。 */
