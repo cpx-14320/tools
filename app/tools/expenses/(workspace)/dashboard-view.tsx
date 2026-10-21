@@ -196,11 +196,11 @@ export function DashboardView() {
         valueColor="#4A3B7C"
         delta={incomeDelta && <DeltaText delta={incomeDelta.delta} pct={incomeDelta.pct} goodWhenUp />}
       />
-      {/* 支出／結餘／固定收支改成左右滑動的輪播：三張卡資訊量都不小，並排會把字擠到
-          換行，疊成三張又會把首頁拉長。下方圓點同時也是在告訴使用者「這裡可以滑」。
-          固定收支本來是下面獨立一整區，收進這裡之後首頁少一個區塊，想看每一期的明細
-          仍然可以從設定 › 固定收支進去。 */}
+      {/* 支出／結餘／固定收支一列兩欄、滑一次換一組。固定收支本來是下面獨立一整區，
+          收進這裡之後首頁少一個區塊，想看每一期的明細仍然可以從設定 › 固定收支進去。
+          下方圓點同時也是在告訴使用者「這裡可以滑」。 */}
       <Carousel
+        perSlide={2}
         slides={[
           <KpiCard
             key="expense"

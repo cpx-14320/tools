@@ -18,17 +18,31 @@ const SWIPE_THRESHOLD_RATIO = 0.2;
  *
  *  圓點除了指示位置，也是在告訴使用者「這裡可以滑」——只有一張時就不顯示，免得出現一顆
  *  點不出來要幹嘛。 */
-export function Carousel({ slides, className = "" }: { slides: ReactNode[]; className?: string }) {
+export function Carousel({
+  slides,
+  perSlide = 1,
+  className = "",
+}: {
+  slides: ReactNode[];
+  /** 一次滑動要露出幾張卡。傳 2 就是一列兩欄、滑一次換兩張；最後一組不足時那張維持
+   *  同樣的半寬，不會忽然撐成整欄（卡片寬度在每一頁之間跳動比留白更難看）。 */
+  perSlide?: number;
+  className?: string;
+}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [index, setIndex] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
   const dragStartX = useRef(0);
 
-  const safeIndex = Math.min(index, Math.max(0, slides.length - 1));
+  // 依 perSlide 把卡片切成一頁一組；perSlide=1 時每組就是一張，跟原本的行為一樣。
+  const pages: ReactNode[][] = [];
+  for (let i = 0; i < slides.length; i += perSlide) pages.push(slides.slice(i, i + perSlide));
+
+  const safeIndex = Math.min(index, Math.max(0, pages.length - 1));
 
   function onPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
-    if (slides.length < 2) return;
+    if (pages.length < 2) return;
     dragStartX.current = e.clientX;
     setDragging(true);
     containerRef.current?.setPointerCapture(e.pointerId);
@@ -43,20 +57,20 @@ export function Carousel({ slides, className = "" }: { slides: ReactNode[]; clas
     if (!dragging) return;
     const width = containerRef.current?.clientWidth ?? 1;
     const threshold = width * SWIPE_THRESHOLD_RATIO;
-    if (dragOffset <= -threshold) setIndex((i) => Math.min(slides.length - 1, i + 1));
+    if (dragOffset <= -threshold) setIndex((i) => Math.min(pages.length - 1, i + 1));
     else if (dragOffset >= threshold) setIndex((i) => Math.max(0, i - 1));
     setDragOffset(0);
     setDragging(false);
   }
 
-  if (slides.length === 0) return null;
+  if (pages.length === 0) return null;
 
   return (
     <div className={className}>
       <div
         ref={containerRef}
         className="touch-pan-y select-none overflow-hidden"
-        style={{ cursor: slides.length > 1 ? (dragging ? "grabbing" : "grab") : undefined }}
+        style={{ cursor: pages.length > 1 ? (dragging ? "grabbing" : "grab") : undefined }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
@@ -70,17 +84,25 @@ export function Carousel({ slides, className = "" }: { slides: ReactNode[]; clas
             transition: dragging ? "none" : "transform 280ms ease",
           }}
         >
-          {slides.map((slide, i) => (
-            <div key={i} className="w-full shrink-0">
-              {slide}
+          {pages.map((page, i) => (
+            <div
+              key={i}
+              className="grid w-full shrink-0 items-start"
+              style={{ gridTemplateColumns: `repeat(${perSlide}, minmax(0, 1fr))`, gap: CARD_GAP_PX }}
+            >
+              {page.map((slide, j) => (
+                <div key={j} className="min-w-0">
+                  {slide}
+                </div>
+              ))}
             </div>
           ))}
         </div>
       </div>
 
-      {slides.length > 1 && (
+      {pages.length > 1 && (
         <div className="mt-2 flex items-center justify-center gap-1.5">
-          {slides.map((_, i) => (
+          {pages.map((_, i) => (
             <button
               key={i}
               type="button"
