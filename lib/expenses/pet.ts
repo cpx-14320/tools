@@ -8,7 +8,7 @@
 //   淨資產 → 只拿來算「理財段位」，純展示、不能換東西
 // 這樣淨資產還是有參與感，但不會變成懲罰。
 
-export type PetItemKind = "食物" | "服裝";
+export type PetItemKind = "食物" | "服裝" | "背景";
 
 /** 商店圖片路徑——跟 presets.ts 的 expenseCategoryIcon 同一套「用途前綴＋英文名」規則，
  *  id 本身已經是英文 slug（food-rice、outfit-mint…），直接接在前綴後面就好。圖檔還沒放進
@@ -24,6 +24,12 @@ export interface PetItem {
   xp?: number;
   /** 服裝目前用色相旋轉模擬換裝（還沒有各套服裝的圖），單位是度。 */
   hueRotate?: number;
+  /** 背景目前用 CSS 漸層模擬（還沒有背景圖），直接套在角色場地那塊上。
+   *
+   *  一定要是淺色：角色圖是白底、不是去背的 PNG，場地上是靠 mix-blend-mode: multiply
+   *  把白色融掉的（見 components/expenses/pet-sprite.tsx），底色一深，角色自己也會跟著
+   *  被乘暗。等換成去背的圖才能放深色背景。 */
+  background?: string;
   desc: string;
   image: string;
 }
@@ -37,12 +43,57 @@ export const PET_ITEMS: PetItem[] = [
   { id: "outfit-mint", name: "薄荷綠", kind: "服裝", price: 80, hueRotate: 120, desc: "清爽的配色", image: petItemImage("outfit-mint") },
   { id: "outfit-ocean", name: "海洋藍", kind: "服裝", price: 120, hueRotate: 200, desc: "沉穩的深藍", image: petItemImage("outfit-ocean") },
   { id: "outfit-sunset", name: "夕陽橘", kind: "服裝", price: 160, hueRotate: 300, desc: "暖色系，存到一筆錢的獎勵", image: petItemImage("outfit-sunset") },
+  {
+    id: "bg-default",
+    name: "淡紫日常",
+    kind: "背景",
+    price: 0,
+    background: "linear-gradient(to bottom, #F3EFFC, #FDF5F8)",
+    desc: "一開始就有的場地",
+    image: petItemImage("bg-default"),
+  },
+  {
+    id: "bg-garden",
+    name: "草地庭院",
+    kind: "背景",
+    price: 100,
+    background: "linear-gradient(to bottom, #E6F5E9, #F7FBF0)",
+    desc: "出門曬太陽的好天氣",
+    image: petItemImage("bg-garden"),
+  },
+  {
+    id: "bg-sunset",
+    name: "黃昏河堤",
+    kind: "背景",
+    price: 150,
+    background: "linear-gradient(to bottom, #FFE8D8, #FFF5EC)",
+    desc: "下班後散步的那段路",
+    image: petItemImage("bg-sunset"),
+  },
+  {
+    id: "bg-night",
+    name: "夜空微光",
+    kind: "背景",
+    price: 200,
+    background: "linear-gradient(to bottom, #DEE4FA, #F0F2FD)",
+    desc: "睡前記帳的時間",
+    image: petItemImage("bg-night"),
+  },
 ];
 
 export const DEFAULT_OUTFIT_ID = "outfit-default";
+export const DEFAULT_BACKGROUND_ID = "bg-default";
+
+/** 沒有設定、或指到不存在的背景時退回預設場地的漸層，畫面不會變成一塊空白。 */
+export const FALLBACK_BACKGROUND = "linear-gradient(to bottom, #F3EFFC, #FDF5F8)";
 
 export function petItemById(id: string): PetItem | undefined {
   return PET_ITEMS.find((i) => i.id === id);
+}
+
+/** 角色場地要用的 CSS background 值。 */
+export function petBackground(id: string): string {
+  return petItemById(id)?.background ?? FALLBACK_BACKGROUND;
 }
 
 // ── 等級 ─────────────────────────────────────────────────────────────────────

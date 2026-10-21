@@ -11,7 +11,7 @@ import { PetSprite, type PetMood } from "@/components/expenses/pet-sprite";
 import { PetShopModal } from "@/components/expenses/pet-shop";
 import { IconImg } from "@/components/expenses/icon-img";
 import { text } from "@/components/expenses/theme";
-import { DAILY_LOG_COINS, BUDGET_KEPT_COINS, PET_ITEMS, levelFromXp, petItemById, wealthTier } from "@/lib/expenses/pet";
+import { DAILY_LOG_COINS, BUDGET_KEPT_COINS, PET_ITEMS, levelFromXp, petBackground, petItemById, wealthTier } from "@/lib/expenses/pet";
 import { netWorth, type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type CategoryDTO } from "@/lib/expenses/categories";
@@ -24,6 +24,8 @@ interface PetState {
   xp: number;
   outfitId: string;
   ownedOutfitIds: string[];
+  backgroundId: string;
+  ownedBackgroundIds: string[];
   foodCounts: Record<string, number>;
   justEarned: { key: string; coins: number; label: string }[];
 }
@@ -107,8 +109,12 @@ export function PetView() {
           : action === "buy"
             ? item?.kind === "食物"
               ? `買了${item?.name}，放進背包了`
-              : `買了${item?.name}，已經換上`
-            : `換上${item?.name}`,
+              : item?.kind === "背景"
+                ? `買了${item?.name}，場地換好了`
+                : `買了${item?.name}，已經換上`
+            : item?.kind === "背景"
+              ? `場地換成${item?.name}`
+              : `換上${item?.name}`,
       );
     }
   }
@@ -134,7 +140,7 @@ export function PetView() {
       {/* 角色場地：待機會呼吸，按「散步」會沿著場地走來走去、碰到邊緣自己轉身。 */}
       <Card className="mb-4">
         <CardBody>
-          <div className="rounded-2xl bg-gradient-to-b from-[#F3EFFC] to-[#FDF5F8] px-3 pt-4">
+          <div className="rounded-2xl px-3 pt-4" style={{ background: petBackground(pet?.backgroundId ?? "") }}>
             <PetSprite mood={mood} hueRotate={outfit?.hueRotate ?? 0} size={168} />
           </div>
 
@@ -181,15 +187,13 @@ export function PetView() {
                 type="button"
                 onClick={() => count > 0 && act("feed", item.id)}
                 disabled={count === 0}
-                className={`relative flex flex-1 flex-col items-center gap-1 rounded-xl py-1 ${count === 0 ? "opacity-40" : ""}`}
+                className={`flex flex-1 flex-col items-center gap-1 rounded-xl py-1 ${count === 0 ? "opacity-40" : ""}`}
               >
-                {count > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 grid min-w-5 place-items-center rounded-full bg-[#4A3B7C] px-1 text-[10px] font-semibold leading-4 text-white">
-                    ×{count}
-                  </span>
-                )}
                 <IconImg src={item.image} alt={item.name} size={40} />
-                <span className="text-[11px] font-medium text-[#4A3B7C]">{item.name}</span>
+                <span className="text-[11px] font-medium text-[#4A3B7C]">
+                  {item.name}
+                  <span className="tabular-nums"> ×{count}</span>
+                </span>
               </button>
             );
           })}
@@ -221,7 +225,14 @@ export function PetView() {
       <PetShopModal
         open={shopOpen}
         onClose={() => setShopOpen(false)}
-        pet={{ coins: pet?.coins ?? 0, outfitId: pet?.outfitId ?? "", ownedOutfitIds: pet?.ownedOutfitIds ?? [], foodCounts: pet?.foodCounts ?? {} }}
+        pet={{
+          coins: pet?.coins ?? 0,
+          outfitId: pet?.outfitId ?? "",
+          ownedOutfitIds: pet?.ownedOutfitIds ?? [],
+          backgroundId: pet?.backgroundId ?? "",
+          ownedBackgroundIds: pet?.ownedBackgroundIds ?? [],
+          foodCounts: pet?.foodCounts ?? {},
+        }}
         message={message}
         onAct={act}
       />

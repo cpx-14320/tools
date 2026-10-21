@@ -4,7 +4,7 @@ import { budgetForMonth, withLegacyCategoryBudgets } from "./budgets";
 import { listBudgetRules } from "./budgets.server";
 import { listCategories } from "./categories.server";
 import { topLevelCategoryId } from "./categories";
-import { DEFAULT_OUTFIT_ID, pendingRewards, petItemById, type PetReward } from "./pet";
+import { DEFAULT_BACKGROUND_ID, DEFAULT_OUTFIT_ID, PET_ITEMS, pendingRewards, petItemById, type PetReward } from "./pet";
 
 interface PetDoc {
   _id: ObjectId;
@@ -15,6 +15,10 @@ interface PetDoc {
   outfitId: string;
   /** 已經買過的服裝（一次性購買，可以重複換穿，不會用掉）。 */
   ownedOutfitIds: string[];
+  /** 目前的場地背景 id／已經買過的背景。規則跟服裝一樣，欄位分開存。
+   *  舊文件沒有這兩個欄位（背景商品加進來之前建的），讀出來時用預設值補齊。 */
+  backgroundId?: string;
+  ownedBackgroundIds?: string[];
   /** 食物庫存：買了先進背包，要自己點了餵才會消耗、換成經驗值——不是買了就直接吃掉。
    *  舊文件可能沒有這個欄位（這個欄位加進來之前建的），讀出來時用 ?? {} 補齊。 */
   foodCounts?: Record<string, number>;
@@ -28,6 +32,8 @@ export interface PetStateDTO {
   xp: number;
   outfitId: string;
   ownedOutfitIds: string[];
+  backgroundId: string;
+  ownedBackgroundIds: string[];
   foodCounts: Record<string, number>;
   /** 這一次結算剛發出去的獎勵，給畫面上跳提示用。 */
   justEarned: PetReward[];
@@ -38,7 +44,16 @@ function collection() {
 }
 
 function toDTO(doc: PetDoc, justEarned: PetReward[] = []): PetStateDTO {
-  return { coins: doc.coins, xp: doc.xp, outfitId: doc.outfitId, ownedOutfitIds: doc.ownedOutfitIds, foodCounts: doc.foodCounts ?? {}, justEarned };
+  return {
+    coins: doc.coins,
+    xp: doc.xp,
+    outfitId: doc.outfitId,
+    ownedOutfitIds: ownedList(doc, "服裝"),
+    backgroundId: doc.backgroundId ?? DEFAULT_BACKGROUND_ID,
+    ownedBackgroundIds: ownedList(doc, "背景"),
+    foodCounts: doc.foodCounts ?? {},
+    justEarned,
+  };
 }
 
 /** 讀取（沒有就建一個初始狀態）。第一次進養成頁的人直接有一套預設服裝、0 幣 0 經驗。 */
@@ -53,6 +68,8 @@ async function ensurePet(userId: ObjectId): Promise<PetDoc> {
     xp: 0,
     outfitId: DEFAULT_OUTFIT_ID,
     ownedOutfitIds: [DEFAULT_OUTFIT_ID],
+    backgroundId: DEFAULT_BACKGROUND_ID,
+    ownedBackgroundIds: [DEFAULT_BACKGROUND_ID],
     foodCounts: {},
     claimedKeys: [],
     createdAt: new Date(),
@@ -144,26 +161,57 @@ export async function feedPet(userId: ObjectId, itemId: string): Promise<PetStat
   return toDTO({ ...pet, xp: pet.xp + item.xp, foodCounts: { ...pet.foodCounts, [itemId]: owned - 1 } });
 }
 
-/** 買服裝（已經有的不能重複買），買完直接穿上。 */
-export async function buyOutfit(userId: ObjectId, itemId: string): Promise<PetStateDTO | { error: string }> {
+/** 服裝跟背景的規則完全一樣：買一次就永久擁有、可以無限次換來換去、換的時候不用再付錢，
+ *  差別只在存進文件的哪兩個欄位。所以共用同一段邏輯，不要為了兩種東西複製兩份。 */
+const WEARABLES = {
+  服裝: { owned: "ownedOutfitIds", current: "outfitId", missing: "還沒有這件服裝", duplicate: "這件已經有了" },
+  背景: { owned: "ownedBackgroundIds", current: "backgroundId", missing: "還沒有這個背景", duplicate: "這個背景已經有了" },
+} as const;
+
+/** 服裝／背景目前擁有哪些。
+ *
+ *  免費的那一件（預設服裝、預設背景）一律算擁有，不管有沒有真的在清單裡——它們是每個人
+ *  的起點，不該因為資料是舊格式、或 $push 在沒有這個欄位的文件上建了一個只有新東西的
+ *  陣列，就變成「要再買一次」。 */
+function ownedList(pet: PetDoc, kind: keyof typeof WEARABLES): string[] {
+  const stored = kind === "服裝" ? pet.ownedOutfitIds : (pet.ownedBackgroundIds ?? []);
+  const free = PET_ITEMS.filter((i) => i.kind === kind && i.price === 0).map((i) => i.id);
+  return [...new Set([...free, ...(stored ?? [])])];
+}
+
+/** 買服裝或背景（已經有的不能重複買），買完直接換上。 */
+export async function buyWearable(userId: ObjectId, itemId: string): Promise<PetStateDTO | { error: string }> {
   const item = petItemById(itemId);
-  if (!item || item.kind !== "服裝") return { error: "找不到這件服裝" };
+  if (!item || (item.kind !== "服裝" && item.kind !== "背景")) return { error: "找不到這個商品" };
+  const fields = WEARABLES[item.kind];
 
   const pet = await ensurePet(userId);
-  if (pet.ownedOutfitIds.includes(itemId)) return { error: "這件已經有了" };
+  if (ownedList(pet, item.kind).includes(itemId)) return { error: fields.duplicate };
   if (pet.coins < item.price) return { error: "星星幣不夠" };
 
   const col = await collection();
-  await col.updateOne({ _id: pet._id }, { $inc: { coins: -item.price }, $push: { ownedOutfitIds: itemId }, $set: { outfitId: itemId } });
-  return toDTO({ ...pet, coins: pet.coins - item.price, ownedOutfitIds: [...pet.ownedOutfitIds, itemId], outfitId: itemId });
+  await col.updateOne(
+    { _id: pet._id },
+    { $inc: { coins: -item.price }, $push: { [fields.owned]: itemId }, $set: { [fields.current]: itemId } },
+  );
+  return toDTO({
+    ...pet,
+    coins: pet.coins - item.price,
+    [fields.owned]: [...ownedList(pet, item.kind), itemId],
+    [fields.current]: itemId,
+  });
 }
 
-/** 換穿已經擁有的服裝。 */
-export async function equipOutfit(userId: ObjectId, itemId: string): Promise<PetStateDTO | { error: string }> {
+/** 換上已經擁有的服裝或背景。 */
+export async function equipWearable(userId: ObjectId, itemId: string): Promise<PetStateDTO | { error: string }> {
+  const item = petItemById(itemId);
+  if (!item || (item.kind !== "服裝" && item.kind !== "背景")) return { error: "找不到這個商品" };
+  const fields = WEARABLES[item.kind];
+
   const pet = await ensurePet(userId);
-  if (!pet.ownedOutfitIds.includes(itemId)) return { error: "還沒有這件服裝" };
+  if (!ownedList(pet, item.kind).includes(itemId)) return { error: fields.missing };
 
   const col = await collection();
-  await col.updateOne({ _id: pet._id }, { $set: { outfitId: itemId } });
-  return toDTO({ ...pet, outfitId: itemId });
+  await col.updateOne({ _id: pet._id }, { $set: { [fields.current]: itemId } });
+  return toDTO({ ...pet, [fields.current]: itemId });
 }
