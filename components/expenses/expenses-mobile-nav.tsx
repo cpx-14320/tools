@@ -9,6 +9,7 @@ const tabs = [
   { href: "/tools/expenses", label: "首頁", icon: ICON_PATHS.navHome },
   { href: "/tools/expenses/reports", label: "報表", icon: ICON_PATHS.navReports },
   { href: "/tools/expenses/assets", label: "資產", icon: ICON_PATHS.navAssets },
+  { href: "/tools/expenses/pet", label: "養成", icon: ICON_PATHS.navPet },
   { href: "/tools/expenses/more", label: "設定", icon: ICON_PATHS.navSettings },
 ];
 

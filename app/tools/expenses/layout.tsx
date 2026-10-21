@@ -5,6 +5,7 @@ import { getSessionUser, hasToolAccess } from "@/lib/auth";
 import { ToolAccessDenied } from "@/components/tool-access-denied";
 import { autoConfirmDueOccurrences } from "@/lib/expenses/recurring-rules.server";
 import { seedExpensesPresets } from "@/lib/expenses/presets.server";
+import { settlePetRewards } from "@/lib/expenses/pet.server";
 
 /** 包住 (workspace) 底下所有頁面跟 ledgers/page.tsx——兩邊都屬於「記帳本」這個工具，
  *  在這一層統一檔，不用在 (workspace)/layout.tsx 跟 ledgers 各自重複檢查一次。
@@ -22,5 +23,11 @@ export default async function ExpensesToolLayout({ children }: { children: React
   const userId = new ObjectId(user.id);
   await seedExpensesPresets(userId).catch(() => {});
   await autoConfirmDueOccurrences(userId).catch(() => {});
+  // 養成的星星幣結算也掛在這裡：使用者可能先記完帳就離開、沒進養成頁，獎勵還是要算到。
+  // 伺服器時區不一定跟使用者同一個，這裡用伺服器的今天就好——差一天的邊界情況由養成頁
+  // 自己再結算一次（兩邊都是冪等的，同一筆獎勵只會發一次）。
+  const serverToday = new Date();
+  const todayISO = `${serverToday.getFullYear()}-${String(serverToday.getMonth() + 1).padStart(2, "0")}-${String(serverToday.getDate()).padStart(2, "0")}`;
+  await settlePetRewards(userId, todayISO).catch(() => {});
   return children;
 }

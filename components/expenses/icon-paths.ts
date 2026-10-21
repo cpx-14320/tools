@@ -6,6 +6,7 @@ export const ICON_PATHS = {
   navHome: "/expenses/nav-home.png",
   navReports: "/expenses/nav-reports.png",
   navAssets: "/expenses/nav-assets.png",
+  navPet: "/expenses/nav-pet.png",
   navSettings: "/expenses/nav-settings.png",
 
   // 設定頁各項功能

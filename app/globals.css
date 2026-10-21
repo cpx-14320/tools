@@ -72,3 +72,16 @@ body {
   color: var(--ink);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+/* 養成角色待機時的「呼吸」——沒有另外畫呼吸的圖，用很小幅度的上下浮動讓站姿看起來
+   是活的。幅度刻意只有 3px，再大就變成在跳而不是在呼吸了。
+   （走路有自己的精靈圖換格動畫，見 components/expenses/pet-sprite.tsx） */
+@keyframes petBreathe {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
