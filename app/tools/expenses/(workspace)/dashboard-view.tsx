@@ -29,21 +29,11 @@ import { type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
 import { withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
-import { upcomingOccurrences, type RecurringRuleDTO } from "@/lib/expenses/recurring-rules";
 import { formatCurrency } from "@/lib/format";
 
 // 首頁只做「摘要」，不是報表頁的另一份拷貝——這幾張卡片的清單固定只顯示前 5 筆，
 // 分類一多也不會把首頁拉得又臭又長，完整清單一律用「查看完整報表」導去報表頁看。
 const SUMMARY_LIMIT = 5;
-
-/** 「接下來會自動入帳」往前看幾天——兩週剛好涵蓋一般的月繳、雙週繳週期，又不會把
- *  下個月的東西全部拉進首頁。 */
-const UPCOMING_DAYS = 14;
-
-/** 本地日期字串（不是 UTC）——toISOString() 在台灣時區的凌晨會回到前一天。 */
-function toLocalISO(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
 
 export function DashboardView() {
   const { filter, compare } = useDateFilter();
@@ -53,15 +43,8 @@ export function DashboardView() {
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [budgetRules, setBudgetRules] = useState<BudgetRuleDTO[]>([]);
-  const [recurringRules, setRecurringRules] = useState<RecurringRuleDTO[]>([]);
   const [ready, setReady] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
-  // 「今天」在元件掛載時算一次就固定住——讀時鐘是不純的，在 render 當中呼叫會讓同一次
-  // 繪製的前後拿到不一樣的值（跨午夜時甚至會不一致）。
-  const [[todayISO, upcomingUntil]] = useState(() => {
-    const now = new Date();
-    return [toLocalISO(now), toLocalISO(new Date(now.getFullYear(), now.getMonth(), now.getDate() + UPCOMING_DAYS))];
-  });
 
   useEffect(() => {
     let cancelled = false;
@@ -72,17 +55,15 @@ export function DashboardView() {
       fetch("/api/expenses/account-types").then((res) => res.json()),
       fetch("/api/expenses/transfers").then((res) => res.json()),
       fetch("/api/expenses/budgets").then((res) => res.json()),
-      fetch("/api/expenses/recurring-rules").then((res) => res.json()),
     ])
       .then(
-        ([categoriesData, txData, accountsData, accountTypesData, transfersData, budgetsData, recurringData]: [
+        ([categoriesData, txData, accountsData, accountTypesData, transfersData, budgetsData]: [
           { categories?: CategoryDTO[] },
           { transactions?: TransactionDTO[] },
           { accounts?: AccountDTO[] },
           { accountTypes?: AccountTypeDTO[] },
           { transfers?: TransferDTO[] },
           { rules?: BudgetRuleDTO[] },
-          { rules?: RecurringRuleDTO[] },
         ]) => {
           if (cancelled) return;
           setCategories(categoriesData.categories ?? []);
@@ -91,7 +72,6 @@ export function DashboardView() {
           setAccountTypes(accountTypesData.accountTypes ?? []);
           setTransfers(transfersData.transfers ?? []);
           setBudgetRules(budgetsData.rules ?? []);
-          setRecurringRules(recurringData.rules ?? []);
           setReady(true);
         },
       )
@@ -139,11 +119,11 @@ export function DashboardView() {
   const budget = budgetSummary(budgetMonthExpenseTx, categories, withLegacyCategoryBudgets(budgetRules, categories), budgetYearMonth);
   const isCurrentMonth = budgetYearMonth === referenceYearMonth(defaultDateFilter());
 
-  // 固定收支：本月已經自動入帳的那幾筆（有 sourceRuleId 就代表是規則產生的），以及
-  // 接下來 UPCOMING_DAYS 天內還會自動入帳的幾期。
-  const recurringThisMonth = transactions.filter((t) => t.sourceRuleId && t.date.slice(0, 7) === referenceYearMonth(defaultDateFilter()));
-  const recurringThisMonthTotal = recurringThisMonth.reduce((sum, t) => sum + t.amount, 0);
-  const upcoming = upcomingOccurrences(recurringRules, todayISO, upcomingUntil);
+  // 固定收支本月已經自動入帳的金額——有 sourceRuleId 就代表這筆是規則產生的。只看交易
+  // 紀錄就算得出來，不用再去拉一次規則清單。
+  const recurringThisMonthTotal = transactions
+    .filter((t) => t.sourceRuleId && t.date.slice(0, 7) === referenceYearMonth(defaultDateFilter()))
+    .reduce((sum, t) => sum + t.amount, 0);
   // 帶上月份，點進去的紀錄頁會把共用篩選器切到同一個月，數字才對得起來。
   const budgetDetailQuery = `kind=支出&month=${budgetYearMonth}`;
 
@@ -216,18 +196,7 @@ export function DashboardView() {
             valueColor={balance >= 0 ? "#4A3B7C" : KPI_NEGATIVE}
             delta={balanceDelta && <DeltaText delta={balanceDelta.delta} pct={balanceDelta.pct} goodWhenUp />}
           />,
-          <KpiCard
-            key="recurring"
-            label="固定收支"
-            value={formatCurrency(recurringThisMonthTotal)}
-            valueColor="#4A3B7C"
-            delta={
-              <span className="shrink-0 text-xs font-medium text-[#9C94C4]">
-                {recurringThisMonth.length > 0 ? `本月已入帳 ${recurringThisMonth.length} 筆` : "本月尚未入帳"}
-                {upcoming.length > 0 && `・${UPCOMING_DAYS} 天內還有 ${upcoming.length} 筆`}
-              </span>
-            }
-          />,
+          <KpiCard key="recurring" label="固定收支" value={formatCurrency(recurringThisMonthTotal)} valueColor="#4A3B7C" />,
         ]}
       />
 
