@@ -10,6 +10,11 @@
 
 export type PetItemKind = "食物" | "服裝";
 
+/** 商店圖片路徑——跟 presets.ts 的 expenseCategoryIcon 同一套「用途前綴＋英文名」規則，
+ *  id 本身已經是英文 slug（food-rice、outfit-mint…），直接接在前綴後面就好。圖檔還沒放進
+ *  public/expenses 之前 IconImg 會用漸層佔位，404 不會破版。 */
+export const petItemImage = (id: string) => `/expenses/pet-item-${id}.png`;
+
 export interface PetItem {
   id: string;
   name: string;
@@ -20,17 +25,18 @@ export interface PetItem {
   /** 服裝目前用色相旋轉模擬換裝（還沒有各套服裝的圖），單位是度。 */
   hueRotate?: number;
   desc: string;
+  image: string;
 }
 
 /** 商店品項。食物是消耗品（買了直接餵、換經驗值），服裝是一次性購買、可以重複換穿。 */
 export const PET_ITEMS: PetItem[] = [
-  { id: "food-rice", name: "飯糰", kind: "食物", price: 10, xp: 10, desc: "最基本的一餐" },
-  { id: "food-noodle", name: "拉麵", kind: "食物", price: 25, xp: 30, desc: "吃飽一點，心情也好" },
-  { id: "food-cake", name: "蛋糕", kind: "食物", price: 60, xp: 80, desc: "慶祝一下這個月守住預算" },
-  { id: "outfit-default", name: "原色套裝", kind: "服裝", price: 0, hueRotate: 0, desc: "一開始就有的衣服" },
-  { id: "outfit-mint", name: "薄荷綠", kind: "服裝", price: 80, hueRotate: 120, desc: "清爽的配色" },
-  { id: "outfit-ocean", name: "海洋藍", kind: "服裝", price: 120, hueRotate: 200, desc: "沉穩的深藍" },
-  { id: "outfit-sunset", name: "夕陽橘", kind: "服裝", price: 160, hueRotate: 300, desc: "暖色系，存到一筆錢的獎勵" },
+  { id: "food-rice", name: "飯糰", kind: "食物", price: 10, xp: 10, desc: "最基本的一餐", image: petItemImage("food-rice") },
+  { id: "food-noodle", name: "拉麵", kind: "食物", price: 25, xp: 30, desc: "吃飽一點，心情也好", image: petItemImage("food-noodle") },
+  { id: "food-cake", name: "蛋糕", kind: "食物", price: 60, xp: 80, desc: "慶祝一下這個月守住預算", image: petItemImage("food-cake") },
+  { id: "outfit-default", name: "原色套裝", kind: "服裝", price: 0, hueRotate: 0, desc: "一開始就有的衣服", image: petItemImage("outfit-default") },
+  { id: "outfit-mint", name: "薄荷綠", kind: "服裝", price: 80, hueRotate: 120, desc: "清爽的配色", image: petItemImage("outfit-mint") },
+  { id: "outfit-ocean", name: "海洋藍", kind: "服裝", price: 120, hueRotate: 200, desc: "沉穩的深藍", image: petItemImage("outfit-ocean") },
+  { id: "outfit-sunset", name: "夕陽橘", kind: "服裝", price: 160, hueRotate: 300, desc: "暖色系，存到一筆錢的獎勵", image: petItemImage("outfit-sunset") },
 ];
 
 export const DEFAULT_OUTFIT_ID = "outfit-default";

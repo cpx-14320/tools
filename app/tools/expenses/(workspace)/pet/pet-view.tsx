@@ -3,20 +3,13 @@
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
 import { Card, CardBody } from "@/components/expenses/card";
-import { SegmentedControl, PillButton } from "@/components/expenses/button";
+import { PillButton } from "@/components/expenses/button";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { ProgressBar } from "@/components/expenses/progress-bar";
 import { PetSprite, type PetMood } from "@/components/expenses/pet-sprite";
+import { PetShopModal } from "@/components/expenses/pet-shop";
 import { text } from "@/components/expenses/theme";
-import {
-  DAILY_LOG_COINS,
-  BUDGET_KEPT_COINS,
-  PET_ITEMS,
-  levelFromXp,
-  petItemById,
-  wealthTier,
-  type PetItemKind,
-} from "@/lib/expenses/pet";
+import { DAILY_LOG_COINS, BUDGET_KEPT_COINS, levelFromXp, petItemById, wealthTier } from "@/lib/expenses/pet";
 import { netWorth, type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type CategoryDTO } from "@/lib/expenses/categories";
@@ -40,7 +33,7 @@ export function PetView() {
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [ready, setReady] = useState(false);
-  const [shopKind, setShopKind] = useState<PetItemKind>("食物");
+  const [shopOpen, setShopOpen] = useState(false);
   const [mood, setMood] = useState<PetMood>("idle");
   const [message, setMessage] = useState<string | null>(null);
   // 「今天」掛載時算一次固定住（本地日期，不是 UTC）——伺服器時區不一定跟使用者同一個，
@@ -121,7 +114,6 @@ export function PetView() {
   const net = netWorth(accounts, accountTypes, transactions, categories, transfers);
   const tier = wealthTier(net);
   const outfit = petItemById(pet?.outfitId ?? "");
-  const shopItems = PET_ITEMS.filter((i) => i.kind === shopKind);
 
   return (
     <div>
@@ -165,54 +157,35 @@ export function PetView() {
         </button>
       )}
 
-      <div className="mb-2 flex items-center justify-between px-1">
-        <p className={text.sectionHeading}>商店</p>
-        <span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ {pet?.coins ?? 0}</span>
-      </div>
+      {/* 商店入口——真正的格狀選購版面放在彈窗裡（PetShopModal），這裡只是一個
+          像手遊「進商店」的入口列，平常不佔版面。 */}
+      <button type="button" onClick={() => setShopOpen(true)} className="mb-4 w-full">
+        <Card>
+          <CardBody className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="grid size-11 place-items-center rounded-2xl bg-[#F3EFFC] text-xl">🛍️</span>
+              <div className="text-left">
+                <p className={text.sectionHeading}>商店</p>
+                <p className={text.muted}>用星星幣買食物、換衣服</p>
+              </div>
+            </div>
+            <span className="flex items-center gap-1 text-sm font-semibold tabular-nums text-[#6F5FD6]">
+              ⭐ {pet?.coins ?? 0}
+              <span aria-hidden className="text-[#C7BFE6]">
+                ›
+              </span>
+            </span>
+          </CardBody>
+        </Card>
+      </button>
 
-      <SegmentedControl
-        className="mb-3"
-        value={shopKind}
-        onChange={setShopKind}
-        options={[
-          { value: "食物", label: "食物" },
-          { value: "服裝", label: "服裝" },
-        ]}
+      <PetShopModal
+        open={shopOpen}
+        onClose={() => setShopOpen(false)}
+        pet={{ coins: pet?.coins ?? 0, outfitId: pet?.outfitId ?? "", ownedOutfitIds: pet?.ownedOutfitIds ?? [] }}
+        message={message}
+        onAct={act}
       />
-
-      <ListCard className="mb-4">
-        {shopItems.map((item) => {
-          const owned = item.kind === "服裝" && (pet?.ownedOutfitIds ?? []).includes(item.id);
-          const equipped = item.id === pet?.outfitId;
-          const affordable = (pet?.coins ?? 0) >= item.price;
-          return (
-            <ListRow
-              key={item.id}
-              name={
-                <span className="flex min-w-0 flex-col">
-                  <span className="truncate">{item.name}</span>
-                  <span className={`truncate ${text.muted}`}>{item.desc}</span>
-                </span>
-              }
-              right={
-                item.kind === "食物" ? (
-                  <PillButton onClick={() => act("feed", item.id)} className={affordable ? "" : "opacity-40"}>
-                    ⭐ {item.price}・餵
-                  </PillButton>
-                ) : equipped ? (
-                  <span className={`text-xs font-semibold text-[#6F5FD6]`}>穿著中</span>
-                ) : owned ? (
-                  <PillButton onClick={() => act("equip", item.id)}>換上</PillButton>
-                ) : (
-                  <PillButton onClick={() => act("buy", item.id)} className={affordable ? "" : "opacity-40"}>
-                    ⭐ {item.price}
-                  </PillButton>
-                )
-              }
-            />
-          );
-        })}
-      </ListCard>
 
       {/* 把賺幣規則直接寫出來——使用者要知道「做什麼會有星星幣」才可能被誘導去做，
           藏在說明頁裡等於沒有。 */}
