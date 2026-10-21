@@ -8,7 +8,7 @@ import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { BudgetModal } from "@/components/expenses/budget-modal";
 import { text } from "@/components/expenses/theme";
-import { budgetForMonth, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
+import { budgetForMonth, budgetPace, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
 import {
   topLevelCategories,
   topLevelCategoryId,
@@ -35,6 +35,11 @@ export function BudgetsView() {
   const [ready, setReady] = useState(false);
   const [yearMonth, setYearMonth] = useState(currentYearMonth());
   const [editing, setEditing] = useState<CategoryDTO | null>(null);
+  // 「今天」掛載時算一次固定住——render 當中讀時鐘是不純的。
+  const [todayISO] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -154,21 +159,31 @@ export function BudgetsView() {
             }
             const pct = Math.round((spent / amount) * 100);
             const over = spent > amount;
+            // 還沒超支、但照目前的速度月底會超支時才提醒——已經超支的上面那行就是紅字了，
+            // 速度正常的話多一行預估只是噪音。
+            const pace = budgetPace(spent, amount, yearMonth, todayISO);
             return (
-              <button key={c.id} type="button" onClick={() => setEditing(c)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
-                <ListProgressRow
-                  icon={c.icon}
-                  iconClassName={categoryColorClass[c.color]}
-                  name={c.name}
-                  amount={`${formatCurrency(spent)} / ${formatCurrency(amount)}`}
-                  pct={pct}
-                  pctLabel={
-                    <span className={over ? "font-semibold text-[#D1517E]" : undefined}>
-                      {over ? `超支 ${formatCurrency(spent - amount)}` : `剩 ${formatCurrency(amount - spent)}`}
-                    </span>
-                  }
-                  barColorClass={over ? "bg-[#D1517E]" : categoryFillClass[c.color]}
-                />
+              <button key={c.id} type="button" onClick={() => setEditing(c)} className="w-full px-4 py-3.5 text-left">
+                <div className="flex w-full items-center gap-3">
+                  <ListProgressRow
+                    icon={c.icon}
+                    iconClassName={categoryColorClass[c.color]}
+                    name={c.name}
+                    amount={`${formatCurrency(spent)} / ${formatCurrency(amount)}`}
+                    pct={pct}
+                    pctLabel={
+                      <span className={over ? "font-semibold text-[#D1517E]" : undefined}>
+                        {over ? `超支 ${formatCurrency(spent - amount)}` : `剩 ${formatCurrency(amount - spent)}`}
+                      </span>
+                    }
+                    barColorClass={over ? "bg-[#D1517E]" : categoryFillClass[c.color]}
+                  />
+                </div>
+                {pace && (
+                  <p className="mt-1.5 pl-[52px] text-xs text-[#D1517E]">
+                    照這個速度，月底大約會花到 {formatCurrency(pace.projected)}（超出 {formatCurrency(pace.projectedOver)}）・還剩 {pace.daysLeft} 天
+                  </p>
+                )}
               </button>
             );
           })}

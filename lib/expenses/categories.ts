@@ -15,6 +15,9 @@ export interface CategoryDTO {
   parentId?: string;
   /** 系統預設建立的分類——「清除全部資料」不會刪掉它們。 */
   isPreset?: boolean;
+  /** 刪除別的分類時，那些紀錄被強制歸類到這裡留下的標記。這個分類是系統自動建的，
+   *  不是使用者自己開的，畫面上要標示出來，也不給刪除（刪了那些紀錄又會變孤兒）。 */
+  isUncategorized?: boolean;
   /** 每月預算，只對頂層「支出」分類有意義——子分類跟收入分類沒有自己的預算，花費算進
    *  它們的頂層大分類裡一起比對。沒填代表這個分類沒設預算。 */
   budgetAmount?: number;

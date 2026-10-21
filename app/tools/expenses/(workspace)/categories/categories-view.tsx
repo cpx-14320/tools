@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
-import { SegmentedControl } from "@/components/expenses/button";
+import { SegmentedControl, Badge } from "@/components/expenses/button";
 import { text } from "@/components/expenses/theme";
 import { CategoryModal, type CategoryModalDraft } from "@/components/expenses/category-modal";
 import { CategoryBatchModal, type CategoryBatchItem } from "@/components/expenses/category-batch-modal";
@@ -132,7 +132,9 @@ export function CategoriesView() {
   const parents = topLevelCategories(categories, kind);
   // 多選可以連子分類一起選——選取清單包含目前分頁看得到的主分類跟它們底下的子分類，
   // 「全選」才不會漏掉子分類，刪除時也能一次把挑好的子分類清掉。
-  const selectableIds = parents.flatMap((c) => [c.id, ...subCategoriesOf(categories, c.id).map((sub) => sub.id)]);
+  const selectableIds = parents
+    .filter((c) => !c.isUncategorized)
+    .flatMap((c) => [c.id, ...subCategoriesOf(categories, c.id).map((sub) => sub.id)]);
   const selection = useSelection(selectableIds);
 
   return (
@@ -152,7 +154,8 @@ export function CategoriesView() {
         initial={modal ?? undefined}
         onClose={() => setModal(null)}
         onSave={handleSave}
-        onDelete={handleDelete}
+        // 「未分類」不給刪（見 categories.server.ts 的守門），所以連刪除鈕都不顯示。
+        onDelete={modal?.isUncategorized ? undefined : handleDelete}
       />
 
       <CategoryBatchModal
@@ -209,10 +212,19 @@ export function CategoriesView() {
                 <ListRow
                   icon={c.icon}
                   iconClassName={categoryColorClass[c.color]}
-                  name={c.name}
+                  name={
+                    c.isUncategorized ? (
+                      <span className="flex items-center gap-1.5">
+                        {c.name}
+                        <Badge>系統</Badge>
+                      </span>
+                    ) : (
+                      c.name
+                    )
+                  }
                   right={<span className={text.muted}>{counts[c.id] ?? 0} 筆紀錄</span>}
-                  leading={selection.selecting ? <SelectionDot selected={selection.selectedIds.has(c.id)} /> : undefined}
-                  onClick={() => (selection.selecting ? selection.toggle(c.id) : setModal(c))}
+                  leading={selection.selecting && !c.isUncategorized ? <SelectionDot selected={selection.selectedIds.has(c.id)} /> : undefined}
+                  onClick={() => (selection.selecting ? (c.isUncategorized ? undefined : selection.toggle(c.id)) : setModal(c))}
                 />
 
                 {subs.length > 0 && (

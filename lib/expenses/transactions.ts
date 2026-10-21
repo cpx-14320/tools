@@ -295,3 +295,36 @@ export function trendByPeriod(
   }
   return points;
 }
+
+export interface SubcategoryRow {
+  /** 子分類 id；直接記在大分類身上（沒有選子分類）的那些錢會聚成一列，id 是空字串。 */
+  id: string;
+  name: string;
+  amount: number;
+  /** 佔這個大分類的百分比。 */
+  pct: number;
+}
+
+/** 某個大分類底下，各子分類各花了多少——報表的分類明細展開時用。
+ *
+ *  直接記在大分類身上、沒有再選子分類的交易會被歸成一列「直接記在這一類」，不是被
+ *  丟掉也不是硬塞進某個子分類：使用者如果看到子分類加起來跟大分類總額對不上，會以為
+ *  數字算錯了。 */
+export function subcategoryBreakdown(transactions: TransactionDTO[], categories: CategoryDTO[], parentId: string): SubcategoryRow[] {
+  const byId = new Map<string, number>();
+  for (const t of transactions) {
+    if (topLevelCategoryId(categories, t.categoryId) !== parentId) continue;
+    // 記在大分類自己身上的用空字串當 key，跟子分類區隔開。
+    const key = t.categoryId === parentId ? "" : t.categoryId;
+    byId.set(key, (byId.get(key) ?? 0) + t.amount);
+  }
+  const total = [...byId.values()].reduce((a, b) => a + b, 0) || 1;
+  return [...byId.entries()]
+    .map(([id, amount]) => ({
+      id,
+      name: id === "" ? "直接記在這一類" : (categoryById(categories, id)?.name ?? "（已刪除分類）"),
+      amount,
+      pct: Math.round((amount / total) * 100),
+    }))
+    .sort((a, b) => b.amount - a.amount);
+}

@@ -15,7 +15,7 @@ import { TransactionModal, type TransactionModalDraft } from "@/components/expen
 import { BreakdownToggle, TransactionBreakdown } from "@/components/expenses/transaction-breakdown";
 import { compareDateFilter, compareLabel, dateFilterRange, defaultDateFilter } from "@/lib/expenses/date-filter";
 import { isValidYearMonth } from "@/lib/expenses/budgets";
-import { Modal } from "@/components/expenses/modal";
+import { Modal, ModalFooter, fieldInputClass } from "@/components/expenses/modal";
 import {
   categoryById,
   categoryColorClass,
@@ -65,6 +65,10 @@ export function TransactionsView() {
   // 只看某一個大分類（含它的子分類）的篩選，空字串＝全部分類。
   const [categoryFilter, setCategoryFilter] = useState(initialCategoryId);
   const [filterOpen, setFilterOpen] = useState(false);
+  // 金額區間篩選（字串是因為使用者可能只填一邊）——翻舊帳時「我記得那筆大概一兩萬」
+  // 比關鍵字好用，備註常常根本沒打。
+  const [minAmount, setMinAmount] = useState("");
+  const [maxAmount, setMaxAmount] = useState("");
   // 哪幾筆的明細是展開的——預設全部收起來，只有有明細的那幾筆才看得到展開箭頭。
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   // 這頁現在只處理既有紀錄的編輯（新增交易改到首頁的浮動按鈕），所以只需要存「正在編輯
@@ -125,9 +129,18 @@ export function TransactionsView() {
   const inCategoryFilter = (t: TransactionDTO) => !categoryFilter || topLevelCategoryId(categories, t.categoryId) === categoryFilter;
   const filterCategory = categoryFilter ? categoryById(categories, categoryFilter) : undefined;
 
+  // 空字串＝那一邊不設限；填了不是數字的東西也當成沒設限，不要讓清單忽然全空。
+  const minNum = Number(minAmount);
+  const maxNum = Number(maxAmount);
+  const hasMin = minAmount.trim() !== "" && Number.isFinite(minNum);
+  const hasMax = maxAmount.trim() !== "" && Number.isFinite(maxNum);
+  const inAmountFilter = (t: TransactionDTO) => (!hasMin || t.amount >= minNum) && (!hasMax || t.amount <= maxNum);
+  const filterCount = (categoryFilter ? 1 : 0) + (hasMin || hasMax ? 1 : 0);
+
   const rows = (isSearching ? transactions.filter(inKind) : totals[kind === "支出" ? "expenseTx" : "incomeTx"])
     .filter((t) => matchesQuery(t, categories, query))
     .filter(inCategoryFilter)
+    .filter(inAmountFilter)
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 
   const total = rows.reduce((sum, t) => sum + t.amount, 0);
@@ -202,46 +215,77 @@ export function TransactionsView() {
         onCategoriesChange={setCategories}
       />
 
-      {/* 「全部」就是格子裡的第一格，跟其他分類長得一樣（跟新增交易彈窗的「＋新增」
-          同一個位置、同一種形狀），不另外佔一整列。 */}
-      <Modal open={filterOpen} onClose={() => setFilterOpen(false)} title="篩選分類">
-        <div className="grid grid-cols-5 gap-x-1 gap-y-2.5">
-          <button
-            type="button"
-            onClick={() => {
+      {/* 篩選條件有兩種（分類、金額區間），所以點了不會立刻關窗——要讓使用者兩個都設完
+          再按「套用」。「全部」是格子裡的第一格，跟其他分類長得一樣（跟新增交易彈窗的
+          「＋新增」同一個位置、同一種形狀），不另外佔一整列。 */}
+      <Modal
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        title="篩選"
+        footer={
+          <ModalFooter
+            onClose={() => setFilterOpen(false)}
+            onConfirm={() => setFilterOpen(false)}
+            confirmLabel="套用"
+            onDelete={filterCount > 0 ? () => {
               setCategoryFilter("");
-              setFilterOpen(false);
-            }}
-            className="flex flex-col items-center gap-1 py-0.5"
-          >
-            <IconAvatar
-              icon="全"
-              size="sm"
-              className={`bg-[#F3EFFC] text-[#6F5FD6] ${!categoryFilter ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`}
+              setMinAmount("");
+              setMaxAmount("");
+            } : undefined}
+            deleteLabel="清除條件"
+          />
+        }
+      >
+        <div>
+          <p className={`mb-2 ${text.label}`}>分類</p>
+          <div className="grid grid-cols-5 gap-x-1 gap-y-2.5">
+            <button type="button" onClick={() => setCategoryFilter("")} className="flex flex-col items-center gap-1 py-0.5">
+              <IconAvatar
+                icon="全"
+                size="sm"
+                className={`bg-[#F3EFFC] text-[#6F5FD6] ${!categoryFilter ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`}
+              />
+              <span className={`line-clamp-1 w-full text-center text-[11px] ${!categoryFilter ? "font-semibold text-[#6F5FD6]" : "font-medium text-[#4A3B7C]"}`}>
+                全部
+              </span>
+            </button>
+            {topLevelCategories(categories, kind).map((c) => {
+              const active = c.id === categoryFilter;
+              return (
+                <button key={c.id} type="button" onClick={() => setCategoryFilter(c.id)} className="flex flex-col items-center gap-1 py-0.5">
+                  <IconAvatar icon={c.icon} size="sm" className={`${categoryColorClass[c.color]} ${active ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`} />
+                  <span className={`line-clamp-1 w-full text-center text-[11px] ${active ? "font-semibold text-[#6F5FD6]" : "font-medium text-[#4A3B7C]"}`}>
+                    {c.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <p className={`mb-2 ${text.label}`}>金額區間（兩邊都可以只填一邊）</p>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              value={minAmount}
+              onChange={(e) => setMinAmount(e.target.value)}
+              placeholder="最低"
+              className={`${fieldInputClass} min-w-0 flex-1`}
             />
-            <span className={`line-clamp-1 w-full text-center text-[11px] ${!categoryFilter ? "font-semibold text-[#6F5FD6]" : "font-medium text-[#4A3B7C]"}`}>
-              全部
-            </span>
-          </button>
-          {topLevelCategories(categories, kind).map((c) => {
-            const active = c.id === categoryFilter;
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => {
-                  setCategoryFilter(c.id);
-                  setFilterOpen(false);
-                }}
-                className="flex flex-col items-center gap-1 py-0.5"
-              >
-                <IconAvatar icon={c.icon} size="sm" className={`${categoryColorClass[c.color]} ${active ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`} />
-                <span className={`line-clamp-1 w-full text-center text-[11px] ${active ? "font-semibold text-[#6F5FD6]" : "font-medium text-[#4A3B7C]"}`}>
-                  {c.name}
-                </span>
-              </button>
-            );
-          })}
+            <span className="shrink-0 text-[#C7BFE6]">～</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              value={maxAmount}
+              onChange={(e) => setMaxAmount(e.target.value)}
+              placeholder="最高"
+              className={`${fieldInputClass} min-w-0 flex-1`}
+            />
+          </div>
         </div>
       </Modal>
 
@@ -258,9 +302,10 @@ export function TransactionsView() {
         />
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
           {/* 分類篩選：有選的時候按鈕變實心＋顯示分類名稱，一眼看得出清單是被篩過的。 */}
-          <PillButton onClick={() => setFilterOpen(true)} active={!!filterCategory}>
+          <PillButton onClick={() => setFilterOpen(true)} active={filterCount > 0}>
             <span aria-hidden>⌕</span>
             <span className="max-w-[64px] truncate">{filterCategory ? filterCategory.name : "篩選"}</span>
+            {filterCount > 1 && <span className="tabular-nums">+{filterCount - 1}</span>}
           </PillButton>
           <ComparePicker />
         </div>

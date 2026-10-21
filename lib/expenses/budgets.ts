@@ -69,3 +69,43 @@ export function withLegacyCategoryBudgets(
 export function isLegacyRule(rule: BudgetRuleDTO): boolean {
   return rule.id.startsWith("legacy-");
 }
+
+/** 這個月過了幾成——用來判斷「花的速度」是不是比「時間的速度」快。
+ *  只有「現在這個月」才算得出進度；看的是過去的月份就回傳 1（整個月都過完了），
+ *  未來的月份回傳 0。 */
+export function monthElapsedRatio(yearMonth: string, today: string): number {
+  const todayYearMonth = today.slice(0, 7);
+  if (yearMonth < todayYearMonth) return 1;
+  if (yearMonth > todayYearMonth) return 0;
+  const [year, month] = yearMonth.split("-").map(Number);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const dayOfMonth = Number(today.slice(8, 10));
+  return dayOfMonth / daysInMonth;
+}
+
+export interface BudgetPace {
+  /** 照目前的速度，整個月大概會花到多少。 */
+  projected: number;
+  /** 預估會超出預算多少；沒有超出就是 0。 */
+  projectedOver: number;
+  /** 這個月還剩幾天（含今天）。 */
+  daysLeft: number;
+}
+
+/** 「照這個速度月底會花到多少」——已經花掉的金額除以「月份已經過掉的比例」。
+ *
+ *  只在「還沒超支、但照速度會超支」的時候才有講的價值：已經超支了畫面上本來就會紅字
+ *  標示，不用再預估一次；速度正常的話跳出一行預估反而是噪音。所以不符合這兩個條件時
+ *  一律回傳 null，由呼叫端決定不顯示。 */
+export function budgetPace(spent: number, budget: number, yearMonth: string, today: string): BudgetPace | null {
+  if (budget <= 0 || spent <= 0 || spent > budget) return null;
+  const elapsed = monthElapsedRatio(yearMonth, today);
+  // 月初前一兩天的樣本太少，除出來的預估會誇張到沒有參考價值（1 號花 100 元就預估
+  // 月底 3000），乾脆不猜。
+  if (elapsed < 0.15 || elapsed >= 1) return null;
+  const projected = Math.round(spent / elapsed);
+  if (projected <= budget) return null;
+  const [year, month] = yearMonth.split("-").map(Number);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  return { projected, projectedOver: projected - budget, daysLeft: daysInMonth - Number(today.slice(8, 10)) + 1 };
+}

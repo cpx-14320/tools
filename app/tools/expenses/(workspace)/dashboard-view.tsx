@@ -25,10 +25,10 @@ import {
   transactionDisplayName,
   type TransactionDTO,
 } from "@/lib/expenses/transactions";
-import { type AccountDTO } from "@/lib/expenses/accounts";
+import { netWorth, type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
-import { withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
+import { budgetPace, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
 import { formatCurrency } from "@/lib/format";
 
 // 首頁只做「摘要」，不是報表頁的另一份拷貝——這幾張卡片的清單固定只顯示前 5 筆，
@@ -45,6 +45,11 @@ export function DashboardView() {
   const [budgetRules, setBudgetRules] = useState<BudgetRuleDTO[]>([]);
   const [ready, setReady] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  // 「今天」掛載時算一次固定住——render 當中讀時鐘是不純的。
+  const [todayISO] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -118,12 +123,14 @@ export function DashboardView() {
   const budgetMonthExpenseTx = totalsForRange(transactions, categories, budgetMonthRange).expenseTx;
   const budget = budgetSummary(budgetMonthExpenseTx, categories, withLegacyCategoryBudgets(budgetRules, categories), budgetYearMonth);
   const isCurrentMonth = budgetYearMonth === referenceYearMonth(defaultDateFilter());
+  const budgetTotalPace = budgetPace(budget.totalSpent, budget.totalBudget, budgetYearMonth, todayISO);
 
   // 固定收支本月已經自動入帳的金額——有 sourceRuleId 就代表這筆是規則產生的。只看交易
   // 紀錄就算得出來，不用再去拉一次規則清單。
   const recurringThisMonthTotal = transactions
     .filter((t) => t.sourceRuleId && t.date.slice(0, 7) === referenceYearMonth(defaultDateFilter()))
     .reduce((sum, t) => sum + t.amount, 0);
+  const net = netWorth(accounts, accountTypes, transactions, categories, transfers);
   // 帶上月份，點進去的紀錄頁會把共用篩選器切到同一個月，數字才對得起來。
   const budgetDetailQuery = `kind=支出&month=${budgetYearMonth}`;
 
@@ -165,23 +172,25 @@ export function DashboardView() {
           「＋」而不是其他 emoji，跟選單圖示區分開，一眼就看得出是「新增」的動作。 */}
       <FloatingAddButton onClick={() => setAddOpen(true)} label="新增交易" />
 
-      {/* 收入獨立一整排、支出跟結餘並排各半——收入是看整體財務狀況時最先想看的數字，
-          拉成滿版比較醒目；支出跟結餘互相比較的意義比較大（花了多少、剩多少），並排
-          方便一眼對照。薪資不再是獨立算出來的特例，就是收入分類加總的其中一塊，想看
-          薪資自己漲跌多少，看「收入來源」卡片裡薪資那一列即可，不需要 Dashboard 再
-          另外開一組指標。 */}
+      {/* 整寬的那張放「結餘」不是「收入」：收入一個月大概就那幾筆、不太會變，結餘才是
+          每記一筆都會動、而且直接回答「我這個月還能花多少」的那個數字，值得最大的版面。
+          收入退回輪播裡跟支出、固定收支、淨資產並列，剛好四張＝兩頁兩欄，不會留半格空白。 */}
       <KpiCard
-        label="本月收入"
-        value={formatCurrency(totalIncome)}
-        valueColor="#4A3B7C"
-        delta={incomeDelta && <DeltaText delta={incomeDelta.delta} pct={incomeDelta.pct} goodWhenUp />}
+        label="本月結餘"
+        value={`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`}
+        valueColor={balance >= 0 ? "#4A3B7C" : KPI_NEGATIVE}
+        delta={balanceDelta && <DeltaText delta={balanceDelta.delta} pct={balanceDelta.pct} goodWhenUp />}
       />
-      {/* 支出／結餘／固定收支一列兩欄、滑一次換一組。固定收支本來是下面獨立一整區，
-          收進這裡之後首頁少一個區塊，想看每一期的明細仍然可以從設定 › 固定收支進去。
-          下方圓點同時也是在告訴使用者「這裡可以滑」。 */}
       <Carousel
         perSlide={2}
         slides={[
+          <KpiCard
+            key="income"
+            label="本月收入"
+            value={formatCurrency(totalIncome)}
+            valueColor="#4A3B7C"
+            delta={incomeDelta && <DeltaText delta={incomeDelta.delta} pct={incomeDelta.pct} goodWhenUp />}
+          />,
           <KpiCard
             key="expense"
             label="本月支出"
@@ -189,14 +198,15 @@ export function DashboardView() {
             valueColor="#4A3B7C"
             delta={expenseDelta && <DeltaText delta={expenseDelta.delta} pct={expenseDelta.pct} goodWhenUp={false} />}
           />,
-          <KpiCard
-            key="balance"
-            label="本月結餘"
-            value={`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`}
-            valueColor={balance >= 0 ? "#4A3B7C" : KPI_NEGATIVE}
-            delta={balanceDelta && <DeltaText delta={balanceDelta.delta} pct={balanceDelta.pct} goodWhenUp />}
-          />,
           <KpiCard key="recurring" label="固定收支" value={formatCurrency(recurringThisMonthTotal)} valueColor="#4A3B7C" />,
+          // 淨資產用的是資產總表同一個算式，而且首頁本來就已經抓了帳戶／類型／轉帳
+          // （新增交易彈窗要用），所以多這張卡不用多打任何一支 API。
+          <KpiCard
+            key="networth"
+            label="淨資產"
+            value={`${net >= 0 ? "" : "－"}${formatCurrency(Math.abs(net))}`}
+            valueColor={net < 0 ? KPI_NEGATIVE : "#4A3B7C"}
+          />,
         ]}
       />
 
@@ -212,12 +222,21 @@ export function DashboardView() {
           <p className={`px-1 ${text.muted}`}>還沒有分類編預算，到「設定 › 預算設定」可以按月份設定。</p>
         ) : (
           <ListCard>
-            <div className="flex items-end justify-between px-4 py-3.5">
-              <p className={text.statValue}>
-                {formatCurrency(budget.totalSpent)}
-                <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {formatCurrency(budget.totalBudget)}</span>
-              </p>
-              <span className={`text-xs font-semibold ${budget.pct > 100 ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>{budget.pct}%</span>
+            <div className="px-4 py-3.5">
+              <div className="flex items-end justify-between">
+                <p className={text.statValue}>
+                  {formatCurrency(budget.totalSpent)}
+                  <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {formatCurrency(budget.totalBudget)}</span>
+                </p>
+                <span className={`text-xs font-semibold ${budget.pct > 100 ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>{budget.pct}%</span>
+              </div>
+              {/* 還沒超支、但照目前的速度月底會超支時才提醒（見 lib/expenses/budgets.ts）。 */}
+              {budgetTotalPace && (
+                <p className="mt-1 text-xs text-[#D1517E]">
+                  照這個速度，月底大約會花到 {formatCurrency(budgetTotalPace.projected)}（超出 {formatCurrency(budgetTotalPace.projectedOver)}）・還剩{" "}
+                  {budgetTotalPace.daysLeft} 天
+                </p>
+              )}
             </div>
             {/* 每一列都可以點，直接跳到紀錄頁、而且已經幫你篩好那個分類的明細。 */}
             {budget.rows.slice(0, SUMMARY_LIMIT).map((row) => (

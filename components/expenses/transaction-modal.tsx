@@ -93,6 +93,12 @@ export function TransactionModal({
   // 現在在編哪一個，scratchExpr 是編明細時的暫存字串（明細本身存的是數字，不是算式）。
   const [target, setTarget] = useState<KeypadTarget>({ kind: "amount" });
   const [scratchExpr, setScratchExpr] = useState("");
+  // 帳戶／備註／明細收在「更多」裡：絕大多數的紀錄只要分類＋金額＋日期，三個欄位攤開
+  // 擺著只會把分類格子跟鍵盤擠到要捲動才看得到。編輯既有紀錄時，那筆本來就有填這幾欄
+  // 的話預設展開，不然會以為資料不見了。
+  const [moreOpen, setMoreOpen] = useState(
+    () => !!initial && (!!initial.accountId || !!initial.note || (initial.breakdown?.length ?? 0) > 0),
+  );
 
   const breakdownTotal = hasBreakdown ? breakdownNet(breakdown) : 0;
   const amountNum = hasBreakdown ? breakdownTotal : evaluateExpr(amountExpr);
@@ -264,19 +270,34 @@ export function TransactionModal({
           />
         </div>
       </Field>
-      <Field label="帳戶（可不填）">
-        <button type="button" onClick={() => setAccountPickerOpen(true)} className={`${fieldInputClass} text-left`}>
-          <span className={`flex items-center gap-1.5 ${selectedAccount ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}`}>
-            {selectedAccountIcon && <InlineIcon icon={selectedAccountIcon} />}
-            {selectedAccount ? selectedAccount.name : "不指定帳戶"}
-          </span>
+      {!moreOpen && (
+        <button
+          type="button"
+          onClick={() => setMoreOpen(true)}
+          className="self-start text-xs font-medium text-[#6F5FD6] hover:underline"
+        >
+          ＋ 更多（帳戶、備註、明細）
         </button>
-      </Field>
-      <Field label="備註（可不填）">
-        <input value={note} onChange={(e) => setNote(e.target.value)} className={fieldInputClass} />
-      </Field>
+      )}
 
-      {hasBreakdown ? (
+      {moreOpen && (
+        <>
+          <Field label="帳戶（可不填）">
+            <button type="button" onClick={() => setAccountPickerOpen(true)} className={`${fieldInputClass} text-left`}>
+              <span className={`flex items-center gap-1.5 ${selectedAccount ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}`}>
+                {selectedAccountIcon && <InlineIcon icon={selectedAccountIcon} />}
+                {selectedAccount ? selectedAccount.name : "不指定帳戶"}
+              </span>
+            </button>
+          </Field>
+          <Field label="備註（可不填）">
+            <input value={note} onChange={(e) => setNote(e.target.value)} className={fieldInputClass} />
+          </Field>
+        </>
+      )}
+
+      {moreOpen &&
+        (hasBreakdown ? (
         <div className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
             <span className={text.label}>明細（例如薪資的本薪／加班費／勞保／所得稅）</span>
@@ -345,18 +366,18 @@ export function TransactionModal({
           </div>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={() => {
-            setBreakdown([blankBreakdownItem()]);
-            setScratchExpr("");
-            setTarget({ kind: "breakdown", index: 0 });
-          }}
-          className="self-start text-xs font-medium text-[#6F5FD6] hover:underline"
-        >
-          ＋ 新增明細（這筆錢想拆成好幾個加項/扣項時再用）
-        </button>
-      )}
+          <button
+            type="button"
+            onClick={() => {
+              setBreakdown([blankBreakdownItem()]);
+              setScratchExpr("");
+              setTarget({ kind: "breakdown", index: 0 });
+            }}
+            className="self-start text-xs font-medium text-[#6F5FD6] hover:underline"
+          >
+            ＋ 新增明細（這筆錢想拆成好幾個加項/扣項時再用）
+          </button>
+        ))}
 
       <AccountPickerModal
         open={accountPickerOpen}

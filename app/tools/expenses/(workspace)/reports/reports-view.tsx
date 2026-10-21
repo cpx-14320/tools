@@ -19,6 +19,7 @@ import {
   categoryBreakdown,
   incomeBreakdown,
   trendByPeriod,
+  subcategoryBreakdown,
   transactionsInDateRange,
   type TransactionDTO,
   type TrendGranularity,
@@ -59,6 +60,8 @@ export function ReportsView() {
   const [periods, setPeriods] = useState(6);
   // 趨勢圖目前展開細項的那一期（用 TrendPoint.start 當 key）；null＝沒有展開任何一根。
   const [selectedTrendStart, setSelectedTrendStart] = useState<string | null>(null);
+  // 明細裡目前展開看子分類的那個大分類；null＝全部收合。
+  const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -278,19 +281,59 @@ export function ReportsView() {
                   </div>
                 </div>
 
+                {/* 點一列展開它的子分類金額——子分類的花費本來只有「幾筆」看得到，
+                    金額全部被捲進大分類裡，等於拆了子分類也看不出差別。沒有子分類、
+                    也沒有直接記在大分類身上的那種（只有一列）就不給展開，點了也只是
+                    把同一個數字再寫一次。 */}
                 <div className="mt-5 flex flex-col gap-3 border-t border-[#F2EEFA] pt-4">
-                  {visibleRows.map((row) => (
-                    <div key={row.id} className="flex items-center gap-3">
-                      <ListProgressRow
-                        icon={row.icon}
-                        iconClassName={row.colorClass}
-                        name={row.name}
-                        amount={formatCurrency(row.amount)}
-                        pct={row.pct}
-                        barColorHex={row.colorHex}
-                      />
-                    </div>
-                  ))}
+                  {visibleRows.map((row) => {
+                    const subRows = subcategoryBreakdown(kind === "支出" ? expenseTx : incomeTx, categories, row.id);
+                    const canExpand = subRows.length > 1;
+                    const isExpanded = expandedCategoryId === row.id;
+                    return (
+                      <div key={row.id}>
+                        <button
+                          type="button"
+                          disabled={!canExpand}
+                          onClick={() => setExpandedCategoryId(isExpanded ? null : row.id)}
+                          className="flex w-full items-center gap-3 text-left"
+                        >
+                          <ListProgressRow
+                            icon={row.icon}
+                            iconClassName={row.colorClass}
+                            name={
+                              canExpand ? (
+                                <span className="flex items-center gap-1">
+                                  {row.name}
+                                  <span aria-hidden className={`text-[10px] text-[#C7BFE6] transition-transform ${isExpanded ? "rotate-180" : ""}`}>
+                                    ▼
+                                  </span>
+                                </span>
+                              ) : (
+                                row.name
+                              )
+                            }
+                            amount={formatCurrency(row.amount)}
+                            pct={row.pct}
+                            barColorHex={row.colorHex}
+                          />
+                        </button>
+                        {isExpanded && (
+                          <div className="mt-2 flex flex-col gap-1.5 border-l-2 border-[#ECE4FA] pl-3 ml-[18px]">
+                            {subRows.map((sub) => (
+                              <div key={sub.id || "self"} className="flex items-center justify-between gap-2 text-xs">
+                                <span className={`min-w-0 truncate ${sub.id ? "text-[#4A3B7C]" : text.muted}`}>{sub.name}</span>
+                                <span className="flex shrink-0 items-center gap-2">
+                                  <span className="tabular-nums font-medium text-[#4A3B7C]">{formatCurrency(sub.amount)}</span>
+                                  <span className={`tabular-nums ${text.faint}`}>{sub.pct}%</span>
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
                 {breakdown.length > TOP_N && (
                   <div className="mt-3 flex justify-center">

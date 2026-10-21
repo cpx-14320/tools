@@ -35,6 +35,7 @@ function toDTO(doc: CategoryDoc): CategoryDTO {
     parentId: doc.parentId?.toHexString(),
     budgetAmount: doc.budgetAmount,
     isPreset: doc.isPreset,
+    isUncategorized: doc.isUncategorized,
   };
 }
 
@@ -188,6 +189,12 @@ export async function deleteCategory(
 ): Promise<{ categories: CategoryDTO[] } | { error: string; inUseCount: number }> {
   const col = await collection();
   const target = new ObjectId(id);
+
+  // 「未分類」是刪除別的分類時的歸宿，自己被刪掉的話那些紀錄又會變成孤兒資料。
+  const targetDocForGuard = await col.findOne({ _id: target, userId });
+  if (targetDocForGuard?.isUncategorized) {
+    return { error: "「未分類」是系統用來收容已刪除分類紀錄的地方，不能刪除", inUseCount: 0 };
+  }
 
   if (!options?.force) {
     const inUseCount = await countCategoryUsage(userId, id);
