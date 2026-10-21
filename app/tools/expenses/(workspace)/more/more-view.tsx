@@ -42,10 +42,6 @@ const GROUPS: { heading: string; items: SettingItem[] }[] = [
     ],
   },
   {
-    heading: "分析",
-    items: [{ href: "/tools/expenses/reports", label: "報表", desc: "趨勢圖表與分類佔比", icon: ICON_PATHS.settingReports }],
-  },
-  {
     heading: "匯出／匯入紀錄",
     items: [
       { href: "/tools/expenses/more/export", label: "匯出資料", desc: "消費紀錄、分類、帳戶類型", icon: ICON_PATHS.settingExport },

@@ -97,7 +97,7 @@ export function AccountTypeBatchModal({
         onAdd={() => setItems((list) => [...list, blankDraft(effectiveKind)])}
         renderItem={(item, i) => (
           <>
-            <Field label="類型名稱">
+            <Field label="名稱">
               <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} placeholder="例如「定存」" className={fieldInputClass} />
             </Field>
             {isDuplicateDraft(items, i, accountTypes) && (

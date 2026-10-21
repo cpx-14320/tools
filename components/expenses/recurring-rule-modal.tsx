@@ -5,6 +5,7 @@ import { SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
 import { DateField } from "./date-field";
 import { CategoryGridPicker } from "./category-grid-picker";
+import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { CategoryBatchModal, type CategoryBatchItem } from "./category-batch-modal";
 import { categoryPath, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 import type { RecurrenceFrequencyUnit } from "@/lib/expenses/recurring-rules";
@@ -70,7 +71,7 @@ export function RecurringRuleModal({
   const [linkedGoalId, setLinkedGoalId] = useState(initial?.linkedGoalId ?? "");
   const [categoryBatchOpen, setCategoryBatchOpen] = useState(false);
 
-  const amountNum = Number(amount);
+  const amountNum = evaluateExpr(amount);
   const intervalNum = Number(interval);
   const cycleCountNum = cycleCount.trim() ? Number(cycleCount) : undefined;
   const canSave =
@@ -110,6 +111,8 @@ export function RecurringRuleModal({
       open={open}
       onClose={onClose}
       title={initial ? "編輯固定收支" : "新增固定收支"}
+      fullHeight
+      stickyBottom={<AmountKeypad expr={amount} onExprChange={setAmount} color={kind === "收入" ? "#2FAE82" : "#D1517E"} label="每次金額" />}
       footer={
         <ModalFooter
           onClose={onClose}
@@ -158,9 +161,6 @@ export function RecurringRuleModal({
         />
       </div>
 
-      <Field label="每次金額">
-        <input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} className={fieldInputClass} />
-      </Field>
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="頻率">

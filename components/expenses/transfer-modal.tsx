@@ -91,6 +91,8 @@ export function TransferModal({
       open={open}
       onClose={onClose}
       title={initial ? "編輯轉帳" : "新增轉帳"}
+      fullHeight
+      stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} color="#6F5FD6" label="轉帳金額" />}
       footer={
         <ModalFooter
           onClose={onClose}
@@ -123,8 +125,6 @@ export function TransferModal({
           <AccountLabel id={toAccountId} accounts={accounts} accountTypes={accountTypes} placeholder="選擇帳戶" />
         </button>
       </Field>
-
-      <AmountKeypad expr={expr} onExprChange={setExpr} color="#6F5FD6" />
 
       <Field label="日期">
         <DateField value={date} onChange={setDate} />

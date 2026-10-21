@@ -13,7 +13,6 @@ export const ICON_PATHS = {
   settingBudgets: "/expenses/setting-budgets.png",
   settingGoals: "/expenses/setting-goals.png",
   settingRecurring: "/expenses/setting-recurring.png",
-  settingReports: "/expenses/setting-reports.png",
   settingAssets: "/expenses/setting-assets.png",
   settingAccountTypes: "/expenses/setting-account-types.png",
   settingExport: "/expenses/setting-export.png",

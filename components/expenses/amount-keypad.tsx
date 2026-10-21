@@ -1,6 +1,8 @@
 "use client";
 
+import { Field, fieldInputClass } from "./modal";
 import { gradient } from "./theme";
+import { formatCurrency } from "@/lib/format";
 
 // 找 expr 裡最後一個運算子之後的那一段（目前正在打的那個數字），判斷要不要擋重複的
 // 小數點、要不要把開頭的孤零零「0」換掉，而不是直接疊成「05」。
@@ -143,5 +145,34 @@ export function AmountKeypad({
         <KeyButton label="÷" onClick={() => pressOperator("÷")} disabled={!expr} tone="op" />
       </div>
     </div>
+  );
+}
+
+/** 金額欄位——長得像輸入框，但點了不會跳出手機原生鍵盤，只是把彈窗下方那個固定小鍵盤
+ *  的編輯對象切到這一欄（選中時邊框會變色）。
+ *
+ *  彈窗裡只要出現金額，一律用這組「欄位顯示＋下方固定鍵盤」的搭配，不要有的用這個、
+ *  有的用原生 `<input type="number">`——原生鍵盤跳出來會把彈窗推上去、關掉又彈回來，
+ *  跟記帳本其他地方的輸入手感完全不同。 */
+export function AmountField({
+  label,
+  value,
+  active,
+  onFocus,
+  placeholder = "點這裡用下方鍵盤輸入",
+}: {
+  label: string;
+  value: number;
+  /** 下方鍵盤目前是不是在編這一欄。 */
+  active: boolean;
+  onFocus: () => void;
+  placeholder?: string;
+}) {
+  return (
+    <Field label={label}>
+      <button type="button" onClick={onFocus} className={`${fieldInputClass} text-left tabular-nums ${active ? "border-[#6F5FD6] bg-[#F9F7FE]" : ""}`}>
+        <span className={value ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}>{value ? formatCurrency(value) : placeholder}</span>
+      </button>
+    </Field>
   );
 }

@@ -40,6 +40,8 @@ export function BudgetModal({
       open={open}
       onClose={onClose}
       title={category ? `${category.name} 的預算` : "設定預算"}
+      fullHeight
+      stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} color="#6F5FD6" label="每月預算" />}
       footer={
         <ModalFooter
           onClose={onClose}
@@ -52,8 +54,6 @@ export function BudgetModal({
         這筆金額會從 <span className="font-semibold text-[#4A3B7C]">{yearMonth}</span> 開始生效，之後每個月都沿用，直到你在更後面的月份再設一筆新的為止。
         填 0 代表從這個月起這個分類不編預算。
       </p>
-
-      <AmountKeypad expr={expr} onExprChange={setExpr} color="#6F5FD6" />
 
       {history.length > 0 && (
         <div>

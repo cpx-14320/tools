@@ -4,6 +4,7 @@ import { useState } from "react";
 import { SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
 import { OptionGrid } from "./option-grid";
+import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { ConfirmModal } from "./confirm-modal";
 import { AccountTypeBatchModal, type AccountTypeBatchItem } from "./account-type-batch-modal";
 import { accountNameTaken, type AccountDTO } from "@/lib/expenses/accounts";
@@ -42,7 +43,8 @@ export function AccountModal({
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [accountTypeId, setAccountTypeId] = useState(initial?.accountTypeId ?? "");
-  const [openingBalance, setOpeningBalance] = useState(initial ? String(initial.openingBalance) : "");
+  // 期初餘額改用彈窗下方那個固定小鍵盤輸入（跟新增交易一致），存的是算式字串。
+  const [openingBalanceExpr, setOpeningBalanceExpr] = useState(initial ? String(initial.openingBalance) : "");
   const [typeBatchOpen, setTypeBatchOpen] = useState(false);
   // 類型格子改成資產／負債分頁切換，不是兩個全部攤開的格子疊在一起——類型一多，兩份
   // 都攤開會很雜。編輯既有帳戶時預設停在那個帳戶原本所屬的分頁。
@@ -52,7 +54,7 @@ export function AccountModal({
   const [deleteTarget, setDeleteTarget] = useState<AccountTypeDTO | null>(null);
   const [blockedInfo, setBlockedInfo] = useState<{ inUseCount: number } | null>(null);
 
-  const balanceNum = Number(openingBalance);
+  const balanceNum = evaluateExpr(openingBalanceExpr);
   const isDuplicateName = accountNameTaken(accounts, name, excludeId);
   const canSave = name.trim() && accountTypeId && Number.isFinite(balanceNum) && balanceNum >= 0 && !isDuplicateName;
   const visibleTypes = accountTypesByKind(accountTypes, typeKindTab);
@@ -112,6 +114,15 @@ export function AccountModal({
       open={open}
       onClose={onClose}
       title={initial ? "編輯帳戶" : "新增帳戶"}
+      fullHeight
+      stickyBottom={
+        <AmountKeypad
+          expr={openingBalanceExpr}
+          onExprChange={setOpeningBalanceExpr}
+          color="#6F5FD6"
+          label={selectedKind === "liability" ? "期初欠款（輸入正數）" : "期初餘額"}
+        />
+      }
       footer={
         <ModalFooter
           onClose={onClose}
@@ -149,9 +160,6 @@ export function AccountModal({
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如「主要活存帳戶」「緊急備用金」" className={fieldInputClass} />
       </Field>
       {isDuplicateName && <p className="text-xs text-[#D1517E]">已經有同樣名稱的帳戶了，換一個名稱吧。</p>}
-      <Field label={selectedKind === "liability" ? "期初欠款（輸入正數）" : "期初餘額"}>
-        <input type="number" min={0} value={openingBalance} onChange={(e) => setOpeningBalance(e.target.value)} className={fieldInputClass} />
-      </Field>
 
       <AccountTypeBatchModal
         open={typeBatchOpen}
