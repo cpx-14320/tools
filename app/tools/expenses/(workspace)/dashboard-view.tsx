@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
-import { Card, CardBody } from "@/components/expenses/card";
 import { ListCard } from "@/components/expenses/list-row";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
@@ -320,17 +319,16 @@ export function DashboardView() {
           「這個月已經自動記了什麼」加上「接下來幾天還會自動記什麼」——錢會自己動的那幾筆
           本來就最容易被忘記，首頁要看得到，才不會月底才發現錢少了一塊。 */}
       {(recurringThisMonth.length > 0 || upcoming.length > 0) && (
-        <Card>
-          <CardBody>
-            <div className="flex items-center justify-between">
-              <p className={text.sectionHeading}>固定收支</p>
-              <Link href="/tools/expenses/recurring" className="text-xs font-medium text-[#6F5FD6]">
-                查看全部
-              </Link>
-            </div>
-
+        <div>
+          <div className="mb-2 flex items-center justify-between px-1">
+            <p className={text.sectionHeading}>固定收支</p>
+            <Link href="/tools/expenses/recurring" className="text-xs font-medium text-[#6F5FD6]">
+              查看全部
+            </Link>
+          </div>
+          <ListCard>
             {recurringThisMonth.length > 0 && (
-              <p className={`mt-3 ${text.muted}`}>
+              <p className={`px-4 py-3.5 ${text.muted}`}>
                 本月已自動入帳 <span className="font-semibold text-[#4A3B7C]">{recurringThisMonth.length}</span> 筆・
                 <span className="font-semibold text-[#4A3B7C]">{formatCurrency(recurringThisMonthTotal)}</span>
               </p>
@@ -338,66 +336,62 @@ export function DashboardView() {
 
             {upcoming.length > 0 && (
               <>
-                <p className={`mt-3 ${text.label}`}>接下來 {UPCOMING_DAYS} 天</p>
-                <ul className="mt-2 flex flex-col divide-y divide-[#ECE4FA]">
-                  {upcoming.slice(0, SUMMARY_LIMIT).map((item) => {
-                    const cat = displayCategoryOf(categories, item.rule.categoryId);
-                    const isIncome = cat?.kind === "收入";
-                    return (
-                      <li key={`${item.rule.id}-${item.date}`} className="flex items-center gap-3 py-2.5 text-sm">
-                        <TransactionRowLabel
-                          icon={cat?.icon ?? "🔁"}
-                          iconClassName={cat ? categoryColorClass[cat.color] : undefined}
-                          title={item.rule.note || cat?.name || "固定收支"}
-                          subtitle={item.date}
-                        />
-                        <span className="shrink-0 tabular-nums font-medium" style={{ color: isIncome ? "#2FAE82" : "#4A3B7C" }}>
-                          {isIncome ? "＋" : "－"}
-                          {formatCurrency(item.rule.amount)}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <p className={`px-4 pb-1 pt-3 ${text.label}`}>接下來 {UPCOMING_DAYS} 天</p>
+                {upcoming.slice(0, SUMMARY_LIMIT).map((item) => {
+                  const cat = displayCategoryOf(categories, item.rule.categoryId);
+                  const isIncome = cat?.kind === "收入";
+                  return (
+                    <div key={`${item.rule.id}-${item.date}`} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
+                      <TransactionRowLabel
+                        icon={cat?.icon ?? "🔁"}
+                        iconClassName={cat ? categoryColorClass[cat.color] : undefined}
+                        title={item.rule.note || cat?.name || "固定收支"}
+                        subtitle={item.date}
+                      />
+                      <span className="shrink-0 tabular-nums font-medium" style={{ color: isIncome ? "#2FAE82" : "#4A3B7C" }}>
+                        {isIncome ? "＋" : "－"}
+                        {formatCurrency(item.rule.amount)}
+                      </span>
+                    </div>
+                  );
+                })}
               </>
             )}
-          </CardBody>
-        </Card>
+          </ListCard>
+        </div>
       )}
 
-      <Card>
-        <CardBody>
-          <div className="flex items-center justify-between">
-            <p className={text.sectionHeading}>最近消費</p>
-            <Link href="/tools/expenses/transactions" className="text-xs font-medium text-[#6F5FD6]">
-              查看全部
-            </Link>
-          </div>
-          {recent.length === 0 ? (
-            <p className={`mt-3 ${text.muted}`}>這段期間還沒有消費紀錄。</p>
-          ) : (
-            // 跟「查看全部」進去的明細列同一種長相（左圖右文），差別只在首頁這裡每一列
-            // 自己帶日期，不照日期分組——首頁只有五筆，為了五筆拆成好幾個日期區塊反而更零碎。
-            <ul className="mt-3 flex flex-col divide-y divide-[#ECE4FA]">
-              {recent.map((t) => {
-                // 子分類沿用大分類的圖示與顏色：「下午茶」顯示的是「餐飲」那顆。
-                const cat = displayCategoryOf(categories, t.categoryId);
-                return (
-                  <li key={t.id} className="flex items-center gap-3 py-2.5 text-sm">
-                    <TransactionRowLabel
-                      icon={cat?.icon ?? "🏷️"}
-                      iconClassName={cat ? categoryColorClass[cat.color] : undefined}
-                      title={transactionDisplayName(t, categories)}
-                      subtitle={t.date}
-                    />
-                    <span className="shrink-0 tabular-nums font-medium text-[#4A3B7C]">－{formatCurrency(t.amount)}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </CardBody>
-      </Card>
+      <div>
+        <div className="mb-2 flex items-center justify-between px-1">
+          <p className={text.sectionHeading}>最近消費</p>
+          <Link href="/tools/expenses/transactions" className="text-xs font-medium text-[#6F5FD6]">
+            查看全部
+          </Link>
+        </div>
+        {recent.length === 0 ? (
+          <p className={`px-1 ${text.muted}`}>這段期間還沒有消費紀錄。</p>
+        ) : (
+          // 跟「查看全部」進去的明細列同一種長相（左圖右文），差別只在首頁這裡每一列
+          // 自己帶日期，不照日期分組——首頁只有五筆，為了五筆拆成好幾個日期區塊反而更零碎。
+          <ListCard>
+            {recent.map((t) => {
+              // 子分類沿用大分類的圖示與顏色：「下午茶」顯示的是「餐飲」那顆。
+              const cat = displayCategoryOf(categories, t.categoryId);
+              return (
+                <div key={t.id} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
+                  <TransactionRowLabel
+                    icon={cat?.icon ?? "🏷️"}
+                    iconClassName={cat ? categoryColorClass[cat.color] : undefined}
+                    title={transactionDisplayName(t, categories)}
+                    subtitle={t.date}
+                  />
+                  <span className="shrink-0 tabular-nums font-medium text-[#4A3B7C]">－{formatCurrency(t.amount)}</span>
+                </div>
+              );
+            })}
+          </ListCard>
+        )}
+      </div>
     </div>
   );
 }
