@@ -7,7 +7,8 @@ import { Card, CardBody } from "@/components/expenses/card";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ProgressBar } from "@/components/expenses/progress-bar";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
-import { SelectionBar, SelectionDot } from "@/components/expenses/selection-bar";
+import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
+import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { text } from "@/components/expenses/theme";
 import { GoalModal, ContributeModal, type GoalModalDraft } from "@/components/expenses/goal-modal";
 import { goalProgress, goalPace, type SavingsGoalDTO } from "@/lib/expenses/goals";
@@ -21,8 +22,6 @@ export function GoalsView() {
   const [modal, setModal] = useState<ModalState | null>(null);
   const [contributeId, setContributeId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
-  const [selecting, setSelecting] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -93,17 +92,7 @@ export function GoalsView() {
     if (!deleteConfirm) return;
     await performDelete(deleteConfirm);
     setDeleteConfirm(null);
-    setSelecting(false);
-    setSelectedIds(new Set());
-  }
-
-  function toggleSelected(id: string) {
-    setSelectedIds((set) => {
-      const next = new Set(set);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    selection.exit();
   }
 
   async function handleContribute(amount: number) {
@@ -119,20 +108,17 @@ export function GoalsView() {
     setContributeId(null);
   }
 
+  const selection = useSelection(goals.map((g) => g.id));
+
   return (
     <div>
       <PageHeader
         title="存錢目標"
         description="設定目標金額，追蹤存了多少、還差多少"
-        actions={
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={() => setSelecting((v) => !v)}>
-              {selecting ? "完成" : "選取"}
-            </Button>
-            <Button onClick={() => setModal({ mode: "create" })}>＋ 新增目標</Button>
-          </div>
-        }
+        actions={<SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />}
       />
+
+      <FloatingAddButton onClick={() => setModal({ mode: "create" })} label="新增存錢目標" />
 
       <GoalModal
         key={modal ? JSON.stringify(modal) : "closed"}
@@ -152,23 +138,20 @@ export function GoalsView() {
         onClose={() => setDeleteConfirm(null)}
       />
 
-      {selecting && (
+      {selection.selecting && (
         <SelectionBar
-          count={selectedIds.size}
-          total={goals.length}
-          onToggleAll={() => setSelectedIds((set) => (set.size === goals.length ? new Set() : new Set(goals.map((g) => g.id))))}
-          onCancel={() => {
-            setSelecting(false);
-            setSelectedIds(new Set());
-          }}
-          onDelete={() => setDeleteConfirm([...selectedIds])}
+          count={selection.selectedIds.size}
+          total={selection.total}
+          onToggleAll={selection.toggleAll}
+          onCancel={selection.exit}
+          onDelete={() => setDeleteConfirm([...selection.selectedIds])}
         />
       )}
 
       {!ready ? (
         <p className={text.faint}>載入中…</p>
       ) : goals.length === 0 ? (
-        <p className={text.faint}>還沒有任何目標，點上方新增第一個</p>
+        <p className={text.faint}>還沒有任何目標，點右下角的＋新增第一個</p>
       ) : (
         <div className="flex flex-col gap-4">
           {goals.map((goal) => {
@@ -178,16 +161,16 @@ export function GoalsView() {
               <Card key={goal.id}>
                 <CardBody>
                   <div className="flex items-start gap-3">
-                    {selecting ? (
-                      <button type="button" onClick={() => toggleSelected(goal.id)} className="shrink-0 pt-1">
-                        <SelectionDot selected={selectedIds.has(goal.id)} />
+                    {selection.selecting ? (
+                      <button type="button" onClick={() => selection.toggle(goal.id)} className="shrink-0 pt-1">
+                        <SelectionDot selected={selection.selectedIds.has(goal.id)} />
                       </button>
                     ) : (
                       <IconAvatar icon={goal.icon} />
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        {selecting ? (
+                        {selection.selecting ? (
                           <span className={text.sectionHeading}>{goal.name}</span>
                         ) : (
                           <button
@@ -205,7 +188,7 @@ export function GoalsView() {
                         {goal.targetDate ? `目標日期 ${goal.targetDate}` : "沒有設定期限"}
                       </p>
                     </div>
-                    {!selecting && !achieved && (
+                    {!selection.selecting && !achieved && (
                       <Button variant="secondary" className="shrink-0" onClick={() => setContributeId(goal.id)}>
                         ＋ 存入
                       </Button>

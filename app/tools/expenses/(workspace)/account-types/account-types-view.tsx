@@ -3,14 +3,13 @@
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
-import { Button } from "@/components/expenses/button";
 import { BackLink } from "@/components/expenses/back-link";
-import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { text } from "@/components/expenses/theme";
 import { AccountTypeModal, type AccountTypeModalDraft } from "@/components/expenses/account-type-modal";
 import { AccountTypeBatchModal, type AccountTypeBatchItem } from "@/components/expenses/account-type-batch-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
-import { SelectionBar, SelectionDot } from "@/components/expenses/selection-bar";
+import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
+import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { accountTypesByKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
 
 export function AccountTypesView() {
@@ -19,8 +18,6 @@ export function AccountTypesView() {
   const [modal, setModal] = useState<AccountTypeDTO | null>(null);
   const [batchOpen, setBatchOpen] = useState(false);
   const [blockedInfo, setBlockedInfo] = useState<{ inUseCount: number } | null>(null);
-  const [selecting, setSelecting] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -82,19 +79,9 @@ export function AccountTypesView() {
   }
 
   async function handleBulkDelete() {
-    const { blockedCount, totalInUse } = await tryDeleteTypes([...selectedIds]);
-    setSelecting(false);
-    setSelectedIds(new Set());
+    const { blockedCount, totalInUse } = await tryDeleteTypes([...selection.selectedIds]);
+    selection.exit();
     if (blockedCount > 0) setBlockedInfo({ inUseCount: totalInUse });
-  }
-
-  function toggleSelected(id: string) {
-    setSelectedIds((set) => {
-      const next = new Set(set);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
   }
 
   // 批次新增：逐筆依序 POST（不是 Promise.all 併發），理由跟分類批次新增一樣——
@@ -117,6 +104,7 @@ export function AccountTypesView() {
 
   const assetTypes = accountTypesByKind(accountTypes, "asset");
   const liabilityTypes = accountTypesByKind(accountTypes, "liability");
+  const selection = useSelection(accountTypes.map((t) => t.id));
 
   return (
     <div>
@@ -127,9 +115,7 @@ export function AccountTypesView() {
         title="帳戶類型"
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={() => setSelecting((v) => !v)}>
-              {selecting ? "完成" : "選取"}
-            </Button>
+            <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />
             <BackLink href="/tools/expenses/assets" label="返回資產總表" />
           </div>
         }
@@ -158,17 +144,12 @@ export function AccountTypesView() {
         onClose={() => setBlockedInfo(null)}
       />
 
-      {selecting && (
+      {selection.selecting && (
         <SelectionBar
-          count={selectedIds.size}
-          total={accountTypes.length}
-          onToggleAll={() =>
-            setSelectedIds((set) => (set.size === accountTypes.length ? new Set() : new Set(accountTypes.map((t) => t.id))))
-          }
-          onCancel={() => {
-            setSelecting(false);
-            setSelectedIds(new Set());
-          }}
+          count={selection.selectedIds.size}
+          total={selection.total}
+          onToggleAll={selection.toggleAll}
+          onCancel={selection.exit}
           onDelete={handleBulkDelete}
         />
       )}
@@ -182,40 +163,34 @@ export function AccountTypesView() {
           {assetTypes.length > 0 && (
             <div>
               <p className={`mb-2 px-1 ${text.sectionHeading}`}>資產</p>
-              <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
+              <ListCard>
                 {assetTypes.map((t) => (
-                  <button
+                  <ListRow
                     key={t.id}
-                    type="button"
-                    onClick={() => (selecting ? toggleSelected(t.id) : setModal(t))}
-                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
-                  >
-                    {selecting && <SelectionDot selected={selectedIds.has(t.id)} />}
-                    <IconAvatar icon={t.icon} size="sm" />
-                    <span className={`min-w-0 flex-1 ${text.body}`}>{t.name}</span>
-                  </button>
+                    icon={t.icon}
+                    name={t.name}
+                    leading={selection.selecting ? <SelectionDot selected={selection.selectedIds.has(t.id)} /> : undefined}
+                    onClick={() => (selection.selecting ? selection.toggle(t.id) : setModal(t))}
+                  />
                 ))}
-              </div>
+              </ListCard>
             </div>
           )}
 
           {liabilityTypes.length > 0 && (
             <div>
               <p className={`mb-2 px-1 ${text.sectionHeading}`}>負債</p>
-              <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
+              <ListCard>
                 {liabilityTypes.map((t) => (
-                  <button
+                  <ListRow
                     key={t.id}
-                    type="button"
-                    onClick={() => (selecting ? toggleSelected(t.id) : setModal(t))}
-                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
-                  >
-                    {selecting && <SelectionDot selected={selectedIds.has(t.id)} />}
-                    <IconAvatar icon={t.icon} size="sm" />
-                    <span className={`min-w-0 flex-1 ${text.body}`}>{t.name}</span>
-                  </button>
+                    icon={t.icon}
+                    name={t.name}
+                    leading={selection.selecting ? <SelectionDot selected={selection.selectedIds.has(t.id)} /> : undefined}
+                    onClick={() => (selection.selecting ? selection.toggle(t.id) : setModal(t))}
+                  />
                 ))}
-              </div>
+              </ListCard>
             </div>
           )}
         </div>

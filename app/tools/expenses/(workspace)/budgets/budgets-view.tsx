@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
 import { Card, CardBody } from "@/components/expenses/card";
 import { DateField } from "@/components/expenses/date-field";
-import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
+import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { BudgetModal } from "@/components/expenses/budget-modal";
 import { text } from "@/components/expenses/theme";
 import { budgetForMonth, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
@@ -131,9 +131,9 @@ export function BudgetsView() {
       {!ready ? (
         <p className={text.faint}>載入中…</p>
       ) : expenseCategories.length === 0 ? (
-        <p className={text.faint}>還沒有任何支出分類，先去「消費分類」建立分類才能編預算</p>
+        <p className={text.faint}>還沒有任何支出分類，先去「收支分類」建立分類才能編預算</p>
       ) : (
-        <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
+        <ListCard>
           {expenseCategories.map((c) => {
             const amount = budgetForMonth(effectiveRules, c.id, yearMonth) ?? 0;
             const spent = spentByCategory.get(c.id) ?? 0;
@@ -141,14 +141,15 @@ export function BudgetsView() {
             // 看到「這類其實每個月都在花」正是決定要不要幫它編預算的依據。
             if (amount <= 0) {
               return (
-                <button key={c.id} type="button" onClick={() => setEditing(c)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
-                  <IconAvatar icon={c.icon} size="sm" className={categoryColorClass[c.color]} />
-                  <span className={`min-w-0 flex-1 ${text.body}`}>{c.name}</span>
-                  <span className="shrink-0 text-sm text-[#B3ABD4]">{spent > 0 ? `已花 ${formatCurrency(spent)}・未編預算` : "未編預算"}</span>
-                  <span aria-hidden className="shrink-0 text-[#C7BFE6]">
-                    ›
-                  </span>
-                </button>
+                <ListRow
+                  key={c.id}
+                  icon={c.icon}
+                  iconClassName={categoryColorClass[c.color]}
+                  name={c.name}
+                  right={<span className="text-sm text-[#B3ABD4]">{spent > 0 ? `已花 ${formatCurrency(spent)}・未編預算` : "未編預算"}</span>}
+                  chevron
+                  onClick={() => setEditing(c)}
+                />
               );
             }
             const pct = Math.round((spent / amount) * 100);
@@ -171,7 +172,7 @@ export function BudgetsView() {
               </button>
             );
           })}
-        </div>
+        </ListCard>
       )}
 
       <BudgetModal

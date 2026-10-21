@@ -1,5 +1,51 @@
 "use client";
 
+import { useState } from "react";
+import { PillButton } from "./button";
+
+/** 多選模式的狀態——分類、帳戶類型、存錢目標、固定收支四個清單頁本來各自寫一份一模一樣的
+ *  `selecting` / `selectedIds` / `toggleSelected` / 清空邏輯，收斂成這一個 hook。
+ *  `ids` 傳目前畫面上「可以被選」的項目 id（已經過分頁篩選的那批），全選才不會把看不到的
+ *  項目也一起選進來。 */
+export function useSelection(ids: string[]) {
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  function toggle(id: string) {
+    setSelectedIds((set) => {
+      const next = new Set(set);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function exit() {
+    setSelecting(false);
+    setSelectedIds(new Set());
+  }
+
+  return {
+    selecting,
+    selectedIds,
+    toggle,
+    exit,
+    /** 「選取／完成」那顆按鈕要綁的事件：退出選取模式時順便把已選的清掉。 */
+    toggleMode: () => (selecting ? exit() : setSelecting(true)),
+    toggleAll: () => setSelectedIds((set) => (set.size === ids.length ? new Set() : new Set(ids))),
+    total: ids.length,
+  };
+}
+
+/** 進入／離開多選模式的那顆按鈕——跟分頁切換（SegmentedControl）等高，可以並排在同一列。 */
+export function SelectionToggle({ selecting, onToggle }: { selecting: boolean; onToggle: () => void }) {
+  return (
+    <PillButton onClick={onToggle} active={selecting}>
+      {selecting ? "完成" : "選取"}
+    </PillButton>
+  );
+}
+
 /** 多選刪除共用的工具列——分類、帳戶類型、存錢目標、固定收支這幾個清單頁都用同一套：
  *  點「選取」進入選取模式，列表的列會換成可以打勾；這條工具列顯示已選幾項、全選/取消
  *  全選、退出選取模式、刪除已選的項目。 */

@@ -23,7 +23,7 @@ const GROUPS: { heading: string; items: SettingItem[] }[] = [
   {
     heading: "記帳設定",
     items: [
-      { href: "/tools/expenses/categories", label: "消費分類", desc: "管理分類與子分類", icon: ICON_PATHS.settingCategories },
+      { href: "/tools/expenses/categories", label: "收支分類", desc: "管理支出與收入的分類、子分類", icon: ICON_PATHS.settingCategories },
       { href: "/tools/expenses/budgets", label: "預算設定", desc: "依月份設定各分類的預算", icon: ICON_PATHS.settingBudgets },
     ],
   },

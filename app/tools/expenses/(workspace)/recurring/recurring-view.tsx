@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
-import { Button, Badge, SegmentedControl, PillButton } from "@/components/expenses/button";
+import { Button, Badge, SegmentedControl } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ProgressBar } from "@/components/expenses/progress-bar";
 import { text } from "@/components/expenses/theme";
 import { RecurringRuleModal, type RecurringRuleModalDraft } from "@/components/expenses/recurring-rule-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
-import { SelectionBar, SelectionDot } from "@/components/expenses/selection-bar";
+import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { categoryById, categoryColorClass, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 import type { TransactionDTO } from "@/lib/expenses/transactions";
 import type { SavingsGoalDTO } from "@/lib/expenses/goals";
@@ -39,8 +39,6 @@ export function RecurringView() {
   const [ready, setReady] = useState(false);
   const [modal, setModal] = useState<ModalState | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
-  const [selecting, setSelecting] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   // 跟消費分類頁一樣用支出／收入分頁切換——固定收支兩種都會有（房租 vs 薪水），
   // 混在同一份清單裡要自己用金額顏色分辨，分頁之後一次只看一種。
   const [kind, setKind] = useState<CategoryKind>("支出");
@@ -112,17 +110,7 @@ export function RecurringView() {
     if (!deleteConfirm) return;
     await performDelete(deleteConfirm);
     setDeleteConfirm(null);
-    setSelecting(false);
-    setSelectedIds(new Set());
-  }
-
-  function toggleSelected(id: string) {
-    setSelectedIds((set) => {
-      const next = new Set(set);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    selection.exit();
   }
 
   async function handleToggleActive(rule: RecurringRuleDTO) {
@@ -139,6 +127,7 @@ export function RecurringView() {
   const today = todayISO();
   // 分類被刪掉的孤兒規則當成支出，跟 totalsForRange 對查無分類的處理方式一致。
   const visibleRules = rules.filter((r) => (categoryById(categories, r.categoryId)?.kind ?? "支出") === kind);
+  const selection = useSelection(visibleRules.map((r) => r.id));
 
   return (
     <div>
@@ -156,9 +145,7 @@ export function RecurringView() {
             { value: "收入", label: "收入" },
           ]}
         />
-        <PillButton onClick={() => setSelecting((v) => !v)} active={selecting}>
-          {selecting ? "完成" : "選取"}
-        </PillButton>
+        <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />
       </div>
 
       <RecurringRuleModal
@@ -195,18 +182,13 @@ export function RecurringView() {
         onClose={() => setDeleteConfirm(null)}
       />
 
-      {selecting && (
+      {selection.selecting && (
         <SelectionBar
-          count={selectedIds.size}
-          total={visibleRules.length}
-          onToggleAll={() =>
-            setSelectedIds((set) => (set.size === visibleRules.length ? new Set() : new Set(visibleRules.map((r) => r.id))))
-          }
-          onCancel={() => {
-            setSelecting(false);
-            setSelectedIds(new Set());
-          }}
-          onDelete={() => setDeleteConfirm([...selectedIds])}
+          count={selection.selectedIds.size}
+          total={selection.total}
+          onToggleAll={selection.toggleAll}
+          onCancel={selection.exit}
+          onDelete={() => setDeleteConfirm([...selection.selectedIds])}
         />
       )}
 
@@ -237,9 +219,9 @@ export function RecurringView() {
                       文字區塊並排），下面那行「每月・無限期循環・起訖」就能吃滿整欄寬度、
                       不會被金額擠到換行。 */}
                   <div className="flex items-start gap-3">
-                    {selecting ? (
-                      <button type="button" onClick={() => toggleSelected(rule.id)} className="shrink-0 pt-1">
-                        <SelectionDot selected={selectedIds.has(rule.id)} />
+                    {selection.selecting ? (
+                      <button type="button" onClick={() => selection.toggle(rule.id)} className="shrink-0 pt-1">
+                        <SelectionDot selected={selection.selectedIds.has(rule.id)} />
                       </button>
                     ) : (
                       <IconAvatar icon={category?.icon ?? ""} size="sm" className={category ? categoryColorClass[category.color] : undefined} />
@@ -248,7 +230,7 @@ export function RecurringView() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex min-w-0 flex-wrap items-center gap-2">
-                          {selecting ? (
+                          {selection.selecting ? (
                             <span className={text.sectionHeading}>{category?.name ?? "（已刪除分類）"}</span>
                           ) : (
                             <button
@@ -291,7 +273,7 @@ export function RecurringView() {
 
                       {nextDate && <p className={`mt-1 ${text.muted}`}>下次預計入帳：{nextDate}</p>}
 
-                      {!selecting && (
+                      {!selection.selecting && (
                         <div className="mt-2 flex items-center justify-end">
                           <Button variant="ghost" onClick={() => handleToggleActive(rule)}>
                             {rule.active ? "暫停" : "恢復"}

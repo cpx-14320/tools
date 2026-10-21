@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
-import { SegmentedControl, PillButton } from "@/components/expenses/button";
+import { SegmentedControl } from "@/components/expenses/button";
 import { text } from "@/components/expenses/theme";
 import { CategoryModal, type CategoryModalDraft } from "@/components/expenses/category-modal";
 import { CategoryBatchModal, type CategoryBatchItem } from "@/components/expenses/category-batch-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
-import { SelectionBar, SelectionDot } from "@/components/expenses/selection-bar";
+import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
+import { ListRow } from "@/components/expenses/list-row";
 import { topLevelCategories, subCategoriesOf, categoryColorClass, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
-import { IconAvatar } from "@/components/expenses/icon-avatar";
 
 /** 編輯既有分類／子分類用（點清單裡的一列開啟）；新增（不管頂層還是子分類）都走下面的
  *  batchTarget／CategoryBatchModal，兩種彈窗各自管各自的狀態。 */
@@ -24,8 +24,6 @@ export function CategoriesView() {
   const [batchTarget, setBatchTarget] = useState<BatchTarget | null>(null);
   const [kind, setKind] = useState<CategoryKind>("支出");
   const [deleteConfirm, setDeleteConfirm] = useState<{ ids: string[]; inUseCount: number } | null>(null);
-  const [selecting, setSelecting] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -92,12 +90,11 @@ export function CategoriesView() {
   }
 
   async function handleBulkDelete() {
-    const { blocked, totalInUse } = await tryDeleteCategories([...selectedIds], false);
+    const { blocked, totalInUse } = await tryDeleteCategories([...selection.selectedIds], false);
     if (blocked.length > 0) {
       setDeleteConfirm({ ids: blocked, inUseCount: totalInUse });
     } else {
-      setSelecting(false);
-      setSelectedIds(new Set());
+      selection.exit();
     }
   }
 
@@ -105,17 +102,7 @@ export function CategoriesView() {
     if (!deleteConfirm) return;
     await tryDeleteCategories(deleteConfirm.ids, true);
     setDeleteConfirm(null);
-    setSelecting(false);
-    setSelectedIds(new Set());
-  }
-
-  function toggleSelected(id: string) {
-    setSelectedIds((set) => {
-      const next = new Set(set);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    selection.exit();
   }
 
   // 批次新增：逐筆依序 POST（不是 Promise.all 併發），理由跟薪資明細類型批次新增一樣——
@@ -143,10 +130,14 @@ export function CategoriesView() {
   }
 
   const parents = topLevelCategories(categories, kind);
+  // 多選可以連子分類一起選——選取清單包含目前分頁看得到的主分類跟它們底下的子分類，
+  // 「全選」才不會漏掉子分類，刪除時也能一次把挑好的子分類清掉。
+  const selectableIds = parents.flatMap((c) => [c.id, ...subCategoriesOf(categories, c.id).map((sub) => sub.id)]);
+  const selection = useSelection(selectableIds);
 
   return (
     <div>
-      <PageHeader title="消費分類" description="分類底下可以再開子分類，方便細看同一種消費裡哪種類型花最多" />
+      <PageHeader title="收支分類" description="支出與收入的分類都在這裡；分類底下可以再開子分類，方便細看同一種消費裡哪種類型花最多" />
 
       {/* 新增搬到右下角的浮動按鈕（跟首頁新增交易、帳戶類型頁同一招），標題列空出來。 */}
       <FloatingAddButton onClick={() => setBatchTarget({})} label="新增分類" />
@@ -170,7 +161,7 @@ export function CategoriesView() {
         isSubcategory={!!batchTarget?.parentId}
         parentId={batchTarget?.parentId}
         categories={categories}
-        defaultKind={kind}
+        lockedKind={kind}
         onClose={() => setBatchTarget(null)}
         onSave={handleBatchSave}
       />
@@ -192,20 +183,15 @@ export function CategoriesView() {
             { value: "收入", label: "收入" },
           ]}
         />
-        <PillButton onClick={() => setSelecting((v) => !v)} active={selecting}>
-          {selecting ? "完成" : "選取"}
-        </PillButton>
+        <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />
       </div>
 
-      {selecting && (
+      {selection.selecting && (
         <SelectionBar
-          count={selectedIds.size}
-          total={parents.length}
-          onToggleAll={() => setSelectedIds((set) => (set.size === parents.length ? new Set() : new Set(parents.map((c) => c.id))))}
-          onCancel={() => {
-            setSelecting(false);
-            setSelectedIds(new Set());
-          }}
+          count={selection.selectedIds.size}
+          total={selection.total}
+          onToggleAll={selection.toggleAll}
+          onCancel={selection.exit}
           onDelete={handleBulkDelete}
         />
       )}
@@ -218,50 +204,42 @@ export function CategoriesView() {
         <div className="flex flex-col gap-3">
           {parents.map((c) => {
             const subs = subCategoriesOf(categories, c.id);
-            const count = counts[c.id] ?? 0;
             return (
               <div key={c.id} className="overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
-                <button
-                  type="button"
-                  onClick={() => (selecting ? toggleSelected(c.id) : setModal(c))}
-                  className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
-                >
-                  {selecting && <SelectionDot selected={selectedIds.has(c.id)} />}
-                  <IconAvatar icon={c.icon} size="sm" className={categoryColorClass[c.color]} />
-                  <span className="min-w-0 flex-1">
-                    <span className={`block ${text.body}`}>{c.name}</span>
-                  </span>
-                  <span className={`shrink-0 ${text.muted}`}>{count} 筆紀錄</span>
-                </button>
+                <ListRow
+                  icon={c.icon}
+                  iconClassName={categoryColorClass[c.color]}
+                  name={c.name}
+                  right={<span className={text.muted}>{counts[c.id] ?? 0} 筆紀錄</span>}
+                  leading={selection.selecting ? <SelectionDot selected={selection.selectedIds.has(c.id)} /> : undefined}
+                  onClick={() => (selection.selecting ? selection.toggle(c.id) : setModal(c))}
+                />
 
                 {subs.length > 0 && (
                   <div className="flex flex-col divide-y divide-[#F2EEFA] border-t border-[#ECE4FA] bg-[#F9F7FE]">
-                    {subs.map((sub) => {
-                      const subCount = counts[sub.id] ?? 0;
-                      return (
-                        <button
-                          key={sub.id}
-                          type="button"
-                          onClick={() => setModal(sub)}
-                          className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
-                        >
-                          <span className="min-w-0 flex-1 text-sm font-medium text-[#4A3B7C]">{sub.name}</span>
-                          <span className={`shrink-0 ${text.muted}`}>{subCount} 筆</span>
-                        </button>
-                      );
-                    })}
+                    {subs.map((sub) => (
+                      <ListRow
+                        key={sub.id}
+                        name={sub.name}
+                        right={<span className={text.muted}>{counts[sub.id] ?? 0} 筆</span>}
+                        leading={selection.selecting ? <SelectionDot selected={selection.selectedIds.has(sub.id)} /> : undefined}
+                        onClick={() => (selection.selecting ? selection.toggle(sub.id) : setModal(sub))}
+                      />
+                    ))}
                   </div>
                 )}
 
-                <div className="border-t border-[#ECE4FA] px-4 py-2">
-                  <button
-                    type="button"
-                    onClick={() => setBatchTarget({ parentId: c.id })}
-                    className="text-xs font-medium text-[#6F5FD6] hover:underline"
-                  >
-                    ＋ 新增子分類
-                  </button>
-                </div>
+                {!selection.selecting && (
+                  <div className="border-t border-[#ECE4FA] px-4 py-2">
+                    <button
+                      type="button"
+                      onClick={() => setBatchTarget({ parentId: c.id })}
+                      className="text-xs font-medium text-[#6F5FD6] hover:underline"
+                    >
+                      ＋ 新增子分類
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}

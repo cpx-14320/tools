@@ -59,7 +59,7 @@ const UNIT_LABEL: Record<ImportKind, string> = {
 
 const DONE_LINK: Record<ImportKind, { href: string; label: string }> = {
   transactions: { href: "/tools/expenses/transactions", label: "查看消費紀錄" },
-  categories: { href: "/tools/expenses/categories", label: "查看消費分類" },
+  categories: { href: "/tools/expenses/categories", label: "查看收支分類" },
   budgets: { href: "/tools/expenses/budgets", label: "查看預算設定" },
   accountTypes: { href: "/tools/expenses/account-types", label: "查看帳戶類型" },
 };

@@ -3,10 +3,8 @@
 import { useState } from "react";
 import { SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
-import { CategoryIconPicker, DEFAULT_PICKER_ICON } from "./category-field-pickers";
-import { categoryFillClass, categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
-
-const COLORS: CategoryColor[] = ["a", "b", "c", "d", "e", "f"];
+import { CategoryColorPicker, CategoryIconPicker, DEFAULT_PICKER_ICON } from "./category-field-pickers";
+import { categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 
 export interface CategoryModalDraft {
   name: string;
@@ -58,7 +56,7 @@ export function CategoryModal({
         <ModalFooter
           onClose={onClose}
           onConfirm={() =>
-            onSave(isSubcategory ? { name: name.trim(), icon: icon.trim() } : { name: name.trim(), icon: icon.trim(), color, kind })
+            onSave(isSubcategory ? { name: name.trim(), icon: icon.trim(), color } : { name: name.trim(), icon: icon.trim(), color, kind })
           }
           confirmDisabled={!canSave}
           onDelete={onDelete}
@@ -66,40 +64,28 @@ export function CategoryModal({
       }
     >
       <Field label="名稱">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如「餐飲」" className={fieldInputClass} />
+        <input value={name} onChange={(e) => setName(e.target.value)} className={fieldInputClass} />
       </Field>
       {isDuplicate && <p className="text-xs text-[#D1517E]">已經有同樣名稱的分類了，換一個名稱吧。</p>}
 
       <CategoryIconPicker kind={kind} value={icon} onChange={setIcon} />
 
+      {/* 收支類型只有頂層分類能選（子分類一定跟著父分類走）；顏色則是兩種都能選，
+          新增跟編輯看到的欄位才會一致。 */}
       {!isSubcategory && (
-        <>
-          <Field label="收支類型">
-            <SegmentedControl
-              className="self-start"
-              value={kind}
-              onChange={setKind}
-              options={[
-                { value: "支出", label: "支出" },
-                { value: "收入", label: "收入" },
-              ]}
-            />
-          </Field>
-          <Field label="顏色">
-            <div className="flex gap-2">
-              {COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  aria-label={`顏色 ${c}`}
-                  onClick={() => setColor(c)}
-                  className={`size-8 rounded-full ${categoryFillClass[c]} ${color === c ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`}
-                />
-              ))}
-            </div>
-          </Field>
-        </>
+        <Field label="收支類型">
+          <SegmentedControl
+            className="self-start"
+            value={kind}
+            onChange={setKind}
+            options={[
+              { value: "支出", label: "支出" },
+              { value: "收入", label: "收入" },
+            ]}
+          />
+        </Field>
       )}
+      <CategoryColorPicker value={color} onChange={setColor} />
       {/* 每月預算已經搬到獨立的「預算設定」頁（可以按月份分別設定），不在這裡輸入。 */}
     </Modal>
   );

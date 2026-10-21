@@ -4,10 +4,8 @@ import { useEffect, useState } from "react";
 import { SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
 import { BatchDraftList } from "./batch-draft-list";
-import { CategoryIconPicker, DEFAULT_PICKER_ICON } from "./category-field-pickers";
-import { categoryFillClass, categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
-
-const COLORS: CategoryColor[] = ["a", "b", "c", "d", "e", "f"];
+import { CategoryColorPicker, CategoryIconPicker, DEFAULT_PICKER_ICON } from "./category-field-pickers";
+import { categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 
 interface Draft {
   name: string;
@@ -95,7 +93,7 @@ export function CategoryBatchModal({
               .filter((it) => it.name && it.icon && !it._dup);
             onSave(
               isSubcategory
-                ? valid.map(({ name, icon }) => ({ name, icon }))
+                ? valid.map(({ name, icon, color }) => ({ name, icon, color }))
                 : valid.map(({ name, icon, color, kind }) => ({ name, icon, color, kind })),
             );
           }}
@@ -110,43 +108,28 @@ export function CategoryBatchModal({
         renderItem={(item, i) => (
           <>
             <Field label="名稱">
-              <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} placeholder="例如「餐飲」" className={fieldInputClass} />
+              <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} className={fieldInputClass} />
             </Field>
             {isDuplicateDraft(items, i, categories, parentId) && <p className="text-xs text-[#D1517E]">已經有同樣名稱的分類了，換一個名稱吧。</p>}
             <CategoryIconPicker kind={item.kind} value={item.icon} onChange={(icon) => updateItem(i, { icon })} />
 
-            {!isSubcategory && (
-              <>
-                {/* 鎖定收支類型時（從新增交易彈窗的某個分頁點進來）不顯示這個切換——
-                    上一層已經選過支出還是收入了，這裡再問一次只會建出對不上的分類。 */}
-                {!lockedKind && (
-                  <Field label="收支類型">
-                    <SegmentedControl
-                      className="self-start"
-                      value={item.kind}
-                      onChange={(kind) => updateItem(i, { kind })}
-                      options={[
-                        { value: "支出", label: "支出" },
-                        { value: "收入", label: "收入" },
-                      ]}
-                    />
-                  </Field>
-                )}
-                <Field label="顏色">
-                  <div className="flex gap-2">
-                    {COLORS.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        aria-label={`顏色 ${c}`}
-                        onClick={() => updateItem(i, { color: c })}
-                        className={`size-8 rounded-full ${categoryFillClass[c]} ${item.color === c ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`}
-                      />
-                    ))}
-                  </div>
-                </Field>
-              </>
+            {/* 收支類型只有頂層分類能選，而且呼叫端已經決定好（lockedKind）時也不用再問
+                ——分頁上已經選過支出還是收入了，這裡再問一次只會建出對不上的分類。
+                顏色則是子分類也能選，跟編輯分類彈窗的欄位保持一致。 */}
+            {!isSubcategory && !lockedKind && (
+              <Field label="收支類型">
+                <SegmentedControl
+                  className="self-start"
+                  value={item.kind}
+                  onChange={(kind) => updateItem(i, { kind })}
+                  options={[
+                    { value: "支出", label: "支出" },
+                    { value: "收入", label: "收入" },
+                  ]}
+                />
+              </Field>
             )}
+            <CategoryColorPicker value={item.color} onChange={(color) => updateItem(i, { color })} />
           </>
         )}
       />

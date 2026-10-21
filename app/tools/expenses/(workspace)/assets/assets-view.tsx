@@ -5,8 +5,8 @@ import Link from "next/link";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { Card, CardBody } from "@/components/expenses/card";
-import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
+import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { DonutChart, type DonutSlice } from "@/components/expenses/donut-chart";
 import { KpiCard, DeltaText, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { AssetComparePicker } from "@/components/expenses/asset-compare-picker";
@@ -293,7 +293,7 @@ export function AssetsView() {
                   ⇄ 轉帳
                 </button>
               </div>
-              <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
+              <ListCard>
                 {assets.map((a) => {
                   const balance = accountBalance(a, accountTypes, transactions, categories, transfers);
                   const pct = (balance / assetTypeSum) * 100;
@@ -310,24 +310,28 @@ export function AssetsView() {
                     </Link>
                   );
                 })}
-              </div>
+              </ListCard>
             </div>
           )}
 
           {liabilities.length > 0 && (
             <div>
               <p className={`mb-2 px-1 ${text.sectionHeading}`}>負債</p>
-              <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
+              <ListCard>
                 {liabilities.map((a) => (
-                  <Link key={a.id} href={`/tools/expenses/assets/${a.id}`} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
-                    <IconAvatar icon={accountTypeById(accountTypes, a.accountTypeId)?.icon ?? "❓"} size="sm" />
-                    <span className={`min-w-0 flex-1 ${text.body}`}>{accountTypeById(accountTypes, a.accountTypeId)?.name ?? "（未知類型）"}</span>
-                    <span className="shrink-0 tabular-nums font-semibold text-[#D1517E]">
-                      －{formatCurrency(accountBalance(a, accountTypes, transactions, categories, transfers))}
-                    </span>
-                  </Link>
+                  <ListRow
+                    key={a.id}
+                    href={`/tools/expenses/assets/${a.id}`}
+                    icon={accountTypeById(accountTypes, a.accountTypeId)?.icon ?? "❓"}
+                    name={accountTypeById(accountTypes, a.accountTypeId)?.name ?? "（未知類型）"}
+                    right={
+                      <span className="tabular-nums font-semibold text-[#D1517E]">
+                        －{formatCurrency(accountBalance(a, accountTypes, transactions, categories, transfers))}
+                      </span>
+                    }
+                  />
                 ))}
-              </div>
+              </ListCard>
             </div>
           )}
         </>

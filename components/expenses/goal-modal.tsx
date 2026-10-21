@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
 import { DateField } from "./date-field";
+import { GoalIconPicker, DEFAULT_PICKER_ICON } from "./category-field-pickers";
 
 export interface GoalModalDraft {
   name: string;
@@ -30,7 +31,7 @@ export function GoalModal({
 }) {
   const isEdit = !!initial;
   const [name, setName] = useState(initial?.name ?? "");
-  const [icon, setIcon] = useState(initial?.icon ?? "🎯");
+  const [icon, setIcon] = useState(initial?.icon ?? DEFAULT_PICKER_ICON);
   const [targetAmount, setTargetAmount] = useState(initial ? String(initial.targetAmount) : "");
   const [currentAmount, setCurrentAmount] = useState(initial ? String(initial.currentAmount) : "0");
   const [startDate, setStartDate] = useState(initial?.startDate ?? "");
@@ -66,9 +67,7 @@ export function GoalModal({
       <Field label="名稱">
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如「日本旅遊基金」" className={fieldInputClass} />
       </Field>
-      <Field label="圖示（輸入一個表情符號）">
-        <input value={icon} onChange={(e) => setIcon(e.target.value)} className={fieldInputClass} />
-      </Field>
+      <GoalIconPicker value={icon} onChange={setIcon} />
       <Field label="目標金額">
         <input type="number" min={1} value={targetAmount} onChange={(e) => setTargetAmount(e.target.value)} className={fieldInputClass} />
       </Field>
