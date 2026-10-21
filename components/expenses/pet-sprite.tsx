@@ -61,13 +61,16 @@ export function PetSprite({ mood = "idle", hueRotate = 0, size = 160 }: { mood?:
   const walking = mood === "walking";
   const facingRight = walk.dir === 1;
 
+  const spriteWidth = size * 0.75;
+
   return (
     <div className="relative w-full overflow-hidden" style={{ height: size }}>
       <div
         className="absolute bottom-0"
         style={{
-          // left 用百分比在場地裡移動，translateX(-50%) 讓 x 代表角色的中心點。
-          left: `${walk.x * 100}%`,
+          // x=0 時角色貼左邊、x=1 時貼右邊，而且兩端都還是完整的——可走的範圍要扣掉角色
+          // 自己的寬度，直接用 `left: x%` 的話走到底會有一半被容器裁掉。
+          left: `calc(${walk.x} * (100% - ${spriteWidth}px) + ${spriteWidth / 2}px)`,
           transform: `translateX(-50%)`,
           transition: walking ? `left ${WALK_FRAME_MS}ms linear` : undefined,
         }}
@@ -75,12 +78,16 @@ export function PetSprite({ mood = "idle", hueRotate = 0, size = 160 }: { mood?:
         <div
           className={walking ? "" : "animate-[petBreathe_2.4s_ease-in-out_infinite]"}
           style={{
-            width: size * 0.75,
+            width: spriteWidth,
             height: size,
             backgroundImage: `url("${SPRITE_SRC}")`,
             backgroundSize: `${COLS * 100}% ${ROWS * 100}%`,
             backgroundPosition: walking ? framePosition(frame, 1) : framePosition(0, 0),
             backgroundRepeat: "no-repeat",
+            // 角色圖是白底、不是去背的 PNG，直接放上去會看到一個白色方塊。multiply 讓
+            // 白色跟底色相乘＝等於消失，角色本身的顏色在這種很淺的粉紫底上幾乎不受影響。
+            // 之後換成去背的圖就可以拿掉這行。
+            mixBlendMode: "multiply",
             // 走路圖本身面向左邊，往右走時整個鏡像過來，不用另外畫一組。
             // hue-rotate 是「換裝」的暫代做法——還沒有各套服裝的圖，先用色相旋轉讓
             // 使用者看得出換了衣服，之後補上真的服裝圖再換掉這一行。
