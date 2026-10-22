@@ -92,8 +92,23 @@ export const INCOME_ICON_OPTIONS: IconOption[] = [
   { path: ICON_OTHER, label: "其他" },
 ];
 
+/** 預設帳戶（現金錢包、銀行帳戶）以外、只拿來給使用者挑的帳戶類型圖——有圖檔但不會
+ *  自動建立對應的帳戶，想用哪一張自己在新增類型時挑。label 是給讀螢幕軟體用的（選擇器
+ *  只排圖、不顯示文字），所以寫的是「這張圖畫的是什麼」。 */
+const EXTRA_ACCOUNT_ICONS: IconOption[] = [
+  { path: accountIcon("card"), label: "信用卡" },
+  { path: accountIcon("fund"), label: "基金" },
+  { path: accountIcon("calendar"), label: "定存" },
+  { path: accountIcon("home"), label: "房屋" },
+  { path: accountIcon("car"), label: "汽車" },
+  { path: accountIcon("education"), label: "學貸" },
+  { path: accountIcon("business"), label: "店面" },
+  { path: accountIcon("deduction"), label: "扣款" },
+];
+
 export const ACCOUNT_ICON_OPTIONS: IconOption[] = [
   ...PRESET_ACCOUNTS.map((a) => ({ path: a.icon, label: a.name })),
+  ...EXTRA_ACCOUNT_ICONS,
   { path: ICON_OTHER, label: "其他" },
 ];
 
