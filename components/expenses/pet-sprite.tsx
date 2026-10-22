@@ -34,7 +34,7 @@ export type PetMood = "idle" | "walking";
  * 眨眼目前沒有對應的圖（精靈圖裡沒有閉眼那一格），所以先不做——要做的話補一格閉眼的
  * 站姿，在這裡每隔幾秒切過去 150ms 就好。
  */
-export function PetSprite({ mood = "idle", hueRotate = 0, size = 160 }: { mood?: PetMood; hueRotate?: number; size?: number }) {
+export function PetSprite({ mood = "idle", hueRotate = 0, heightPct = 76 }: { mood?: PetMood; hueRotate?: number; heightPct?: number }) {
   const [frame, setFrame] = useState(0);
   // 位置跟方向放在同一份狀態裡，一次更新完：方向會影響畫面（往右走要鏡像），所以不能
   // 放在 ref 裡；兩個分開存又會讓「走到邊緣要轉向」要跨兩個 updater 才算得出來。
@@ -61,33 +61,40 @@ export function PetSprite({ mood = "idle", hueRotate = 0, size = 160 }: { mood?:
   const walking = mood === "walking";
   const facingRight = walk.dir === 1;
 
-  const spriteWidth = size * 0.75;
-
   return (
-    <div className="relative w-full overflow-hidden" style={{ height: size }}>
+    // 高寬都交給外層決定（呼叫端用 aspect-square 之類的給一個方形場地），這裡只負責填滿。
+    <div className="relative size-full overflow-hidden">
       <div
         className="absolute bottom-0"
         style={{
-          // x=0 時角色貼左邊、x=1 時貼右邊，而且兩端都還是完整的——可走的範圍要扣掉角色
-          // 自己的寬度，直接用 `left: x%` 的話走到底會有一半被容器裁掉。
-          left: `calc(${walk.x} * (100% - ${spriteWidth}px) + ${spriteWidth / 2}px)`,
-          transform: `translateX(-50%)`,
+          // 高度跟著場地走，寬度由長寬比推出來——寬度也用百分比的話，場地不是正方形時
+          // 角色會被拉扁。尺寸掛在這一層（定位用的那層）而不是裡面那層：百分比高度要有
+          // 一個高度確定的父層才算得出來，而絕對定位的這層本身是由內容撐開的。
+          height: `${heightPct}%`,
+          aspectRatio: "3 / 4",
+          // x=0 貼左邊、x=1 貼右邊，兩端都還是完整的角色：位置用場地寬度的百分比，位移則用
+          // 角色「自己」寬度的百分比（translateX 的 % 是算自己的寬度），兩者相抵之後就不需要
+          // 知道角色實際幾 px——x=0 時不位移、x=1 時剛好往回退一個自己的寬度。
+          left: `${walk.x * 100}%`,
+          transform: `translateX(${-walk.x * 100}%)`,
           transition: walking ? `left ${WALK_FRAME_MS}ms linear` : undefined,
+          // 角色圖是白底、不是去背的 PNG，直接放上去會看到一個白色方塊。multiply 讓
+          // 白色跟底色相乘＝等於消失，角色本身的顏色在這種很淺的底色上幾乎不受影響。
+          // 之後換成去背的圖就可以拿掉這行。
+          //
+          // 要掛在這一層：這層有 transform，會自成一個堆疊脈絡，裡面的元素再怎麼
+          // multiply 也只會跟「這層內部」相乘（裡面是透明的，等於沒作用），白框照樣看得到。
+          // 掛在這層才是跟場地的底色相乘。
+          mixBlendMode: "multiply",
         }}
       >
         <div
-          className={walking ? "" : "animate-[petBreathe_2.4s_ease-in-out_infinite]"}
+          className={`size-full ${walking ? "" : "animate-[petBreathe_2.4s_ease-in-out_infinite]"}`}
           style={{
-            width: spriteWidth,
-            height: size,
             backgroundImage: `url("${SPRITE_SRC}")`,
             backgroundSize: `${COLS * 100}% ${ROWS * 100}%`,
             backgroundPosition: walking ? framePosition(frame, 1) : framePosition(0, 0),
             backgroundRepeat: "no-repeat",
-            // 角色圖是白底、不是去背的 PNG，直接放上去會看到一個白色方塊。multiply 讓
-            // 白色跟底色相乘＝等於消失，角色本身的顏色在這種很淺的粉紫底上幾乎不受影響。
-            // 之後換成去背的圖就可以拿掉這行。
-            mixBlendMode: "multiply",
             // 走路圖本身面向左邊，往右走時整個鏡像過來，不用另外畫一組。
             // hue-rotate 是「換裝」的暫代做法——還沒有各套服裝的圖，先用色相旋轉讓
             // 使用者看得出換了衣服，之後補上真的服裝圖再換掉這一行。

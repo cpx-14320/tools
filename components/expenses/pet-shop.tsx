@@ -111,8 +111,10 @@ export function PetShopModal({
         )
       }
     >
-      <div className="rounded-2xl px-3 pt-4" style={{ background: petBackground(pet.backgroundId) }}>
-        <PetSprite mood="idle" hueRotate={outfit?.hueRotate ?? 0} size={140} />
+      {/* 跟養成頁的場地一樣是 1:1，只是限一個最大寬度——彈窗裡還要放頁籤跟商品格子，
+          讓預覽撐滿整個寬度的話下面就只剩一點點位置。 */}
+      <div className="mx-auto aspect-square w-full max-w-[200px] rounded-2xl p-3" style={{ background: petBackground(pet.backgroundId) }}>
+        <PetSprite mood="idle" hueRotate={outfit?.hueRotate ?? 0} />
       </div>
 
       {message && <div className="rounded-2xl bg-[#F3EFFC] px-4 py-2.5 text-center text-xs text-[#4A3B7C]">{message}</div>}

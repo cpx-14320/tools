@@ -149,8 +149,10 @@ export function PetView() {
       {/* 角色場地：待機會呼吸，按「散步」會沿著場地走來走去、碰到邊緣自己轉身。 */}
       <Card className="mb-4">
         <CardBody>
-          <div className="rounded-2xl px-3 pt-4" style={{ background: petBackground(pet?.backgroundId ?? "") }}>
-            <PetSprite mood={mood} hueRotate={outfit?.hueRotate ?? 0} size={168} />
+          {/* 場地固定 1:1 正方形，角色站在底部、高度佔場地的七成多；換背景、換裝都只是
+              換這塊的底色跟角色色相，版面不會跟著變動。 */}
+          <div className="aspect-square w-full rounded-2xl p-3" style={{ background: petBackground(pet?.backgroundId ?? "") }}>
+            <PetSprite mood={mood} hueRotate={outfit?.hueRotate ?? 0} />
           </div>
 
           <div className="mt-3 flex items-center justify-between gap-2">
