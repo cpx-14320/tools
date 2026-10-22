@@ -323,7 +323,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
                 {formatCurrency(currentBalance)}
               </p>
             </div>
-            <IconAvatar icon={type?.icon ?? "❓"} />
+            <IconAvatar icon={type?.icon ?? "❓"} className={type ? categoryColorClass[type.color] : undefined} />
           </div>
           {/* 餘額是從交易即時加總出來的，漏記一筆就會跟實際差一輩子——對帳讓使用者輸入
               真正的餘額，差額補成一筆調整交易，不用回頭翻整份紀錄找是哪裡少記。 */}

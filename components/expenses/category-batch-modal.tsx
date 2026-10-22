@@ -107,13 +107,8 @@ export function CategoryBatchModal({
         onAdd={() => setItems((list) => [...list, blankDraft(effectiveKind)])}
         renderItem={(item, i) => (
           <>
-            <Field label="名稱">
-              <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} className={fieldInputClass} />
-            </Field>
-            {isDuplicateDraft(items, i, categories, parentId) && <p className="text-xs text-[#D1517E]">已經有同樣名稱的分類了，換一個名稱吧。</p>}
-            <CategoryIconPicker kind={item.kind} value={item.icon} onChange={(icon) => updateItem(i, { icon })} />
-
-            {/* 收支類型只有頂層分類能選，而且呼叫端已經決定好（lockedKind）時也不用再問
+            {/* 欄位順序：類型→名稱→圖示→顏色，跟編輯分類、帳戶類型的彈窗一致。
+                收支類型只有頂層分類能選，而且呼叫端已經決定好（lockedKind）時也不用再問
                 ——分頁上已經選過支出還是收入了，這裡再問一次只會建出對不上的分類。
                 顏色則是子分類也能選，跟編輯分類彈窗的欄位保持一致。 */}
             {!isSubcategory && !lockedKind && (
@@ -129,6 +124,11 @@ export function CategoryBatchModal({
                 />
               </Field>
             )}
+            <Field label="名稱">
+              <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} className={fieldInputClass} />
+            </Field>
+            {isDuplicateDraft(items, i, categories, parentId) && <p className="text-xs text-[#D1517E]">已經有同樣名稱的分類了，換一個名稱吧。</p>}
+            <CategoryIconPicker kind={item.kind} value={item.icon} onChange={(icon) => updateItem(i, { icon })} />
             <CategoryColorPicker value={item.color} onChange={(color) => updateItem(i, { color })} />
           </>
         )}

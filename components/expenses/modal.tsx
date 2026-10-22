@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "./button";
 import { text } from "./theme";
@@ -93,7 +93,12 @@ export function Modal({
 /** 彈窗底部那排按鈕：左邊（可選）刪除、右邊取消＋主要動作。
  *
  *  記帳本十幾個彈窗本來各自手刻同一段「onDelete ? 刪除 : <span />，右邊再放取消跟儲存」，
- *  連紅色刪除字的色碼都是各自複製的。集中成這一個，之後要調整按鈕順序或樣式只要改一次。 */
+ *  連紅色刪除字的色碼都是各自複製的。集中成這一個，之後要調整按鈕順序或樣式只要改一次。
+ *
+ *  儲存鍵自己防連點：onConfirm 多半是「打 API →（成功才）關彈窗」的非同步流程，在回應
+ *  回來之前按鈕還是能按的，手快點兩下就會送出兩筆一模一樣的資料。這裡在送出期間把它
+ *  鎖住——用 ref 擋同一個 tick 內的第二次點擊（state 要等重繪才生效，擋不住），state
+ *  只負責讓按鈕變成不能按的樣子。 */
 export function ModalFooter({
   onClose,
   onConfirm,
@@ -103,13 +108,30 @@ export function ModalFooter({
   deleteLabel = "刪除",
 }: {
   onClose: () => void;
-  onConfirm: () => void;
+  /** 回傳 Promise 的話（呼叫端的 onSave 是 async function 就會是），送出期間儲存鍵會
+   *  鎖住，等它結束才解鎖。 */
+  onConfirm: () => void | Promise<unknown>;
   confirmLabel?: string;
   confirmDisabled?: boolean;
   /** 有給才顯示左下角的刪除；新增用的彈窗不給，位置用空元素佔著維持左右分佈。 */
   onDelete?: () => void;
   deleteLabel?: string;
 }) {
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+
+  async function handleConfirm() {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      await onConfirm();
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  }
+
   return (
     <>
       {onDelete ? (
@@ -123,7 +145,7 @@ export function ModalFooter({
         <Button variant="ghost" onClick={onClose}>
           取消
         </Button>
-        <Button disabled={confirmDisabled} onClick={onConfirm}>
+        <Button disabled={confirmDisabled || saving} onClick={handleConfirm}>
           {confirmLabel}
         </Button>
       </div>

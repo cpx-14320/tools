@@ -41,7 +41,7 @@ export function BudgetModal({
       onClose={onClose}
       title={category ? `${category.name} 的預算` : "設定預算"}
       fullHeight
-      stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} color="#6F5FD6" label="每月預算" />}
+      stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} label="每月預算" />}
       footer={
         <ModalFooter
           onClose={onClose}

@@ -135,7 +135,16 @@ export function PetView() {
 
   return (
     <div>
-      <PageHeader title="養成" description="好好記帳就能賺星星幣，拿去餵角色、換衣服" />
+      {/* 賺幣規則收在標題右邊那顆小按鈕裡（點了開彈窗），頁面本身不留說明區塊。 */}
+      <PageHeader
+        title="養成"
+        description="好好記帳就能賺星星幣，拿去餵角色、換衣服"
+        actions={
+          <PillButton onClick={() => setRulesOpen(true)}>
+            <span aria-hidden>❓</span> 怎麼賺星星幣
+          </PillButton>
+        }
+      />
 
       {/* 角色場地：待機會呼吸，按「散步」會沿著場地走來走去、碰到邊緣自己轉身。 */}
       <Card className="mb-4">
@@ -236,14 +245,6 @@ export function PetView() {
         message={message}
         onAct={act}
       />
-
-      {/* 賺幣規則收進彈窗，比照首頁「vs 去年同期」那顆比較基準按鈕——平常只留一顆
-          小按鈕，頁面才不會被說明文字占掉版面，想看的人自己點開。 */}
-      <div className="flex justify-center">
-        <PillButton onClick={() => setRulesOpen(true)}>
-          <span aria-hidden>❓</span> 怎麼賺星星幣
-        </PillButton>
-      </div>
 
       <Modal open={rulesOpen} onClose={() => setRulesOpen(false)} title="怎麼賺星星幣">
         <ListCard>

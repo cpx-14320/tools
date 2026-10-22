@@ -56,7 +56,6 @@ export function GoalModal({
         <AmountKeypad
           expr={target === "target" ? targetAmount : currentAmount}
           onExprChange={target === "target" ? setTargetAmount : setCurrentAmount}
-          color="#6F5FD6"
           label={target === "target" ? "目標金額" : "目前已經存了多少"}
         />
       }
@@ -113,7 +112,7 @@ export function ContributeModal({ open, onClose, onSave }: { open: boolean; onCl
       onClose={onClose}
       title="存入"
       fullHeight
-      stickyBottom={<AmountKeypad expr={amount} onExprChange={setAmount} color="#2FAE82" label="這次要存入多少" />}
+      stickyBottom={<AmountKeypad expr={amount} onExprChange={setAmount} label="這次要存入多少" />}
       footer={
         <ModalFooter
           onClose={onClose}

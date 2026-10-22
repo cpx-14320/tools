@@ -112,7 +112,7 @@ export function RecurringRuleModal({
       onClose={onClose}
       title={initial ? "編輯固定收支" : "新增固定收支"}
       fullHeight
-      stickyBottom={<AmountKeypad expr={amount} onExprChange={setAmount} color={kind === "收入" ? "#2FAE82" : "#D1517E"} label="每次金額" />}
+      stickyBottom={<AmountKeypad expr={amount} onExprChange={setAmount} label="每次金額" />}
       footer={
         <ModalFooter
           onClose={onClose}
@@ -162,14 +162,12 @@ export function RecurringRuleModal({
       </div>
 
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="頻率">
-          <SegmentedControl value={frequencyUnit} onChange={setFrequencyUnit} options={FREQUENCY_OPTIONS} />
-        </Field>
-        <Field label="每隔幾個單位（例如每 2 週填 2）">
-          <input type="number" min={1} value={interval} onChange={(e) => setInterval_(e.target.value)} className={fieldInputClass} />
-        </Field>
-      </div>
+      <Field label="頻率">
+        <SegmentedControl className="self-start" value={frequencyUnit} onChange={setFrequencyUnit} options={FREQUENCY_OPTIONS} />
+      </Field>
+      <Field label="每隔幾個單位（例如每 2 週填 2）">
+        <input type="number" min={1} value={interval} onChange={(e) => setInterval_(e.target.value)} className={fieldInputClass} />
+      </Field>
 
       <Field label="開始日期">
         <DateField value={startDate} onChange={setStartDate} />

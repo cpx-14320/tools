@@ -14,7 +14,7 @@ import { text } from "@/components/expenses/theme";
 import { AccountModal, type AccountModalDraft } from "@/components/expenses/account-modal";
 import { TransferModal, type TransferModalDraft } from "@/components/expenses/transfer-modal";
 import { accountsByKind, accountBalance, balanceDelta, totalByKind, netWorth, type AccountDTO } from "@/lib/expenses/accounts";
-import { accountTypeById, type AccountTypeDTO } from "@/lib/expenses/account-types";
+import { accountTypeById, accountTypeColorClass, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { categoryColorHex, type CategoryDTO } from "@/lib/expenses/categories";
 import { type TransactionDTO } from "@/lib/expenses/transactions";
 import { type TransferDTO } from "@/lib/expenses/transfers";
@@ -301,6 +301,7 @@ export function AssetsView() {
                     <Link key={a.id} href={`/tools/expenses/assets/${a.id}`} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
                       <ListProgressRow
                         icon={accountTypeById(accountTypes, a.accountTypeId)?.icon ?? "❓"}
+                        iconClassName={accountTypeColorClass(accountTypes, a.accountTypeId)}
                         name={accountTypeById(accountTypes, a.accountTypeId)?.name ?? "（未知類型）"}
                         amount={formatCurrency(balance)}
                         pct={pct}
@@ -323,6 +324,7 @@ export function AssetsView() {
                     key={a.id}
                     href={`/tools/expenses/assets/${a.id}`}
                     icon={accountTypeById(accountTypes, a.accountTypeId)?.icon ?? "❓"}
+                    iconClassName={accountTypeColorClass(accountTypes, a.accountTypeId)}
                     name={accountTypeById(accountTypes, a.accountTypeId)?.name ?? "（未知類型）"}
                     right={
                       <span className="tabular-nums font-semibold text-[#D1517E]">

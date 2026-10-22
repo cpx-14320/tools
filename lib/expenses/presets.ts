@@ -37,7 +37,7 @@ export interface PresetCategorySeed {
 
 /** 支出主分類。顏色在 a～f 六色之間輪，相鄰的分類不會同色。 */
 export const PRESET_EXPENSE_CATEGORIES: PresetCategorySeed[] = [
-  { name: "餐飲", icon: expenseCategoryIcon("food"), color: "a", children: ["早餐", "午餐", "晚餐", "下午茶"] },
+  { name: "餐飲", icon: expenseCategoryIcon("food"), color: "a", children: ["早餐", "午餐", "晚餐"] },
   { name: "交通", icon: expenseCategoryIcon("transport"), color: "b", children: ["月票", "加油"] },
   { name: "購物", icon: expenseCategoryIcon("shopping"), color: "c", children: ["服裝", "保養品", "化妝品", "禮物"] },
   { name: "生活", icon: expenseCategoryIcon("life"), color: "d", children: ["日用品", "電話費", "水電費"] },
@@ -52,12 +52,9 @@ export const PRESET_EXPENSE_CATEGORIES: PresetCategorySeed[] = [
 ];
 
 export const PRESET_INCOME_CATEGORIES: PresetCategorySeed[] = [
-  {
-    name: "薪水",
-    icon: incomeCategoryIcon("salary"),
-    color: "a",
-    children: ["獎金", "年終", "分紅", "中秋禮金", "端午禮金", "聖誕禮金", "其他獎金", "加班費"],
-  },
+  // 各種節慶禮金、加班費這類項目不另外開子分類——它們是「某一筆薪水裡的一個項目」，
+  // 記在那筆薪水的明細裡（見 lib/expenses/transactions.ts 的 breakdown）比拆成子分類精準。
+  { name: "薪水", icon: incomeCategoryIcon("salary"), color: "a", children: ["獎金", "年終", "分紅"] },
   { name: "投資", icon: incomeCategoryIcon("investment"), color: "b" },
   { name: "利息", icon: incomeCategoryIcon("interest"), color: "c" },
   { name: "其他", icon: ICON_OTHER, color: "d" },
@@ -68,12 +65,13 @@ export interface PresetAccountSeed {
    *  使用者一進來就有東西可以記帳，不用先建類型再建帳戶。 */
   name: string;
   icon: string;
+  color: CategoryColor;
 }
 
 /** 預設只建資產類型；負債（信用卡、貸款…）不是每個人都有，要用再自己新增。 */
 export const PRESET_ACCOUNTS: PresetAccountSeed[] = [
-  { name: "現金錢包", icon: accountIcon("cash") },
-  { name: "銀行帳戶", icon: accountIcon("bank") },
+  { name: "現金錢包", icon: accountIcon("cash"), color: "a" },
+  { name: "銀行帳戶", icon: accountIcon("bank"), color: "b" },
 ];
 
 /** 圖示選擇器可以選的圖——使用者新增自訂分類時從這裡挑，挑不到合適的就用「其他」那張

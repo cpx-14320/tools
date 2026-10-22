@@ -11,6 +11,7 @@ import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { accountTypesByKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
+import { categoryColorClass } from "@/lib/expenses/categories";
 
 export function AccountTypesView() {
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
@@ -168,6 +169,7 @@ export function AccountTypesView() {
                   <ListRow
                     key={t.id}
                     icon={t.icon}
+                    iconClassName={categoryColorClass[t.color]}
                     name={t.name}
                     leading={selection.selecting ? <SelectionDot selected={selection.selectedIds.has(t.id)} /> : undefined}
                     onClick={() => (selection.selecting ? selection.toggle(t.id) : setModal(t))}
@@ -185,6 +187,7 @@ export function AccountTypesView() {
                   <ListRow
                     key={t.id}
                     icon={t.icon}
+                    iconClassName={categoryColorClass[t.color]}
                     name={t.name}
                     leading={selection.selecting ? <SelectionDot selected={selection.selectedIds.has(t.id)} /> : undefined}
                     onClick={() => (selection.selecting ? selection.toggle(t.id) : setModal(t))}

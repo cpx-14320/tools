@@ -92,7 +92,7 @@ export function TransferModal({
       onClose={onClose}
       title={initial ? "編輯轉帳" : "新增轉帳"}
       fullHeight
-      stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} color="#6F5FD6" label="轉帳金額" />}
+      stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} label="轉帳金額" />}
       footer={
         <ModalFooter
           onClose={onClose}

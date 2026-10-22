@@ -64,16 +64,17 @@ function KeyButton({
 /** 金額輸入共用元件——NT$ 大字顯示＋4×4 內建小算盤（新增交易、新增轉帳都用這個）。
  *  是受控元件：expr 是目前打在螢幕上的原始字串（例如 "120+45"），呼叫端自己存狀態、
  *  用 evaluateExpr(expr) 算出實際金額，這裡只負責「怎麼編輯這個字串」。 */
+/** NT$ 字樣的顏色。所有彈窗一律用這個紅色（＝新增消費紀錄那個），不跟著收入/支出或
+ *  轉帳/預算換色——同一個鍵盤在不同彈窗變成三種顏色，看起來像三個不同的元件。 */
+const AMOUNT_COLOR = "#D1517E";
+
 export function AmountKeypad({
   expr,
   onExprChange,
-  color = "#D1517E",
   label,
 }: {
   expr: string;
   onExprChange: (expr: string) => void;
-  /** NT$ 字樣的顏色——支出/轉出習慣用紅色，收入習慣用綠色，呼叫端自己決定。 */
-  color?: string;
   /** 數字上方的小標，只有在「這個鍵盤現在不是在編一般金額」時才需要（例如改某一筆
    *  明細項目的金額）；平常不傳，因為旁邊就是一個大大的 NT$ 金額，再寫一次「金額」
    *  是多餘的。 */
@@ -114,7 +115,7 @@ export function AmountKeypad({
           這個大大的 NT$ 數字，再標一次是多餘的。 */}
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-baseline gap-1.5">
-          <span className="text-xl font-bold" style={{ color }}>
+          <span className="text-xl font-bold" style={{ color: AMOUNT_COLOR }}>
             NT$
           </span>
           <span className="truncate text-3xl font-bold tabular-nums text-[#4A3B7C]">{expr || "0"}</span>

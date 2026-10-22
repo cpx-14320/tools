@@ -29,13 +29,19 @@ export function toISO(year: number, month: number, day: number): string {
   return `${year}-${pad2(month)}-${pad2(day)}`;
 }
 
+/** 解析 `YYYY-MM-DD`；空字串或缺的欄位一律退回「今天」。
+ *
+ *  每一段都要大於 0 才算數，不能只看 Number.isFinite——`Number("")` 是 0 而不是 NaN，
+ *  所以空字串（例如存錢目標那種「可不填」的日期）會被當成西元 0 年，年份格就會列出
+ *  0 年前後那十幾年。 */
 export function parseISO(value: string) {
   const [y, m, d] = value.split("-").map(Number);
   const now = new Date();
+  const ok = (n: number) => Number.isFinite(n) && n > 0;
   return {
-    year: Number.isFinite(y) ? y : now.getFullYear(),
-    month: Number.isFinite(m) ? m : now.getMonth() + 1,
-    day: Number.isFinite(d) ? d : now.getDate(),
+    year: ok(y) ? y : now.getFullYear(),
+    month: ok(m) ? m : now.getMonth() + 1,
+    day: ok(d) ? d : now.getDate(),
   };
 }
 

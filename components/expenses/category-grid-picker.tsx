@@ -1,6 +1,5 @@
 "use client";
 
-import { InlineIcon } from "./icon-avatar";
 import { OptionGrid } from "./option-grid";
 import {
   topLevelCategories,
@@ -57,7 +56,8 @@ export function CategoryGridPicker({
                 sub.id === value ? "border-[#6F5FD6] bg-[#6F5FD6] text-white" : "border-[#ECE4FA] bg-white text-[#4A3B7C]"
               }`}
             >
-              <InlineIcon icon={sub.icon} className="size-3.5" />
+              {/* 只有文字、不放圖示：子分類目前全部共用同一張佔位圖，每一顆都掛一個
+                  一模一樣的小圖等於只是把字擠窄，分辨不出任何東西。 */}
               {sub.name}
             </button>
           ))}

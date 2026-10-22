@@ -4,17 +4,19 @@ import { useEffect, useState } from "react";
 import { SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
 import { BatchDraftList } from "./batch-draft-list";
-import { AccountIconPicker, DEFAULT_PICKER_ICON } from "./category-field-pickers";
-import { accountTypeNameTaken, type AccountKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
+import { AccountIconPicker, CategoryColorPicker, DEFAULT_PICKER_ICON } from "./category-field-pickers";
+import { accountTypeNameTaken, DEFAULT_ACCOUNT_TYPE_COLOR, type AccountKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
+import type { CategoryColor } from "@/lib/expenses/categories";
 
 interface Draft {
   name: string;
   icon: string;
   kind: AccountKind;
+  color: CategoryColor;
 }
 
 function blankDraft(kind: AccountKind = "asset"): Draft {
-  return { name: "", icon: DEFAULT_PICKER_ICON, kind };
+  return { name: "", icon: DEFAULT_PICKER_ICON, kind, color: DEFAULT_ACCOUNT_TYPE_COLOR };
 }
 
 export type AccountTypeBatchItem = Draft;
@@ -84,7 +86,7 @@ export function AccountTypeBatchModal({
               items
                 .map((it, i) => ({ ...it, name: it.name.trim(), icon: it.icon.trim(), _dup: isDuplicateDraft(items, i, accountTypes) }))
                 .filter((it) => it.name && it.icon && !it._dup)
-                .map(({ name, icon, kind }) => ({ name, icon, kind })),
+                .map(({ name, icon, kind, color }) => ({ name, icon, kind, color })),
             )
           }
           confirmDisabled={!canSave}
@@ -97,15 +99,9 @@ export function AccountTypeBatchModal({
         onAdd={() => setItems((list) => [...list, blankDraft(effectiveKind)])}
         renderItem={(item, i) => (
           <>
-            <Field label="名稱">
-              <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} placeholder="例如「定存」" className={fieldInputClass} />
-            </Field>
-            {isDuplicateDraft(items, i, accountTypes) && (
-              <p className="text-xs text-[#D1517E]">已經有同樣名稱的{item.kind === "asset" ? "資產" : "負債"}類型了，換一個名稱吧。</p>
-            )}
-            <AccountIconPicker value={item.icon} onChange={(icon) => updateItem(i, { icon })} />
-            {/* 鎖定 kind 時（從「新增帳戶」彈窗裡開啟）不顯示這個切換——資產/負債在
-                上一層已經選過了，這裡再問一次只是多餘的欄位。 */}
+            {/* 欄位順序跟消費分類的彈窗一致：類型→名稱→圖示→顏色。鎖定 kind 時
+                （從「新增帳戶」彈窗裡開啟）不顯示類型——資產/負債在上一層已經選過了，
+                這裡再問一次只是多餘的欄位。 */}
             {!lockedKind && (
               <Field label="類型">
                 <SegmentedControl
@@ -119,6 +115,14 @@ export function AccountTypeBatchModal({
                 />
               </Field>
             )}
+            <Field label="名稱">
+              <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} placeholder="例如「定存」" className={fieldInputClass} />
+            </Field>
+            {isDuplicateDraft(items, i, accountTypes) && (
+              <p className="text-xs text-[#D1517E]">已經有同樣名稱的{item.kind === "asset" ? "資產" : "負債"}類型了，換一個名稱吧。</p>
+            )}
+            <AccountIconPicker value={item.icon} onChange={(icon) => updateItem(i, { icon })} />
+            <CategoryColorPicker value={item.color} onChange={(color) => updateItem(i, { color })} />
           </>
         )}
       />

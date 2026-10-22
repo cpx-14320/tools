@@ -49,7 +49,7 @@ export function ReconcileModal({
       onClose={onClose}
       title={`${accountName} 對帳`}
       fullHeight
-      stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} color="#6F5FD6" label="實際餘額" />}
+      stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} label="實際餘額" />}
       footer={
         <ModalFooter
           onClose={onClose}

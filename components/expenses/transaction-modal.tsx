@@ -177,7 +177,7 @@ export function TransactionModal({
       fullHeight
       // 小鍵盤固定在彈窗最下面不跟著捲動，使用者可以一邊捲上面的分類／日期／帳戶，
       // 一邊隨時按數字；按明細項目的金額時這個鍵盤會改成編那一項（見 keypadLabel）。
-      stickyBottom={<AmountKeypad expr={keypadExpr} onExprChange={handleKeypadChange} color={kind === "收入" ? "#2FAE82" : "#D1517E"} label={keypadLabel} />}
+      stickyBottom={<AmountKeypad expr={keypadExpr} onExprChange={handleKeypadChange} label={keypadLabel} />}
       footer={
         <ModalFooter
           onClose={onClose}
@@ -232,7 +232,8 @@ export function TransactionModal({
                     active ? "border-[#6F5FD6] bg-[#6F5FD6] text-white" : "border-[#ECE4FA] bg-white text-[#4A3B7C]"
                   }`}
                 >
-                  <InlineIcon icon={cat.icon} className="size-3.5" />
+                  {/* 只有文字——這一排是「分類＋帳戶」的組合，圖示不是用來辨識的資訊，
+                      拿掉之後一列能多放一兩個常用組合。 */}
                   <span>{cat.name}</span>
                   {acc && <span className={active ? "text-white/70" : "text-[#9C94C4]"}>· {acc.name}</span>}
                 </button>

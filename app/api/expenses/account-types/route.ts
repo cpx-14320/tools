@@ -1,15 +1,20 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { requireTool } from "@/lib/auth";
-import type { AccountKind } from "@/lib/expenses/account-types";
+import { DEFAULT_ACCOUNT_TYPE_COLOR, type AccountKind } from "@/lib/expenses/account-types";
+import type { CategoryColor } from "@/lib/expenses/categories";
 import { listAccountTypes, createAccountType, updateAccountType, deleteAccountType } from "@/lib/expenses/account-types.server";
 
-function parseCreateInput(body: { name?: unknown; icon?: unknown; kind?: unknown } | null) {
+function parseColor(value: unknown): CategoryColor {
+  return typeof value === "string" ? (value as CategoryColor) : DEFAULT_ACCOUNT_TYPE_COLOR;
+}
+
+function parseCreateInput(body: { name?: unknown; icon?: unknown; kind?: unknown; color?: unknown } | null) {
   const name = typeof body?.name === "string" ? body.name.trim() : "";
   const icon = typeof body?.icon === "string" ? body.icon.trim() : "";
   const kind = body?.kind === "asset" || body?.kind === "liability" ? (body.kind as AccountKind) : null;
   if (!name || !icon || !kind) return null;
-  return { name, icon, kind };
+  return { name, icon, kind, color: parseColor(body?.color) };
 }
 
 export async function GET() {
@@ -43,7 +48,7 @@ export async function PUT(request: Request) {
   const icon = typeof body?.icon === "string" ? body.icon.trim() : "";
   if (!id || !name || !icon) return NextResponse.json({ error: "缺少必要欄位" }, { status: 400 });
 
-  const result = await updateAccountType(new ObjectId(user.id), id, { name, icon });
+  const result = await updateAccountType(new ObjectId(user.id), id, { name, icon, color: parseColor(body?.color) });
   if ("error" in result) return NextResponse.json(result, { status: 409 });
   return NextResponse.json(result);
 }

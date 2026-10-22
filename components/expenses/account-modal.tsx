@@ -9,6 +9,7 @@ import { ConfirmModal } from "./confirm-modal";
 import { AccountTypeBatchModal, type AccountTypeBatchItem } from "./account-type-batch-modal";
 import { accountNameTaken, type AccountDTO } from "@/lib/expenses/accounts";
 import { accountTypesByKind, type AccountKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
+import { categoryColorClass } from "@/lib/expenses/categories";
 
 export interface AccountModalDraft {
   name: string;
@@ -119,7 +120,6 @@ export function AccountModal({
         <AmountKeypad
           expr={openingBalanceExpr}
           onExprChange={setOpeningBalanceExpr}
-          color="#6F5FD6"
           label={selectedKind === "liability" ? "期初欠款（輸入正數）" : "期初餘額"}
         />
       }
@@ -147,7 +147,7 @@ export function AccountModal({
         {/* 跟新增消費紀錄的分類格子同一個元件（OptionGrid）——欄數、選取樣式、
             「＋新增」的位置都一致，不再兩邊各長一個樣。 */}
         <OptionGrid
-          options={visibleTypes.map((t) => ({ id: t.id, name: t.name, icon: t.icon }))}
+          options={visibleTypes.map((t) => ({ id: t.id, name: t.name, icon: t.icon, colorClass: categoryColorClass[t.color] }))}
           value={accountTypeId}
           onChange={setAccountTypeId}
           onAddClick={() => setTypeBatchOpen(true)}

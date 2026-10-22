@@ -4,13 +4,20 @@
 // 資產/負債都是類型決定的，個別帳戶（accounts.ts）只負責自己的名稱跟期初餘額，不再
 // 各自存一份圖示——理由跟分類／交易的關係一樣，避免兩邊資料兜不起來。
 
+import { categoryColorClass, type CategoryColor } from "./categories";
+
 export type AccountKind = "asset" | "liability";
+
+/** 沒有設定顏色的舊資料一律當成 a——顏色是後來才加的欄位，之前建立的類型沒有這一欄。 */
+export const DEFAULT_ACCOUNT_TYPE_COLOR: CategoryColor = "a";
 
 export interface AccountTypeDTO {
   id: string;
   name: string;
   icon: string;
   kind: AccountKind;
+  /** 圖示底色，用的是跟消費分類同一組六色色票（categoryColorClass）。 */
+  color: CategoryColor;
   /** 系統預設建立的類型——「清除全部資料」不會刪掉它們。 */
   isPreset?: boolean;
 }
@@ -21,6 +28,13 @@ export function accountTypesByKind(types: AccountTypeDTO[], kind: AccountKind): 
 
 export function accountTypeById(types: AccountTypeDTO[], id: string): AccountTypeDTO | undefined {
   return types.find((t) => t.id === id);
+}
+
+/** 帳戶類型圖示的底色 class。查不到類型（資料被刪掉、或還沒載入完）時回傳 undefined，
+ *  IconAvatar 會用自己的預設淡紫底。 */
+export function accountTypeColorClass(types: AccountTypeDTO[], id: string): string | undefined {
+  const type = accountTypeById(types, id);
+  return type ? categoryColorClass[type.color] : undefined;
 }
 
 /** 同一種資產/負債底下名稱不能重複——重複的話「資產配置」那種依名稱分組/上色的畫面

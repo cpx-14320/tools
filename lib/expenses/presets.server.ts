@@ -92,6 +92,7 @@ export async function seedExpensesPresets(userId: ObjectId): Promise<void> {
       name: seed.name,
       icon: seed.icon,
       kind: "asset",
+      color: seed.color,
       order: index,
       createdAt: now,
       isPreset: true,

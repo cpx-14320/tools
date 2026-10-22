@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
-import { accountTypeNameTaken, type AccountKind, type AccountTypeDTO } from "./account-types";
+import { accountTypeNameTaken, DEFAULT_ACCOUNT_TYPE_COLOR, type AccountKind, type AccountTypeDTO } from "./account-types";
+import type { CategoryColor } from "./categories";
 
 interface AccountTypeDoc {
   _id: ObjectId;
@@ -8,6 +9,8 @@ interface AccountTypeDoc {
   name: string;
   icon: string;
   kind: AccountKind;
+  /** 顏色是後來才加的欄位，舊文件沒有，讀出來時補 DEFAULT_ACCOUNT_TYPE_COLOR。 */
+  color?: CategoryColor;
   order: number;
   createdAt: Date;
   /** 系統預設建立的類型（見 presets.server.ts）——「清除全部資料」會略過。 */
@@ -15,7 +18,14 @@ interface AccountTypeDoc {
 }
 
 function toDTO(doc: AccountTypeDoc): AccountTypeDTO {
-  return { id: doc._id.toHexString(), name: doc.name, icon: doc.icon, kind: doc.kind, isPreset: doc.isPreset };
+  return {
+    id: doc._id.toHexString(),
+    name: doc.name,
+    icon: doc.icon,
+    kind: doc.kind,
+    color: doc.color ?? DEFAULT_ACCOUNT_TYPE_COLOR,
+    isPreset: doc.isPreset,
+  };
 }
 
 function collection() {
@@ -32,6 +42,7 @@ export interface AccountTypeInput {
   name: string;
   icon: string;
   kind: AccountKind;
+  color: CategoryColor;
 }
 
 export async function createAccountType(
@@ -43,7 +54,16 @@ export async function createAccountType(
 
   const col = await collection();
   const order = await col.countDocuments({ userId, kind: input.kind });
-  const doc: AccountTypeDoc = { _id: new ObjectId(), userId, name: input.name, icon: input.icon, kind: input.kind, order, createdAt: new Date() };
+  const doc: AccountTypeDoc = {
+    _id: new ObjectId(),
+    userId,
+    name: input.name,
+    icon: input.icon,
+    kind: input.kind,
+    color: input.color,
+    order,
+    createdAt: new Date(),
+  };
   await col.insertOne(doc);
   const accountTypes = await listAccountTypes(userId);
   return { accountType: toDTO(doc), accountTypes };
@@ -54,7 +74,7 @@ export async function createAccountType(
 export async function updateAccountType(
   userId: ObjectId,
   id: string,
-  input: { name: string; icon: string },
+  input: { name: string; icon: string; color: CategoryColor },
 ): Promise<{ accountTypes: AccountTypeDTO[] } | { error: string }> {
   const col = await collection();
   const current = await col.findOne({ _id: new ObjectId(id), userId });
@@ -62,7 +82,7 @@ export async function updateAccountType(
     const existing = await listAccountTypes(userId);
     if (accountTypeNameTaken(existing, current.kind, input.name, id)) return { error: "已經有同樣名稱的類型了，換一個名稱吧。" };
   }
-  await col.updateOne({ _id: new ObjectId(id), userId }, { $set: { name: input.name, icon: input.icon } });
+  await col.updateOne({ _id: new ObjectId(id), userId }, { $set: { name: input.name, icon: input.icon, color: input.color } });
   return { accountTypes: await listAccountTypes(userId) };
 }
 

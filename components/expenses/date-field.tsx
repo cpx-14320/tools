@@ -41,16 +41,21 @@ export function DateField({
       >
         <span className={label ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}>{label || placeholder}</span>
       </button>
-      <DatePickerModal
-        open={open}
-        granularity={granularity}
-        initial={value}
-        onClose={() => setOpen(false)}
-        onSave={(v) => {
-          onChange(v);
-          setOpen(false);
-        }}
-      />
+      {/* 只在打開的時候才掛上去：DatePickerModal 的年／月／日是 useState 初始值，元件
+          一直掛著的話只會在第一次讀 initial，之後欄位的值變了（或換成編輯另一筆資料）
+          再打開看到的還是上一次留下來的年月日。 */}
+      {open && (
+        <DatePickerModal
+          open
+          granularity={granularity}
+          initial={value}
+          onClose={() => setOpen(false)}
+          onSave={(v) => {
+            onChange(v);
+            setOpen(false);
+          }}
+        />
+      )}
     </>
   );
 }
