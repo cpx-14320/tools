@@ -10,12 +10,12 @@ export const ICON_PATHS = {
   navSettings: "/expenses/nav-settings.png",
 
   // 設定頁各項功能
-  settingCategories: "/expenses/setting-categories.png",
-  settingBudgets: "/expenses/setting-budgets.png",
-  settingGoals: "/expenses/setting-goals.png",
+  settingCategories: "/expenses/setting-category.png",
+  settingBudgets: "/expenses/setting-budget.png",
+  settingGoals: "/expenses/setting-savings.png",
   settingRecurring: "/expenses/setting-recurring.png",
   settingAssets: "/expenses/setting-assets.png",
-  settingAccountTypes: "/expenses/setting-account-types.png",
+  settingAccountTypes: "/expenses/setting-account.png",
   settingExport: "/expenses/setting-export.png",
   settingImport: "/expenses/setting-import.png",
 } as const;
