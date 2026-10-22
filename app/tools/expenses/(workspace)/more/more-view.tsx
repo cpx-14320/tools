@@ -86,7 +86,9 @@ export function MoreView() {
             <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
               {group.items.map((item) => (
                 <Link key={item.href} href={item.href} className="flex items-center gap-3 px-4 py-3.5 active:bg-[#F3EFFC]">
-                  <IconImg src={item.icon} alt={item.label} size={40} />
+                  {/* 不帶底色方塊，跟搭乘車設定頁「其他小工具」那排一樣，圖直接放在白底上
+                      （圖本身是去背的）。圖檔還沒放進 public/expenses 之前這裡會是空白。 */}
+                  <IconImg src={item.icon} alt={item.label} size={40} background={false} />
                   <span className="min-w-0 flex-1">
                     <span className={`block ${text.body}`}>{item.label}</span>
                     <span className={`block ${text.muted}`}>{item.desc}</span>
