@@ -285,7 +285,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
       />
 
       <TransactionModal
-        key={txModal ? JSON.stringify(txModal) : "closed"}
+        key={txModal ? JSON.stringify(txModal) : "tx-closed"}
         open={txModal !== null}
         categories={categories}
         accounts={accounts}
@@ -301,7 +301,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
       />
 
       <TransferModal
-        key={transferModal ? transferModal.id : "closed"}
+        key={transferModal ? transferModal.id : "transfer-closed"}
         open={transferModal !== null}
         accounts={accounts}
         accountTypes={accountTypes}

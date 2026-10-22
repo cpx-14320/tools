@@ -1,6 +1,6 @@
 "use client";
 
-import { IconAvatar } from "./icon-avatar";
+import { InlineIcon } from "./icon-avatar";
 import { Field } from "./modal";
 import { text } from "./theme";
 import { ACCOUNT_ICON_OPTIONS, EXPENSE_ICON_OPTIONS, INCOME_ICON_OPTIONS, ICON_OTHER, type IconOption } from "@/lib/expenses/presets";
@@ -10,7 +10,14 @@ import { categoryFillClass, type CategoryColor, type CategoryKind } from "@/lib/
  *
  *  圖是一張張畫出來放進 public/expenses 的，使用者沒辦法「自己輸入一個路徑」（打錯就是
  *  破圖），所以這裡是封閉的清單；還沒有專屬圖的分類就選最後那張「其他」頂著，之後補了
- *  圖再回來改。清單隨著 lib/expenses/presets.ts 裡的圖變多而加長，這個元件不用改。 */
+ *  圖再回來改。清單隨著 lib/expenses/presets.ts 裡的圖變多而加長，這個元件不用改。
+ *
+ *  呈現方式比照搭乘車的常用行程彈窗（components/transit/frequent-trip-modal.tsx）：圖直接
+ *  放著，不套底色方塊、不加選取色環，選中的是「亮的那一張」、其他半透明。圖本身就是
+ *  去背的彩色插圖，再墊一層淡紫底只是讓每張圖都被一個方塊框住，反而看不出挑的是哪張。
+ *
+ *  記帳本所有會挑圖示的彈窗（新增/編輯分類、批次新增分類、帳戶類型、存錢目標）都是走
+ *  這一個元件，所以樣式只要改這裡一處。 */
 function IconPicker({ options, value, onChange }: { options: IconOption[]; value: string; onChange: (icon: string) => void }) {
   return (
     <div className="flex flex-col gap-2">
@@ -18,20 +25,18 @@ function IconPicker({ options, value, onChange }: { options: IconOption[]; value
       {/* 只排圖、不寫名稱——這裡挑的是「長什麼樣子」，不是在選一個已經定義好的分類，
           圖下面掛一行名稱反而會讓人以為選了圖就等於選了那個分類。名稱留在 aria-label
           給讀螢幕軟體用。 */}
-      <div className="grid grid-cols-6 gap-2">
+      <div className="flex flex-wrap gap-2">
         {options.map((option) => (
           <button
             key={option.path}
             type="button"
             onClick={() => onChange(option.path)}
             aria-label={`圖示 ${option.label}`}
-            className="flex items-center justify-center"
+            aria-pressed={value === option.path}
+            className={`transition-opacity ${value === option.path ? "" : "opacity-40 hover:opacity-70"}`}
           >
-            <IconAvatar
-              icon={option.path}
-              size="sm"
-              className={`bg-[#F3EFFC] ${value === option.path ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`}
-            />
+            {/* 要 block：InlineIcon 是 <span>，行內元素吃不到寬高，不加的話整排會是空的。 */}
+            <InlineIcon icon={option.path} className="block size-10" />
           </button>
         ))}
       </div>

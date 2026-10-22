@@ -145,7 +145,7 @@ export function CategoriesView() {
       <FloatingAddButton onClick={() => setBatchTarget({})} label="新增分類" />
 
       <CategoryModal
-        key={modal ? modal.id : "closed"}
+        key={modal ? modal.id : "edit-closed"}
         open={modal !== null}
         isSubcategory={!!modal?.parentId}
         parentId={modal?.parentId}
@@ -159,7 +159,7 @@ export function CategoriesView() {
       />
 
       <CategoryBatchModal
-        key={batchTarget ? (batchTarget.parentId ?? "top") : "closed"}
+        key={batchTarget ? (batchTarget.parentId ?? "top") : "batch-closed"}
         open={batchTarget !== null}
         isSubcategory={!!batchTarget?.parentId}
         parentId={batchTarget?.parentId}
