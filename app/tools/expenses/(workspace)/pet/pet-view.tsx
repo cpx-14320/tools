@@ -5,7 +5,6 @@ import { PageHeader } from "@/components/expenses/page-header";
 import { Card, CardBody } from "@/components/expenses/card";
 import { PillButton } from "@/components/expenses/button";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
-import { Modal } from "@/components/expenses/modal";
 import { ProgressBar } from "@/components/expenses/progress-bar";
 import { PetSprite, type PetMood } from "@/components/expenses/pet-sprite";
 import { PetShopModal } from "@/components/expenses/pet-shop";
@@ -39,7 +38,6 @@ export function PetView() {
   const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [ready, setReady] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
-  const [rulesOpen, setRulesOpen] = useState(false);
   const [mood, setMood] = useState<PetMood>("idle");
   const [message, setMessage] = useState<string | null>(null);
   // 「今天」掛載時算一次固定住（本地日期，不是 UTC）——伺服器時區不一定跟使用者同一個，
@@ -135,15 +133,22 @@ export function PetView() {
 
   return (
     <div>
-      {/* 說明跟賺幣規則都收在標題右邊那顆按鈕裡（點了開彈窗），頁面本身不留說明區塊。
-          這裡不用 PageHeader 的問號，因為「怎麼賺星星幣」講得比一個問號清楚，同一個位置
-          放兩顆（問號＋這顆）只是讓人不知道該點哪一個。 */}
+      {/* 說明跟賺幣規則都收在標題右邊的問號裡（PageHeader 的 help），跟記帳本其他頁一致。 */}
       <PageHeader
         title="養成"
-        actions={
-          <PillButton onClick={() => setRulesOpen(true)}>
-            <span aria-hidden>❓</span> 怎麼賺星星幣
-          </PillButton>
+        help={
+          <>
+            <p className={`${text.muted} leading-relaxed`}>好好記帳就能賺星星幣，拿去餵角色、換衣服。</p>
+            <p className={text.sectionHeading}>怎麼賺星星幣</p>
+            <ListCard>
+              <ListRow name="當天有記帳" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ {DAILY_LOG_COINS}</span>} />
+              <ListRow name="連續記帳 3／7／14／30 天" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ 10～100</span>} />
+              <ListRow name="上個月每個分類都沒超支" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ {BUDGET_KEPT_COINS}</span>} />
+            </ListCard>
+            <p className={`${text.faint} leading-relaxed`}>
+              星星幣只看記帳習慣，不看你有多少錢——淨資產只拿來算上面那個理財段位，才不會因為一筆大額支出就讓角色跟著「變窮」。
+            </p>
+          </>
         }
       />
 
@@ -249,17 +254,6 @@ export function PetView() {
         onAct={act}
       />
 
-      <Modal open={rulesOpen} onClose={() => setRulesOpen(false)} title="怎麼賺星星幣">
-        <p className={`${text.muted} leading-relaxed`}>好好記帳就能賺星星幣，拿去餵角色、換衣服。</p>
-        <ListCard>
-          <ListRow name="當天有記帳" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ {DAILY_LOG_COINS}</span>} />
-          <ListRow name="連續記帳 3／7／14／30 天" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ 10～100</span>} />
-          <ListRow name="上個月每個分類都沒超支" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ {BUDGET_KEPT_COINS}</span>} />
-        </ListCard>
-        <p className={`${text.faint} leading-relaxed`}>
-          星星幣只看記帳習慣，不看你有多少錢——淨資產只拿來算上面那個理財段位，才不會因為一筆大額支出就讓角色跟著「變窮」。
-        </p>
-      </Modal>
     </div>
   );
 }
