@@ -142,7 +142,7 @@ export function ExportView() {
       <Link href="/tools/expenses/more" className={`mb-3 inline-block font-medium ${text.muted} hover:text-[#6F5FD6]`}>
         ← 設定
       </Link>
-      <PageHeader title="匯出資料" description="消費紀錄可以選月份區間；其他三種是整份匯出，換環境或還原備份時先匯入分類跟帳戶類型，再匯入預算跟消費紀錄" />
+      <PageHeader title="匯出資料" help="消費紀錄可以選月份區間；其他三種是整份匯出，換環境或還原備份時先匯入分類跟帳戶類型，再匯入預算跟消費紀錄" />
 
       {/* 完整備份：四份檔案一次下載，省得自己切四次分頁、也不會漏掉其中一份。
           一次觸發多個下載，瀏覽器可能會問「是否允許下載多個檔案」，這是正常的。 */}

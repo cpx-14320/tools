@@ -114,7 +114,7 @@ export function GoalsView() {
     <div>
       <PageHeader
         title="存錢目標"
-        description="設定目標金額，追蹤存了多少、還差多少"
+        help="設定目標金額，追蹤存了多少、還差多少"
         actions={<SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />}
       />
 

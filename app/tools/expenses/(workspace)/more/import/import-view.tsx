@@ -259,7 +259,7 @@ export function ImportView() {
       <Link href="/tools/expenses/more" className={`mb-3 inline-block font-medium ${text.muted} hover:text-[#6F5FD6]`}>
         ← 設定
       </Link>
-      <PageHeader title="匯入資料" description="換環境或還原備份時，先匯入消費分類跟帳戶類型，再匯入預算設定跟消費紀錄" />
+      <PageHeader title="匯入資料" help="換環境或還原備份時，先匯入消費分類跟帳戶類型，再匯入預算設定跟消費紀錄" />
 
       <SegmentedControl
         className="mb-4"

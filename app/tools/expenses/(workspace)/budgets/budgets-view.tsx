@@ -105,7 +105,7 @@ export function BudgetsView() {
 
   return (
     <div>
-      <PageHeader title="預算設定" description="選月份設定各分類的預算，設定後往後的月份會沿用，要調整時再設一筆新的就好" />
+      <PageHeader title="預算設定" help="選月份設定各分類的預算，設定後往後的月份會沿用，要調整時再設一筆新的就好" />
 
       <div className="mb-4">
         <label className="flex flex-col gap-1.5">

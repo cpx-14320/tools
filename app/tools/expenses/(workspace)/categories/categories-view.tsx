@@ -139,7 +139,7 @@ export function CategoriesView() {
 
   return (
     <div>
-      <PageHeader title="收支分類" description="支出與收入的分類都在這裡；分類底下可以再開子分類，方便細看同一種消費裡哪種類型花最多" />
+      <PageHeader title="收支分類" help="支出與收入的分類都在這裡；分類底下可以再開子分類，方便細看同一種消費裡哪種類型花最多" />
 
       {/* 新增搬到右下角的浮動按鈕（跟首頁新增交易、帳戶類型頁同一招），標題列空出來。 */}
       <FloatingAddButton onClick={() => setBatchTarget({})} label="新增分類" />

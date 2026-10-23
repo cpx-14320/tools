@@ -131,7 +131,7 @@ export function RecurringView() {
 
   return (
     <div>
-      <PageHeader title="固定收支" description="每月電話費、房租這種會重複出現的收支，到期會在你下次打開記帳本時自動入帳" />
+      <PageHeader title="固定收支" help="每月電話費、房租這種會重複出現的收支，到期會在你下次打開記帳本時自動入帳" />
 
       {/* 新增搬到右下角的浮動按鈕，跟首頁新增交易、消費分類頁同一招。 */}
       <FloatingAddButton onClick={() => setModal({ mode: "create" })} label="新增固定收支" />

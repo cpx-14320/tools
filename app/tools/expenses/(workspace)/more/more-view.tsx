@@ -9,6 +9,7 @@ import { ICON_PATHS } from "@/components/expenses/icon-paths";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { PageHeader } from "@/components/expenses/page-header";
 import { text } from "@/components/expenses/theme";
+import { TOOLS_REGISTRY } from "@/lib/tools-registry";
 
 interface SettingItem {
   href: string;
@@ -52,9 +53,13 @@ const GROUPS: { heading: string; items: SettingItem[] }[] = [
 
 type ResetScope = "records" | "all";
 
+/** 這一頁所屬的工具，用來把自己從「其他小工具」的清單裡排除。 */
+const CURRENT_TOOL_ID = "expenses";
+
 export function MoreView() {
   const router = useRouter();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  const otherTools = TOOLS_REGISTRY.filter((t) => t.toolId !== CURRENT_TOOL_ID && (user?.tools ?? []).includes(t.toolId));
   const [resetScope, setResetScope] = useState<ResetScope | null>(null);
   const [result, setResult] = useState<string | null>(null);
 
@@ -101,6 +106,29 @@ export function MoreView() {
             </div>
           </div>
         ))}
+
+        {/* 其他小工具——比照搭乘車設定頁同名區塊：列出這個帳號有權限、而且不是現在這個
+            工具的項目，點了直接跳過去。清單是 TOOLS_REGISTRY（純靜態資料），不用另外打 API。 */}
+        {otherTools.length > 0 && (
+          <div>
+            <p className={`mb-2 px-1 ${text.label}`}>其他小工具</p>
+            <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
+              {otherTools.map((tool) => (
+                <Link key={tool.toolId} href={tool.href} className="flex items-center gap-3 px-4 py-3.5 active:bg-[#F3EFFC]">
+                  {tool.iconImage ? (
+                    <IconImg src={tool.iconImage} alt={tool.name} size={40} background={false} />
+                  ) : (
+                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#F3EFFC] text-lg">{tool.icon}</span>
+                  )}
+                  <span className={`min-w-0 flex-1 ${text.body}`}>{tool.name}</span>
+                  <span aria-hidden className="text-[#C7BFE6]">
+                    ›
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div>
           <p className={`mb-2 px-1 ${text.label}`}>帳號</p>

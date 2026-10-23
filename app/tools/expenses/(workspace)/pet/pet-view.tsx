@@ -135,10 +135,11 @@ export function PetView() {
 
   return (
     <div>
-      {/* 賺幣規則收在標題右邊那顆小按鈕裡（點了開彈窗），頁面本身不留說明區塊。 */}
+      {/* 說明跟賺幣規則都收在標題右邊那顆按鈕裡（點了開彈窗），頁面本身不留說明區塊。
+          這裡不用 PageHeader 的問號，因為「怎麼賺星星幣」講得比一個問號清楚，同一個位置
+          放兩顆（問號＋這顆）只是讓人不知道該點哪一個。 */}
       <PageHeader
         title="養成"
-        description="好好記帳就能賺星星幣，拿去餵角色、換衣服"
         actions={
           <PillButton onClick={() => setRulesOpen(true)}>
             <span aria-hidden>❓</span> 怎麼賺星星幣
@@ -249,6 +250,7 @@ export function PetView() {
       />
 
       <Modal open={rulesOpen} onClose={() => setRulesOpen(false)} title="怎麼賺星星幣">
+        <p className={`${text.muted} leading-relaxed`}>好好記帳就能賺星星幣，拿去餵角色、換衣服。</p>
         <ListCard>
           <ListRow name="當天有記帳" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ {DAILY_LOG_COINS}</span>} />
           <ListRow name="連續記帳 3／7／14／30 天" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ 10～100</span>} />
