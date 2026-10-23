@@ -181,22 +181,15 @@ export function ReportsView() {
     : null;
 
   const assetTypeTotals = sumByAccountType(assetAccounts, accountTypes, transactions, categories, transfers);
-  const assetTypeTotalsBefore = compareDate ? sumByAccountType(assetAccounts, accountTypes, compareTx, categories, compareTransfers) : null;
   const assetTypeSum = [...assetTypeTotals.values()].reduce((sum, v) => sum + v, 0) || 1;
   const assetTypeBreakdown = [...assetTypeTotals.entries()]
-    .map(([typeId, amount], i) => {
-      const type = accountTypeById(accountTypes, typeId);
-      // 沒出現在 before 這份 Map 裡（當時這一類還沒有帳戶）就當作從 0 開始。
-      const before = assetTypeTotalsBefore?.get(typeId) ?? (assetTypeTotalsBefore ? 0 : undefined);
-      return {
-        id: typeId,
-        name: type?.name ?? "（未知類型）",
-        amount,
-        pct: (amount / assetTypeSum) * 100,
-        colorHex: ASSET_TYPE_COLORS[i % ASSET_TYPE_COLORS.length],
-        changeAmount: before === undefined ? null : amount - before,
-      };
-    })
+    .map(([typeId, amount], i) => ({
+      id: typeId,
+      name: accountTypeById(accountTypes, typeId)?.name ?? "（未知類型）",
+      amount,
+      pct: (amount / assetTypeSum) * 100,
+      colorHex: ASSET_TYPE_COLORS[i % ASSET_TYPE_COLORS.length],
+    }))
     .sort((a, b) => b.amount - a.amount);
   const assetTypeDonutData: DonutSlice[] = assetTypeBreakdown.map((r) => ({ id: r.id, label: r.name, amount: r.amount, colorHex: r.colorHex }));
   const assetTypeColor = new Map(assetTypeBreakdown.map((r) => [r.id, r.colorHex]));
@@ -418,25 +411,17 @@ export function ReportsView() {
               ) : (
                 <div className="mt-4 flex items-center gap-5">
                   <DonutChart data={assetTypeDonutData} size={120} />
+                  {/* 圖例只有「類型名稱＋佔比」，跟支出分頁的圓餅圖例一字不差——金額跟
+                      增減都在下面那排帳戶列（還有上面的 KPI）看得到，圖例再寫一次只是
+                      把這一小塊擠滿數字。 */}
                   <div className="flex flex-1 flex-col gap-2">
                     {assetTypeBreakdown.map((row) => (
-                      <div key={row.id} className="flex items-start justify-between gap-2">
-                        <span className="flex min-w-0 items-center gap-1.5">
-                          <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: row.colorHex }} />
-                          <span className={`truncate ${text.body}`}>{row.name}</span>
+                      <div key={row.id} className="flex items-center justify-between text-xs">
+                        <span className="flex items-center gap-1.5 text-[#4A3B7C]">
+                          <span className="size-2.5 shrink-0 rounded-full" style={{ background: row.colorHex }} />
+                          {row.name}
                         </span>
-                        <span className="shrink-0 text-right">
-                          <span className="block tabular-nums text-sm font-semibold text-[#4A3B7C]">{formatCurrency(row.amount)}</span>
-                          <span className={`block tabular-nums ${text.muted}`}>
-                            {row.changeAmount !== null && row.changeAmount !== 0 && (
-                              <span className={row.changeAmount > 0 ? "mr-1 text-[#2FAE82]" : "mr-1 text-[#D1517E]"}>
-                                {row.changeAmount > 0 ? "▲" : "▼"}
-                                {formatCurrency(Math.abs(row.changeAmount))}
-                              </span>
-                            )}
-                            {row.pct.toFixed(1)}%
-                          </span>
-                        </span>
+                        <span className={`tabular-nums ${text.muted}`}>{row.pct.toFixed(1)}%</span>
                       </div>
                     ))}
                   </div>
