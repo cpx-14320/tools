@@ -197,6 +197,19 @@ export function TransactionsView() {
 
   return (
     <div>
+      <label className="mb-4 flex items-center gap-2 rounded-full border border-[#ECE4FA] bg-white px-4 py-2.5">
+        <span aria-hidden className="text-[#9C94C4]">
+          🔍
+        </span>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={`搜尋備註、分類⋯不限${filter.mode === "all" ? "" : "期間"}`}
+          className="w-full bg-transparent text-sm text-[#4A3B7C] outline-none placeholder:text-[#B3ABD4]"
+        />
+      </label>
+
       <DateFilterPicker className="mb-4" />
 
       <TransactionModal
@@ -311,19 +324,6 @@ export function TransactionsView() {
         </div>
       </div>
 
-      <label className="mb-4 flex items-center gap-2 rounded-full border border-[#ECE4FA] bg-white px-4 py-2.5">
-        <span aria-hidden className="text-[#9C94C4]">
-          🔍
-        </span>
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={`搜尋備註、分類⋯不限${filter.mode === "all" ? "" : "期間"}`}
-          className="w-full bg-transparent text-sm text-[#4A3B7C] outline-none placeholder:text-[#B3ABD4]"
-        />
-      </label>
-
       {!ready ? (
         <p className={text.faint}>載入中…</p>
       ) : (
@@ -356,7 +356,17 @@ export function TransactionsView() {
             <div className="flex flex-col gap-5">
               {[...groups.entries()].map(([date, items]) => (
                 <div key={date}>
-                  <p className={`mb-1.5 px-1 font-medium ${text.muted}`}>{date}</p>
+                  {/* 日期右邊掛當天的小計——只有「這段期間總共花多少」的話，要知道某一天花了
+                      多少還得自己把那幾列加起來。金額的正負號跟下面每一列一致。 */}
+                  <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
+                    <p className={`font-medium ${text.muted}`}>{date}</p>
+                    {/* 跟左邊的日期同一個字級字色——當天小計是這一組的標頭資訊，不是要跟
+                        下面每一列的金額搶眼睛。 */}
+                    <p className={`font-medium tabular-nums ${text.muted}`}>
+                      {kind === "收入" ? "＋" : "－"}
+                      {formatCurrency(items.reduce((sum, t) => sum + t.amount, 0))}
+                    </p>
+                  </div>
                   <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
                     {items.map((t) => {
                       const category = categoryById(categories, t.categoryId);

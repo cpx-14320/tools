@@ -138,7 +138,7 @@ export function DashboardView() {
   if (!ready) {
     return (
       <div className="flex flex-col gap-4">
-        <DateFilterPicker />
+        <DateFilterPicker compact />
         <p className={text.faint}>載入中…</p>
       </div>
     );
@@ -146,7 +146,7 @@ export function DashboardView() {
 
   return (
     <div className="flex flex-col gap-4">
-      <DateFilterPicker />
+      <DateFilterPicker compact />
       <div className="-mt-1 flex justify-end">
         <ComparePicker />
       </div>

@@ -22,16 +22,12 @@ interface SettingItem {
  *  之前那樣九個項目擠成一長條、看不出哪些是同一類的東西。 */
 const GROUPS: { heading: string; items: SettingItem[] }[] = [
   {
-    heading: "記帳設定",
+    // 這一區是「記帳之前要先定義好的東西」：分類、預算、帳戶類型。資產總表不放這裡——
+    // 設定頁只處理設定，看餘額跟淨資產是資產頁的事，底部導覽列本來就有入口。
+    heading: "分類、預算與帳戶",
     items: [
       { href: "/tools/expenses/categories", label: "收支分類", desc: "管理支出與收入的分類、子分類", icon: ICON_PATHS.settingCategories },
       { href: "/tools/expenses/budgets", label: "預算設定", desc: "依月份設定各分類的預算", icon: ICON_PATHS.settingBudgets },
-    ],
-  },
-  {
-    heading: "帳戶與資產",
-    items: [
-      { href: "/tools/expenses/assets", label: "資產總表", desc: "看淨資產、各帳戶餘額", icon: ICON_PATHS.settingAssets },
       { href: "/tools/expenses/account-types", label: "帳戶類型", desc: "自訂資產/負債的帳戶類型", icon: ICON_PATHS.settingAccountTypes },
     ],
   },
