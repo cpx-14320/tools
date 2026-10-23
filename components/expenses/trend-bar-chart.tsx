@@ -212,3 +212,86 @@ export function NetTrendChart({
     </div>
   );
 }
+
+/** 淨資產版的「比前一期增減」。不能直接用 periodDelta：那個算的是 (今-昨)/昨，昨天是
+ *  負數時分母的負號會把方向整個顛倒過來——淨資產從 -8 萬變成 -5.1 萬明明是變好，卻會
+ *  算出 -36% 而標成下降。這裡方向只看「數字有沒有變大」，百分比用絕對值當分母。 */
+function netWorthDelta(current: number, previous: number | undefined): { text: string; up: boolean } | null {
+  if (previous === undefined || previous === 0 || current === previous) return null;
+  const pct = Math.round(((current - previous) / Math.abs(previous)) * 100);
+  if (pct === 0) return null;
+  return { text: `${pct > 0 ? "▲" : "▼"}${Math.abs(pct)}%`, up: current > previous };
+}
+
+export interface AssetTrendPoint {
+  label: string;
+  /** 這一期結束那天當時的淨資產，可能是負的（負債大於資產）。 */
+  value: number;
+}
+
+/** 淨資產趨勢——跟收支的長條圖長得一樣（同樣高度、同樣的金額標示、同樣的「比前一期
+ *  增減」那一行），但不是堆疊圖，而且必須處理負值：淨資產是「某一刻的存量」，負債比
+ *  資產多的時候就是負的，從 0 往上長的長條畫不出來。
+ *
+ *  做法是把零線放在「正負兩邊各自需要多少空間」的比例位置上：全部都是正的時候零線就在
+ *  最底下，長得跟收支那張圖一模一樣；出現負值才會把零線往上抬，負的長條從零線往下長。 */
+export function AssetTrendChart({ points, formatValue }: { points: AssetTrendPoint[]; formatValue: (n: number) => string }) {
+  const maxValue = Math.max(0, ...points.map((p) => p.value));
+  const minValue = Math.min(0, ...points.map((p) => p.value));
+  const span = maxValue - minValue || 1;
+  const positiveArea = Math.round((maxValue / span) * BAR_AREA);
+  const negativeArea = BAR_AREA - positiveArea;
+
+  return (
+    <div>
+      <div className="flex gap-2" style={{ height: CHART_HEIGHT }}>
+        {points.map((p) => {
+          const negative = p.value < 0;
+          const height = Math.max(2, Math.round((Math.abs(p.value) / span) * BAR_AREA));
+          return (
+            <div key={p.label} className="flex flex-1 flex-col" style={{ height: CHART_HEIGHT }} title={`${p.label}：${formatValue(p.value)}`}>
+              {/* 上半部（零線以上）：金額標示貼著長條頂端，長條本身從零線往上長。 */}
+              <div className="flex w-full flex-col justify-end" style={{ height: VALUE_LABEL_HEIGHT + positiveArea }}>
+                {!negative && (
+                  <>
+                    <span className="mb-0.5 w-full truncate text-center text-[10px] font-medium tabular-nums text-[#4A3B7C]">
+                      {compactAmount(p.value)}
+                    </span>
+                    <div className="w-full rounded-t-md" style={{ height, background: "#6F5FD6" }} />
+                  </>
+                )}
+              </div>
+              {/* 下半部（零線以下）：負的長條往下長，金額標在長條底下。 */}
+              <div className="flex w-full flex-col justify-start" style={{ height: negativeArea }}>
+                {negative && (
+                  <>
+                    <div className="w-full rounded-b-md" style={{ height, background: NEGATIVE }} />
+                    <span className="mt-0.5 w-full truncate text-center text-[10px] font-medium tabular-nums" style={{ color: NEGATIVE }}>
+                      －{compactAmount(Math.abs(p.value))}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-2 flex gap-2">
+        {points.map((p, i) => {
+          // 淨資產變多是好事（▲ 綠），跟支出趨勢的紅綠相反。
+          const delta = netWorthDelta(p.value, points[i - 1]?.value);
+          return (
+            <div key={p.label} className="flex-1 overflow-hidden text-center">
+              <span className="block truncate text-[10px] text-[#9C94C4]">{p.label}</span>
+              {delta && (
+                <span className="block truncate text-[10px] font-medium tabular-nums" style={{ color: delta.up ? POSITIVE : NEGATIVE }}>
+                  {delta.text}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

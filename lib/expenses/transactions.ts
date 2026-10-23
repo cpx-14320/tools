@@ -263,6 +263,16 @@ function trendPeriodBounds(granularity: TrendGranularity, offset: number, today:
   return { start: `${year}-01-01`, end: `${year}-12-31`, label: `${year}` };
 }
 
+/** 近 periods 期（依 granularity 切）各自的起訖與標籤，最後一筆是「現在這一期」。
+ *  收支趨勢跟資產趨勢共用同一組期間，兩張圖的 X 軸才會對得起來。 */
+export function trendPeriods(granularity: TrendGranularity, periods: number, today = new Date()): { start: string; end: string; label: string }[] {
+  const list: { start: string; end: string; label: string }[] = [];
+  for (let offset = -(periods - 1); offset <= 0; offset++) {
+    list.push(trendPeriodBounds(granularity, offset, today));
+  }
+  return list;
+}
+
 /** 近 periods 期（依 granularity 切）的收支趨勢，每一期再依頂層分類拆開——畫堆疊長條圖用。
  *  只看指定 kind（支出或收入）的交易；「淨額」趨勢不是這個函式的事，呼叫端自己各呼叫一次
  *  支出、一次收入，用兩邊的 total 相減即可，不需要這裡再多一種「淨額模式」。 */
@@ -273,10 +283,8 @@ export function trendByPeriod(
   granularity: TrendGranularity,
   periods: number,
 ): TrendPoint[] {
-  const today = new Date();
   const points: TrendPoint[] = [];
-  for (let offset = -(periods - 1); offset <= 0; offset++) {
-    const { start, end, label } = trendPeriodBounds(granularity, offset, today);
+  for (const { start, end, label } of trendPeriods(granularity, periods)) {
     const rangeTx = transactionsInDateRange(transactions, { start, end }).filter(
       (t) => categoryById(categories, t.categoryId)?.kind === kind,
     );

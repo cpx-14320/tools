@@ -11,11 +11,11 @@ import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { text } from "@/components/expenses/theme";
 import { DonutChart, type DonutSlice } from "@/components/expenses/donut-chart";
-import { TrendBarChart, NetTrendChart, type TrendSeries } from "@/components/expenses/trend-bar-chart";
+import { TrendBarChart, NetTrendChart, AssetTrendChart, type TrendSeries } from "@/components/expenses/trend-bar-chart";
 import { KpiCard, DeltaText, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { AssetComparePicker } from "@/components/expenses/asset-compare-picker";
-import { accountsByKind, balanceDelta, netWorth, sumByAccountType, totalByKind, type AccountDTO } from "@/lib/expenses/accounts";
-import { accountTypeById, type AccountTypeDTO } from "@/lib/expenses/account-types";
+import { accountBalance, accountsByKind, balanceDelta, netWorth, netWorthAt, sumByAccountType, totalByKind, type AccountDTO } from "@/lib/expenses/accounts";
+import { accountTypeById, accountTypeColorClass, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
 import { assetCompareDate, defaultAssetCompareSetting, type AssetCompareSetting } from "@/lib/expenses/asset-compare";
 import { categoryById, categoryColorHex, categoryColorClass, type CategoryDTO } from "@/lib/expenses/categories";
@@ -25,6 +25,7 @@ import {
   categoryBreakdown,
   incomeBreakdown,
   trendByPeriod,
+  trendPeriods,
   subcategoryBreakdown,
   transactionsInDateRange,
   type TransactionDTO,
@@ -198,6 +199,37 @@ export function ReportsView() {
     })
     .sort((a, b) => b.amount - a.amount);
   const assetTypeDonutData: DonutSlice[] = assetTypeBreakdown.map((r) => ({ id: r.id, label: r.name, amount: r.amount, colorHex: r.colorHex }));
+  const assetTypeColor = new Map(assetTypeBreakdown.map((r) => [r.id, r.colorHex]));
+
+  // 圓餅是按「類型」分，下面這份清單是按「帳戶」列——跟支出分頁「圓餅看大分類、清單看
+  // 細項」同一個層次關係。顏色沿用該帳戶所屬類型在圓餅上的顏色，兩邊對得起來。
+  const assetAccountRows = assetAccounts
+    .map((a) => {
+      const balance = accountBalance(a, accountTypes, transactions, categories, transfers);
+      return {
+        id: a.id,
+        name: a.name,
+        icon: accountTypeById(accountTypes, a.accountTypeId)?.icon ?? "❓",
+        iconClassName: accountTypeColorClass(accountTypes, a.accountTypeId),
+        amount: balance,
+        pct: (balance / assetTypeSum) * 100,
+        colorHex: assetTypeColor.get(a.accountTypeId) ?? OTHER_COLOR,
+      };
+    })
+    .sort((a, b) => b.amount - a.amount);
+
+  // 淨資產趨勢：每一期取「那一期最後一天當時」的淨資產，期間切法跟收支趨勢共用同一個
+  // trendPeriods，兩張圖的 X 軸才一致。
+  const assetTrendPoints = useMemo(
+    () =>
+      kind === "資產"
+        ? trendPeriods(granularity, periods).map((p) => ({
+            label: p.label,
+            value: netWorthAt(accounts, accountTypes, transactions, categories, transfers, p.end),
+          }))
+        : [],
+    [kind, granularity, periods, accounts, accountTypes, transactions, categories, transfers],
+  );
 
   const range = dateFilterRange(filter);
   const deltaSuffix = previousPeriodSuffix(filter.mode);
@@ -410,6 +442,55 @@ export function ReportsView() {
                   </div>
                 </div>
               )}
+
+              {/* 圓餅下面列出每個資產帳戶，樣式跟支出分頁的分類清單一樣（ListProgressRow），
+                  差別只在這裡的「佔比」是佔總資產、顏色跟著它所屬的類型。 */}
+              {assetAccountRows.length > 0 && (
+                <div className="mt-5 flex flex-col gap-3 border-t border-[#F2EEFA] pt-4">
+                  {assetAccountRows.map((row) => (
+                    // ListProgressRow 只回傳「圖示＋文字區塊」的片段，外層容器要自己包成
+                    // 一列（跟下面支出分頁的分類列同一種寫法），不然會被攤成直的一條。
+                    <div key={row.id} className="flex w-full items-center gap-3">
+                      <ListProgressRow
+                        icon={row.icon}
+                        iconClassName={row.iconClassName}
+                        name={row.name}
+                        amount={formatCurrency(row.amount)}
+                        pct={row.pct}
+                        pctLabel={`${row.pct.toFixed(1)}%`}
+                        barColorHex={row.colorHex}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardBody>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className={text.sectionHeading}>趨勢</p>
+                <SegmentedControl value={granularity} onChange={changeGranularity} options={GRANULARITY_OPTIONS} />
+              </div>
+              <div className="mt-3 flex gap-1.5">
+                {PERIOD_OPTIONS_BY_GRANULARITY[granularity].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => changePeriods(n)}
+                    className={`rounded-full px-3 py-1 text-xs font-medium ${periods === n ? "bg-[#6F5FD6] text-white" : "bg-[#F3EFFC] text-[#9C94C4]"}`}
+                  >
+                    近 {n}
+                    {GRANULARITY_UNIT[granularity]}
+                  </button>
+                ))}
+              </div>
+              {/* 每一根是「那一期最後一天當時的淨資產」，不是那一期的收支加總——這張圖
+                  回答的是「我的錢有沒有變多」，不是「這個月花了多少」。 */}
+              <div className="mt-5">
+                <AssetTrendChart points={assetTrendPoints} formatValue={formatCurrency} />
+              </div>
             </CardBody>
           </Card>
         </>

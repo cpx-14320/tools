@@ -184,3 +184,22 @@ export function sumByAccountType(
   }
   return totals;
 }
+
+/** 某一天當時的淨資產。餘額函式本來就是「傳進去哪些交易／轉帳就算哪些」，篩掉那天之後
+ *  的資料再算一次就是當時的數字（見 lib/expenses/asset-compare.ts 的說明）。 */
+export function netWorthAt(
+  accounts: AccountDTO[],
+  types: AccountTypeDTO[],
+  transactions: TransactionDTO[],
+  categories: CategoryDTO[],
+  transfers: TransferDTO[],
+  date: string,
+): number {
+  return netWorth(
+    accounts,
+    types,
+    transactions.filter((t) => t.date <= date),
+    categories,
+    transfers.filter((t) => t.date <= date),
+  );
+}
