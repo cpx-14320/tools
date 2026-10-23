@@ -28,7 +28,7 @@ import {
 import { netWorth, type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
-import { budgetPace, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
+import { budgetPace, monthDaysLeft, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
 import { formatCurrency } from "@/lib/format";
 
 // 首頁只做「摘要」，不是報表頁的另一份拷貝——這幾張卡片的清單固定只顯示前 5 筆，
@@ -124,6 +124,7 @@ export function DashboardView() {
   const budget = budgetSummary(budgetMonthExpenseTx, categories, withLegacyCategoryBudgets(budgetRules, categories), budgetYearMonth);
   const isCurrentMonth = budgetYearMonth === referenceYearMonth(defaultDateFilter());
   const budgetTotalPace = budgetPace(budget.totalSpent, budget.totalBudget, budgetYearMonth, todayISO);
+  const budgetDaysLeft = monthDaysLeft(budgetYearMonth, todayISO);
 
   // 固定收支本月已經自動入帳的金額——有 sourceRuleId 就代表這筆是規則產生的。只看交易
   // 紀錄就算得出來，不用再去拉一次規則清單。
@@ -223,12 +224,24 @@ export function DashboardView() {
         ) : (
           <ListCard>
             <div className="px-4 py-3.5">
-              <div className="flex items-end justify-between">
+              <div className="flex items-end justify-between gap-2">
                 <p className={text.statValue}>
                   {formatCurrency(budget.totalSpent)}
                   <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {formatCurrency(budget.totalBudget)}</span>
                 </p>
-                <span className={`text-xs font-semibold ${budget.pct > 100 ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>{budget.pct}%</span>
+                {/* 超支與否用小標籤講清楚，旁邊再附「這個月還剩幾天」——只看百分比的話，
+                    不知道是「才過幾天就用掉八成」還是「月底了剛好用到八成」。 */}
+                <span className="flex shrink-0 items-center gap-1.5">
+                  {budget.totalSpent > budget.totalBudget && (
+                    <span className="rounded-full bg-[#FDEEF0] px-2 py-0.5 text-[11px] font-semibold text-[#D1517E]">已超支</span>
+                  )}
+                  {budgetDaysLeft > 0 && (
+                    <span className="rounded-full bg-[#F3EFFC] px-2 py-0.5 text-[11px] font-medium tabular-nums text-[#6F5FD6]">
+                      剩 {budgetDaysLeft} 天
+                    </span>
+                  )}
+                  <span className={`text-xs font-semibold ${budget.pct > 100 ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>{budget.pct}%</span>
+                </span>
               </div>
               {/* 還沒超支、但照目前的速度月底會超支時才提醒（見 lib/expenses/budgets.ts）。 */}
               {budgetTotalPace && (
@@ -340,7 +353,9 @@ export function DashboardView() {
               // 子分類沿用大分類的圖示與顏色：「下午茶」顯示的是「餐飲」那顆。
               const cat = displayCategoryOf(categories, t.categoryId);
               return (
-                <div key={t.id} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
+                // 整列都可以點，跟右上角的「查看全部」去同一頁——列出來的東西看起來就像
+                // 可以點進去看細節，點了沒反應只會讓人以為壞掉。
+                <Link key={t.id} href="/tools/expenses/transactions" className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
                   <TransactionRowLabel
                     icon={cat?.icon ?? "🏷️"}
                     iconClassName={cat ? categoryColorClass[cat.color] : undefined}
@@ -348,7 +363,7 @@ export function DashboardView() {
                     subtitle={t.date}
                   />
                   <span className="shrink-0 tabular-nums font-medium text-[#4A3B7C]">－{formatCurrency(t.amount)}</span>
-                </div>
+                </Link>
               );
             })}
           </ListCard>

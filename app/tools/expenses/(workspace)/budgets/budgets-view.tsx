@@ -8,7 +8,7 @@ import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { BudgetModal } from "@/components/expenses/budget-modal";
 import { text } from "@/components/expenses/theme";
-import { budgetForMonth, budgetPace, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
+import { budgetForMonth, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
 import {
   topLevelCategories,
   topLevelCategoryId,
@@ -35,11 +35,6 @@ export function BudgetsView() {
   const [ready, setReady] = useState(false);
   const [yearMonth, setYearMonth] = useState(currentYearMonth());
   const [editing, setEditing] = useState<CategoryDTO | null>(null);
-  // 「今天」掛載時算一次固定住——render 當中讀時鐘是不純的。
-  const [todayISO] = useState(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  });
 
   useEffect(() => {
     let cancelled = false;
@@ -159,9 +154,8 @@ export function BudgetsView() {
             }
             const pct = Math.round((spent / amount) * 100);
             const over = spent > amount;
-            // 還沒超支、但照目前的速度月底會超支時才提醒——已經超支的上面那行就是紅字了，
-            // 速度正常的話多一行預估只是噪音。
-            const pace = budgetPace(spent, amount, yearMonth, todayISO);
+            // 這一頁是「設定預算」，不是看進度的地方——花費速度的提醒只放在首頁的本月預算，
+            // 這裡每一列都掛一行紅字只會讓設定清單變得很吵。
             return (
               <button key={c.id} type="button" onClick={() => setEditing(c)} className="w-full px-4 py-3.5 text-left">
                 <div className="flex w-full items-center gap-3">
@@ -179,11 +173,6 @@ export function BudgetsView() {
                     barColorClass={over ? "bg-[#D1517E]" : categoryFillClass[c.color]}
                   />
                 </div>
-                {pace && (
-                  <p className="mt-1.5 pl-[52px] text-xs text-[#D1517E]">
-                    照這個速度，月底大約會花到 {formatCurrency(pace.projected)}（超出 {formatCurrency(pace.projectedOver)}）・還剩 {pace.daysLeft} 天
-                  </p>
-                )}
               </button>
             );
           })}

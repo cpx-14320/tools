@@ -83,6 +83,17 @@ export function monthElapsedRatio(yearMonth: string, today: string): number {
   return dayOfMonth / daysInMonth;
 }
 
+/** 這個月還剩幾天（含今天）。看的是過去的月份回傳 0（沒有「還剩」可言），未來的月份
+ *  回傳整個月的天數。 */
+export function monthDaysLeft(yearMonth: string, today: string): number {
+  const [year, month] = yearMonth.split("-").map(Number);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const todayYearMonth = today.slice(0, 7);
+  if (yearMonth < todayYearMonth) return 0;
+  if (yearMonth > todayYearMonth) return daysInMonth;
+  return daysInMonth - Number(today.slice(8, 10)) + 1;
+}
+
 export interface BudgetPace {
   /** 照目前的速度，整個月大概會花到多少。 */
   projected: number;
@@ -105,7 +116,5 @@ export function budgetPace(spent: number, budget: number, yearMonth: string, tod
   if (elapsed < 0.15 || elapsed >= 1) return null;
   const projected = Math.round(spent / elapsed);
   if (projected <= budget) return null;
-  const [year, month] = yearMonth.split("-").map(Number);
-  const daysInMonth = new Date(year, month, 0).getDate();
-  return { projected, projectedOver: projected - budget, daysLeft: daysInMonth - Number(today.slice(8, 10)) + 1 };
+  return { projected, projectedOver: projected - budget, daysLeft: monthDaysLeft(yearMonth, today) };
 }
