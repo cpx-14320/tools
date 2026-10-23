@@ -14,7 +14,7 @@ import { text } from "@/components/expenses/theme";
 import { compareDateFilter, dateFilterRange, defaultDateFilter, referenceYearMonth } from "@/lib/expenses/date-filter";
 import { ComparePicker } from "@/components/expenses/compare-picker";
 import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
-import { categoryColorClass, categoryFillClass, displayCategoryOf, topLevelCategories, type CategoryDTO } from "@/lib/expenses/categories";
+import { categoryColorClass, categoryFillClass, categoryPath, displayCategoryOf, topLevelCategories, type CategoryDTO } from "@/lib/expenses/categories";
 import {
   totalsForRange,
   rangeDelta,
@@ -30,6 +30,13 @@ import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
 import { budgetPace, monthDaysLeft, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
 import { formatCurrency } from "@/lib/format";
+
+/** 把 `YYYY-MM-DD` 往前／往後推幾天。用本地時區的 Date 做日曆運算，不碰 UTC。 */
+function shiftDays(date: string, delta: number): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const shifted = new Date(y, m - 1, d + delta);
+  return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, "0")}-${String(shifted.getDate()).padStart(2, "0")}`;
+}
 
 // 首頁只做「摘要」，不是報表頁的另一份拷貝——這幾張卡片的清單固定只顯示前 5 筆，
 // 分類一多也不會把首頁拉得又臭又長，完整清單一律用「查看完整報表」導去報表頁看。
@@ -110,7 +117,16 @@ export function DashboardView() {
   const expenseDelta = rangeDelta((r) => totalsForRange(transactions, categories, r).totalExpense, filter, hasPriorData, baseline);
   const balanceDelta = rangeDelta((r) => totalsForRange(transactions, categories, r).balance, filter, hasPriorData, baseline);
   const incomeRows = incomeBreakdown(incomeTx, categories);
-  const recent = [...expenseTx].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 5);
+  // 「最近消費」只看近 7 天，而且是以「這段期間裡最新的一筆」為基準往回推——用今天當
+  // 基準的話，翻到過去的月份時這一區會整個空掉。依日期分組（新的在上面），跟消費紀錄
+  // 頁同一種版面。
+  const sortedExpenses = [...expenseTx].sort((a, b) => (a.date < b.date ? 1 : -1));
+  const recentCutoff = sortedExpenses.length > 0 ? shiftDays(sortedExpenses[0].date, -6) : "";
+  const recentGroups = [...
+    sortedExpenses
+      .filter((t) => t.date >= recentCutoff)
+      .reduce((map, t) => map.set(t.date, [...(map.get(t.date) ?? []), t]), new Map<string, TransactionDTO[]>())
+  ];
 
   // 預算本來就是以「月」為單位，所以不直接吃篩選器的區間（可能是一天、一年或自訂區間），
   // 而是取篩選器的參考月份：篩到 2026-08 就看 8 月的預算，切回本月就看本月。這樣卡片標題、
@@ -134,7 +150,6 @@ export function DashboardView() {
     .map((category) => ({ category, spent: spentById.get(category.id) ?? 0, budget: budgetedById.get(category.id) ?? null }))
     .filter((row) => row.spent > 0 || row.budget !== null)
     .sort((a, b) => b.spent - a.spent);
-  const hasUnbudgetedSpend = expenseRows.some((row) => !row.budget && row.spent > 0);
 
   // 固定收支本月已經自動入帳的金額——有 sourceRuleId 就代表這筆是規則產生的。只看交易
   // 紀錄就算得出來，不用再去拉一次規則清單。
@@ -224,7 +239,7 @@ export function DashboardView() {
       {/* 小標在白框外面、清單在框裡——跟資產總表的「資產」區塊同一種結構。 */}
       <div>
         <div className="mb-2 flex items-center justify-between px-1">
-          <p className={text.sectionHeading}>{isCurrentMonth ? "本月支出" : `${budgetYearMonth} 支出`}</p>
+          <p className={text.sectionHeading}>{isCurrentMonth ? "本月預算支出" : `${budgetYearMonth} 預算支出`}</p>
           <Link href={`/tools/expenses/transactions?${budgetDetailQuery}`} className="text-xs font-medium text-[#6F5FD6]">
             查看全部
           </Link>
@@ -255,9 +270,6 @@ export function DashboardView() {
                   <span className={`text-xs font-semibold ${budget.pct > 100 ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>{budget.pct}%</span>
                 </span>
               </div>
-              {/* 上面那兩個數字只算「有編預算的分類」，有分類還沒編預算時要講一聲，不然
-                  跟上面 KPI 的本月支出對不起來，會以為其中一個算錯。全部都編了就不用講。 */}
-              {hasUnbudgetedSpend && <p className={`mt-0.5 ${text.muted}`}>只計有編預算的分類</p>}
               {/* 還沒超支、但照目前的速度月底會超支時才提醒（見 lib/expenses/budgets.ts）。 */}
               {budgetTotalPace && (
                 <p className="mt-1 text-xs text-[#D1517E]">
@@ -344,30 +356,41 @@ export function DashboardView() {
             查看全部
           </Link>
         </div>
-        {recent.length === 0 ? (
+        {recentGroups.length === 0 ? (
           <p className={`px-1 ${text.muted}`}>這段期間還沒有消費紀錄。</p>
         ) : (
-          // 跟「查看全部」進去的明細列同一種長相（左圖右文），差別只在首頁這裡每一列
-          // 自己帶日期，不照日期分組——首頁只有五筆，為了五筆拆成好幾個日期區塊反而更零碎。
-          <ListCard>
-            {recent.map((t) => {
-              // 子分類沿用大分類的圖示與顏色：「下午茶」顯示的是「餐飲」那顆。
-              const cat = displayCategoryOf(categories, t.categoryId);
-              return (
-                // 整列都可以點，跟右上角的「查看全部」去同一頁——列出來的東西看起來就像
-                // 可以點進去看細節，點了沒反應只會讓人以為壞掉。
-                <Link key={t.id} href="/tools/expenses/transactions" className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
-                  <TransactionRowLabel
-                    icon={cat?.icon ?? "🏷️"}
-                    iconClassName={cat ? categoryColorClass[cat.color] : undefined}
-                    title={transactionDisplayName(t, categories)}
-                    subtitle={t.date}
-                  />
-                  <span className="shrink-0 tabular-nums font-medium text-[#4A3B7C]">－{formatCurrency(t.amount)}</span>
-                </Link>
-              );
-            })}
-          </ListCard>
+          // 版面跟「查看全部」進去的消費紀錄頁一樣：日期當小標、右邊掛當天小計，底下才是
+          // 那一天的明細（標題是備註/分類、副標是分類路徑）。
+          <div className="flex flex-col gap-4">
+            {recentGroups.map(([date, items]) => (
+              <div key={date}>
+                <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
+                  <p className={`font-medium ${text.muted}`}>{date}</p>
+                  <p className={`font-medium tabular-nums ${text.muted}`}>
+                    －{formatCurrency(items.reduce((sum, t) => sum + t.amount, 0))}
+                  </p>
+                </div>
+                <ListCard>
+                  {items.map((t) => {
+                    // 子分類沿用大分類的圖示與顏色：「下午茶」顯示的是「餐飲」那顆。
+                    const cat = displayCategoryOf(categories, t.categoryId);
+                    return (
+                      // 整列都可以點，跟右上角的「查看全部」去同一頁。
+                      <Link key={t.id} href="/tools/expenses/transactions" className="flex w-full items-center gap-3 px-4 py-3 text-left">
+                        <TransactionRowLabel
+                          icon={cat?.icon ?? "🏷️"}
+                          iconClassName={cat ? categoryColorClass[cat.color] : undefined}
+                          title={transactionDisplayName(t, categories)}
+                          subtitle={categoryPath(categories, t.categoryId)}
+                        />
+                        <span className="shrink-0 tabular-nums font-semibold text-[#4A3B7C]">－{formatCurrency(t.amount)}</span>
+                      </Link>
+                    );
+                  })}
+                </ListCard>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
