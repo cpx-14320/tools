@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
-import { ListCard } from "@/components/expenses/list-row";
+import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { Carousel } from "@/components/expenses/carousel";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
@@ -14,7 +14,7 @@ import { text } from "@/components/expenses/theme";
 import { compareDateFilter, dateFilterRange, defaultDateFilter, referenceYearMonth } from "@/lib/expenses/date-filter";
 import { ComparePicker } from "@/components/expenses/compare-picker";
 import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
-import { categoryColorClass, categoryFillClass, displayCategoryOf, type CategoryDTO } from "@/lib/expenses/categories";
+import { categoryColorClass, categoryFillClass, displayCategoryOf, topLevelCategories, type CategoryDTO } from "@/lib/expenses/categories";
 import {
   totalsForRange,
   rangeDelta,
@@ -109,7 +109,6 @@ export function DashboardView() {
   const incomeDelta = rangeDelta((r) => totalsForRange(transactions, categories, r).totalIncome, filter, hasPriorData, baseline);
   const expenseDelta = rangeDelta((r) => totalsForRange(transactions, categories, r).totalExpense, filter, hasPriorData, baseline);
   const balanceDelta = rangeDelta((r) => totalsForRange(transactions, categories, r).balance, filter, hasPriorData, baseline);
-  const breakdown = categoryBreakdown(expenseTx, categories);
   const incomeRows = incomeBreakdown(incomeTx, categories);
   const recent = [...expenseTx].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 5);
 
@@ -125,6 +124,17 @@ export function DashboardView() {
   const isCurrentMonth = budgetYearMonth === referenceYearMonth(defaultDateFilter());
   const budgetTotalPace = budgetPace(budget.totalSpent, budget.totalBudget, budgetYearMonth, todayISO);
   const budgetDaysLeft = monthDaysLeft(budgetYearMonth, todayISO);
+
+  // 首頁的支出清單把「有編預算」跟「沒編預算」的分類列在一起（跟預算設定頁同一種列法），
+  // 所以不需要再另外放一個「消費分類佔比」區塊——那塊列的分類這裡全都有，而且還多了
+  // 預算狀態。沒編預算的分類只顯示花了多少，不畫進度條（沒有分母可以畫）。
+  const budgetedById = new Map(budget.rows.map((r) => [r.category.id, r]));
+  const spentById = new Map(categoryBreakdown(budgetMonthExpenseTx, categories).map((r) => [r.category.id, r.amount]));
+  const expenseRows = topLevelCategories(categories, "支出")
+    .map((category) => ({ category, spent: spentById.get(category.id) ?? 0, budget: budgetedById.get(category.id) ?? null }))
+    .filter((row) => row.spent > 0 || row.budget !== null)
+    .sort((a, b) => b.spent - a.spent);
+  const hasUnbudgetedSpend = expenseRows.some((row) => !row.budget && row.spent > 0);
 
   // 固定收支本月已經自動入帳的金額——有 sourceRuleId 就代表這筆是規則產生的。只看交易
   // 紀錄就算得出來，不用再去拉一次規則清單。
@@ -214,13 +224,13 @@ export function DashboardView() {
       {/* 小標在白框外面、清單在框裡——跟資產總表的「資產」區塊同一種結構。 */}
       <div>
         <div className="mb-2 flex items-center justify-between px-1">
-          <p className={text.sectionHeading}>{isCurrentMonth ? "本月預算" : `${budgetYearMonth} 預算`}</p>
+          <p className={text.sectionHeading}>{isCurrentMonth ? "本月支出" : `${budgetYearMonth} 支出`}</p>
           <Link href={`/tools/expenses/transactions?${budgetDetailQuery}`} className="text-xs font-medium text-[#6F5FD6]">
             查看全部
           </Link>
         </div>
-        {budget.rows.length === 0 ? (
-          <p className={`px-1 ${text.muted}`}>還沒有分類編預算，到「設定 › 預算設定」可以按月份設定。</p>
+        {expenseRows.length === 0 ? (
+          <p className={`px-1 ${text.muted}`}>這個月還沒有支出紀錄。</p>
         ) : (
           <ListCard>
             <div className="px-4 py-3.5">
@@ -245,6 +255,9 @@ export function DashboardView() {
                   <span className={`text-xs font-semibold ${budget.pct > 100 ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>{budget.pct}%</span>
                 </span>
               </div>
+              {/* 上面那兩個數字只算「有編預算的分類」，有分類還沒編預算時要講一聲，不然
+                  跟上面 KPI 的本月支出對不起來，會以為其中一個算錯。全部都編了就不用講。 */}
+              {hasUnbudgetedSpend && <p className={`mt-0.5 ${text.muted}`}>只計有編預算的分類</p>}
               {/* 還沒超支、但照目前的速度月底會超支時才提醒（見 lib/expenses/budgets.ts）。 */}
               {budgetTotalPace && (
                 <p className="mt-1 text-xs text-[#D1517E]">
@@ -253,56 +266,42 @@ export function DashboardView() {
                 </p>
               )}
             </div>
-            {/* 每一列都可以點，直接跳到紀錄頁、而且已經幫你篩好那個分類的明細。 */}
-            {budget.rows.slice(0, SUMMARY_LIMIT).map((row) => (
-              <Link
-                key={row.category.id}
-                href={`/tools/expenses/transactions?${budgetDetailQuery}&categoryId=${row.category.id}`}
-                className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
-              >
-                <ListProgressRow
+            {/* 每一列都可以點，直接跳到紀錄頁、而且已經幫你篩好那個分類的明細。
+                有編預算的畫「花了多少／預算多少」的進度條，沒編預算的只報金額——沒有
+                分母就沒有進度可言，硬畫一條空的反而像是用了 0%。 */}
+            {expenseRows.slice(0, SUMMARY_LIMIT).map((row) =>
+              row.budget ? (
+                <Link
+                  key={row.category.id}
+                  href={`/tools/expenses/transactions?${budgetDetailQuery}&categoryId=${row.category.id}`}
+                  className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+                >
+                  <ListProgressRow
+                    icon={row.category.icon}
+                    iconClassName={categoryColorClass[row.category.color]}
+                    name={row.category.name}
+                    amount={`${formatCurrency(row.budget.spent)} / ${formatCurrency(row.budget.budgetAmount)}`}
+                    pct={row.budget.pct}
+                    pctLabel={<span className={row.budget.pct > 100 ? "text-[#D1517E]" : undefined}>{row.budget.pct}%</span>}
+                    barColorClass={row.budget.pct > 100 ? "bg-[#D1517E]" : categoryFillClass[row.category.color]}
+                  />
+                </Link>
+              ) : (
+                <ListRow
+                  key={row.category.id}
+                  href={`/tools/expenses/transactions?${budgetDetailQuery}&categoryId=${row.category.id}`}
                   icon={row.category.icon}
                   iconClassName={categoryColorClass[row.category.color]}
                   name={row.category.name}
-                  amount={`${formatCurrency(row.spent)} / ${formatCurrency(row.budgetAmount)}`}
-                  pct={row.pct}
-                  pctLabel={<span className={row.pct > 100 ? "text-[#D1517E]" : undefined}>{row.pct}%</span>}
-                  barColorClass={row.pct > 100 ? "bg-[#D1517E]" : categoryFillClass[row.category.color]}
+                  right={
+                    <span className="text-sm">
+                      <span className="tabular-nums font-semibold text-[#4A3B7C]">{formatCurrency(row.spent)}</span>
+                      <span className={`ml-1.5 ${text.muted}`}>未編預算</span>
+                    </span>
+                  }
                 />
-              </Link>
-            ))}
-          </ListCard>
-        )}
-      </div>
-
-      <div>
-        <div className="mb-2 flex items-center justify-between px-1">
-          <p className={text.sectionHeading}>消費分類佔比</p>
-          <Link href="/tools/expenses/transactions?kind=支出" className="text-xs font-medium text-[#6F5FD6]">
-            查看全部
-          </Link>
-        </div>
-        {breakdown.length === 0 ? (
-          <p className={`px-1 ${text.muted}`}>這段期間還沒有消費紀錄。</p>
-        ) : (
-          // 點某一類（例如「居家」）直接跳到紀錄頁、而且已經篩好只剩那一類的明細。
-          <ListCard>
-            {breakdown.slice(0, SUMMARY_LIMIT).map((row) => (
-              <Link
-                key={row.category.id}
-                href={`/tools/expenses/transactions?kind=支出&categoryId=${row.category.id}`}
-                className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
-              >
-                <ListProgressRow
-                  icon={row.category.icon}
-                  iconClassName={categoryColorClass[row.category.color]}
-                  name={row.category.name}
-                  amount={formatCurrency(row.amount)}
-                  pct={row.pct}
-                  barColorClass={categoryFillClass[row.category.color]}
-                />
-              </Link>
-            ))}
+              ),
+            )}
           </ListCard>
         )}
       </div>
