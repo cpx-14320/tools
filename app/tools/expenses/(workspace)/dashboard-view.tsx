@@ -224,7 +224,9 @@ export function DashboardView() {
         ) : (
           <ListCard>
             <div className="px-4 py-3.5">
-              <div className="flex items-end justify-between gap-2">
+              {/* items-center：金額、剩餘天數、百分比三個字級不一樣（lg／11px／xs），
+                  靠底部對齊的話小字會沉下去，看起來沒對齊。 */}
+              <div className="flex items-center justify-between gap-2">
                 <p className={text.statValue}>
                   {formatCurrency(budget.totalSpent)}
                   <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {formatCurrency(budget.totalBudget)}</span>
