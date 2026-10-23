@@ -86,6 +86,19 @@ export function TransferModal({
   const amountNum = evaluateExpr(expr);
   const canSave = !!fromAccountId && !!toAccountId && fromAccountId !== toAccountId && Number.isFinite(amountNum) && amountNum > 0 && !!date;
 
+  // 兩邊的帳戶選單都列出全部帳戶，不把對面選到的那個藏起來——藏起來的話，選完才發現
+  // 「錢其實在另一個帳戶裡」時，那個帳戶已經從轉出的清單裡消失了，等於要重新整理才能改。
+  // 選到跟對面同一個帳戶時直接對調兩邊，這也正好是使用者想做的事（轉錯方向）。
+  function pickFrom(id: string) {
+    if (id && id === toAccountId) setToAccountId(fromAccountId);
+    setFromAccountId(id);
+  }
+
+  function pickTo(id: string) {
+    if (id && id === fromAccountId) setFromAccountId(toAccountId);
+    setToAccountId(id);
+  }
+
   return (
     <Modal
       open={open}
@@ -116,10 +129,6 @@ export function TransferModal({
         </button>
       </Field>
 
-      <p aria-hidden className="text-center text-[#C7BFE6]">
-        ↓
-      </p>
-
       <Field label="到（轉入帳戶）">
         <button type="button" onClick={() => setPickingTo(true)} className={`${fieldInputClass} text-left`}>
           <AccountLabel id={toAccountId} accounts={accounts} accountTypes={accountTypes} placeholder="選擇帳戶" />
@@ -142,10 +151,9 @@ export function TransferModal({
         categories={categories}
         transfers={transfers}
         value={fromAccountId || undefined}
-        excludeAccountId={toAccountId || undefined}
         allowUnset={false}
         onClose={() => setPickingFrom(false)}
-        onSelect={(id) => setFromAccountId(id ?? "")}
+        onSelect={(id) => pickFrom(id ?? "")}
       />
       <AccountPickerModal
         open={pickingTo}
@@ -156,10 +164,9 @@ export function TransferModal({
         categories={categories}
         transfers={transfers}
         value={toAccountId || undefined}
-        excludeAccountId={fromAccountId || undefined}
         allowUnset={false}
         onClose={() => setPickingTo(false)}
-        onSelect={(id) => setToAccountId(id ?? "")}
+        onSelect={(id) => pickTo(id ?? "")}
       />
     </Modal>
   );

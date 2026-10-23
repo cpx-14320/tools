@@ -436,10 +436,13 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
                           onClick={() => setTransferModal(transfer)}
                           className="flex w-full items-center gap-3 px-3 py-3 text-left"
                         >
+                          {/* 標題放備註、副標放「轉到／來自 哪個帳戶」——跟上面的交易列
+                              一致（標題是這筆是什麼、副標是它歸在哪裡）。沒寫備註的話
+                              標題就是「轉帳」兩個字。 */}
                           <TransactionRowLabel
                             icon="⇄"
-                            title={isOutgoing ? `轉帳至 ${otherAccount?.name ?? "（未知帳戶）"}` : `轉帳自 ${otherAccount?.name ?? "（未知帳戶）"}`}
-                            subtitle={transfer.note || "轉帳"}
+                            title={transfer.note || "轉帳"}
+                            subtitle={`${isOutgoing ? "轉到" : "來自"} ${otherAccount?.name ?? "（未知帳戶）"}`}
                           />
                           <div className="flex shrink-0 flex-col items-end">
                             <span className="tabular-nums font-semibold text-[#6F5FD6]">

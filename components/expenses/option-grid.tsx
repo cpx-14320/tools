@@ -18,26 +18,21 @@ export interface GridOption {
  *  這一個元件，兩邊的外觀和操作就不會再各走各的。
  *
  *  - `onAddClick` 有給才顯示第一格的「＋新增」。
- *  - `onDelete` 有給才在每一格右上角顯示小叉叉；刪除跟選取是兩顆並排的按鈕（按鈕裡
- *    不能再放按鈕），點叉叉不會連帶選到那一格。 */
+ *  - 格子裡沒有刪除：分類要刪去「設定 › 收支分類」，帳戶類型要刪去「設定 › 帳戶類型」，
+ *    刪除都集中在那兩頁（有使用中的檢查、批次選取），選擇器只負責選。 */
 export function OptionGrid({
   options,
   value,
   onChange,
   onAddClick,
-  onDelete,
   addLabel = "新增",
-  deleteLabelOf,
   className = "",
 }: {
   options: GridOption[];
   value: string;
   onChange: (id: string) => void;
   onAddClick?: () => void;
-  onDelete?: (option: GridOption) => void;
   addLabel?: string;
-  /** 刪除鈕的無障礙說明，例如 `(o) => \`刪除「${o.name}」類型\``。 */
-  deleteLabelOf?: (option: GridOption) => string;
   className?: string;
 }) {
   return (
@@ -51,7 +46,7 @@ export function OptionGrid({
       {options.map((option) => {
         const active = option.id === value;
         return (
-          <div key={option.id} className="relative flex flex-col items-center gap-1 py-0.5">
+          <div key={option.id} className="flex flex-col items-center gap-1 py-0.5">
             <button type="button" onClick={() => onChange(option.id)} className="flex w-full flex-col items-center gap-1">
               <IconAvatar
                 icon={option.icon}
@@ -62,18 +57,6 @@ export function OptionGrid({
                 {option.name}
               </span>
             </button>
-            {onDelete && (
-              <button
-                type="button"
-                onClick={() => onDelete(option)}
-                aria-label={deleteLabelOf?.(option) ?? `刪除「${option.name}」`}
-                className="absolute -right-0.5 -top-0.5 grid size-5 place-items-center rounded-full border border-[#ECE4FA] bg-white text-[#D1517E] shadow-sm"
-              >
-                <span aria-hidden className="text-[10px] leading-none">
-                  ✕
-                </span>
-              </button>
-            )}
           </div>
         );
       })}

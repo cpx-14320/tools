@@ -5,7 +5,6 @@ import { SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
 import { OptionGrid } from "./option-grid";
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
-import { ConfirmModal } from "./confirm-modal";
 import { AccountTypeBatchModal, type AccountTypeBatchItem } from "./account-type-batch-modal";
 import { accountNameTaken, type AccountDTO } from "@/lib/expenses/accounts";
 import { accountTypesByKind, type AccountKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
@@ -52,8 +51,6 @@ export function AccountModal({
   const [typeKindTab, setTypeKindTab] = useState<AccountKind>(
     () => accountTypes.find((t) => t.id === initial?.accountTypeId)?.kind ?? "asset",
   );
-  const [deleteTarget, setDeleteTarget] = useState<AccountTypeDTO | null>(null);
-  const [blockedInfo, setBlockedInfo] = useState<{ inUseCount: number } | null>(null);
 
   const balanceNum = evaluateExpr(openingBalanceExpr);
   const isDuplicateName = accountNameTaken(accounts, name, excludeId);
@@ -92,30 +89,11 @@ export function AccountModal({
     setTypeBatchOpen(false);
   }
 
-  // 刪除類型沒有「未分類」這種通用歸宿（見 account-types.server.ts 的說明），還有帳戶
-  // 在用的話會被擋下，彈出 blockedInfo 告知筆數，使用者要先把那些帳戶改到別的類型。
-  async function handleDeleteType() {
-    if (!deleteTarget) return;
-    const res = await fetch(`/api/expenses/account-types?id=${deleteTarget.id}`, { method: "DELETE" }).catch(() => null);
-    if (res?.status === 409) {
-      const data: { inUseCount?: number } = await res.json().catch(() => ({}));
-      setBlockedInfo({ inUseCount: data.inUseCount ?? 0 });
-      return;
-    }
-    const data: { accountTypes?: AccountTypeDTO[] } = (await res?.json().catch(() => ({}))) ?? {};
-    if (data.accountTypes) {
-      onAccountTypesChange(data.accountTypes);
-      // 剛好刪到目前選著的那個類型，選取狀態要跟著清掉，不然會留著一個已經不存在的 id。
-      if (accountTypeId === deleteTarget.id) setAccountTypeId("");
-    }
-  }
-
   return (
     <Modal
       open={open}
       onClose={onClose}
       title={initial ? "編輯帳戶" : "新增帳戶"}
-      fullHeight
       stickyBottom={
         <AmountKeypad
           expr={openingBalanceExpr}
@@ -132,28 +110,31 @@ export function AccountModal({
         />
       }
     >
+      {/* 資產／負債自己一列：它是「先決定要建哪一種帳戶」的分流，不是「類型」這個欄位的
+          附屬選項，擠在欄位標籤旁邊會看起來像是類型的某種屬性。 */}
+      <SegmentedControl
+        className="self-start"
+        value={typeKindTab}
+        onChange={switchTypeKindTab}
+        options={[
+          { value: "asset", label: "資產" },
+          { value: "liability", label: "負債" },
+        ]}
+      />
+
       <div>
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-xs font-medium text-[#9C94C4]">類型</span>
-          <SegmentedControl
-            value={typeKindTab}
-            onChange={switchTypeKindTab}
-            options={[
-              { value: "asset", label: "資產" },
-              { value: "liability", label: "負債" },
-            ]}
+        <span className="mb-2 block text-xs font-medium text-[#9C94C4]">類型</span>
+        {/* 跟新增消費紀錄的分類格子完全一樣：同一個 OptionGrid、同樣的捲動高度上限，
+            而且同樣只有「＋新增」沒有刪除——類型要刪一律去「設定 › 帳戶類型」，跟分類
+            只能在「設定 › 收支分類」刪是同一個規則。 */}
+        <div className="max-h-[260px] overflow-y-auto">
+          <OptionGrid
+            options={visibleTypes.map((t) => ({ id: t.id, name: t.name, icon: t.icon, colorClass: categoryColorClass[t.color] }))}
+            value={accountTypeId}
+            onChange={setAccountTypeId}
+            onAddClick={() => setTypeBatchOpen(true)}
           />
         </div>
-        {/* 跟新增消費紀錄的分類格子同一個元件（OptionGrid）——欄數、選取樣式、
-            「＋新增」的位置都一致，不再兩邊各長一個樣。 */}
-        <OptionGrid
-          options={visibleTypes.map((t) => ({ id: t.id, name: t.name, icon: t.icon, colorClass: categoryColorClass[t.color] }))}
-          value={accountTypeId}
-          onChange={setAccountTypeId}
-          onAddClick={() => setTypeBatchOpen(true)}
-          onDelete={(option) => setDeleteTarget(accountTypes.find((t) => t.id === option.id) ?? null)}
-          deleteLabelOf={(option) => `刪除「${option.name}」類型`}
-        />
       </div>
 
       <Field label="名稱">
@@ -167,21 +148,6 @@ export function AccountModal({
         accountTypes={accountTypes}
         onClose={() => setTypeBatchOpen(false)}
         onSave={handleCreateTypes}
-      />
-
-      <ConfirmModal
-        open={deleteTarget !== null}
-        title="刪除帳戶類型"
-        message={`確定要刪除「${deleteTarget?.name ?? ""}」這個類型嗎？`}
-        onConfirm={handleDeleteType}
-        onClose={() => setDeleteTarget(null)}
-      />
-      <ConfirmModal
-        open={blockedInfo !== null}
-        title="這個類型還有帳戶在用"
-        message={`還有 ${blockedInfo?.inUseCount ?? 0} 個帳戶掛著這個類型，無法刪除。請先把這些帳戶改成別的類型，再回來刪除。`}
-        onlyAcknowledge
-        onClose={() => setBlockedInfo(null)}
       />
     </Modal>
   );
