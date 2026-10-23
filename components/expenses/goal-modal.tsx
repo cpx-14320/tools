@@ -111,7 +111,6 @@ export function ContributeModal({ open, onClose, onSave }: { open: boolean; onCl
       open={open}
       onClose={onClose}
       title="存入"
-      fullHeight
       stickyBottom={<AmountKeypad expr={amount} onExprChange={setAmount} label="這次要存入多少" />}
       footer={
         <ModalFooter
