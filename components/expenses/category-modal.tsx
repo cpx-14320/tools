@@ -35,7 +35,8 @@ export function CategoryModal({
   excludeId?: string;
   initial?: CategoryModalDraft;
   onClose: () => void;
-  onSave: (draft: Pick<CategoryModalDraft, "name" | "icon"> & Partial<Pick<CategoryModalDraft, "color" | "kind">>) => void;
+  /** 子分類只會回傳名稱——圖示／顏色／收支類型都跟著父分類，不由這個彈窗決定。 */
+  onSave: (draft: Pick<CategoryModalDraft, "name"> & Partial<Pick<CategoryModalDraft, "icon" | "color" | "kind">>) => void;
   onDelete?: () => void;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
@@ -45,7 +46,8 @@ export function CategoryModal({
 
   const title = initial ? "編輯分類" : isSubcategory ? "新增子分類" : "新增分類";
   const isDuplicate = categoryNameTaken(categories, name, { kind, parentId }, excludeId);
-  const canSave = name.trim().length > 0 && icon.trim().length > 0 && !isDuplicate;
+  // 子分類只填名稱，圖示由父分類決定，不能拿它當必填條件。
+  const canSave = name.trim().length > 0 && (isSubcategory || icon.trim().length > 0) && !isDuplicate;
 
   return (
     <Modal
@@ -56,16 +58,16 @@ export function CategoryModal({
         <ModalFooter
           onClose={onClose}
           onConfirm={() =>
-            onSave(isSubcategory ? { name: name.trim(), icon: icon.trim(), color } : { name: name.trim(), icon: icon.trim(), color, kind })
+            onSave(isSubcategory ? { name: name.trim() } : { name: name.trim(), icon: icon.trim(), color, kind })
           }
           confirmDisabled={!canSave}
           onDelete={onDelete}
         />
       }
     >
-      {/* 欄位順序：類型→名稱→圖示→顏色，跟帳戶類型的彈窗一致。收支類型只有頂層分類
-          能選（子分類一定跟著父分類走）；顏色則是兩種都能選，新增跟編輯看到的欄位才
-          會一致。 */}
+      {/* 欄位順序：類型→名稱→圖示→顏色，跟帳戶類型的彈窗一致。子分類只剩名稱——收支
+          類型、圖示、顏色全都跟著父分類走（見 categories.server.ts 的 createCategory），
+          留著那兩個選擇器只是讓人選了卻不會生效。 */}
       {!isSubcategory && (
         <Field label="收支類型">
           <SegmentedControl
@@ -84,8 +86,12 @@ export function CategoryModal({
       </Field>
       {isDuplicate && <p className="text-xs text-[#D1517E]">已經有同樣名稱的分類了，換一個名稱吧。</p>}
 
-      <CategoryIconPicker kind={kind} value={icon} onChange={setIcon} />
-      <CategoryColorPicker value={color} onChange={setColor} />
+      {!isSubcategory && (
+        <>
+          <CategoryIconPicker kind={kind} value={icon} onChange={setIcon} />
+          <CategoryColorPicker value={color} onChange={setColor} />
+        </>
+      )}
       {/* 每月預算已經搬到獨立的「預算設定」頁（可以按月份分別設定），不在這裡輸入。 */}
     </Modal>
   );

@@ -46,7 +46,7 @@ export function CategoriesView() {
   }, []);
 
   async function handleSave(
-    draft: Pick<CategoryModalDraft, "name" | "icon"> & Partial<Pick<CategoryModalDraft, "color" | "kind">> & { budgetAmount?: number | null },
+    draft: Pick<CategoryModalDraft, "name"> & Partial<Pick<CategoryModalDraft, "icon" | "color" | "kind">> & { budgetAmount?: number | null },
   ) {
     if (!modal) return;
     const data: { categories?: CategoryDTO[] } = await fetch("/api/expenses/categories", {

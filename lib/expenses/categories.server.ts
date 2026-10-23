@@ -65,11 +65,18 @@ export async function createCategory(
 
   let parentId: ObjectId | null = null;
   let kind = input.kind;
+  // 子分類的收支類型、圖示、顏色一律跟著父分類走，使用者不自己挑（見 categories.ts 的
+  // displayCategoryOf：子分類在畫面上本來就是用父分類那顆圖示跟顏色，自己存一組只會跟
+  // 畫面對不起來）。呼叫端送什麼進來都以父分類為準，不是「沒送才補」。
+  let icon = input.icon;
+  let color = input.color;
   if (input.parentId) {
     const parent = await col.findOne({ _id: new ObjectId(input.parentId), userId, parentId: null });
     if (!parent) return { error: "找不到要新增子分類的父分類" };
     parentId = parent._id;
-    kind = parent.kind; // 子分類的 kind 跟父分類一致，不能自己另外選
+    kind = parent.kind;
+    icon = parent.icon;
+    color = parent.color;
   }
 
   const existing = await listCategories(userId);
@@ -82,8 +89,8 @@ export async function createCategory(
     _id: new ObjectId(),
     userId,
     name: input.name,
-    icon: input.icon,
-    color: input.color,
+    icon,
+    color,
     kind,
     parentId,
     order,
@@ -135,6 +142,16 @@ export async function updateCategory(
   if (Object.keys(update).length > 0) {
     await col.updateOne({ _id: new ObjectId(id), userId }, update);
   }
+
+  // 改了父分類的圖示／顏色，底下的子分類要跟著改——子分類是「沿用父分類的樣子」，存的是
+  // 複製過來的值，不跟著更新的話畫面上會出現同一群分類兩種顏色。
+  const inherited: Record<string, unknown> = {};
+  if (fields.icon !== undefined) inherited.icon = fields.icon;
+  if (fields.color !== undefined) inherited.color = fields.color;
+  if (Object.keys(inherited).length > 0) {
+    await col.updateMany({ userId, parentId: new ObjectId(id) }, { $set: inherited });
+  }
+
   return { categories: await listCategories(userId) };
 }
 

@@ -18,7 +18,8 @@ function blankDraft(kind: CategoryKind = "支出"): Draft {
   return { name: "", icon: DEFAULT_PICKER_ICON, color: "a", kind };
 }
 
-export type CategoryBatchItem = Pick<Draft, "name" | "icon"> & Partial<Pick<Draft, "color" | "kind">>;
+/** 送出的草稿。子分類只有名稱——圖示／顏色／收支類型由伺服器從父分類複製。 */
+export type CategoryBatchItem = Pick<Draft, "name"> & Partial<Pick<Draft, "icon" | "color" | "kind">>;
 
 // 同一個父分類底下（或同一種收支類型的頂層）名稱不能重複——跟已存在的分類撞名，或這一批
 // 草稿裡自己人互撞都算。
@@ -31,10 +32,9 @@ function isDuplicateDraft(items: Draft[], index: number, existing: CategoryDTO[]
 }
 
 /** 新增分類／子分類——跟搭乘車「新增分類」同一種做法：一次開著好幾則草稿一起填，填完
- *  按一次「儲存」整批送出。子分類不能自己選
- *  顏色／收支類型（跟父分類一致，見 category-modal.tsx 的同樣規則），所以 isSubcategory
- *  時每一則只會顯示名稱／圖示兩個欄位，color/kind 不會出現在 onSave 回傳的物件裡，由
- *  呼叫端補上父分類的值。 */
+ *  按一次「儲存」整批送出。子分類的收支類型、圖示、顏色全都跟著父分類走（見
+ *  categories.server.ts 的 createCategory），所以 isSubcategory 時每一則只有名稱一個欄位，
+ *  送出的物件也只有 name。 */
 export function CategoryBatchModal({
   open,
   isSubcategory,
@@ -77,7 +77,8 @@ export function CategoryBatchModal({
     setItems((list) => (list.length > 1 ? list.filter((_, i) => i !== index) : list));
   }
 
-  const canSave = items.some((it, i) => it.name.trim() && it.icon.trim() && !isDuplicateDraft(items, i, categories, parentId));
+  // 子分類只填名稱，圖示由父分類決定，不能拿它當必填條件。
+  const canSave = items.some((it, i) => it.name.trim() && (isSubcategory || it.icon.trim()) && !isDuplicateDraft(items, i, categories, parentId));
 
   return (
     <Modal
@@ -90,10 +91,10 @@ export function CategoryBatchModal({
           onConfirm={() => {
             const valid = items
               .map((it, i) => ({ ...it, name: it.name.trim(), icon: it.icon.trim(), _dup: isDuplicateDraft(items, i, categories, parentId) }))
-              .filter((it) => it.name && it.icon && !it._dup);
+              .filter((it) => it.name && (isSubcategory || it.icon) && !it._dup);
             onSave(
               isSubcategory
-                ? valid.map(({ name, icon, color }) => ({ name, icon, color }))
+                ? valid.map(({ name }) => ({ name }))
                 : valid.map(({ name, icon, color, kind }) => ({ name, icon, color, kind })),
             );
           }}
@@ -128,8 +129,12 @@ export function CategoryBatchModal({
               <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} className={fieldInputClass} />
             </Field>
             {isDuplicateDraft(items, i, categories, parentId) && <p className="text-xs text-[#D1517E]">已經有同樣名稱的分類了，換一個名稱吧。</p>}
-            <CategoryIconPicker kind={item.kind} value={item.icon} onChange={(icon) => updateItem(i, { icon })} />
-            <CategoryColorPicker value={item.color} onChange={(color) => updateItem(i, { color })} />
+            {!isSubcategory && (
+              <>
+                <CategoryIconPicker kind={item.kind} value={item.icon} onChange={(icon) => updateItem(i, { icon })} />
+                <CategoryColorPicker value={item.color} onChange={(color) => updateItem(i, { color })} />
+              </>
+            )}
           </>
         )}
       />

@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
-import { PRESET_ACCOUNTS, PRESET_EXPENSE_CATEGORIES, PRESET_INCOME_CATEGORIES, ICON_OTHER, type PresetCategorySeed } from "./presets";
+import { PRESET_ACCOUNTS, PRESET_EXPENSE_CATEGORIES, PRESET_INCOME_CATEGORIES, type PresetCategorySeed } from "./presets";
 import type { CategoryKind } from "./categories";
 
 /** 記錄「這個使用者的記帳本預設資料已經建過了」。
@@ -63,8 +63,9 @@ export async function seedExpensesPresets(userId: ObjectId): Promise<void> {
           _id: new ObjectId(),
           userId,
           name: childName,
-          // 子分類還沒有專屬圖檔，先用共用的佔位圖；顏色跟著父分類走。
-          icon: ICON_OTHER,
+          // 圖示跟顏色都沿用父分類——子分類不會有自己的一組（見 categories.server.ts 的
+          // createCategory，使用者自己新增時也是直接複製父分類的）。
+          icon: seed.icon,
           color: seed.color,
           kind,
           parentId,

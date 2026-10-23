@@ -22,7 +22,8 @@ export async function POST(request: Request) {
   const color = typeof body?.color === "string" ? (body.color as CategoryColor) : undefined;
   const kind = typeof body?.kind === "string" ? (body.kind as CategoryKind) : undefined;
   const parentId = typeof body?.parentId === "string" ? body.parentId : undefined;
-  if (!name || !icon || (!parentId && (!color || !kind))) {
+  // 子分類不用送圖示／顏色／收支類型，三個都由 createCategory 從父分類複製過來。
+  if (!name || (!parentId && (!icon || !color || !kind))) {
     return NextResponse.json({ error: "缺少必要欄位" }, { status: 400 });
   }
 
@@ -38,7 +39,9 @@ export async function PUT(request: Request) {
   const body = await request.json().catch(() => null);
   const id = typeof body?.id === "string" ? body.id : "";
   const name = typeof body?.name === "string" ? body.name.trim() : "";
-  const icon = typeof body?.icon === "string" ? body.icon.trim() : "";
+  // 沒送就是 undefined（不是空字串）——updateCategory 靠 undefined 判斷「這次不改這個欄位」，
+  // 傳空字串進去會被當成真的要改，把圖示清掉。
+  const icon = typeof body?.icon === "string" && body.icon.trim() ? body.icon.trim() : undefined;
   const color = typeof body?.color === "string" ? (body.color as CategoryColor) : undefined;
   // 有帶這個欄位（不管值是什麼）才代表使用者這次有動預算；完全沒帶代表這次編輯不碰預算，
   // 跟 updateCategory 的 undefined／null／number 三態約定對齊（見 categories.server.ts）。
@@ -48,7 +51,9 @@ export async function PUT(request: Request) {
         ? body.budgetAmount
         : null
       : undefined;
-  if (!id || !name || !icon) return NextResponse.json({ error: "缺少必要欄位" }, { status: 400 });
+  // 只有名稱是必填：子分類的編輯只會送名稱，圖示／顏色跟著父分類，沒送就維持原值
+  // （updateCategory 會濾掉 undefined 的欄位）。
+  if (!id || !name) return NextResponse.json({ error: "缺少必要欄位" }, { status: 400 });
 
   const result = await updateCategory(new ObjectId(user.id), id, { name, icon, color, budgetAmount });
   if ("error" in result) return NextResponse.json(result, { status: 409 });
