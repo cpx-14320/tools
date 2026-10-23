@@ -167,3 +167,20 @@ export function netWorth(
     totalByKind(accounts, types, transactions, categories, transfers, "liability")
   );
 }
+
+/** 依帳戶類型加總餘額（資產配置用）——同一組資料「現在」跟「基準日當時」各算一次，
+ *  所以抽成函式，不要兩份幾乎一樣的迴圈。傳進來的 transactions／transfers 篩到哪一天，
+ *  算出來就是那一天當時的配置。 */
+export function sumByAccountType(
+  assets: AccountDTO[],
+  types: AccountTypeDTO[],
+  transactions: TransactionDTO[],
+  categories: CategoryDTO[],
+  transfers: TransferDTO[],
+): Map<string, number> {
+  const totals = new Map<string, number>();
+  for (const a of assets) {
+    totals.set(a.accountTypeId, (totals.get(a.accountTypeId) ?? 0) + accountBalance(a, types, transactions, categories, transfers));
+  }
+  return totals;
+}
