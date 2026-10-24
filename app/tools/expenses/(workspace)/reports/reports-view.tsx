@@ -34,6 +34,8 @@ import {
 } from "@/lib/expenses/transactions";
 import { dateFilterRange, previousPeriodSuffix } from "@/lib/expenses/date-filter";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
+import { KpiCardSkeleton, ListCardSkeleton } from "@/components/expenses/skeleton";
+import { useSkeletonCount } from "@/components/expenses/skeleton-count";
 import { formatCurrency } from "@/lib/format";
 
 type ReportKind = "支出" | "收入" | "淨額" | "資產";
@@ -342,14 +344,19 @@ export function ReportsView() {
   }
 
   const selectedPoint = kind !== "淨額" ? (trendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
+  // 載入中畫骨架，明細列數用上次記住的實際筆數（見 skeleton-count.ts）。
+  const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:reports", TOP_N, ready ? Math.min(breakdown.length, TOP_N) : undefined);
+
   const selectedIncomePoint = kind === "淨額" ? (incomeTrendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
   const selectedExpensePoint = kind === "淨額" ? (expenseTrendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
 
   if (!ready) {
+    // 骨架照著載入完成後的版面排：期間總額一張大卡，底下是分類明細清單。
     return (
       <div className="flex flex-col gap-4">
         <PageHeader title="報表" />
-        <p className={text.faint}>載入中…</p>
+        <KpiCardSkeleton />
+        <ListCardSkeleton count={skeletonCount} progress />
       </div>
     );
   }

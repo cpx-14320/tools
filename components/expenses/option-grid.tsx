@@ -51,15 +51,11 @@ export function OptionGrid({
             <button
               type="button"
               onClick={() => onChange(option.id)}
-              // 挑了一個之後其他格子淡掉（跟圖示選擇器同一組 class，見 theme.ts）——
-              // 格子一多的時候，光靠選中那格的色環很難一眼看出挑到哪個。
-              className={`flex w-full flex-col items-center gap-1 transition-opacity ${value && !active ? unselectedOption : ""}`}
+              // 沒選到的一律淡掉，包含「還沒選任何一個」的時候——亮起來的那一格就是答案，
+              // 不用再另外畫一圈色環去指它（跟圖示選擇器同一組 class，見 theme.ts）。
+              className={`flex w-full flex-col items-center gap-1 transition-opacity ${active ? "" : unselectedOption}`}
             >
-              <IconAvatar
-                icon={option.icon}
-                size="sm"
-                className={`${option.colorClass ?? "bg-[#F3EFFC]"} ${active ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`}
-              />
+              <IconAvatar icon={option.icon} size="sm" className={option.colorClass ?? "bg-[#F3EFFC]"} />
               <span className={`line-clamp-1 w-full text-center text-[11px] ${active ? "font-semibold text-[#6F5FD6]" : "font-medium text-[#4A3B7C]"}`}>
                 {option.name}
               </span>

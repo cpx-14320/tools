@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ListCardSkeleton } from "@/components/expenses/skeleton";
+import { useSkeletonCount } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
@@ -21,6 +23,8 @@ export function AssetsView() {
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [ready, setReady] = useState(false);
+  // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
+  const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:assets", 4, ready ? accounts.length : undefined);
   const [createOpen, setCreateOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   useEffect(() => {
@@ -114,7 +118,7 @@ export function AssetsView() {
       />
 
       {!ready ? (
-        <p className={text.faint}>載入中…</p>
+        <ListCardSkeleton count={skeletonCount} />
       ) : accounts.length === 0 ? (
         <p className={text.faint}>還沒有任何帳戶，點右下角的＋新增第一個</p>
       ) : (

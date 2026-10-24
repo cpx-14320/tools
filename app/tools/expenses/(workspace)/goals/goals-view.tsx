@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ListCardSkeleton } from "@/components/expenses/skeleton";
+import { useSkeletonCount } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { Button, Badge } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
@@ -12,13 +14,15 @@ import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { text } from "@/components/expenses/theme";
 import { GoalModal, ContributeModal, type GoalModalDraft } from "@/components/expenses/goal-modal";
 import { goalProgress, goalPace, type SavingsGoalDTO } from "@/lib/expenses/goals";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDateRange } from "@/lib/format";
 
 type ModalState = { mode: "create" } | { mode: "edit"; goal: SavingsGoalDTO };
 
 export function GoalsView() {
   const [goals, setGoals] = useState<SavingsGoalDTO[]>([]);
   const [ready, setReady] = useState(false);
+  // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
+  const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:goals", 3, ready ? goals.length : undefined);
   const [modal, setModal] = useState<ModalState | null>(null);
   const [contributeId, setContributeId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
@@ -149,7 +153,7 @@ export function GoalsView() {
       )}
 
       {!ready ? (
-        <p className={text.faint}>載入中…</p>
+        <ListCardSkeleton count={skeletonCount} progress />
       ) : goals.length === 0 ? (
         <p className={text.faint}>還沒有任何目標，點右下角的＋新增第一個</p>
       ) : (
@@ -184,8 +188,7 @@ export function GoalsView() {
                         {achieved && <Badge tone="positive">已達成</Badge>}
                       </div>
                       <p className={`mt-0.5 ${text.muted}`}>
-                        {goal.startDate && `${goal.startDate} 開始・`}
-                        {goal.targetDate ? `目標日期 ${goal.targetDate}` : "沒有設定期限"}
+                        {formatDateRange(goal.startDate, goal.targetDate) || "沒有設定期限"}
                       </p>
                     </div>
                     {!selection.selecting && !achieved && (

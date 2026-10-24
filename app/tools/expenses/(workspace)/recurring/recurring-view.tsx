@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ListCardSkeleton } from "@/components/expenses/skeleton";
+import { useSkeletonCount } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { Button, Badge, SegmentedControl } from "@/components/expenses/button";
@@ -37,6 +39,8 @@ export function RecurringView() {
   const [rules, setRules] = useState<RecurringRuleDTO[]>([]);
   const [goals, setGoals] = useState<SavingsGoalDTO[]>([]);
   const [ready, setReady] = useState(false);
+  // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
+  const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:recurring", 4, ready ? rules.length : undefined);
   const [modal, setModal] = useState<ModalState | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
   // 跟消費分類頁一樣用支出／收入分頁切換——固定收支兩種都會有（房租 vs 薪水），
@@ -193,7 +197,7 @@ export function RecurringView() {
       )}
 
       {!ready ? (
-        <p className={text.faint}>載入中…</p>
+        <ListCardSkeleton count={skeletonCount} />
       ) : visibleRules.length === 0 ? (
         <p className={text.faint}>還沒有任何固定{kind}，點右下角的＋新增第一筆</p>
       ) : (

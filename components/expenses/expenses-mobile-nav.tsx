@@ -5,12 +5,22 @@ import { usePathname } from "next/navigation";
 import { IconImg } from "./icon-img";
 import { ICON_PATHS } from "./icon-paths";
 
+/** `owns` 是「這個頁籤要為哪些路徑亮起來」。
+ *
+ *  不是每一頁都有自己的頁籤：消費紀錄頁沒有頁籤，但它只會從首頁的「查看全部」／清單
+ *  列點進去，所以歸在首頁底下——進去之後底部還是亮著首頁，才知道自己是從哪一區進來的。
+ *  收支分類、預算、存錢目標、固定收支同理，都歸在設定底下。 */
 const tabs = [
-  { href: "/tools/expenses", label: "首頁", icon: ICON_PATHS.navHome },
-  { href: "/tools/expenses/reports", label: "報表", icon: ICON_PATHS.navReports },
-  { href: "/tools/expenses/assets", label: "資產", icon: ICON_PATHS.navAssets },
-  { href: "/tools/expenses/pet", label: "養成", icon: ICON_PATHS.navPet },
-  { href: "/tools/expenses/more", label: "設定", icon: ICON_PATHS.navSettings },
+  { href: "/tools/expenses", label: "首頁", icon: ICON_PATHS.navHome, owns: ["/tools/expenses/transactions"] },
+  { href: "/tools/expenses/reports", label: "報表", icon: ICON_PATHS.navReports, owns: [] },
+  { href: "/tools/expenses/assets", label: "資產", icon: ICON_PATHS.navAssets, owns: ["/tools/expenses/account-types"] },
+  { href: "/tools/expenses/pet", label: "養成", icon: ICON_PATHS.navPet, owns: [] },
+  {
+    href: "/tools/expenses/more",
+    label: "設定",
+    icon: ICON_PATHS.navSettings,
+    owns: ["/tools/expenses/categories", "/tools/expenses/goals", "/tools/expenses/recurring", "/tools/expenses/budgets"],
+  },
 ];
 
 /** 比照搭乘車 TransitMobileNav 的樣式：固定貼齊卡片正下方、滿版橫列、只有上邊框，不是
@@ -30,16 +40,10 @@ export function ExpensesMobileNav() {
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 10px)" }}
       >
         {tabs.map((tab) => {
-          const active =
-            tab.href === "/tools/expenses"
-              ? pathname === tab.href
-              : tab.href === "/tools/expenses/assets"
-                ? ["/tools/expenses/assets", "/tools/expenses/account-types"].some((p) => pathname.startsWith(p))
-                : tab.href === "/tools/expenses/more"
-                  ? ["/tools/expenses/categories", "/tools/expenses/goals", "/tools/expenses/recurring", "/tools/expenses/budgets", "/tools/expenses/more"].some(
-                      (p) => pathname.startsWith(p),
-                    )
-                  : pathname.startsWith(tab.href);
+          // 自己的子路由（/more/export、/assets/[id]…）一律算自己；但首頁的 href 是所有
+          // 頁面的前綴，不能用 startsWith，要完全相同才算。
+          const self = tab.href === "/tools/expenses" ? pathname === tab.href : pathname.startsWith(tab.href);
+          const active = self || tab.owns.some((p) => pathname.startsWith(p));
           return (
             <Link key={tab.href} href={tab.href} className="flex flex-1 flex-col items-center gap-0.5 py-1 text-[11px]">
               <IconImg src={tab.icon} alt={tab.label} size={32} background={false} className={active ? "" : "opacity-50"} />

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ListCardSkeleton } from "@/components/expenses/skeleton";
+import { useSkeletonCount } from "@/components/expenses/skeleton-count";
 import { useSearchParams } from "next/navigation";
 import { SegmentedControl, PillButton } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
@@ -60,6 +62,8 @@ export function TransactionsView() {
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [ready, setReady] = useState(false);
+  // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
+  const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:transactions", 8, ready ? transactions.length : undefined);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<CategoryKind>(initialKind);
   // 只看某一個大分類（含它的子分類）的篩選，空字串＝全部分類。
@@ -325,7 +329,7 @@ export function TransactionsView() {
       </div>
 
       {!ready ? (
-        <p className={text.faint}>載入中…</p>
+        <ListCardSkeleton count={skeletonCount} />
       ) : (
         <>
           {isSearching ? (

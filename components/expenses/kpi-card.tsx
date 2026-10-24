@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { Card, CardBody } from "./card";
 import { text } from "./theme";
 
@@ -31,6 +32,8 @@ export function KpiCard({
   valueColor,
   delta,
   action,
+  href,
+  valueClassName = "text-lg font-bold tabular-nums",
 }: {
   label: string;
   value: string;
@@ -39,21 +42,27 @@ export function KpiCard({
   /** 金額右邊的操作按鈕（目前只有首頁結餘卡的隱藏金額眼睛）。跟金額同一行，不是另外
    *  一列，不然這張卡會為了一顆小按鈕多長一截。 */
   action?: ReactNode;
+  /** 有給的話整張卡可以點，導去那一頁看明細。 */
+  href?: string;
+  /** 金額的字級——遮起來時換成小一號（見首頁的隱藏金額）。 */
+  valueClassName?: string;
 }) {
-  return (
-    <Card>
-      <CardBody className="p-3">
-        <div className="flex items-start justify-between gap-2">
-          <p className={text.muted}>{label}</p>
-          {delta}
-        </div>
-        <div className="mt-0.5 flex items-center justify-between gap-2">
-          <p className="text-lg font-bold tabular-nums" style={{ color: valueColor }}>
-            {value}
-          </p>
-          {action}
-        </div>
-      </CardBody>
-    </Card>
+  const body = (
+    <CardBody className="p-3">
+      <div className="flex items-start justify-between gap-2">
+        <p className={text.muted}>{label}</p>
+        {delta}
+      </div>
+      <div className="mt-0.5 flex items-center justify-between gap-2">
+        <p className={valueClassName} style={{ color: valueColor }}>
+          {value}
+        </p>
+        {action}
+      </div>
+    </CardBody>
   );
+  // 卡片裡還放著「隱藏金額」那顆按鈕，整張卡包成 <a> 的話按鈕會變成連結的一部分
+  // （HTML 不允許 a 裡面有互動元素）。所以連結只包內容、不包按鈕時才用 Link；
+  // 有 action 的那張卡（結餘）本來就沒有要連出去。
+  return <Card>{href && !action ? <Link href={href} className="block">{body}</Link> : body}</Card>;
 }

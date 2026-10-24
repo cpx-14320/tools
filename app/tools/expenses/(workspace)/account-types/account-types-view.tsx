@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ListCardSkeleton } from "@/components/expenses/skeleton";
+import { useSkeletonCount } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { BackLink } from "@/components/expenses/back-link";
@@ -16,6 +18,8 @@ import { categoryColorClass } from "@/lib/expenses/categories";
 export function AccountTypesView() {
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const [ready, setReady] = useState(false);
+  // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
+  const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:account-types", 4, ready ? accountTypes.length : undefined);
   const [modal, setModal] = useState<AccountTypeDTO | null>(null);
   const [batchOpen, setBatchOpen] = useState(false);
   const [blockedInfo, setBlockedInfo] = useState<{ inUseCount: number } | null>(null);
@@ -156,7 +160,7 @@ export function AccountTypesView() {
       )}
 
       {!ready ? (
-        <p className={text.faint}>載入中…</p>
+        <ListCardSkeleton count={skeletonCount} progress />
       ) : accountTypes.length === 0 ? (
         <p className={text.faint}>還沒有任何帳戶類型，點右下角的＋新增</p>
       ) : (

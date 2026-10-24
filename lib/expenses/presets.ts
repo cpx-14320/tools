@@ -54,7 +54,10 @@ export const PRESET_EXPENSE_CATEGORIES: PresetCategorySeed[] = [
 export const PRESET_INCOME_CATEGORIES: PresetCategorySeed[] = [
   // 各種節慶禮金、加班費這類項目不另外開子分類——它們是「某一筆薪水裡的一個項目」，
   // 記在那筆薪水的明細裡（見 lib/expenses/transactions.ts 的 breakdown）比拆成子分類精準。
-  { name: "薪水", icon: incomeCategoryIcon("salary"), color: "a", children: ["獎金", "年終", "分紅"] },
+  // 「月薪」排第一：有子項目的大分類現在一定要選到項目才能記帳（見 categories.ts 的
+  // needsSubcategory），最常記的那一筆「這個月的薪水」要有地方放，底薪／勞保這些則是
+  // 記在那一筆底下的明細。
+  { name: "薪水", icon: incomeCategoryIcon("salary"), color: "a", children: ["月薪", "獎金", "年終", "分紅"] },
   { name: "投資", icon: incomeCategoryIcon("investment"), color: "b" },
   { name: "利息", icon: incomeCategoryIcon("interest"), color: "c" },
   { name: "其他", icon: ICON_OTHER, color: "d" },

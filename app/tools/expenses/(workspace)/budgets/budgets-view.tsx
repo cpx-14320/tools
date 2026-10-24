@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ListCardSkeleton } from "@/components/expenses/skeleton";
+import { useSkeletonCount } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { Card, CardBody } from "@/components/expenses/card";
 import { DateField } from "@/components/expenses/date-field";
@@ -33,6 +35,8 @@ export function BudgetsView() {
   const [rules, setRules] = useState<BudgetRuleDTO[]>([]);
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [ready, setReady] = useState(false);
+  // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
+  const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:budgets", 6, ready ? categories.filter((c) => !c.parentId && c.kind === "支出").length : undefined);
   const [yearMonth, setYearMonth] = useState(currentYearMonth());
   const [editing, setEditing] = useState<CategoryDTO | null>(null);
 
@@ -129,7 +133,7 @@ export function BudgetsView() {
       </Card>
 
       {!ready ? (
-        <p className={text.faint}>載入中…</p>
+        <ListCardSkeleton count={skeletonCount} progress />
       ) : expenseCategories.length === 0 ? (
         <p className={text.faint}>還沒有任何支出分類，先去「收支分類」建立分類才能編預算</p>
       ) : (

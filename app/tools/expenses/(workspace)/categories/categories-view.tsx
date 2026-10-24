@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ListCardSkeleton } from "@/components/expenses/skeleton";
+import { useSkeletonCount } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { SegmentedControl, Badge } from "@/components/expenses/button";
@@ -20,6 +22,8 @@ export function CategoriesView() {
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [ready, setReady] = useState(false);
+  // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
+  const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:categories", 6, ready ? categories.filter((c) => !c.parentId).length : undefined);
   const [modal, setModal] = useState<CategoryDTO | null>(null);
   const [batchTarget, setBatchTarget] = useState<BatchTarget | null>(null);
   const [kind, setKind] = useState<CategoryKind>("支出");
@@ -200,7 +204,7 @@ export function CategoriesView() {
       )}
 
       {!ready ? (
-        <p className={text.faint}>載入中…</p>
+        <ListCardSkeleton count={skeletonCount} />
       ) : parents.length === 0 ? (
         <p className={text.faint}>還沒有任何{kind}分類，點右下角的＋建立第一個</p>
       ) : (

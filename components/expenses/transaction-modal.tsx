@@ -8,12 +8,11 @@ import { AccountPickerModal } from "./account-picker-modal";
 import { CategoryGridPicker } from "./category-grid-picker";
 import { CategoryBatchModal, type CategoryBatchItem } from "./category-batch-modal";
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
-import { InlineIcon } from "./icon-avatar";
 import { text } from "./theme";
 import { categoryPath, needsSubcategory, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 import { breakdownNet, type BreakdownItem, type BreakdownKind, type TransactionDTO } from "@/lib/expenses/transactions";
 import { type AccountDTO } from "@/lib/expenses/accounts";
-import { accountTypeById, type AccountTypeDTO } from "@/lib/expenses/account-types";
+import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
 import { formatCurrency } from "@/lib/format";
 
@@ -108,7 +107,6 @@ export function TransactionModal({
     categoryId && !needsSubcategory(categories, categoryId) && Number.isFinite(amountNum) && amountNum > 0 && date && breakdownValid;
 
   const selectedAccount = accounts.find((a) => a.id === accountId);
-  const selectedAccountIcon = selectedAccount ? (accountTypeById(accountTypes, selectedAccount.accountTypeId)?.icon ?? "") : "";
 
   // 編到一半的明細項目被刪掉時，鍵盤要退回編交易金額，不然 target.index 會指向不存在
   // 的項目（或指到被往前遞補的另一筆，改到不該改的地方）。
@@ -252,8 +250,9 @@ export function TransactionModal({
         <>
           <Field label="帳戶（可不填）">
             <button type="button" onClick={() => setAccountPickerOpen(true)} className={`${fieldInputClass} text-left`}>
-              <span className={`flex items-center gap-1.5 ${selectedAccount ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}`}>
-                {selectedAccountIcon && <InlineIcon icon={selectedAccountIcon} />}
+              {/* 只有名稱、不放類型圖示：這一欄顯示的是「哪一個帳戶」，圖示是帳戶類型的，
+                  同一種類型底下好幾個帳戶會掛同一張圖，分辨不出任何東西。 */}
+              <span className={selectedAccount ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}>
                 {selectedAccount ? selectedAccount.name : "不指定帳戶"}
               </span>
             </button>
