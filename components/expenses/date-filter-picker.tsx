@@ -179,7 +179,25 @@ function CompactDateFilterPicker({ className = "" }: { className?: string }) {
   // 自訂區間時，箭頭以區間起始日所在的月份為基準往前後走。
   const baseYear = custom ? Number(filter.customStart.slice(0, 4)) : filter.year;
   const baseMonth = custom ? Number(filter.customStart.slice(5, 7)) : filter.month;
-  const atCurrentMonth = !custom && filter.year === nowYearMonth.year && filter.month === nowYearMonth.month;
+  const atCurrentMonth = filter.mode === "month" && filter.year === nowYearMonth.year && filter.month === nowYearMonth.month;
+
+  // 標籤一定要講真話：篩選器是跟其他頁共用的，在報表頁選了「全部」或「年」再回首頁，
+  // 這顆以前照樣寫「2026/10」，但下面的數字其實是全部期間的——兩邊對不起來，而且看
+  // 不出原因。現在直接把當下的模式寫出來，按一下箭頭就會回到按月瀏覽。
+  const label = (() => {
+    switch (filter.mode) {
+      case "all":
+        return "全部期間";
+      case "year":
+        return `${filter.year}年`;
+      case "day":
+        return `${filter.year}/${pad2(filter.month)}/${pad2(filter.day)}`;
+      case "custom":
+        return `${filter.customStart} ～ ${filter.customEnd}`;
+      case "month":
+        return `${filter.year}/${pad2(filter.month)}`;
+    }
+  })();
 
   function goMonth(delta: number) {
     const d = new Date(baseYear, baseMonth - 1 + delta, 1);
@@ -189,7 +207,7 @@ function CompactDateFilterPicker({ className = "" }: { className?: string }) {
   return (
     <div className={`flex justify-center ${className}`}>
       <PeriodNav
-        label={custom ? `${filter.customStart} ～ ${filter.customEnd}` : `${filter.year}/${pad2(filter.month)}`}
+        label={label}
         onPrev={() => goMonth(-1)}
         onNext={() => goMonth(1)}
         nextDisabled={atCurrentMonth}

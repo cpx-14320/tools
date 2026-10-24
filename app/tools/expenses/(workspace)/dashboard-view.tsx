@@ -23,6 +23,7 @@ import {
   totalsForRange,
   rangeDelta,
   categoryBreakdown,
+  incomeBreakdown,
   budgetSummary,
   transactionsInDateRange,
   transactionDisplayName,
@@ -95,6 +96,7 @@ export function DashboardView() {
   const [addOpen, setAddOpen] = useState(false);
   // 兩張長清單各自的「展開／收合」，預設都是收起來的（見 ExpandToggle）。
   const [expenseRowsExpanded, setExpenseRowsExpanded] = useState(false);
+  const [incomeRowsExpanded, setIncomeRowsExpanded] = useState(false);
   const [recentExpanded, setRecentExpanded] = useState(false);
   // 在外面看記帳本時把金額遮起來，記在這台裝置上（見 hidden-amounts.tsx）。
   const { hidden: amountsHidden, toggle: toggleAmounts, mask } = useHiddenAmounts();
@@ -187,7 +189,7 @@ export function DashboardView() {
   const budgetYearMonth = referenceYearMonth(filter);
   const [budgetYear, budgetMonth] = budgetYearMonth.split("-").map(Number);
   const budgetMonthRange = dateFilterRange({ ...filter, mode: "month", year: budgetYear, month: budgetMonth });
-  const budgetMonthExpenseTx = totalsForRange(transactions, categories, budgetMonthRange).expenseTx;
+  const { expenseTx: budgetMonthExpenseTx, incomeTx: budgetMonthIncomeTx } = totalsForRange(transactions, categories, budgetMonthRange);
   const budget = budgetSummary(budgetMonthExpenseTx, categories, withLegacyCategoryBudgets(budgetRules, categories), budgetYearMonth);
   const isCurrentMonth = budgetYearMonth === referenceYearMonth(defaultDateFilter());
   const budgetTotalPace = budgetPace(budget.totalSpent, budget.totalBudget, budgetYearMonth, todayISO);
@@ -203,6 +205,10 @@ export function DashboardView() {
     .filter((row) => row.spent > 0 || row.budget !== null)
     .sort((a, b) => b.spent - a.spent);
 
+  // 收入來源：跟底下的預算卡同一個月份（budgetMonthRange），不是吃篩選器的任意區間——
+  // 兩塊疊在一起，月份不一樣的話數字對不起來。
+  const incomeRows = incomeBreakdown(budgetMonthIncomeTx, categories);
+
   // 固定收支本月已經自動入帳的金額——有 sourceRuleId 就代表這筆是規則產生的。只看交易
   // 紀錄就算得出來，不用再去拉一次規則清單。
   const recurringThisMonthTotal = transactions
@@ -211,6 +217,7 @@ export function DashboardView() {
   const net = netWorth(accounts, accountTypes, transactions, categories, transfers);
   // 帶上月份，點進去的紀錄頁會把共用篩選器切到同一個月，數字才對得起來。
   const budgetDetailQuery = `kind=支出&month=${budgetYearMonth}`;
+  const incomeDetailQuery = `kind=收入&month=${budgetYearMonth}`;
 
   // 載入中畫骨架，預算清單的列數用上次記住的實際筆數（見 skeleton-count.ts）。
   const budgetSkeletonCount = useSkeletonCount(
@@ -237,6 +244,7 @@ export function DashboardView() {
             <KpiCardSkeleton />
             <KpiCardSkeleton />
           </div>
+          <SectionSkeleton count={Math.min(budgetSkeletonCount, 2)} progress />
           <SectionSkeleton count={budgetSkeletonCount} progress />
           <SectionSkeleton count={Math.min(budgetSkeletonCount, PREVIEW_COUNT)} />
         </div>
@@ -311,6 +319,41 @@ export function DashboardView() {
           />,
         ]}
       />
+
+      {/* 收入來源擺在支出上方：先知道「這個月進來多少、從哪來」，再往下看花到哪去。
+          每一列都可以點，帶著同一個月份導到消費紀錄的收入分頁並篩好那個分類——
+          收入這邊本來沒有任何入口可以點進明細。 */}
+      {incomeRows.length > 0 && (
+        <div>
+          <div className="mb-2 flex items-center justify-between px-1">
+            <p className={text.sectionHeading}>{isCurrentMonth ? "本月收入來源" : `${budgetYearMonth} 收入來源`}</p>
+            <Link href={`/tools/expenses/transactions?${incomeDetailQuery}`} className="text-xs font-medium text-[#6F5FD6]">
+              查看全部
+            </Link>
+          </div>
+          <ListCard>
+            {(incomeRowsExpanded ? incomeRows : incomeRows.slice(0, SUMMARY_LIMIT)).map((row) => (
+              <Link
+                key={row.id}
+                href={`/tools/expenses/transactions?${incomeDetailQuery}&categoryId=${row.id}`}
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+              >
+                <ListProgressRow
+                  icon={row.icon}
+                  iconClassName="bg-[#E3F6EC] text-[#2FAE82]"
+                  name={row.name}
+                  amount={mask(formatCurrency(row.amount))}
+                  pct={row.pct}
+                  barColorClass="bg-[#2FAE82]"
+                />
+              </Link>
+            ))}
+          </ListCard>
+          {incomeRows.length > SUMMARY_LIMIT && (
+            <ExpandToggle expanded={incomeRowsExpanded} total={incomeRows.length} onToggle={() => setIncomeRowsExpanded((v) => !v)} />
+          )}
+        </div>
+      )}
 
       {/* 小標在白框外面、清單在框裡——跟資產總表的「資產」區塊同一種結構。 */}
       <div>
