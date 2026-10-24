@@ -219,21 +219,13 @@ export function DashboardView() {
     ready ? Math.min(expenseRows.length, SUMMARY_LIMIT) : undefined,
   );
 
-  // 遮起來的時候金額換成小一號：＊＊＊＊ 用大字級佔的寬度比真的金額還寬，一整排
-  // 卡片會被撐得忽寬忽窄。
-  const maskedValueClass = amountsHidden ? "text-sm font-bold tabular-nums" : "text-lg font-bold tabular-nums";
-
-  // 主視覺上的兩個控制項：日期置中、比較基準靠右放在它下面一列（兩個並排的話，選了
-  // 自訂區間時日期會變成「2026-10-01 ～ 2026-10-31」，一行放不下）。
+  // 主視覺上的兩個控制項：日期在左上角、比較基準在右上角，同一列的兩端。日期那顆是
+  // 兩行的膠囊（年在上、月在下），自訂區間也放得下，不用再擠成一長串。
   const heroOverlay = (
-    <>
-      <div className="absolute inset-x-5 top-5">
-        <DateFilterPicker compact />
-      </div>
-      <div className="absolute right-5 top-[4.25rem]">
-        <ComparePicker />
-      </div>
-    </>
+    <div className="absolute inset-x-5 top-5 flex items-start justify-between gap-2">
+      <DateFilterPicker hero />
+      <ComparePicker />
+    </div>
   );
 
   if (!ready) {
@@ -285,7 +277,6 @@ export function DashboardView() {
       <KpiCard
         label="本月結餘"
         value={mask(`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`)}
-        valueClassName={maskedValueClass}
         valueColor={balance >= 0 ? "#4A3B7C" : KPI_NEGATIVE}
         delta={balanceDelta && <DeltaText delta={balanceDelta.delta} pct={balanceDelta.pct} goodWhenUp />}
         // 眼睛只掛在這張最上面的卡上，但管的是下面整排（收入／支出／固定收支／淨資產）。
@@ -298,7 +289,6 @@ export function DashboardView() {
             key="income"
             label="本月收入"
             value={mask(formatCurrency(totalIncome))}
-            valueClassName={maskedValueClass}
             valueColor="#4A3B7C"
             href={`/tools/expenses/transactions?kind=收入&month=${budgetYearMonth}`}
             delta={incomeDelta && <DeltaText delta={incomeDelta.delta} pct={incomeDelta.pct} goodWhenUp />}
@@ -307,19 +297,17 @@ export function DashboardView() {
             key="expense"
             label="本月支出"
             value={mask(formatCurrency(totalExpense))}
-            valueClassName={maskedValueClass}
             valueColor="#4A3B7C"
             href={`/tools/expenses/transactions?kind=支出&month=${budgetYearMonth}`}
             delta={expenseDelta && <DeltaText delta={expenseDelta.delta} pct={expenseDelta.pct} goodWhenUp={false} />}
           />,
-          <KpiCard key="recurring" label="固定收支" value={mask(formatCurrency(recurringThisMonthTotal))} valueClassName={maskedValueClass} valueColor="#4A3B7C" />,
+          <KpiCard key="recurring" label="固定收支" value={mask(formatCurrency(recurringThisMonthTotal))} valueColor="#4A3B7C" />,
           // 淨資產用的是資產總表同一個算式，而且首頁本來就已經抓了帳戶／類型／轉帳
           // （新增交易彈窗要用），所以多這張卡不用多打任何一支 API。
           <KpiCard
             key="networth"
             label="淨資產"
             value={mask(`${net >= 0 ? "" : "－"}${formatCurrency(Math.abs(net))}`)}
-            valueClassName={maskedValueClass}
             valueColor={net < 0 ? KPI_NEGATIVE : "#4A3B7C"}
           />,
         ]}

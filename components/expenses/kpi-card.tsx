@@ -33,10 +33,9 @@ export function KpiCard({
   delta,
   action,
   href,
-  valueClassName = "text-lg font-bold tabular-nums",
 }: {
   label: string;
-  value: string;
+  value: ReactNode;
   valueColor: string;
   delta?: ReactNode;
   /** 金額右邊的操作按鈕（目前只有首頁結餘卡的隱藏金額眼睛）。跟金額同一行，不是另外
@@ -44,8 +43,6 @@ export function KpiCard({
   action?: ReactNode;
   /** 有給的話整張卡可以點，導去那一頁看明細。 */
   href?: string;
-  /** 金額的字級——遮起來時換成小一號（見首頁的隱藏金額）。 */
-  valueClassName?: string;
 }) {
   const body = (
     <CardBody className="p-3">
@@ -54,7 +51,7 @@ export function KpiCard({
         {delta}
       </div>
       <div className="mt-0.5 flex items-center justify-between gap-2">
-        <p className={valueClassName} style={{ color: valueColor }}>
+        <p className="text-lg font-bold tabular-nums" style={{ color: valueColor }}>
           {value}
         </p>
         {action}

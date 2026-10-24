@@ -104,7 +104,6 @@ export function TransferModal({
       open={open}
       onClose={onClose}
       title={initial ? "編輯轉帳" : "新增轉帳"}
-      fullHeight
       stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} label="轉帳金額" />}
       footer={
         <ModalFooter
@@ -123,17 +122,20 @@ export function TransferModal({
         />
       }
     >
-      <Field label="從（轉出帳戶）">
-        <button type="button" onClick={() => setPickingFrom(true)} className={`${fieldInputClass} text-left`}>
-          <AccountLabel id={fromAccountId} accounts={accounts} accountTypes={accountTypes} placeholder="選擇帳戶" />
-        </button>
-      </Field>
-
-      <Field label="到（轉入帳戶）">
-        <button type="button" onClick={() => setPickingTo(true)} className={`${fieldInputClass} text-left`}>
-          <AccountLabel id={toAccountId} accounts={accounts} accountTypes={accountTypes} placeholder="選擇帳戶" />
-        </button>
-      </Field>
+      {/* 轉出／轉入並排成一列：這兩欄是一組「從哪裡到哪裡」，上下排開反而要掃兩次才
+          看得出方向；而且各佔一整列會把彈窗拉長到要捲動。 */}
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="從（轉出帳戶）">
+          <button type="button" onClick={() => setPickingFrom(true)} className={`${fieldInputClass} truncate text-left`}>
+            <AccountLabel id={fromAccountId} accounts={accounts} accountTypes={accountTypes} placeholder="選擇帳戶" />
+          </button>
+        </Field>
+        <Field label="到（轉入帳戶）">
+          <button type="button" onClick={() => setPickingTo(true)} className={`${fieldInputClass} truncate text-left`}>
+            <AccountLabel id={toAccountId} accounts={accounts} accountTypes={accountTypes} placeholder="選擇帳戶" />
+          </button>
+        </Field>
+      </div>
 
       <Field label="日期">
         <DateField value={date} onChange={setDate} />

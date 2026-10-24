@@ -6,10 +6,12 @@ import { useSkeletonCount } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
+import { Card, CardBody } from "@/components/expenses/card";
+import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { text } from "@/components/expenses/theme";
 import { AccountModal, type AccountModalDraft } from "@/components/expenses/account-modal";
 import { TransferModal, type TransferModalDraft } from "@/components/expenses/transfer-modal";
-import { accountsByKind, accountBalance, type AccountDTO } from "@/lib/expenses/accounts";
+import { accountsByKind, accountBalance, netWorth, totalByKind, type AccountDTO } from "@/lib/expenses/accounts";
 import { accountTypeById, accountTypeColorClass, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type CategoryDTO } from "@/lib/expenses/categories";
 import { type TransactionDTO } from "@/lib/expenses/transactions";
@@ -87,6 +89,11 @@ export function AssetsView() {
 
   const assets = accountsByKind(accounts, accountTypes, "asset");
   const liabilities = accountsByKind(accounts, accountTypes, "liability");
+  // 頁面最上面先給一個「現在總共有多少」的結論，再往下才是一個一個帳戶——跟報表頁
+  // 「這段期間支出」那張大卡、首頁「本月收入／本月支出」那兩張小卡同一套版面。
+  const net = netWorth(accounts, accountTypes, transactions, categories, transfers);
+  const totalAssets = totalByKind(accounts, accountTypes, transactions, categories, transfers, "asset");
+  const totalLiabilities = totalByKind(accounts, accountTypes, transactions, categories, transfers, "liability");
   return (
     <div>
       {/* 新增帳戶搬到右下角的浮動按鈕，跟首頁新增交易同一招——標題列只留「帳戶類型」
@@ -116,6 +123,24 @@ export function AssetsView() {
         onClose={() => setTransferOpen(false)}
         onSave={handleCreateTransfer}
       />
+
+      {ready && accounts.length > 0 && (
+        <div className="mb-5 flex flex-col gap-3">
+          <Card>
+            <CardBody>
+              <p className={text.muted}>淨資產</p>
+              <p className="mt-1 text-2xl font-bold tabular-nums text-[#4A3B7C]">
+                {net < 0 ? "－" : ""}
+                {formatCurrency(Math.abs(net))}
+              </p>
+            </CardBody>
+          </Card>
+          <div className="grid grid-cols-2 gap-3">
+            <KpiCard label="資產" value={formatCurrency(totalAssets)} valueColor="#4A3B7C" />
+            <KpiCard label="負債" value={formatCurrency(totalLiabilities)} valueColor={totalLiabilities > 0 ? KPI_NEGATIVE : "#4A3B7C"} />
+          </div>
+        </div>
+      )}
 
       {!ready ? (
         <ListCardSkeleton count={skeletonCount} />

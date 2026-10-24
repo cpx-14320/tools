@@ -138,7 +138,7 @@ export function AccountModal({
       </div>
 
       <Field label="名稱">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如「主要活存帳戶」「緊急備用金」" className={fieldInputClass} />
+        <input value={name} onChange={(e) => setName(e.target.value)} className={fieldInputClass} />
       </Field>
       {isDuplicateName && <p className="text-xs text-[#D1517E]">已經有同樣名稱的帳戶了，換一個名稱吧。</p>}
 

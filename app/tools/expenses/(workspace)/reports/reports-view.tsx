@@ -9,15 +9,14 @@ import { SegmentedControl } from "@/components/expenses/button";
 import { DeltaBadge } from "@/components/expenses/delta-badge";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
+import { ComparePicker } from "@/components/expenses/compare-picker";
 import { text } from "@/components/expenses/theme";
 import { DonutChart, type DonutSlice } from "@/components/expenses/donut-chart";
 import { TrendBarChart, NetTrendChart, AssetTrendChart, type TrendSeries } from "@/components/expenses/trend-bar-chart";
-import { KpiCard, DeltaText, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
-import { AssetComparePicker } from "@/components/expenses/asset-compare-picker";
+import { KpiCard, DeltaText, KPI_NEGATIVE, KPI_POSITIVE } from "@/components/expenses/kpi-card";
 import { accountBalance, accountsByKind, balanceDelta, netWorth, netWorthAt, sumByAccountType, totalByKind, type AccountDTO } from "@/lib/expenses/accounts";
 import { accountTypeById, accountTypeColorClass, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
-import { assetCompareDate, defaultAssetCompareSetting, type AssetCompareSetting } from "@/lib/expenses/asset-compare";
 import { categoryById, categoryColorHex, categoryColorClass, type CategoryDTO } from "@/lib/expenses/categories";
 import {
   totalsForRange,
@@ -32,7 +31,7 @@ import {
   type TrendGranularity,
   type TrendPoint,
 } from "@/lib/expenses/transactions";
-import { dateFilterRange, previousPeriodSuffix } from "@/lib/expenses/date-filter";
+import { compareDateFilter, dateFilterRange, previousPeriodSuffix } from "@/lib/expenses/date-filter";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { KpiCardSkeleton, ListCardSkeleton } from "@/components/expenses/skeleton";
 import { useSkeletonCount } from "@/components/expenses/skeleton-count";
@@ -42,20 +41,6 @@ type ReportKind = "支出" | "收入" | "淨額" | "資產";
 
 // 帳戶類型沒有自己的圖表配色，資產配置圖借用分類佔比圖同一組色票循環上色。
 const ASSET_TYPE_COLORS = Object.values(categoryColorHex);
-
-const ASSET_COMPARE_STORAGE_KEY = "cpx-tools:expenses-asset-compare";
-
-function loadSavedAssetCompare(): AssetCompareSetting | null {
-  try {
-    const raw = localStorage.getItem(ASSET_COMPARE_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === "object" && typeof parsed.mode === "string") return parsed as AssetCompareSetting;
-  } catch {
-    /* 私密視窗等情況或資料壞掉，忽略，用預設值 */
-  }
-  return null;
-}
 
 const GRANULARITY_OPTIONS: { value: TrendGranularity; label: string }[] = [
   { value: "day", label: "日" },
@@ -77,7 +62,7 @@ const OTHER_COLOR = "#B3ABD4";
 const TOP_N = PREVIEW_COUNT;
 
 export function ReportsView() {
-  const { filter } = useDateFilter();
+  const { filter, compare } = useDateFilter();
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
@@ -92,29 +77,11 @@ export function ReportsView() {
   const [selectedTrendStart, setSelectedTrendStart] = useState<string | null>(null);
   // 明細裡目前展開看子分類的那個大分類；null＝全部收合。
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
-  // 資產分頁的比較基準（跟上面的日期篩選器無關——資產比的是「現在 vs 某一天」的餘額差，
-  // 見 lib/expenses/asset-compare.ts）。記在 localStorage，下次進來不用重選。
-  const [assetCompare, setAssetCompareState] = useState<AssetCompareSetting>(defaultAssetCompareSetting);
   // 「今天」掛載時算一次固定住——render 當中讀時鐘是不純的。
   const [todayISO] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
-
-  useEffect(() => {
-    const saved = loadSavedAssetCompare();
-    /* eslint-disable-next-line react-hooks/set-state-in-effect */
-    if (saved) setAssetCompareState(saved);
-  }, []);
-
-  function setAssetCompare(next: AssetCompareSetting) {
-    setAssetCompareState(next);
-    try {
-      localStorage.setItem(ASSET_COMPARE_STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      /* 忽略 */
-    }
-  }
 
   useEffect(() => {
     let cancelled = false;
@@ -166,24 +133,31 @@ export function ReportsView() {
 
   // ── 資產分頁 ────────────────────────────────────────────────────────────────
   // 餘額函式本來就是「傳進去哪些交易／轉帳就算哪些」，把資料篩成「日期 <= 基準日」再算
-  // 一次，就是那一天當時的數字（見 lib/expenses/asset-compare.ts）。
+  // 一次，就是那一天當時的數字（見 lib/expenses/accounts.ts 的 netWorthAt）。
   const assetAccounts = accountsByKind(accounts, accountTypes, "asset");
-  const net = netWorth(accounts, accountTypes, transactions, categories, transfers);
-  const totalAssets = totalByKind(accounts, accountTypes, transactions, categories, transfers, "asset");
-  const totalLiabilities = totalByKind(accounts, accountTypes, transactions, categories, transfers, "liability");
+  // 「這段期間的最後一天」就是資產的基準日；選「全部」沒有結束日，那就是今天。
+  const assetAsOf = dateFilterRange(filter)?.end ?? todayISO;
+  const assetTx = transactions.filter((t) => t.date <= assetAsOf);
+  const assetTransfers = transfers.filter((t) => t.date <= assetAsOf);
+  const net = netWorth(accounts, accountTypes, assetTx, categories, assetTransfers);
+  const totalAssets = totalByKind(accounts, accountTypes, assetTx, categories, assetTransfers, "asset");
+  const totalLiabilities = totalByKind(accounts, accountTypes, assetTx, categories, assetTransfers, "liability");
 
-  const compareDate = assetCompareDate(assetCompare, todayISO);
+  // 比較基準跟收支分頁走同一個設定（上一期／去年同期／指定年份）：把現在看的這段期間
+  // 整個平移過去，取平移後那一期的最後一天當時的數字。
+  const compareDate = dateFilterRange(compareDateFilter(filter, compare) ?? filter)?.end ?? null;
   const compareTx = compareDate ? transactions.filter((t) => t.date <= compareDate) : [];
   const compareTransfers = compareDate ? transfers.filter((t) => t.date <= compareDate) : [];
-  const netDelta = compareDate ? balanceDelta(net, netWorth(accounts, accountTypes, compareTx, categories, compareTransfers)) : null;
-  const assetsDelta = compareDate
+  const hasAssetBaseline = compareDate !== null && compareDateFilter(filter, compare) !== null;
+  const netDelta = hasAssetBaseline ? balanceDelta(net, netWorth(accounts, accountTypes, compareTx, categories, compareTransfers)) : null;
+  const assetsDelta = hasAssetBaseline
     ? balanceDelta(totalAssets, totalByKind(accounts, accountTypes, compareTx, categories, compareTransfers, "asset"))
     : null;
-  const liabilitiesDelta = compareDate
+  const liabilitiesDelta = hasAssetBaseline
     ? balanceDelta(totalLiabilities, totalByKind(accounts, accountTypes, compareTx, categories, compareTransfers, "liability"))
     : null;
 
-  const assetTypeTotals = sumByAccountType(assetAccounts, accountTypes, transactions, categories, transfers);
+  const assetTypeTotals = sumByAccountType(assetAccounts, accountTypes, assetTx, categories, assetTransfers);
   const assetTypeSum = [...assetTypeTotals.values()].reduce((sum, v) => sum + v, 0) || 1;
   const assetTypeBreakdown = [...assetTypeTotals.entries()]
     .map(([typeId, amount], i) => ({
@@ -201,7 +175,7 @@ export function ReportsView() {
   // 細項」同一個層次關係。顏色沿用該帳戶所屬類型在圓餅上的顏色，兩邊對得起來。
   const assetAccountRows = assetAccounts
     .map((a) => {
-      const balance = accountBalance(a, accountTypes, transactions, categories, transfers);
+      const balance = accountBalance(a, accountTypes, assetTx, categories, assetTransfers);
       return {
         id: a.id,
         name: a.name,
@@ -270,6 +244,15 @@ export function ReportsView() {
     ...(restAmount > 0 ? [{ id: "other", label: "其他", amount: restAmount, colorHex: OTHER_COLOR }] : []),
   ];
   const visibleRows = expanded ? breakdown : breakdown.slice(0, TOP_N);
+
+  // 淨額沒有「分類佔比」可以畫——它是收入減支出的差，不是一堆分類加起來。能畫的是
+  // 「這段期間的錢從哪裡來、又去了哪裡」：收入跟支出兩片，中間的缺口就是結餘。版面
+  // 跟支出／收入分頁的圓餅完全一樣，四個分頁看起來才是同一種東西。
+  const netDonutData: DonutSlice[] = [
+    { id: "income", label: "收入", amount: totalIncome, colorHex: KPI_POSITIVE },
+    { id: "expense", label: "支出", amount: totalExpense, colorHex: KPI_NEGATIVE },
+  ].filter((d) => d.amount > 0);
+  const netDonutTotal = totalIncome + totalExpense;
 
   const trendPoints = useMemo(
     () => (kind === "支出" || kind === "收入" ? trendByPeriod(transactions, categories, kind, granularity, periods) : []),
@@ -363,7 +346,9 @@ export function ReportsView() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title="報表" />
+      {/* 「跟誰比」放在標題右邊，四個分頁共用同一個設定——本來只有資產分頁裡面有
+          一顆自己的基準日選擇器，切到別的分頁就不見了，而且跟首頁那顆各記各的。 */}
+      <PageHeader title="報表" actions={<ComparePicker />} />
 
       <SegmentedControl
         value={kind}
@@ -382,9 +367,10 @@ export function ReportsView() {
         ]}
       />
 
-      {/* 資產看的是「某一天當時有多少」，不是「一段期間內發生多少」，所以這一頁的時間
-          控制換成基準日選擇器，日期區間篩選器對它沒有意義。 */}
-      {kind === "資產" ? <AssetComparePicker setting={assetCompare} onChange={setAssetCompare} /> : <DateFilterPicker />}
+      {/* 四個分頁共用同一排日／月／年／全部／自訂。資產看的是「某一天當時有多少」而不是
+          「一段期間內發生多少」，所以這一頁對資產的解讀是「這段期間的最後一天當時有
+          多少」——切到 2026-09 就看九月底的淨資產，這樣才看得出每個月的成長或衰退。 */}
+      <DateFilterPicker />
 
       {kind === "資產" ? (
         <>
@@ -502,6 +488,36 @@ export function ReportsView() {
           </div>
         </CardBody>
       </Card>
+
+      {kind === "淨額" && netDonutData.length > 0 && (
+        <Card>
+          <CardBody>
+            <p className={text.sectionHeading}>明細</p>
+            <div className="mt-4 flex items-center gap-5">
+              <DonutChart data={netDonutData} size={120} />
+              <div className="flex flex-1 flex-col gap-2">
+                {netDonutData.map((d) => (
+                  <div key={d.id} className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5 text-[#4A3B7C]">
+                      <span className="size-2.5 shrink-0 rounded-full" style={{ background: d.colorHex }} />
+                      {d.label}
+                    </span>
+                    <span className={`tabular-nums ${text.muted}`}>{((d.amount / netDonutTotal) * 100).toFixed(1)}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* 圓餅只看得出收支的比例，底下補一行把「所以結餘是多少」講完。 */}
+            <div className="mt-5 flex items-center justify-between border-t border-[#F2EEFA] pt-4 text-sm">
+              <span className={text.body}>結餘</span>
+              <span className="tabular-nums font-semibold" style={{ color: balance < 0 ? KPI_NEGATIVE : KPI_POSITIVE }}>
+                {balance < 0 ? "－" : ""}
+                {formatCurrency(Math.abs(balance))}
+              </span>
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       {kind !== "淨額" && (
         <Card>

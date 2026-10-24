@@ -75,11 +75,21 @@ function PeriodNav({
 /** 分類切換（年／月／日／全部／自訂）跟當前期間導覽並排在同一列——跟「趨勢」區塊的
  *  頻率切換＋標題同一種「一排放不下就自動換行」的排法（flex-wrap），不用另外處理
  *  窄螢幕的特例。「自訂」的起訖日期欄位比較寬，擺不進同一列，另外佔一整列。 */
-export function DateFilterPicker({ className = "", compact = false }: { className?: string; compact?: boolean }) {
+export function DateFilterPicker({
+  className = "",
+  compact = false,
+  hero = false,
+}: {
+  className?: string;
+  compact?: boolean;
+  /** 首頁主視覺上的那顆兩行膠囊（年在上、月在下）。 */
+  hero?: boolean;
+}) {
   const { filter, setFilter, setMode } = useDateFilter();
   const [dayPickerOpen, setDayPickerOpen] = useState(false);
   const [rangePickerOpen, setRangePickerOpen] = useState(false);
 
+  if (hero) return <HeroDateFilterPicker className={className} />;
   if (compact) return <CompactDateFilterPicker className={className} />;
 
   return (
@@ -155,6 +165,48 @@ export function DateFilterPicker({ className = "", compact = false }: { classNam
           />
         </>
       )}
+    </div>
+  );
+}
+
+/** 首頁主視覺左上角那顆：年份一行小字、月份一行大字加一個下拉箭頭，點了開區間選擇器。
+ *
+ *  跟 CompactDateFilterPicker 的差別只有外觀——主視覺是一張插畫，膠囊壓在上面，字級
+ *  分成兩行比一行「2026/10 ‹ ›」好認，而且不用擺左右箭頭去跟圖搶位置。選了自訂區間時
+ *  一行放不下起訖日期，改成上行寫年、下行寫「10/01-10/31」。 */
+function HeroDateFilterPicker({ className = "" }: { className?: string }) {
+  const { filter, setFilter } = useDateFilter();
+  const [rangePickerOpen, setRangePickerOpen] = useState(false);
+
+  const custom = filter.mode === "custom";
+  const topLine = custom ? `${filter.customStart.slice(0, 4)}年` : `${filter.year}年`;
+  const bottomLine = custom ? `${filter.customStart.slice(5)}-${filter.customEnd.slice(5)}` : `${filter.month}月`;
+
+  return (
+    <div className={className}>
+      <button
+        type="button"
+        onClick={() => setRangePickerOpen(true)}
+        className="flex flex-col items-center rounded-2xl bg-white/85 px-3.5 py-1.5 shadow-[0_4px_14px_-6px_rgba(111,95,214,0.5)] backdrop-blur-sm"
+      >
+        <span className="text-xs font-medium tabular-nums text-[#9C94C4]">{topLine}</span>
+        <span className="flex items-center gap-0.5 text-lg font-bold leading-tight tabular-nums text-[#4A3B7C]">
+          {bottomLine}
+          <span aria-hidden className="text-[10px] text-[#9C94C4]">
+            ▼
+          </span>
+        </span>
+      </button>
+      <DateRangePickerModal
+        open={rangePickerOpen}
+        initialStart={filter.customStart}
+        initialEnd={filter.customEnd}
+        onClose={() => setRangePickerOpen(false)}
+        onSave={(start, end) => {
+          setFilter({ ...filter, mode: "custom", ...yearMonthOf(start), customStart: start, customEnd: end });
+          setRangePickerOpen(false);
+        }}
+      />
     </div>
   );
 }

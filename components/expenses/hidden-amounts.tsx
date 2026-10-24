@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 const STORAGE_KEY = "cpx-tools:expenses-amounts-hidden";
 
-/** 遮起來時顯示的字樣——保留 NT$ 前綴，看得出這一格本來就是金額、只是被蓋住了。 */
-export const MASKED_AMOUNT = "NT$ ＊＊＊＊";
+/** 遮起來時顯示的字樣——保留 NT$ 前綴，看得出這一格本來就是金額、只是被蓋住了。
+ *
+ *  只有星號縮成 text-sm，NT$ 維持原本的字級：整行一起縮小的話，遮起來跟打開來的那
+ *  一行高度不一樣，卡片會忽高忽矮；星號本身比數字寬，不縮的話又會把卡片撐開。 */
+const MaskedAmount = (
+  <>
+    NT$ <span className="text-sm">＊＊＊＊</span>
+  </>
+);
 
 /** 「把首頁的金額遮起來」的開關，記在這台裝置上。
  *
@@ -38,9 +45,9 @@ export function useHiddenAmounts() {
     }
   }
 
-  /** 要顯示的金額文字——遮起來時一律換成 MASKED_AMOUNT。 */
-  function mask(value: string): string {
-    return hidden ? MASKED_AMOUNT : value;
+  /** 要顯示的金額——遮起來時換成星號（見 MaskedAmount）。 */
+  function mask(value: string): ReactNode {
+    return hidden ? MaskedAmount : value;
   }
 
   return { hidden, toggle, mask };
