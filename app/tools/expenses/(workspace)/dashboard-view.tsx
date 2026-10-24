@@ -9,8 +9,8 @@ import { Carousel } from "@/components/expenses/carousel";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { HiddenAmountsToggle, useHiddenAmounts } from "@/components/expenses/hidden-amounts";
-import { KpiCardSkeleton, SectionSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonCount } from "@/components/expenses/skeleton-count";
+import { GroupedSectionSkeleton, KpiCardSkeleton, SectionSkeleton } from "@/components/expenses/skeleton";
+import { useSkeletonCount, useSkeletonShape } from "@/components/expenses/skeleton-count";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
@@ -222,10 +222,12 @@ export function DashboardView() {
     SUMMARY_LIMIT,
     ready ? Math.min(expenseRows.length, SUMMARY_LIMIT) : undefined,
   );
-  const recentSkeletonCount = useSkeletonCount(
+  // 最近消費是「日期小標＋那天的卡片」一組一組排的，只記總筆數還原不出組數，所以記的是
+  // 形狀（每一組各幾列）。
+  const recentSkeletonShape = useSkeletonShape(
     "cpx-tools:expenses-skeleton:dashboard-recent",
-    PREVIEW_COUNT,
-    ready ? Math.min(recentCount, PREVIEW_COUNT) : undefined,
+    [3, 2],
+    ready ? visibleRecentGroups.map(([, items]) => items.length) : undefined,
   );
 
   // 主視覺上只有日期（左上角）。首頁是「這個月的現況」，不是拿來做期間比較的地方——
@@ -249,7 +251,7 @@ export function DashboardView() {
           </div>
           <SectionSkeleton count={incomeSkeletonCount} progress />
           <SectionSkeleton count={budgetSkeletonCount} progress />
-          <SectionSkeleton count={recentSkeletonCount} />
+          <GroupedSectionSkeleton shape={recentSkeletonShape} />
         </div>
       </HeroShell>
     );

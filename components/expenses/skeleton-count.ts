@@ -13,10 +13,15 @@ import { useEffect, useState } from "react";
 /** 再長的清單超出第一屏的部分本來就看不到，畫上百列骨架只會讓載入本身變慢。 */
 const MAX_SKELETON = 12;
 
+/** 0 也是一個有效的答案（「這一區上次就是空的」），所以要跟「沒存過」分開。
+ *  以前 0 是直接 removeItem，下次讀回來變成 fallback——明明沒有資料卻畫五列骨架，
+ *  資料回來只剩一張「還沒有任何資料」的空卡，畫面整個縮一截。 */
 export function loadSkeletonCount(key: string, fallback: number, max: number = MAX_SKELETON): number {
   try {
-    const n = Number(localStorage.getItem(key));
-    return Number.isFinite(n) && n > 0 ? Math.min(n, max) : fallback;
+    const raw = localStorage.getItem(key);
+    if (raw === null) return fallback;
+    const n = Number(raw);
+    return Number.isFinite(n) && n >= 0 ? Math.min(n, max) : fallback;
   } catch {
     // 私密視窗等情況讀不到，用 fallback 猜。
     return fallback;
@@ -25,8 +30,7 @@ export function loadSkeletonCount(key: string, fallback: number, max: number = M
 
 export function saveSkeletonCount(key: string, count: number) {
   try {
-    if (count > 0) localStorage.setItem(key, String(count));
-    else localStorage.removeItem(key);
+    localStorage.setItem(key, String(Math.max(0, Math.round(count))));
   } catch {
     /* 存不進去就放著，下次還是用 fallback */
   }
@@ -54,4 +58,36 @@ export function useSkeletonCount(key: string, fallback: number, actual?: number)
   }, [key, actual]);
 
   return count;
+}
+
+/** 巢狀清單（「最近消費」是日期底下再掛幾筆）的骨架形狀：每一組各有幾列。
+ *  只記總筆數的話還原不出組數，骨架會少掉每一組之間的日期小標跟間距。 */
+export function useSkeletonShape(key: string, fallback: number[], actual?: number[]): number[] {
+  const [shape, setShape] = useState(fallback);
+  const actualKey = actual === undefined ? undefined : actual.join(",");
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw === null) return;
+      const parsed: unknown = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return;
+      const counts = parsed.filter((n): n is number => typeof n === "number" && Number.isFinite(n) && n >= 0);
+      /* eslint-disable-next-line react-hooks/set-state-in-effect */
+      setShape(counts.slice(0, MAX_SKELETON).map((n) => Math.min(n, MAX_SKELETON)));
+    } catch {
+      /* 讀不到或壞掉就用 fallback */
+    }
+  }, [key]);
+
+  useEffect(() => {
+    if (actualKey === undefined) return;
+    try {
+      localStorage.setItem(key, JSON.stringify(actualKey === "" ? [] : actualKey.split(",").map(Number)));
+    } catch {
+      /* 忽略 */
+    }
+  }, [key, actualKey]);
+
+  return shape;
 }

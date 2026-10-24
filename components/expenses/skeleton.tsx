@@ -1,5 +1,5 @@
 import { Card, CardBody } from "./card";
-import { ListCard } from "./list-row";
+import { EmptyListCard, ListCard } from "./list-row";
 
 /** 載入中的骨架元件庫。
  *
@@ -36,8 +36,22 @@ function RowSkeleton({ progress }: { progress: boolean }) {
   );
 }
 
-/** 一張 ListCard 的骨架——外框跟真的清單同一個（圓角、細框、列間分隔線）。 */
+/** 一張 ListCard 的骨架——外框跟真的清單同一個（圓角、細框、列間分隔線）。
+ *
+ *  count 是 0 代表「上次這一區就是空的」，那時候畫面上出現的是一張 EmptyListCard
+ *  （一行置中的說明），所以骨架也要畫成那個形狀、那個高度，不是畫 0 列變成一條
+ *  扁扁的空框。 */
 export function ListCardSkeleton({ count, progress = false }: { count: number; progress?: boolean }) {
+  // 直接借 EmptyListCard 的外框，高度、邊框、陰影才會跟真的空卡一模一樣。
+  if (count <= 0) {
+    return (
+      <EmptyListCard>
+        <span className="inline-block align-middle">
+          <SkeletonBar width={72} height={12} />
+        </span>
+      </EmptyListCard>
+    );
+  }
   return (
     <ListCard>
       {Array.from({ length: count }, (_, i) => (
@@ -68,6 +82,40 @@ export function SectionSkeleton({ count, progress = false }: { count: number; pr
         <SkeletonBar width={48} height={12} />
       </div>
       <ListCardSkeleton count={count} progress={progress} />
+    </div>
+  );
+}
+
+/** 依日期分組的清單骨架（首頁的「最近消費」）——每一組一個小標＋一張卡。
+ *
+ *  `shape` 是「每一組各有幾列」，來自 skeleton-count.ts 記住的上次形狀。只記總筆數的話
+ *  沒辦法還原組數，畫成一張大卡就會少掉每一組之間的小標跟間距，資料回來時高度照樣跳。 */
+export function GroupedSectionSkeleton({ shape }: { shape: number[] }) {
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between px-1">
+        <SkeletonBar width={96} height={14} />
+        <SkeletonBar width={48} height={12} />
+      </div>
+      {shape.length === 0 ? (
+        <ListCardSkeleton count={0} />
+      ) : (
+        <div className="flex flex-col gap-5">
+          {shape.map((rows, i) => (
+            <div key={i}>
+              <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
+                <SkeletonBar width={80} height={12} />
+                <SkeletonBar width={64} height={12} />
+              </div>
+              <ListCard>
+                {Array.from({ length: rows }, (_, r) => (
+                  <RowSkeleton key={r} progress={false} />
+                ))}
+              </ListCard>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
