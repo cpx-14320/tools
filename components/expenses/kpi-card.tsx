@@ -25,7 +25,21 @@ export function DeltaText({ delta, pct, goodWhenUp }: { delta: number; pct: numb
  *  也統一跟其他小標題區塊（資產/負債小標旁邊放操作、首頁卡片旁邊放「查看全部」）
  *  同一種「小標左、附加資訊右」的版型。總覽頁（本月收入/支出/結餘）跟資產總表
  *  （淨資產/資產/負債）共用同一套樣式，不要兩邊各自手刻。 */
-export function KpiCard({ label, value, valueColor, delta }: { label: string; value: string; valueColor: string; delta?: ReactNode }) {
+export function KpiCard({
+  label,
+  value,
+  valueColor,
+  delta,
+  action,
+}: {
+  label: string;
+  value: string;
+  valueColor: string;
+  delta?: ReactNode;
+  /** 金額右邊的操作按鈕（目前只有首頁結餘卡的隱藏金額眼睛）。跟金額同一行，不是另外
+   *  一列，不然這張卡會為了一顆小按鈕多長一截。 */
+  action?: ReactNode;
+}) {
   return (
     <Card>
       <CardBody className="p-3">
@@ -33,9 +47,12 @@ export function KpiCard({ label, value, valueColor, delta }: { label: string; va
           <p className={text.muted}>{label}</p>
           {delta}
         </div>
-        <p className="mt-0.5 text-lg font-bold tabular-nums" style={{ color: valueColor }}>
-          {value}
-        </p>
+        <div className="mt-0.5 flex items-center justify-between gap-2">
+          <p className="text-lg font-bold tabular-nums" style={{ color: valueColor }}>
+            {value}
+          </p>
+          {action}
+        </div>
       </CardBody>
     </Card>
   );

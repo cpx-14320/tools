@@ -8,6 +8,7 @@ import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { Carousel } from "@/components/expenses/carousel";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
+import { HiddenAmountsToggle, useHiddenAmounts } from "@/components/expenses/hidden-amounts";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { KpiCard, DeltaText, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
@@ -69,6 +70,8 @@ export function DashboardView() {
   // 兩張長清單各自的「展開／收合」，預設都是收起來的（見 ExpandToggle）。
   const [expenseRowsExpanded, setExpenseRowsExpanded] = useState(false);
   const [recentExpanded, setRecentExpanded] = useState(false);
+  // 在外面看記帳本時把金額遮起來，記在這台裝置上（見 hidden-amounts.tsx）。
+  const { hidden: amountsHidden, toggle: toggleAmounts, mask } = useHiddenAmounts();
   // 「今天」掛載時算一次固定住——render 當中讀時鐘是不純的。
   const [todayISO] = useState(() => {
     const d = new Date();
@@ -227,9 +230,11 @@ export function DashboardView() {
           收入退回輪播裡跟支出、固定收支、淨資產並列，剛好四張＝兩頁兩欄，不會留半格空白。 */}
       <KpiCard
         label="本月結餘"
-        value={`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`}
+        value={mask(`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`)}
         valueColor={balance >= 0 ? "#4A3B7C" : KPI_NEGATIVE}
         delta={balanceDelta && <DeltaText delta={balanceDelta.delta} pct={balanceDelta.pct} goodWhenUp />}
+        // 眼睛只掛在這張最上面的卡上，但管的是下面整排（收入／支出／固定收支／淨資產）。
+        action={<HiddenAmountsToggle hidden={amountsHidden} onToggle={toggleAmounts} />}
       />
       <Carousel
         perSlide={2}
@@ -237,24 +242,24 @@ export function DashboardView() {
           <KpiCard
             key="income"
             label="本月收入"
-            value={formatCurrency(totalIncome)}
+            value={mask(formatCurrency(totalIncome))}
             valueColor="#4A3B7C"
             delta={incomeDelta && <DeltaText delta={incomeDelta.delta} pct={incomeDelta.pct} goodWhenUp />}
           />,
           <KpiCard
             key="expense"
             label="本月支出"
-            value={formatCurrency(totalExpense)}
+            value={mask(formatCurrency(totalExpense))}
             valueColor="#4A3B7C"
             delta={expenseDelta && <DeltaText delta={expenseDelta.delta} pct={expenseDelta.pct} goodWhenUp={false} />}
           />,
-          <KpiCard key="recurring" label="固定收支" value={formatCurrency(recurringThisMonthTotal)} valueColor="#4A3B7C" />,
+          <KpiCard key="recurring" label="固定收支" value={mask(formatCurrency(recurringThisMonthTotal))} valueColor="#4A3B7C" />,
           // 淨資產用的是資產總表同一個算式，而且首頁本來就已經抓了帳戶／類型／轉帳
           // （新增交易彈窗要用），所以多這張卡不用多打任何一支 API。
           <KpiCard
             key="networth"
             label="淨資產"
-            value={`${net >= 0 ? "" : "－"}${formatCurrency(Math.abs(net))}`}
+            value={mask(`${net >= 0 ? "" : "－"}${formatCurrency(Math.abs(net))}`)}
             valueColor={net < 0 ? KPI_NEGATIVE : "#4A3B7C"}
           />,
         ]}
