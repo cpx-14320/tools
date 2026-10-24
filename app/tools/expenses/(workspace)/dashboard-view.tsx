@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
@@ -33,7 +33,31 @@ import { type TransferDTO } from "@/lib/expenses/transfers";
 import { budgetPace, monthDaysLeft, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
 import { formatCurrency } from "@/lib/format";
 
-/** 把 `YYYY-MM-DD` 往前／往後推幾天。用本地時區的 Date 做日曆運算，不碰 UTC。 */
+/** 首頁的主視覺＋底下那張蓋上來的白色內容面板，比照搭乘車首頁的版型
+ *  （app/tools/transit/home-view.tsx）。
+ *
+ *  外層的負邊距是為了掙脫外殼給每一頁的留白（ExpensesMobileShell 的 px-5 pt-6 pb-6）——
+ *  主視覺要滿版出血，不能縮在左右各 20px 的內容欄裡。白色面板的 -mt-16 讓它往上蓋住
+ *  主視覺的下緣，圓角才會壓在圖片上；pb 留到導覽列以下，不然捲到底會露出外殼的紫色漸層。 */
+function HeroShell({ children, overlay }: { children: ReactNode; overlay: ReactNode }) {
+  return (
+    <div className="-mx-5 -mb-24 -mt-6 flex flex-1 flex-col">
+      <div className="relative h-56 w-full shrink-0 overflow-hidden bg-[#EDE6FB]">
+        {/* 固定一張本地插畫、尺寸也固定，不需要 next/image 的動態最佳化（搭乘車的
+            ImageSlot 同樣是直接用 <img>）。底色先鋪著，圖還沒載完時不會是一片白。 */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/expenses/main-work.png" alt="記帳插畫" className="h-full w-full object-cover" />
+        {/* 選日期跟比較基準疊在圖上（絕對定位），不佔內容面板的高度——這兩個控制項一年
+            到頭都在那裡，擺進白色面板裡等於每次進首頁都先看到兩列控制項才看到數字。 */}
+        {overlay}
+      </div>
+      <div className="relative z-10 -mt-16 flex-1 rounded-t-[2rem] bg-white px-5 pb-28 pt-5 shadow-[0_-8px_24px_-8px_rgba(111,95,214,0.2)]">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 /** 依日期分組的清單，跨組往下數到第 limit 筆為止（數滿了的那一組只留前面幾筆，
  *  後面的組整組捨去）。給「最近消費」收合用。 */
 function limitEntries<T>(groups: [string, T[]][], limit: number): [string, T[]][] {
@@ -47,6 +71,7 @@ function limitEntries<T>(groups: [string, T[]][], limit: number): [string, T[]][
   return out;
 }
 
+/** 把 `YYYY-MM-DD` 往前／往後推幾天。用本地時區的 Date 做日曆運算，不碰 UTC。 */
 function shiftDays(date: string, delta: number): string {
   const [y, m, d] = date.split("-").map(Number);
   const shifted = new Date(y, m - 1, d + delta);
@@ -187,21 +212,30 @@ export function DashboardView() {
   // 帶上月份，點進去的紀錄頁會把共用篩選器切到同一個月，數字才對得起來。
   const budgetDetailQuery = `kind=支出&month=${budgetYearMonth}`;
 
+  // 主視覺上的兩個控制項：日期置中、比較基準靠右放在它下面一列（兩個並排的話，選了
+  // 自訂區間時日期會變成「2026-10-01 ～ 2026-10-31」，一行放不下）。
+  const heroOverlay = (
+    <>
+      <div className="absolute inset-x-5 top-5">
+        <DateFilterPicker compact />
+      </div>
+      <div className="absolute right-5 top-[4.25rem]">
+        <ComparePicker />
+      </div>
+    </>
+  );
+
   if (!ready) {
     return (
-      <div className="flex flex-col gap-4">
-        <DateFilterPicker compact />
+      <HeroShell overlay={heroOverlay}>
         <p className={text.faint}>載入中…</p>
-      </div>
+      </HeroShell>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <DateFilterPicker compact />
-      <div className="-mt-1 flex justify-end">
-        <ComparePicker />
-      </div>
+    <HeroShell overlay={heroOverlay}>
+      <div className="flex flex-col gap-4">
 
       {/* key 跟著開關變動＝每次打開都重新掛載一個乾淨的彈窗：不這樣做的話，上一筆填過的
           金額、分類會原封不動留著，使用者得自己一個一個清掉才能記下一筆。其他頁面的
@@ -434,7 +468,8 @@ export function DashboardView() {
             )}
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </HeroShell>
   );
 }

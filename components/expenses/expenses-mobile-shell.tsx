@@ -27,7 +27,9 @@ export function ExpensesMobileShell({ children }: { children: ReactNode }) {
             pb-24，見 transit-mobile-shell.tsx）——pb-24 留給底部導覽列（fixed、不佔版面流動
             空間），左右／上下留白搬進內層這個 div，main 本身保持跟搭乘車一致、不吃 padding。 */}
         <main className="min-h-0 flex-1 overflow-y-auto pb-24">
-          <div className="flex flex-col px-5 pb-6 pt-6">{children}</div>
+          {/* min-h-full：讓頁面至少佔滿捲動區的高度，內容不夠長時底下才不會露出外殼的
+              紫色漸層。首頁的主視覺版型（HeroShell）靠這個讓白色面板撐到底。 */}
+          <div className="flex min-h-full flex-col px-5 pb-6 pt-6">{children}</div>
         </main>
 
         <ExpensesMobileNav />
