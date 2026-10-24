@@ -162,13 +162,13 @@ export function DateFilterPicker({ className = "", compact = false }: { classNam
 /** 精簡版：只有一顆「2026/10 ‹ ›」的膠囊，沒有日／月／年／全部／自訂那排頁籤。
  *
  *  ‹ › 一次換一個月，已經是本月時「下一月」變灰（還沒發生的月份沒東西可看）；點中間的
- *  日期會開區間選擇器，挑完就是自訂區間，label 改成顯示起訖日期。自訂狀態下再按箭頭就
- *  回到「按月瀏覽」，從那段區間的起始月份接著走——不然選了自訂之後會卡在裡面出不來。
+ *  日期開年月選擇器，只挑年跟月、不挑區間——首頁講的是「這個月」（本月結餘、本月收入、
+ *  本月預算支出），挑一段任意區間的話那些標題就對不上了。要看任意區間請用報表頁。
  *
  *  給版面緊的頁面用（首頁）：頁籤那一排佔掉一整列，但九成的時候使用者只是要看某個月。 */
 function CompactDateFilterPicker({ className = "" }: { className?: string }) {
   const { filter, setFilter } = useDateFilter();
-  const [rangePickerOpen, setRangePickerOpen] = useState(false);
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   // 「這個月」掛載時算一次固定住——render 當中讀時鐘是不純的。
   const [nowYearMonth] = useState(() => {
     const d = new Date();
@@ -176,7 +176,7 @@ function CompactDateFilterPicker({ className = "" }: { className?: string }) {
   });
 
   const custom = filter.mode === "custom";
-  // 自訂區間時，箭頭以區間起始日所在的月份為基準往前後走。
+  // 自訂區間時（從報表頁切過來的），箭頭以區間起始日所在的月份為基準往前後走。
   const baseYear = custom ? Number(filter.customStart.slice(0, 4)) : filter.year;
   const baseMonth = custom ? Number(filter.customStart.slice(5, 7)) : filter.month;
   const atCurrentMonth = filter.mode === "month" && filter.year === nowYearMonth.year && filter.month === nowYearMonth.month;
@@ -211,16 +211,18 @@ function CompactDateFilterPicker({ className = "" }: { className?: string }) {
         onPrev={() => goMonth(-1)}
         onNext={() => goMonth(1)}
         nextDisabled={atCurrentMonth}
-        onLabelClick={() => setRangePickerOpen(true)}
+        onLabelClick={() => setMonthPickerOpen(true)}
       />
-      <DateRangePickerModal
-        open={rangePickerOpen}
-        initialStart={filter.customStart}
-        initialEnd={filter.customEnd}
-        onClose={() => setRangePickerOpen(false)}
-        onSave={(start, end) => {
-          setFilter({ ...filter, mode: "custom", ...yearMonthOf(start), customStart: start, customEnd: end });
-          setRangePickerOpen(false);
+      {/* granularity="month"：選年、選月兩步就結束，不會再跳到選日。 */}
+      <DatePickerModal
+        open={monthPickerOpen}
+        granularity="month"
+        initial={`${baseYear}-${pad2(baseMonth)}`}
+        onClose={() => setMonthPickerOpen(false)}
+        onSave={(value) => {
+          const [y, m] = value.split("-").map(Number);
+          setFilter({ ...filter, mode: "month", year: y, month: m });
+          setMonthPickerOpen(false);
         }}
       />
     </div>

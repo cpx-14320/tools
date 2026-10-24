@@ -12,20 +12,17 @@ import { HiddenAmountsToggle, useHiddenAmounts } from "@/components/expenses/hid
 import { KpiCardSkeleton, SectionSkeleton } from "@/components/expenses/skeleton";
 import { useSkeletonCount } from "@/components/expenses/skeleton-count";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
-import { KpiCard, DeltaText, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
+import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { text } from "@/components/expenses/theme";
-import { compareDateFilter, dateFilterRange, defaultDateFilter, referenceYearMonth } from "@/lib/expenses/date-filter";
-import { ComparePicker } from "@/components/expenses/compare-picker";
+import { dateFilterRange, defaultDateFilter, referenceYearMonth } from "@/lib/expenses/date-filter";
 import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
 import { categoryColorClass, categoryFillClass, categoryPath, displayCategoryOf, topLevelCategories, type CategoryDTO } from "@/lib/expenses/categories";
 import {
   totalsForRange,
-  rangeDelta,
   categoryBreakdown,
   incomeBreakdown,
   budgetSummary,
-  transactionsInDateRange,
   transactionDisplayName,
   type TransactionDTO,
 } from "@/lib/expenses/transactions";
@@ -85,7 +82,7 @@ function shiftDays(date: string, delta: number): string {
 const SUMMARY_LIMIT = PREVIEW_COUNT;
 
 export function DashboardView() {
-  const { filter, compare } = useDateFilter();
+  const { filter } = useDateFilter();
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
@@ -156,14 +153,8 @@ export function DashboardView() {
   }
 
   const range = dateFilterRange(filter);
-  const hasPriorData = (r: ReturnType<typeof dateFilterRange>) => transactionsInDateRange(transactions, r).length > 0;
 
   const { totalIncome, totalExpense, balance, expenseTx } = totalsForRange(transactions, categories, range);
-  // 「跟誰比」由使用者在比較基準選單決定（上一期／去年同期／指定年份同期／不比較）。
-  const baseline = compareDateFilter(filter, compare);
-  const incomeDelta = rangeDelta((r) => totalsForRange(transactions, categories, r).totalIncome, filter, hasPriorData, baseline);
-  const expenseDelta = rangeDelta((r) => totalsForRange(transactions, categories, r).totalExpense, filter, hasPriorData, baseline);
-  const balanceDelta = rangeDelta((r) => totalsForRange(transactions, categories, r).balance, filter, hasPriorData, baseline);
   // 「最近消費」只看近 7 天，而且是以「這段期間裡最新的一筆」為基準往回推——用今天當
   // 基準的話，翻到過去的月份時這一區會整個空掉。依日期分組（新的在上面），跟消費紀錄
   // 頁同一種版面。
@@ -219,34 +210,46 @@ export function DashboardView() {
   const budgetDetailQuery = `kind=支出&month=${budgetYearMonth}`;
   const incomeDetailQuery = `kind=收入&month=${budgetYearMonth}`;
 
-  // 載入中畫骨架，預算清單的列數用上次記住的實際筆數（見 skeleton-count.ts）。
+  // 載入中畫骨架。三塊清單各記各的筆數——它們長度本來就不一樣（收入來源通常一兩列、
+  // 預算支出五六列），共用一個數字的話一定有兩塊對不上，資料回來時版面就會跳。
+  const incomeSkeletonCount = useSkeletonCount(
+    "cpx-tools:expenses-skeleton:dashboard-income",
+    2,
+    ready ? Math.min(incomeRows.length, SUMMARY_LIMIT) : undefined,
+  );
   const budgetSkeletonCount = useSkeletonCount(
     "cpx-tools:expenses-skeleton:dashboard-budget",
     SUMMARY_LIMIT,
     ready ? Math.min(expenseRows.length, SUMMARY_LIMIT) : undefined,
   );
+  const recentSkeletonCount = useSkeletonCount(
+    "cpx-tools:expenses-skeleton:dashboard-recent",
+    PREVIEW_COUNT,
+    ready ? Math.min(recentCount, PREVIEW_COUNT) : undefined,
+  );
 
-  // 主視覺上的兩個控制項：日期在左上角、比較基準在右上角，同一列的兩端。
+  // 主視覺上只有日期（左上角）。首頁是「這個月的現況」，不是拿來做期間比較的地方——
+  // 「跟誰比」那組設定收斂到報表頁，四個分頁共用一顆就夠了。
   const heroOverlay = (
-    <div className="absolute inset-x-5 top-5 flex items-start justify-between gap-2">
+    <div className="absolute inset-x-5 top-5 flex items-start">
       <DateFilterPicker compact />
-      <ComparePicker />
     </div>
   );
 
   if (!ready) {
-    // 骨架的形狀照著載入完成後的版面排：一張大結餘卡、一排兩欄的小卡、預算清單。
+    // 骨架照著載入完成後的版面排——連外層的 gap 都要一樣（下面是 gap-5），不然資料
+    // 回來時每一塊的間距都會變一次。三塊清單的列數各自來自上次記住的實際筆數。
     return (
       <HeroShell overlay={heroOverlay}>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           <KpiCardSkeleton />
           <div className="grid grid-cols-2 gap-3">
             <KpiCardSkeleton />
             <KpiCardSkeleton />
           </div>
-          <SectionSkeleton count={Math.min(budgetSkeletonCount, 2)} progress />
+          <SectionSkeleton count={incomeSkeletonCount} progress />
           <SectionSkeleton count={budgetSkeletonCount} progress />
-          <SectionSkeleton count={Math.min(budgetSkeletonCount, PREVIEW_COUNT)} />
+          <SectionSkeleton count={recentSkeletonCount} />
         </div>
       </HeroShell>
     );
@@ -285,7 +288,6 @@ export function DashboardView() {
         label="本月結餘"
         value={mask(`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`)}
         valueColor={balance >= 0 ? "#4A3B7C" : KPI_NEGATIVE}
-        delta={balanceDelta && <DeltaText delta={balanceDelta.delta} pct={balanceDelta.pct} goodWhenUp />}
         // 眼睛只掛在這張最上面的卡上，但管的是下面整排（收入／支出／固定收支／淨資產）。
         action={<HiddenAmountsToggle hidden={amountsHidden} onToggle={toggleAmounts} />}
       />
@@ -298,7 +300,6 @@ export function DashboardView() {
             value={mask(formatCurrency(totalIncome))}
             valueColor="#4A3B7C"
             href={`/tools/expenses/transactions?kind=收入&month=${budgetYearMonth}`}
-            delta={incomeDelta && <DeltaText delta={incomeDelta.delta} pct={incomeDelta.pct} goodWhenUp />}
           />,
           <KpiCard
             key="expense"
@@ -306,7 +307,6 @@ export function DashboardView() {
             value={mask(formatCurrency(totalExpense))}
             valueColor="#4A3B7C"
             href={`/tools/expenses/transactions?kind=支出&month=${budgetYearMonth}`}
-            delta={expenseDelta && <DeltaText delta={expenseDelta.delta} pct={expenseDelta.pct} goodWhenUp={false} />}
           />,
           <KpiCard key="recurring" label="固定收支" value={mask(formatCurrency(recurringThisMonthTotal))} valueColor="#4A3B7C" />,
           // 淨資產用的是資產總表同一個算式，而且首頁本來就已經抓了帳戶／類型／轉帳
@@ -331,7 +331,7 @@ export function DashboardView() {
             </Link>
           </div>
           {incomeRows.length === 0 ? (
-            <EmptyListCard>這個月還沒有收入紀錄</EmptyListCard>
+            <EmptyListCard />
           ) : (
           <ListCard>
             {(incomeRowsExpanded ? incomeRows : incomeRows.slice(0, SUMMARY_LIMIT)).map((row) => (
@@ -366,7 +366,7 @@ export function DashboardView() {
           </Link>
         </div>
         {expenseRows.length === 0 ? (
-          <EmptyListCard>這個月還沒有支出紀錄</EmptyListCard>
+          <EmptyListCard />
         ) : (
           <ListCard>
             <div className="px-4 py-3.5">
@@ -454,7 +454,7 @@ export function DashboardView() {
           </Link>
         </div>
         {recentGroups.length === 0 ? (
-          <EmptyListCard>這段期間還沒有消費紀錄</EmptyListCard>
+          <EmptyListCard />
         ) : (
           // 版面跟「查看全部」進去的消費紀錄頁一樣：日期當小標、右邊掛當天小計，底下才是
           // 那一天的明細（標題是備註/分類、副標是分類路徑）。

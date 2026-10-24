@@ -210,6 +210,41 @@ export interface ImportRowResult {
  *  一起回傳讓畫面列出哪幾列有問題、為什麼。
  *
  *  相容舊檔：沒有「明細」那一欄的舊匯出檔（只有四欄）一樣可以匯入，明細就是空的。 */
+/** 把 CSV 的分類欄對應到真正的分類。
+ *
+ *  欄位可以填完整路徑「薪水 › 春酒禮金」或只填名稱「春酒禮金」。以前一律只取最後一段
+ *  去比名稱，填了路徑也是白填——而同一個名稱在不同大分類底下（甚至同時存在一個同名的
+ *  頂層分類）是完全合法的，比到誰純粹看分類清單的順序。實際發生過：「春酒禮金」同時
+ *  存在於「薪水」底下跟頂層，匯入時全部掛到頂層那個，報表上就變成一個獨立的大分類，
+ *  而不是在「薪水」展開的細項裡。
+ *
+ *  所以：有填路徑就用路徑比對（父名稱＋子名稱都要對）；只填名稱而且剛好只有一個同名
+ *  分類就用那個；同名的有好幾個就擋下來請使用者寫完整路徑，不要替他猜。 */
+function matchCategory(categories: CategoryLookupItem[], cell: string): { category: CategoryLookupItem } | { error: string } {
+  const text = cell.trim();
+  if (!text) return { error: "找不到分類「（空白）」" };
+
+  const parts = text.split("›").map((p) => p.trim());
+  const leafName = parts[parts.length - 1];
+  const parentName = parts.length > 1 ? parts[parts.length - 2] : "";
+  const nameById = new Map(categories.map((c) => [c.id, c.name]));
+  const sameName = categories.filter((c) => c.name === leafName);
+
+  if (sameName.length === 0) return { error: `找不到分類「${text}」` };
+
+  if (parentName) {
+    const hit = sameName.find((c) => c.parentId && nameById.get(c.parentId) === parentName);
+    if (!hit) return { error: `找不到分類「${text}」——「${parentName}」底下沒有「${leafName}」` };
+    return { category: hit };
+  }
+
+  if (sameName.length > 1) {
+    const paths = sameName.map((c) => (c.parentId ? `${nameById.get(c.parentId) ?? "?"} › ${c.name}` : `${c.name}（大分類）`));
+    return { error: `有 ${sameName.length} 個分類都叫「${leafName}」（${paths.join("、")}），請改填完整路徑` };
+  }
+  return { category: sameName[0] };
+}
+
 export function parseTransactionsCSV(
   text: string,
   categories: CategoryLookupItem[],
@@ -229,11 +264,9 @@ export function parseTransactionsCSV(
     if (!amountText || Number.isNaN(amount) || amount <= 0) {
       return { row: rowNum, ok: false, error: "金額不是有效數字" };
     }
-    const leafName = (categoryText ?? "").split("›").pop()?.trim() ?? "";
-    const category = categories.find((c) => c.name === leafName);
-    if (!category) {
-      return { row: rowNum, ok: false, error: `找不到分類「${categoryText?.trim() || "（空白）"}」` };
-    }
+    const matched = matchCategory(categories, categoryText ?? "");
+    if ("error" in matched) return { row: rowNum, ok: false, error: matched.error };
+    const category = matched.category;
 
     // 有填明細的話，加項減扣項要剛好等於金額欄——app 裡的明細本來就是「金額由明細
     // 加總算出來」（見 transaction-modal.tsx），兩邊兜不起來一定是有一項打錯或漏掉。

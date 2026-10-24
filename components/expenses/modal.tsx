@@ -60,7 +60,9 @@ export function Modal({
       <div className="relative flex h-full w-full justify-center px-0 py-0 sm:px-4 sm:py-6">
         <div className="flex h-dvh w-full max-w-[430px] items-end sm:h-[850px]">
           <div
-            className={`flex w-full flex-col overflow-hidden rounded-t-[1.75rem] bg-white ${fullHeight ? "h-full max-h-full" : "max-h-[80%]"}`}
+            // 滿版的彈窗不要上圓角：圓角切掉的那兩個角會透出底下那層的顏色，看起來像
+            // 沒蓋滿。只有半高的彈窗需要圓角，那是它「從下面滑上來」的視覺。
+            className={`flex w-full flex-col overflow-hidden bg-white ${fullHeight ? "h-full max-h-full" : "max-h-[80%] rounded-t-[1.75rem]"}`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex shrink-0 items-center justify-between border-b border-[#ECE4FA] px-5 py-4">
