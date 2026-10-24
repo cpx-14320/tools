@@ -7,6 +7,7 @@ import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { Carousel } from "@/components/expenses/carousel";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
+import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { KpiCard, DeltaText, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
@@ -32,6 +33,19 @@ import { budgetPace, monthDaysLeft, withLegacyCategoryBudgets, type BudgetRuleDT
 import { formatCurrency } from "@/lib/format";
 
 /** 把 `YYYY-MM-DD` 往前／往後推幾天。用本地時區的 Date 做日曆運算，不碰 UTC。 */
+/** 依日期分組的清單，跨組往下數到第 limit 筆為止（數滿了的那一組只留前面幾筆，
+ *  後面的組整組捨去）。給「最近消費」收合用。 */
+function limitEntries<T>(groups: [string, T[]][], limit: number): [string, T[]][] {
+  const out: [string, T[]][] = [];
+  let left = limit;
+  for (const [date, items] of groups) {
+    if (left <= 0) break;
+    out.push([date, items.slice(0, left)]);
+    left -= items.length;
+  }
+  return out;
+}
+
 function shiftDays(date: string, delta: number): string {
   const [y, m, d] = date.split("-").map(Number);
   const shifted = new Date(y, m - 1, d + delta);
@@ -40,7 +54,7 @@ function shiftDays(date: string, delta: number): string {
 
 // 首頁只做「摘要」，不是報表頁的另一份拷貝——這幾張卡片的清單固定只顯示前 5 筆，
 // 分類一多也不會把首頁拉得又臭又長，完整清單一律用「查看完整報表」導去報表頁看。
-const SUMMARY_LIMIT = 5;
+const SUMMARY_LIMIT = PREVIEW_COUNT;
 
 export function DashboardView() {
   const { filter, compare } = useDateFilter();
@@ -52,6 +66,9 @@ export function DashboardView() {
   const [budgetRules, setBudgetRules] = useState<BudgetRuleDTO[]>([]);
   const [ready, setReady] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  // 兩張長清單各自的「展開／收合」，預設都是收起來的（見 ExpandToggle）。
+  const [expenseRowsExpanded, setExpenseRowsExpanded] = useState(false);
+  const [recentExpanded, setRecentExpanded] = useState(false);
   // 「今天」掛載時算一次固定住——render 當中讀時鐘是不純的。
   const [todayISO] = useState(() => {
     const d = new Date();
@@ -127,6 +144,13 @@ export function DashboardView() {
       .filter((t) => t.date >= recentCutoff)
       .reduce((map, t) => map.set(t.date, [...(map.get(t.date) ?? []), t]), new Map<string, TransactionDTO[]>())
   ];
+  const recentCount = recentGroups.reduce((sum, [, items]) => sum + items.length, 0);
+  // 每一天的小計一律照「那一天全部的紀錄」算，不是照收合後看得到的那幾筆——被收起來的
+  // 那天如果只剩兩筆，小計卻跟著縮水的話，展開前後同一天會出現兩個不同的金額。
+  const recentDayTotals = new Map(recentGroups.map(([date, items]) => [date, items.reduce((sum, t) => sum + t.amount, 0)]));
+  // 收起來時算的是「總共幾筆」，不是「幾天」——同一天可能有五六筆，照天數切的話收合後
+  // 還是一長串。所以跨日期往下數到第 PREVIEW_COUNT 筆為止，那一天剩下的就一起收起來。
+  const visibleRecentGroups = recentExpanded ? recentGroups : limitEntries(recentGroups, PREVIEW_COUNT);
 
   // 預算本來就是以「月」為單位，所以不直接吃篩選器的區間（可能是一天、一年或自訂區間），
   // 而是取篩選器的參考月份：篩到 2026-08 就看 8 月的預算，切回本月就看本月。這樣卡片標題、
@@ -281,7 +305,7 @@ export function DashboardView() {
             {/* 每一列都可以點，直接跳到紀錄頁、而且已經幫你篩好那個分類的明細。
                 有編預算的畫「花了多少／預算多少」的進度條，沒編預算的只報金額——沒有
                 分母就沒有進度可言，硬畫一條空的反而像是用了 0%。 */}
-            {expenseRows.slice(0, SUMMARY_LIMIT).map((row) =>
+            {(expenseRowsExpanded ? expenseRows : expenseRows.slice(0, SUMMARY_LIMIT)).map((row) =>
               row.budget ? (
                 <Link
                   key={row.category.id}
@@ -315,6 +339,13 @@ export function DashboardView() {
               ),
             )}
           </ListCard>
+        )}
+        {expenseRows.length > SUMMARY_LIMIT && (
+          <ExpandToggle
+            expanded={expenseRowsExpanded}
+            total={expenseRows.length}
+            onToggle={() => setExpenseRowsExpanded((v) => !v)}
+          />
         )}
       </div>
 
@@ -362,13 +393,11 @@ export function DashboardView() {
           // 版面跟「查看全部」進去的消費紀錄頁一樣：日期當小標、右邊掛當天小計，底下才是
           // 那一天的明細（標題是備註/分類、副標是分類路徑）。
           <div className="flex flex-col gap-4">
-            {recentGroups.map(([date, items]) => (
+            {visibleRecentGroups.map(([date, items]) => (
               <div key={date}>
                 <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
                   <p className={`font-medium ${text.muted}`}>{date}</p>
-                  <p className={`font-medium tabular-nums ${text.muted}`}>
-                    －{formatCurrency(items.reduce((sum, t) => sum + t.amount, 0))}
-                  </p>
+                  <p className={`font-medium tabular-nums ${text.muted}`}>－{formatCurrency(recentDayTotals.get(date) ?? 0)}</p>
                 </div>
                 <ListCard>
                   {items.map((t) => {
@@ -390,6 +419,14 @@ export function DashboardView() {
                 </ListCard>
               </div>
             ))}
+            {recentCount > PREVIEW_COUNT && (
+              <ExpandToggle
+                expanded={recentExpanded}
+                total={recentCount}
+                onToggle={() => setRecentExpanded((v) => !v)}
+                label="顯示近七日"
+              />
+            )}
           </div>
         )}
       </div>

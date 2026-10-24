@@ -33,6 +33,7 @@ import {
   type TrendPoint,
 } from "@/lib/expenses/transactions";
 import { dateFilterRange, previousPeriodSuffix } from "@/lib/expenses/date-filter";
+import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { formatCurrency } from "@/lib/format";
 
 type ReportKind = "支出" | "收入" | "淨額" | "資產";
@@ -71,7 +72,7 @@ const PERIOD_OPTIONS_BY_GRANULARITY: Record<TrendGranularity, number[]> = {
 const GRANULARITY_UNIT: Record<TrendGranularity, string> = { day: "天", week: "週", month: "月", year: "年" };
 
 const OTHER_COLOR = "#B3ABD4";
-const TOP_N = 5;
+const TOP_N = PREVIEW_COUNT;
 
 export function ReportsView() {
   const { filter } = useDateFilter();
@@ -573,11 +574,7 @@ export function ReportsView() {
                   })}
                 </div>
                 {breakdown.length > TOP_N && (
-                  <div className="mt-3 flex justify-center">
-                    <button type="button" onClick={() => setExpanded((v) => !v)} className="text-xs font-medium text-[#6F5FD6]">
-                      {expanded ? "收合" : `顯示全部 (${breakdown.length})`}
-                    </button>
-                  </div>
+                  <ExpandToggle expanded={expanded} total={breakdown.length} onToggle={() => setExpanded((v) => !v)} />
                 )}
               </>
             )}
