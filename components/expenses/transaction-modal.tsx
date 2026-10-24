@@ -10,8 +10,8 @@ import { CategoryBatchModal, type CategoryBatchItem } from "./category-batch-mod
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { InlineIcon } from "./icon-avatar";
 import { text } from "./theme";
-import { categoryById, categoryPath, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
-import { breakdownNet, frequentCombos, type BreakdownItem, type BreakdownKind, type TransactionDTO } from "@/lib/expenses/transactions";
+import { categoryPath, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
+import { breakdownNet, type BreakdownItem, type BreakdownKind, type TransactionDTO } from "@/lib/expenses/transactions";
 import { type AccountDTO } from "@/lib/expenses/accounts";
 import { accountTypeById, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
@@ -105,7 +105,6 @@ export function TransactionModal({
   const breakdownValid = !hasBreakdown || breakdown.every((b) => b.label.trim() && Number.isFinite(b.amount) && b.amount > 0);
   const canSave = categoryId && Number.isFinite(amountNum) && amountNum > 0 && date && breakdownValid;
 
-  const combos = frequentCombos(transactions, categories, kind);
   const selectedAccount = accounts.find((a) => a.id === accountId);
   const selectedAccountIcon = selectedAccount ? (accountTypeById(accountTypes, selectedAccount.accountTypeId)?.icon ?? "") : "";
 
@@ -208,40 +207,6 @@ export function TransactionModal({
           { value: "收入", label: "收入" },
         ]}
       />
-
-      {/* 常用組合置頂：從最近的紀錄統計出最常用的「分類＋帳戶」，點一下兩欄一起填好，
-          只有編輯既有紀錄時不顯示（那時候欄位本來就有值，再推薦只會誤觸）。 */}
-      {!initial && combos.length > 0 && (
-        <div>
-          <span className="text-xs font-medium text-[#9C94C4]">常用</span>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {combos.map((combo) => {
-              const cat = categoryById(categories, combo.categoryId);
-              const acc = combo.accountId ? accounts.find((a) => a.id === combo.accountId) : undefined;
-              if (!cat) return null;
-              const active = categoryId === combo.categoryId && (combo.accountId ?? "") === accountId;
-              return (
-                <button
-                  key={`${combo.categoryId}|${combo.accountId ?? ""}`}
-                  type="button"
-                  onClick={() => {
-                    setCategoryId(combo.categoryId);
-                    setAccountId(combo.accountId ?? "");
-                  }}
-                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                    active ? "border-[#6F5FD6] bg-[#6F5FD6] text-white" : "border-[#ECE4FA] bg-white text-[#4A3B7C]"
-                  }`}
-                >
-                  {/* 只有文字——這一排是「分類＋帳戶」的組合，圖示不是用來辨識的資訊，
-                      拿掉之後一列能多放一兩個常用組合。 */}
-                  <span>{cat.name}</span>
-                  {acc && <span className={active ? "text-white/70" : "text-[#9C94C4]"}>· {acc.name}</span>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       <div>
         <div className="mb-2 flex items-center justify-between">
@@ -376,7 +341,7 @@ export function TransactionModal({
             }}
             className="self-start text-xs font-medium text-[#6F5FD6] hover:underline"
           >
-            ＋ 新增明細（這筆錢想拆成好幾個加項/扣項時再用）
+            ＋ 新增明細
           </button>
         ))}
 

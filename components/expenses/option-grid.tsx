@@ -1,6 +1,7 @@
 "use client";
 
 import { IconAvatar } from "./icon-avatar";
+import { unselectedOption } from "./theme";
 
 export interface GridOption {
   id: string;
@@ -47,7 +48,13 @@ export function OptionGrid({
         const active = option.id === value;
         return (
           <div key={option.id} className="flex flex-col items-center gap-1 py-0.5">
-            <button type="button" onClick={() => onChange(option.id)} className="flex w-full flex-col items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onChange(option.id)}
+              // 挑了一個之後其他格子淡掉（跟圖示選擇器同一組 class，見 theme.ts）——
+              // 格子一多的時候，光靠選中那格的色環很難一眼看出挑到哪個。
+              className={`flex w-full flex-col items-center gap-1 transition-opacity ${value && !active ? unselectedOption : ""}`}
+            >
               <IconAvatar
                 icon={option.icon}
                 size="sm"

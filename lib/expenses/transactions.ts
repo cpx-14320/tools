@@ -53,46 +53,6 @@ export function transactionDisplayName(t: TransactionDTO, categories: CategoryDT
   return t.note || categoryById(categories, t.categoryId)?.name || "（未分類）";
 }
 
-/** 新增交易時置頂的「常用組合」——從最近的紀錄裡統計最常出現的「分類＋帳戶」配對，
- *  點一下就把兩個欄位一起填好。只看最近 RECENT_WINDOW 筆，生活型態變了（換工作、搬家）
- *  之後舊習慣會自然淡出，不用另外做一組「我的最愛」讓使用者維護。
- *
- *  刻意連帳戶一起當成組合的一部分：同樣是「餐飲」，用現金付跟刷卡是兩種不同的習慣，
- *  分開列出來才真的省到選帳戶那一步；沒掛帳戶的紀錄也算一種組合（accountId 為空）。 */
-const RECENT_WINDOW = 120;
-
-export interface FrequentCombo {
-  categoryId: string;
-  accountId?: string;
-  count: number;
-}
-
-export function frequentCombos(
-  transactions: TransactionDTO[],
-  categories: CategoryDTO[],
-  kind: CategoryKind,
-  limit = 4,
-): FrequentCombo[] {
-  const recent = [...transactions]
-    .filter((t) => categoryById(categories, t.categoryId)?.kind === kind)
-    .sort((a, b) => (a.date < b.date ? 1 : -1))
-    .slice(0, RECENT_WINDOW);
-
-  const counts = new Map<string, FrequentCombo>();
-  for (const t of recent) {
-    const key = `${t.categoryId}|${t.accountId ?? ""}`;
-    const hit = counts.get(key);
-    if (hit) hit.count++;
-    else counts.set(key, { categoryId: t.categoryId, accountId: t.accountId, count: 1 });
-  }
-
-  // 只出現過一次的不算「常用」，列出來只是把雜訊推到最上面。
-  return [...counts.values()]
-    .filter((c) => c.count > 1)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, limit);
-}
-
 export function transactionsInDateRange(transactions: TransactionDTO[], range: DateRange | null): TransactionDTO[] {
   return transactions.filter((t) => inDateRange(t.date, range)).sort((a, b) => (a.date < b.date ? -1 : 1));
 }

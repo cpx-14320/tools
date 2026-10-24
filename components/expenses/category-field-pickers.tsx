@@ -2,7 +2,7 @@
 
 import { InlineIcon } from "./icon-avatar";
 import { Field } from "./modal";
-import { text } from "./theme";
+import { text, unselectedOption } from "./theme";
 import { ACCOUNT_ICON_OPTIONS, EXPENSE_ICON_OPTIONS, INCOME_ICON_OPTIONS, ICON_OTHER, type IconOption } from "@/lib/expenses/presets";
 import { categoryFillClass, type CategoryColor, type CategoryKind } from "@/lib/expenses/categories";
 
@@ -33,7 +33,7 @@ function IconPicker({ options, value, onChange }: { options: IconOption[]; value
             onClick={() => onChange(option.path)}
             aria-label={`圖示 ${option.label}`}
             aria-pressed={value === option.path}
-            className={`transition-opacity ${value === option.path ? "" : "opacity-40 hover:opacity-70"}`}
+            className={`transition-opacity ${value === option.path ? "" : unselectedOption}`}
           >
             {/* 要 block：InlineIcon 是 <span>，行內元素吃不到寬高，不加的話整排會是空的。 */}
             <InlineIcon icon={option.path} className="block size-10" />

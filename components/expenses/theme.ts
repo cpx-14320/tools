@@ -42,6 +42,13 @@ export const text = {
   statValue: "text-lg font-bold tabular-nums text-[#4A3B7C]",
 } as const;
 
+/** 「這個選項沒被選中」的統一表現：選到的那個保持原樣，其他的淡掉成灰灰的一片。
+ *
+ *  圖示選擇器（category-field-pickers.tsx）跟格子選擇器（option-grid.tsx）共用這一組
+ *  class——兩邊都是「一排東西挑一個」，挑的手感要一樣。一個都還沒選的時候不要套，
+ *  不然整排都是暗的，看起來像全部不能點。 */
+export const unselectedOption = "opacity-40 hover:opacity-70";
+
 /** 間距規範——卡片/區塊/欄位之間統一用這幾階，不要每個頁面自己湊 gap-3／gap-4／gap-5。
  *  card：同一張卡片內，標題跟內容、內容跟內容之間的間距。section：頁面裡一個區塊
  *  （一張卡片／一個列表）跟下一個區塊之間的間距。field：表單裡欄位跟欄位之間。
