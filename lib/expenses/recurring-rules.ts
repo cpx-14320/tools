@@ -136,21 +136,3 @@ export function describeCycle(rule: Pick<RecurringRuleDTO, "cycleCount">): strin
   return rule.cycleCount ? `循環 ${rule.cycleCount} 期` : "無限期循環";
 }
 
-export interface UpcomingOccurrence {
-  rule: RecurringRuleDTO;
-  date: string;
-}
-
-/** 接下來 until（含）之前還沒發生的幾期——給首頁「接下來會自動入帳」的提醒用。
- *  到期的期數進頁面時就已經被 autoConfirmDueOccurrences 補掉了，所以「還沒發生」
- *  等同於「日期在今天之後」，不用再去比對哪幾期已經入帳。暫停中的規則不算。 */
-export function upcomingOccurrences(rules: RecurringRuleDTO[], today: string, until: string): UpcomingOccurrence[] {
-  const result: UpcomingOccurrence[] = [];
-  for (const rule of rules) {
-    if (!rule.active) continue;
-    for (const occ of occurrencesUpTo(rule, until)) {
-      if (occ.date > today) result.push({ rule, date: occ.date });
-    }
-  }
-  return result.sort((a, b) => (a.date < b.date ? -1 : 1));
-}

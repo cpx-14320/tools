@@ -107,10 +107,15 @@ async function budgetKeptMonth(userId: ObjectId, today: string): Promise<string 
   return allKept ? prevMonth : null;
 }
 
-/** 結算獎勵：算出還沒發過的獎勵，一次把幣加上去、把 key 記起來。
+/** 結算獎勵：算出還沒發過的獎勵，把幣加上去、把 key 記起來。
  *
- *  掛在每次進記帳本時跑（跟固定收支自動入帳同一個時機），所以必須是冪等的——重複跑
- *  只會發一次，靠的是 claimedKeys。 */
+ *  掛在每次進記帳本時跑（跟固定收支自動入帳同一個時機），而且進養成頁時 API 還會再跑
+ *  一次，所以必須是冪等的——同一筆獎勵不管結算幾次都只能發一次。
+ *
+ *  每一筆獎勵各自用一次「條件更新」寫入：條件是「claimedKeys 裡還沒有這個 key」，所以
+ *  檢查跟寫入是同一個原子操作。先前是「先讀出 claimedKeys 比對、再一次寫回」，兩個請求
+ *  同時進來時會雙雙通過比對、各發一次（實際資料裡已經出現重複的 key 跟多發的星星幣）。
+ *  modifiedCount 是 0 就代表這一筆被別人搶先發掉了，不算在這次的 justEarned 裡。 */
 export async function settlePetRewards(userId: ObjectId, today: string): Promise<PetStateDTO> {
   const pet = await ensurePet(userId);
 
@@ -124,14 +129,20 @@ export async function settlePetRewards(userId: ObjectId, today: string): Promise
   });
   if (rewards.length === 0) return toDTO(pet);
 
-  const coins = rewards.reduce((sum, r) => sum + r.coins, 0);
   const col = await collection();
-  await col.updateOne({ _id: pet._id }, { $inc: { coins }, $push: { claimedKeys: { $each: rewards.map((r) => r.key) } } });
-  return toDTO({ ...pet, coins: pet.coins + coins }, rewards);
-}
+  const granted: PetReward[] = [];
+  for (const reward of rewards) {
+    const res = await col.updateOne(
+      { _id: pet._id, claimedKeys: { $ne: reward.key } },
+      { $inc: { coins: reward.coins }, $push: { claimedKeys: reward.key } },
+    );
+    if (res.modifiedCount === 1) granted.push(reward);
+  }
+  if (granted.length === 0) return toDTO(pet);
 
-export async function getPetState(userId: ObjectId): Promise<PetStateDTO> {
-  return toDTO(await ensurePet(userId));
+  // 重新讀一次，拿到真正寫進去的幣數（這次結算可能只發了其中幾筆）。
+  const updated = await col.findOne({ _id: pet._id });
+  return toDTO(updated ?? pet, granted);
 }
 
 /** 買食物——先進背包，不會立刻吃掉，要另外呼叫 feedPet 才會消耗。 */
