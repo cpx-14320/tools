@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ListCardSkeleton } from "@/components/expenses/skeleton";
+import { FaIcon } from "@/components/expenses/fa-icon";
+import { DateGroupsSkeleton, SummaryCardSkeleton } from "@/components/expenses/skeleton";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
-import { useSkeletonCount } from "@/components/expenses/skeleton-count";
+import { useSkeletonShape } from "@/components/expenses/skeleton-count";
 import { useSearchParams } from "next/navigation";
 import { SegmentedControl, PillButton } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
@@ -65,7 +66,6 @@ export function TransactionsView() {
   const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [ready, setReady] = useState(false);
   // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
-  const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:transactions", 8, ready ? transactions.length : undefined);
   const [query, setQuery] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
   const [kind, setKind] = useState<CategoryKind>(initialKind);
@@ -172,6 +172,14 @@ export function TransactionsView() {
     list.push(t);
     groups.set(t.date, list);
   }
+
+  // 骨架的形狀＝每一組（每一天）各有幾列，而不是總筆數：只記總數還原不出組數，
+  // 畫成一張大卡就會少掉日期小標跟組間距。支出／收入的筆數差很多，兩個分頁各記各的。
+  const skeletonShape = useSkeletonShape(
+    `cpx-tools:expenses-skeleton:transactions:${kind}`,
+    [3, 2, 4],
+    ready ? [...groups.values()].map((items) => items.length) : undefined,
+  );
 
   function toggleExpanded(id: string) {
     setExpandedIds((set) => {
@@ -341,9 +349,9 @@ export function TransactionsView() {
       {/* 搜尋列貼著清單：它篩的是下面那份清單，擺在整頁最上面（日期篩選器之上）看起來
           像是跟期間同一組設定。 */}
       <label className="mb-4 flex items-center gap-2 rounded-full border border-[#ECE4FA] bg-white px-4 py-2.5">
-        <span aria-hidden className="text-[#9C94C4]">
-          🔍
-        </span>
+        {/* 跟搭乘車同一套 Font Awesome 實心圖（那邊的鉛筆是 fa-pen），emoji 在不同
+            平台長得不一樣、線條粗細也跟整頁的圖示對不上。 */}
+        <FaIcon icon="magnifying-glass" size={14} className="shrink-0 text-[#9C94C4]" />
         <input
           type="search"
           value={query}
@@ -373,7 +381,11 @@ export function TransactionsView() {
       />
 
       {!ready ? (
-        <ListCardSkeleton count={skeletonCount} />
+        // 骨架照著載入完成後的版面排：一張期間合計卡，底下是依日期分組的清單。
+        <div className="flex flex-col gap-4">
+          <SummaryCardSkeleton delta />
+          <DateGroupsSkeleton shape={skeletonShape} />
+        </div>
       ) : (
         <>
           {isSearching ? (
@@ -445,7 +457,10 @@ export function TransactionsView() {
                                   {kind === "收入" ? "＋" : "－"}
                                   {formatCurrency(t.amount)}
                                 </span>
-                                {account && balanceAfter !== undefined && (
+                                {/* 只有支出列才顯示「記完之後帳戶剩多少」：收入是把錢加
+                                    進帳戶，那個數字跟「還剩多少可以花」無關，掛在這裡
+                                    只是把列塞滿。 */}
+                                {kind === "支出" && account && balanceAfter !== undefined && (
                                   <span className={`mt-0.5 max-w-[120px] truncate tabular-nums ${text.faint}`}>
                                     {account.name} {formatCurrency(balanceAfter)}
                                   </span>

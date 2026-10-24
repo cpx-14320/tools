@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Card, CardBody } from "./card";
 import { EmptyListCard, ListCard } from "./list-row";
 
@@ -116,6 +117,106 @@ export function GroupedSectionSkeleton({ shape }: { shape: number[] }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/** 一張白卡的骨架外框——內容自己傳，給各頁刻自己的形狀用。 */
+export function CardSkeleton({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <Card className={className}>
+      <CardBody>{children}</CardBody>
+    </Card>
+  );
+}
+
+/** 「這段期間支出 NT$ 7,700」那種大數字摘要卡（報表頁最上面、消費紀錄頁的期間合計）。 */
+export function SummaryCardSkeleton({ delta = false }: { delta?: boolean }) {
+  return (
+    <CardSkeleton>
+      <SkeletonBar width={72} height={12} />
+      <div className="mt-2 flex items-end justify-between gap-2">
+        <SkeletonBar width={148} height={24} />
+        {delta && <SkeletonBar width={96} height={12} />}
+      </div>
+    </CardSkeleton>
+  );
+}
+
+/** 圓餅＋圖例＋底下的清單——報表頁「明細」那張卡。 */
+export function DonutCardSkeleton({ rows }: { rows: number }) {
+  return (
+    <CardSkeleton>
+      <SkeletonBar width={48} height={14} />
+      <div className="mt-4 flex items-center gap-5">
+        <div className={`size-[120px] shrink-0 animate-pulse rounded-full ${SKELETON_BG}`} />
+        <div className="flex flex-1 flex-col gap-2.5">
+          {Array.from({ length: Math.max(rows, 1) }, (_, i) => (
+            <div key={i} className="flex items-center justify-between gap-2">
+              <SkeletonBar width="45%" height={10} />
+              <SkeletonBar width={36} height={10} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="mt-5 flex flex-col gap-3 border-t border-[#F2EEFA] pt-4">
+        {Array.from({ length: Math.max(rows, 1) }, (_, i) => (
+          <div key={i} className="flex w-full items-center gap-3">
+            <div className={`size-9 shrink-0 animate-pulse rounded-xl ${SKELETON_BG}`} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <SkeletonBar width="35%" />
+                <SkeletonBar width="30%" />
+              </div>
+              <SkeletonBar width="100%" height={8} className="mt-2" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </CardSkeleton>
+  );
+}
+
+/** 趨勢卡：標題＋頻率切換、期間膠囊、一排長條。 */
+export function TrendCardSkeleton() {
+  return (
+    <CardSkeleton>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <SkeletonBar width={32} height={14} />
+        <SkeletonBar width={148} height={30} className="rounded-full" />
+      </div>
+      <div className="mt-3 flex gap-1.5">
+        {[56, 56, 64, 64].map((w, i) => (
+          <SkeletonBar key={i} width={w} height={26} className="rounded-full" />
+        ))}
+      </div>
+      <div className="mt-5 flex h-[150px] items-end gap-2">
+        {[40, 70, 55, 85, 60, 95].map((h, i) => (
+          <div key={i} className={`flex-1 animate-pulse rounded-t-md ${SKELETON_BG}`} style={{ height: `${h}%` }} />
+        ))}
+      </div>
+    </CardSkeleton>
+  );
+}
+
+/** 依日期分組、但沒有區塊小標的清單骨架（消費紀錄頁的列表）。 */
+export function DateGroupsSkeleton({ shape }: { shape: number[] }) {
+  if (shape.length === 0) return <ListCardSkeleton count={0} />;
+  return (
+    <div className="flex flex-col gap-5">
+      {shape.map((rows, i) => (
+        <div key={i}>
+          <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
+            <SkeletonBar width={80} height={12} />
+            <SkeletonBar width={64} height={12} />
+          </div>
+          <ListCard>
+            {Array.from({ length: rows }, (_, r) => (
+              <RowSkeleton key={r} progress={false} />
+            ))}
+          </ListCard>
+        </div>
+      ))}
     </div>
   );
 }

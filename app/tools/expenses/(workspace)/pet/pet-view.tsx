@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
+import { CardSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
 import { Card, CardBody } from "@/components/expenses/card";
 import { PillButton } from "@/components/expenses/button";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
@@ -118,10 +119,52 @@ export function PetView() {
   }
 
   if (!ready) {
+    // 這一頁的版面是固定的（角色場地、食物背包、商店入口三張卡），不像清單頁會隨
+    // 筆數變長，所以骨架直接把那三張卡的形狀畫出來，載入前後的高度就一樣。
     return (
       <div>
         <PageHeader title="養成" />
-        <p className={text.faint}>載入中…</p>
+        <CardSkeleton className="mb-4">
+          <div className="aspect-square w-full animate-pulse rounded-2xl bg-[#EDE6FB]" />
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <div>
+              <SkeletonBar width={56} height={14} />
+              <SkeletonBar width={140} height={12} className="mt-1.5" />
+            </div>
+            <SkeletonBar width={64} height={30} className="rounded-full" />
+          </div>
+          <div className="mt-3">
+            <div className="mb-1 flex items-center justify-between">
+              <SkeletonBar width={40} height={12} />
+              <SkeletonBar width={48} height={12} />
+            </div>
+            <SkeletonBar width="100%" height={8} />
+          </div>
+        </CardSkeleton>
+
+        <CardSkeleton className="mb-4">
+          <div className="flex items-center justify-between gap-2">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex flex-1 flex-col items-center gap-1 py-1">
+                <div className="size-10 animate-pulse rounded-xl bg-[#EDE6FB]" />
+                <SkeletonBar width={56} height={11} />
+              </div>
+            ))}
+          </div>
+        </CardSkeleton>
+
+        <CardSkeleton>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="size-11 animate-pulse rounded-2xl bg-[#EDE6FB]" />
+              <div>
+                <SkeletonBar width={40} height={14} />
+                <SkeletonBar width={128} height={12} className="mt-1.5" />
+              </div>
+            </div>
+            <SkeletonBar width={48} height={14} />
+          </div>
+        </CardSkeleton>
       </div>
     );
   }

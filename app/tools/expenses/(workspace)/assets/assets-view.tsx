@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ListCardSkeleton } from "@/components/expenses/skeleton";
+import { CardSkeleton, KpiCardSkeleton, SectionSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
 import { useSkeletonCount } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
@@ -26,7 +26,6 @@ export function AssetsView() {
   const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [ready, setReady] = useState(false);
   // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
-  const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:assets", 4, ready ? accounts.length : undefined);
   const [createOpen, setCreateOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   useEffect(() => {
@@ -89,6 +88,10 @@ export function AssetsView() {
 
   const assets = accountsByKind(accounts, accountTypes, "asset");
   const liabilities = accountsByKind(accounts, accountTypes, "liability");
+  // 資產跟負債兩段各記各的筆數——大多數人資產好幾個、負債零到一個，共用一個數字一定
+  // 有一段對不上。
+  const assetSkeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:assets-asset", 2, ready ? assets.length : undefined);
+  const liabilitySkeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:assets-liability", 1, ready ? liabilities.length : undefined);
   // 頁面最上面先給一個「現在總共有多少」的結論，再往下才是一個一個帳戶——跟報表頁
   // 「這段期間支出」那張大卡、首頁「本月收入／本月支出」那兩張小卡同一套版面。
   const net = netWorth(accounts, accountTypes, transactions, categories, transfers);
@@ -143,7 +146,23 @@ export function AssetsView() {
       )}
 
       {!ready ? (
-        <ListCardSkeleton count={skeletonCount} />
+        // 骨架照著載入完成後的版面排：淨資產大卡、資產/負債兩張小卡，再來是兩段帳戶清單。
+        <div>
+          <div className="mb-5 flex flex-col gap-3">
+            <CardSkeleton>
+              <SkeletonBar width={48} height={12} />
+              <SkeletonBar width={148} height={24} className="mt-2" />
+            </CardSkeleton>
+            <div className="grid grid-cols-2 gap-3">
+              <KpiCardSkeleton />
+              <KpiCardSkeleton />
+            </div>
+          </div>
+          <div className="flex flex-col gap-5">
+            <SectionSkeleton count={assetSkeletonCount} />
+            <SectionSkeleton count={liabilitySkeletonCount} />
+          </div>
+        </div>
       ) : accounts.length === 0 ? (
         <p className={text.faint}>還沒有任何帳戶，點右下角的＋新增第一個</p>
       ) : (

@@ -33,7 +33,7 @@ import {
 } from "@/lib/expenses/transactions";
 import { compareDateFilter, dateFilterRange, previousPeriodSuffix } from "@/lib/expenses/date-filter";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
-import { KpiCardSkeleton, ListCardSkeleton } from "@/components/expenses/skeleton";
+import { DonutCardSkeleton, KpiCardSkeleton, SummaryCardSkeleton, TrendCardSkeleton } from "@/components/expenses/skeleton";
 import { useSkeletonCount } from "@/components/expenses/skeleton-count";
 import { formatCurrency } from "@/lib/format";
 
@@ -334,12 +334,26 @@ export function ReportsView() {
   const selectedExpensePoint = kind === "淨額" ? (expenseTrendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
 
   if (!ready) {
-    // 骨架照著載入完成後的版面排：期間總額一張大卡，底下是分類明細清單。
+    // 骨架照著載入完成後的版面排：分頁切換、日期篩選器、期間總額、明細（圓餅＋清單）、
+    // 趨勢。前兩排是固定的控制項，直接畫出它們的形狀，資料回來時只有數字長出來。
     return (
       <div className="flex flex-col gap-4">
         <PageHeader title="報表" />
-        <KpiCardSkeleton />
-        <ListCardSkeleton count={skeletonCount} progress />
+        <div className="h-[42px] animate-pulse rounded-full bg-[#EDE6FB]" />
+        <div className="h-[34px] w-[232px] animate-pulse rounded-full bg-[#EDE6FB]" />
+        {kind === "資產" ? (
+          <>
+            <KpiCardSkeleton />
+            <div className="grid grid-cols-2 gap-3">
+              <KpiCardSkeleton />
+              <KpiCardSkeleton />
+            </div>
+          </>
+        ) : (
+          <SummaryCardSkeleton delta />
+        )}
+        <DonutCardSkeleton rows={skeletonCount} />
+        <TrendCardSkeleton />
       </div>
     );
   }

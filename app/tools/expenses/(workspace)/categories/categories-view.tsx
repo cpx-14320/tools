@@ -27,7 +27,7 @@ export function CategoriesView() {
   const [modal, setModal] = useState<CategoryDTO | null>(null);
   const [batchTarget, setBatchTarget] = useState<BatchTarget | null>(null);
   const [kind, setKind] = useState<CategoryKind>("支出");
-  const [deleteConfirm, setDeleteConfirm] = useState<{ ids: string[]; inUseCount: number } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ ids: string[]; inUseCount: number; subCount: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,17 +86,36 @@ export function CategoriesView() {
     return { blocked, totalInUse };
   }
 
+  /** 選取的這批裡，主分類底下總共掛著幾個子分類——刪主分類會連子分類一起刪掉
+   *  （見 categories.server.ts 的 deleteCategory），刪之前要先講清楚。 */
+  function subCount(ids: string[]): number {
+    return categories.filter((c) => c.parentId && ids.includes(c.parentId)).length;
+  }
+
   async function handleDelete() {
     if (!modal) return;
-    const { blocked, totalInUse } = await tryDeleteCategories([modal.id], false);
+    const ids = [modal.id];
+    // 有子分類就先問一次，就算完全沒有紀錄在用也一樣——「刪一個主分類結果底下五個
+    // 子分類一起不見」不該是按下去之後才發現的事。
+    if (subCount(ids) > 0) {
+      setModal(null);
+      setDeleteConfirm({ ids, inUseCount: 0, subCount: subCount(ids) });
+      return;
+    }
+    const { blocked, totalInUse } = await tryDeleteCategories(ids, false);
     setModal(null);
-    if (blocked.length > 0) setDeleteConfirm({ ids: blocked, inUseCount: totalInUse });
+    if (blocked.length > 0) setDeleteConfirm({ ids: blocked, inUseCount: totalInUse, subCount: subCount(blocked) });
   }
 
   async function handleBulkDelete() {
-    const { blocked, totalInUse } = await tryDeleteCategories([...selection.selectedIds], false);
+    const ids = [...selection.selectedIds];
+    if (subCount(ids) > 0) {
+      setDeleteConfirm({ ids, inUseCount: 0, subCount: subCount(ids) });
+      return;
+    }
+    const { blocked, totalInUse } = await tryDeleteCategories(ids, false);
     if (blocked.length > 0) {
-      setDeleteConfirm({ ids: blocked, inUseCount: totalInUse });
+      setDeleteConfirm({ ids: blocked, inUseCount: totalInUse, subCount: subCount(blocked) });
     } else {
       selection.exit();
     }
@@ -173,10 +192,20 @@ export function CategoriesView() {
         onSave={handleBatchSave}
       />
 
+      {/* 兩件事分開講：子分類會跟著一起消失、既有紀錄會被改掛到「未分類」。
+          兩種情況可能同時發生，所以訊息是組出來的，不是二選一。 */}
       <ConfirmModal
         open={deleteConfirm !== null}
-        title="這些分類還有紀錄"
-        message={`選取的分類裡，還有共 ${deleteConfirm?.inUseCount ?? 0} 筆交易或固定收支規則在用。刪除後這些紀錄會自動歸類到「未分類」，不會被刪除也不會變成孤兒資料。確定要刪除嗎？`}
+        title={(deleteConfirm?.subCount ?? 0) > 0 ? "會連子分類一起刪除" : "這些分類還有紀錄"}
+        message={[
+          (deleteConfirm?.subCount ?? 0) > 0 ? `底下的 ${deleteConfirm?.subCount} 個子分類也會一起刪除。` : "",
+          (deleteConfirm?.inUseCount ?? 0) > 0
+            ? `還有共 ${deleteConfirm?.inUseCount} 筆交易或固定收支規則在用，刪除後這些紀錄會自動歸類到「未分類」，不會被刪除也不會變成孤兒資料。`
+            : "已經記過的交易如果有掛到這些分類，會自動歸類到「未分類」，不會被刪除。",
+          "確定要刪除嗎？",
+        ]
+          .filter(Boolean)
+          .join("")}
         onConfirm={handleForceDelete}
         onClose={() => setDeleteConfirm(null)}
       />
