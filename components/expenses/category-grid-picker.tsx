@@ -54,7 +54,11 @@ export function CategoryGridPicker({
         // 標一行「項目」：這排圓角選項跟上面的分類格子長得完全不一樣，不寫清楚的話
         // 會被當成另一組分類，不知道是在選剛剛那個分類底下的細項。
         <div className="mt-3 flex flex-col gap-2">
-          <span className={text.label}>項目</span>
+          <div className="flex items-center gap-2">
+            <span className={text.label}>項目</span>
+            {/* 還停在大分類上就提醒一句，不要讓人按了儲存（灰的）之後才在猜哪裡沒填。 */}
+            {value === activeParentId && <span className="text-xs font-medium text-[#D1517E]">請選一個項目</span>}
+          </div>
           <div className="flex flex-wrap gap-2">
             {subcategories.map((sub) => (
               <button

@@ -31,6 +31,17 @@ export function subCategoriesOf(categories: CategoryDTO[], parentId: string): Ca
   return categories.filter((c) => c.parentId === parentId);
 }
 
+/** 這筆帳還不能存——選到的是「有子分類的大分類」，但還沒挑子分類。
+ *
+ *  有子分類的大分類只是個殼，錢要記在底下的項目上；記在殼身上的話，報表展開這個大分類
+ *  時那筆錢在每一個子分類裡都找不到，只能另外列成「其他」一類，看起來像是算錯。所以
+ *  建立的時候就擋下來，不要事後再去收拾。反過來，沒有子分類的大分類本來就是終點，
+ *  直接記在它身上完全正常。 */
+export function needsSubcategory(categories: CategoryDTO[], categoryId: string): boolean {
+  if (!categoryId) return false;
+  return subCategoriesOf(categories, categoryId).length > 0;
+}
+
 export function categoryById(categories: CategoryDTO[], id: string): CategoryDTO | undefined {
   return categories.find((c) => c.id === id);
 }

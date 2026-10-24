@@ -265,7 +265,6 @@ export function trendByPeriod(
 }
 
 export interface SubcategoryRow {
-  /** 子分類 id；直接記在大分類身上（沒有選子分類）的那些錢會聚成一列，id 是空字串。 */
   id: string;
   name: string;
   amount: number;
@@ -275,22 +274,22 @@ export interface SubcategoryRow {
 
 /** 某個大分類底下，各子分類各花了多少——報表的分類明細展開時用。
  *
- *  直接記在大分類身上、沒有再選子分類的交易會被歸成一列「直接記在這一類」，不是被
- *  丟掉也不是硬塞進某個子分類：使用者如果看到子分類加起來跟大分類總額對不上，會以為
- *  數字算錯了。 */
+ *  只列子分類。直接記在大分類身上的錢不列：有子分類的大分類現在建立時就一定要挑到
+ *  項目（見 categories.ts 的 needsSubcategory），記在殼身上的只剩擋下這條規則之前的
+ *  舊資料，為了那幾筆多掛一列「直接記在這一類」，反而讓每次展開都多一行看不懂的東西。
+ *  百分比是在列出來的這些子分類之間算的，所以還是會加到 100%。 */
 export function subcategoryBreakdown(transactions: TransactionDTO[], categories: CategoryDTO[], parentId: string): SubcategoryRow[] {
   const byId = new Map<string, number>();
   for (const t of transactions) {
+    if (t.categoryId === parentId) continue;
     if (topLevelCategoryId(categories, t.categoryId) !== parentId) continue;
-    // 記在大分類自己身上的用空字串當 key，跟子分類區隔開。
-    const key = t.categoryId === parentId ? "" : t.categoryId;
-    byId.set(key, (byId.get(key) ?? 0) + t.amount);
+    byId.set(t.categoryId, (byId.get(t.categoryId) ?? 0) + t.amount);
   }
   const total = [...byId.values()].reduce((a, b) => a + b, 0) || 1;
   return [...byId.entries()]
     .map(([id, amount]) => ({
       id,
-      name: id === "" ? "直接記在這一類" : (categoryById(categories, id)?.name ?? "（已刪除分類）"),
+      name: categoryById(categories, id)?.name ?? "（已刪除分類）",
       amount,
       pct: Math.round((amount / total) * 100),
     }))

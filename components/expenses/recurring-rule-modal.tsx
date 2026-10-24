@@ -7,7 +7,7 @@ import { DateField } from "./date-field";
 import { CategoryGridPicker } from "./category-grid-picker";
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { CategoryBatchModal, type CategoryBatchItem } from "./category-batch-modal";
-import { categoryPath, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
+import { categoryPath, needsSubcategory, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 import type { RecurrenceFrequencyUnit } from "@/lib/expenses/recurring-rules";
 import type { SavingsGoalDTO } from "@/lib/expenses/goals";
 
@@ -76,6 +76,8 @@ export function RecurringRuleModal({
   const cycleCountNum = cycleCount.trim() ? Number(cycleCount) : undefined;
   const canSave =
     categoryId &&
+    // 跟新增交易同一條規則：有子分類的大分類要挑到底下的項目（見 needsSubcategory）。
+    !needsSubcategory(categories, categoryId) &&
     Number.isFinite(amountNum) &&
     amountNum > 0 &&
     Number.isFinite(intervalNum) &&

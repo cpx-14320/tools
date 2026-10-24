@@ -10,7 +10,7 @@ import { CategoryBatchModal, type CategoryBatchItem } from "./category-batch-mod
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { InlineIcon } from "./icon-avatar";
 import { text } from "./theme";
-import { categoryPath, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
+import { categoryPath, needsSubcategory, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 import { breakdownNet, type BreakdownItem, type BreakdownKind, type TransactionDTO } from "@/lib/expenses/transactions";
 import { type AccountDTO } from "@/lib/expenses/accounts";
 import { accountTypeById, type AccountTypeDTO } from "@/lib/expenses/account-types";
@@ -103,7 +103,9 @@ export function TransactionModal({
   const breakdownTotal = hasBreakdown ? breakdownNet(breakdown) : 0;
   const amountNum = hasBreakdown ? breakdownTotal : evaluateExpr(amountExpr);
   const breakdownValid = !hasBreakdown || breakdown.every((b) => b.label.trim() && Number.isFinite(b.amount) && b.amount > 0);
-  const canSave = categoryId && Number.isFinite(amountNum) && amountNum > 0 && date && breakdownValid;
+  // 有子分類的大分類只是個殼，一定要挑到底下的項目才算選好（見 needsSubcategory）。
+  const canSave =
+    categoryId && !needsSubcategory(categories, categoryId) && Number.isFinite(amountNum) && amountNum > 0 && date && breakdownValid;
 
   const selectedAccount = accounts.find((a) => a.id === accountId);
   const selectedAccountIcon = selectedAccount ? (accountTypeById(accountTypes, selectedAccount.accountTypeId)?.icon ?? "") : "";
