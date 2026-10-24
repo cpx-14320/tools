@@ -219,11 +219,10 @@ export function DashboardView() {
     ready ? Math.min(expenseRows.length, SUMMARY_LIMIT) : undefined,
   );
 
-  // 主視覺上的兩個控制項：日期在左上角、比較基準在右上角，同一列的兩端。日期那顆是
-  // 兩行的膠囊（年在上、月在下），自訂區間也放得下，不用再擠成一長串。
+  // 主視覺上的兩個控制項：日期在左上角、比較基準在右上角，同一列的兩端。
   const heroOverlay = (
     <div className="absolute inset-x-5 top-5 flex items-start justify-between gap-2">
-      <DateFilterPicker hero />
+      <DateFilterPicker compact />
       <ComparePicker />
     </div>
   );
