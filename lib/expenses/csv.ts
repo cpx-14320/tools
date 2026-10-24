@@ -21,6 +21,13 @@ function csvEscape(value: string | number): string {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+/** 明細的淨額（加項減扣項）。跟 transactions.ts 的 breakdownNet 算的是同一件事，但
+ *  這裡刻意不 import：csv.ts 是給伺服器端的 import route 跟瀏覽器端的匯入頁共用的
+ *  純文字處理，不想為了一行加總把整個交易邏輯模組拉進來。 */
+function netOf(items: CSVBreakdownItem[]): number {
+  return items.reduce((sum, i) => sum + (i.kind === "扣項" ? -i.amount : i.amount), 0);
+}
+
 export interface CSVBreakdownItem {
   label: string;
   kind: "加項" | "扣項";
@@ -44,19 +51,32 @@ export function breakdownToText(breakdown: CSVBreakdownItem[] | undefined): stri
   return breakdown.map((b) => `${b.label}:${b.kind === "扣項" ? "-" : "+"}${b.amount}`).join(";");
 }
 
-/** breakdownToText 的反向解析。格式不對的項目直接跳過，不會整筆爆掉——匯入時
- *  寧可少一個明細項目，也不要讓整列紀錄進不來。標籤本身可能含有冒號，所以用
- *  最後一個冒號切，不是第一個。 */
+/** breakdownToText 的反向解析。
+ *
+ *  標準寫法是 `本薪:+50000`，但在試算表裡手打很容易漏掉冒號變成 `本薪+50000`——
+ *  後面的 +/- 本來就已經把標籤跟金額分開了，所以沒有冒號也照樣收。真正無法解析的
+ *  項目才跳過（不會讓整列進不來）；標籤本身可能含有冒號，所以用最後一個冒號切。 */
 export function parseBreakdownText(text: string | undefined): CSVBreakdownItem[] {
   if (!text || !text.trim()) return [];
   const items: CSVBreakdownItem[] = [];
   for (const chunk of text.split(";")) {
     const piece = chunk.trim();
     if (!piece) continue;
-    const sep = piece.lastIndexOf(":");
-    if (sep <= 0) continue;
-    const label = piece.slice(0, sep).trim();
-    const valueText = piece.slice(sep + 1).trim();
+
+    let label: string;
+    let valueText: string;
+    const colon = piece.lastIndexOf(":");
+    if (colon > 0) {
+      label = piece.slice(0, colon).trim();
+      valueText = piece.slice(colon + 1).trim();
+    } else {
+      // 沒有冒號：從最後一個 +/- 切開，那個符號同時也是加項／扣項的標記。
+      const sign = Math.max(piece.lastIndexOf("+"), piece.lastIndexOf("-"));
+      if (sign <= 0) continue;
+      label = piece.slice(0, sign).trim();
+      valueText = piece.slice(sign).trim();
+    }
+
     const amount = Math.abs(Number(valueText));
     if (!label || !Number.isFinite(amount) || amount <= 0) continue;
     items.push({ label, kind: valueText.startsWith("-") ? "扣項" : "加項", amount });
@@ -83,6 +103,22 @@ export function isValidISODate(date: string): boolean {
   const [y, m, d] = date.split("-").map(Number);
   const parsed = new Date(y, m - 1, d);
   return parsed.getFullYear() === y && parsed.getMonth() === m - 1 && parsed.getDate() === d;
+}
+
+/** 把日期欄位整理成 YYYY-MM-DD。
+ *
+ *  匯出的是 2026-01-05 這種純文字，但只要在 Excel 裡打開再存一次，它就會自作主張
+ *  改成 2026/1/5（甚至 2026/1/5 上午 12:00:00）。使用者沒有做錯任何事，不該因為
+ *  開過一次 Excel 就整份匯不進來——斜線換成橫線、月份日期補零，再交給嚴格的
+ *  isValidISODate 檢查。真的不成樣子的值還是會被擋下。 */
+export function normalizeDateCell(raw: string | undefined): string {
+  const text = (raw ?? "").trim();
+  // Excel 可能在後面接時間（"2026/1/5 上午 12:00:00"），只取前面那段日期。
+  const datePart = text.split(/[\sT]/)[0];
+  const m = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/.exec(datePart);
+  if (!m) return datePart;
+  const [, y, mo, d] = m;
+  return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
 }
 
 /** 簡單的 CSV 文字解析器，支援雙引號欄位、欄位內的逗號／換行／跳脫雙引號（""）。 */
@@ -164,9 +200,10 @@ export function parseTransactionsCSV(
   const dataRows = rows.slice(1); // 跳過標題列
   const results: ImportRowResult[] = dataRows.map((cols, idx) => {
     const rowNum = idx + 2;
-    const [date, categoryText, amountText, note, breakdownText] = cols;
+    const [dateText, categoryText, amountText, note, breakdownText] = cols;
 
-    if (!date || !isValidISODate(date.trim())) {
+    const date = normalizeDateCell(dateText);
+    if (!date || !isValidISODate(date)) {
       return { row: rowNum, ok: false, error: "日期格式不正確，需要 YYYY-MM-DD 且是存在的日期" };
     }
     const amount = Number(amountText);
@@ -178,14 +215,29 @@ export function parseTransactionsCSV(
     if (!category) {
       return { row: rowNum, ok: false, error: `找不到分類「${categoryText?.trim() || "（空白）"}」` };
     }
+
+    // 有填明細的話，加項減扣項要剛好等於金額欄——app 裡的明細本來就是「金額由明細
+    // 加總算出來」（見 transaction-modal.tsx），兩邊兜不起來一定是有一項打錯或漏掉。
+    // 以前是默默照金額欄匯進去，少掉的那一項不會有任何提示。
     const breakdown = parseBreakdownText(breakdownText);
+    if (breakdown.length > 0) {
+      const net = netOf(breakdown);
+      if (net !== amount) {
+        return {
+          row: rowNum,
+          ok: false,
+          error: `明細加減起來是 ${net}，跟金額欄的 ${amount} 對不起來（差 ${Math.abs(amount - net)}）`,
+        };
+      }
+    }
+
     return {
       row: rowNum,
       ok: true,
       transaction: {
         categoryId: category.id,
         amount,
-        date: date.trim(),
+        date,
         note: note?.trim() || undefined,
         breakdown: breakdown.length > 0 ? breakdown : undefined,
       },
@@ -326,6 +378,10 @@ const CSV_TEMPLATES: Record<CSVTemplateKind, string[][]> = {
     ["交通", "支出", "b", ""],
     ["薪水", "收入", "c", ""],
     ["早餐", "支出", "a", "餐飲"],
+    // 大分類一旦有子項目就不能直接記帳（見 categories.ts 的 needsSubcategory），
+    // 所以「薪水」底下一定要跟著一個收薪水用的項目，不然消費紀錄範本的那一列會
+    // 找不到分類。
+    ["月薪", "收入", "c", "薪水"],
   ],
   budgets: [
     ["分類", "生效月份", "每月預算"],
