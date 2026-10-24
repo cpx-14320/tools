@@ -1,8 +1,6 @@
 // 消費紀錄 CSV 匯出／匯入的純文字處理邏輯。不碰資料庫，伺服器端（import API route 重新
 // 驗證一次）跟 client component（匯入頁預覽、匯出頁下載）都直接 import 同一份。
 
-import { ICON_OTHER } from "./presets";
-
 export interface CategoryLookupItem {
   id: string;
   name: string;
@@ -201,29 +199,27 @@ export function parseTransactionsCSV(
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// 分類／帳戶類型的匯出入
+// 分類的匯出入
 //
 // 消費紀錄的 CSV 只能引用「已經存在」的分類（見 parseTransactionsCSV 找不到分類就報錯），
-// 所以換新環境／還原備份時順序是：先匯入分類跟帳戶類型，再匯入消費紀錄。這兩種
-// 主檔各自有自己的欄位格式，跟消費紀錄分開三種檔案，不用一個檔案塞類型欄位去分流。
+// 所以換新環境／還原備份時順序是：先匯入分類，再匯入預算跟消費紀錄。
+//
+// 沒有「圖示」欄：分類的 icon 存的是圖檔路徑（見 lib/expenses/presets.ts），而畫面上
+// 是從一組固定的圖裡挑，不是自己打路徑——在試算表裡手打一串 /expenses/xxx.png 只會
+// 打錯變破圖。匯入進來的分類一律先給共用的「其他」圖，之後在畫面上挑一張就好。
+//
+// 帳戶類型也不走 CSV：那是一份一輩子大概只會設定一次、而且只有三五筆的清單，在畫面上
+// 新增比開試算表快，為它維護一種檔案格式划不來。
 // ────────────────────────────────────────────────────────────────────────────
 
 export type CSVCategoryKind = "支出" | "收入";
-export type CSVAccountKind = "資產" | "負債";
 
 export interface CSVCategoryItem {
   name: string;
   kind: CSVCategoryKind;
-  icon: string;
   color: string;
   /** 空字串＝頂層分類；有值＝這是那個大分類底下的子分類（用名稱對應）。 */
   parentName: string;
-}
-
-export interface CSVAccountTypeItem {
-  name: string;
-  kind: CSVAccountKind;
-  icon: string;
 }
 
 /** 分類（含子分類）轉成 CSV。頂層分類排在前面、子分類排在後面——匯入時要先有父分類
@@ -243,6 +239,12 @@ export function categoriesToCSV(
 export interface CategoryImportRowResult {
   row: number;
   ok: boolean;
+  /** 「這一列沒問題，只是已經有了」——跟真正的格式錯誤分開算。
+   *
+   *  新帳號一進記帳本就會自動建好一整套預設分類（餐飲、交通、早餐…，見 presets.ts），
+   *  所以把分類備份匯回新環境時，幾乎每一列都會撞名。那不是錯誤，是正常的略過；
+   *  混在「有問題」裡會變成滿滿一片紅字，看起來像整個檔案壞掉。 */
+  skipped?: boolean;
   error?: string;
   category?: CSVCategoryItem;
 }
@@ -255,7 +257,7 @@ export function parseCategoriesCSV(
   text: string,
   existing: { name: string; kind: string; parentId?: string }[],
   existingNameById: Map<string, string>,
-): { results: CategoryImportRowResult[]; validCount: number; invalidCount: number } {
+): { results: CategoryImportRowResult[]; validCount: number; invalidCount: number; skippedCount: number } {
   const rows = parseCSV(text);
   const dataRows = rows.slice(1);
   const seen = new Set<string>();
@@ -265,7 +267,7 @@ export function parseCategoriesCSV(
 
   const results: CategoryImportRowResult[] = dataRows.map((cols, idx) => {
     const rowNum = idx + 2;
-    const [nameText, kindText, iconText, colorText, parentText] = cols;
+    const [nameText, kindText, colorText, parentText] = cols;
     const name = (nameText ?? "").trim();
     const kind = (kindText ?? "").trim();
     const parentName = (parentText ?? "").trim();
@@ -275,12 +277,13 @@ export function parseCategoriesCSV(
       return { row: rowNum, ok: false, error: `收支類型要填「支出」或「收入」，目前是「${kind || "（空白）"}」` };
     }
 
+    // 撞名是 skipped 不是錯誤（見 CategoryImportRowResult.skipped）。
     const key = `${kind}::${parentName}::${name}`;
     if (existingKeys.has(key)) {
-      return { row: rowNum, ok: false, error: `「${name}」已經存在，略過不重複建立` };
+      return { row: rowNum, ok: false, skipped: true, error: `「${name}」已經有了` };
     }
     if (seen.has(key)) {
-      return { row: rowNum, ok: false, error: `這個檔案裡「${name}」重複出現，只會建立一次` };
+      return { row: rowNum, ok: false, skipped: true, error: `這個檔案裡「${name}」重複出現，只建立一次` };
     }
     seen.add(key);
 
@@ -289,71 +292,15 @@ export function parseCategoriesCSV(
     return {
       row: rowNum,
       ok: true,
-      category: {
-        name,
-        kind,
-        // 圖示欄留空時給共用的「其他」佔位圖——分類的圖示現在是圖片路徑，不是表情符號。
-        icon: (iconText ?? "").trim() || ICON_OTHER,
-        color: /^[a-f]$/.test(color) ? color : "a",
-        parentName,
-      },
+      category: { name, kind, color: /^[a-f]$/.test(color) ? color : "a", parentName },
     };
   });
 
   return {
     results,
     validCount: results.filter((r) => r.ok).length,
-    invalidCount: results.filter((r) => !r.ok).length,
-  };
-}
-
-export function accountTypesToCSV(types: { name: string; kind: CSVAccountKind; icon: string }[]): string {
-  const header = ["名稱", "資產負債", "圖示"];
-  const lines = types.map((t) => [t.name, t.kind, t.icon].map(csvEscape).join(","));
-  return [header.join(","), ...lines].join("\r\n");
-}
-
-export interface AccountTypeImportRowResult {
-  row: number;
-  ok: boolean;
-  error?: string;
-  accountType?: CSVAccountTypeItem;
-}
-
-/** 解析帳戶類型匯入 CSV（名稱,資產負債,圖示）。資產/負債建立後不能改（見
- *  account-types.server.ts），所以這一欄填錯會直接擋下，不自動猜。 */
-export function parseAccountTypesCSV(
-  text: string,
-  existing: { name: string; kind: CSVAccountKind }[],
-): { results: AccountTypeImportRowResult[]; validCount: number; invalidCount: number } {
-  const rows = parseCSV(text);
-  const dataRows = rows.slice(1);
-  const seen = new Set<string>();
-  const existingKeys = new Set(existing.map((t) => `${t.kind}::${t.name}`));
-
-  const results: AccountTypeImportRowResult[] = dataRows.map((cols, idx) => {
-    const rowNum = idx + 2;
-    const [nameText, kindText, iconText] = cols;
-    const name = (nameText ?? "").trim();
-    const kind = (kindText ?? "").trim();
-
-    if (!name) return { row: rowNum, ok: false, error: "類型名稱不能空白" };
-    if (kind !== "資產" && kind !== "負債") {
-      return { row: rowNum, ok: false, error: `資產負債要填「資產」或「負債」，目前是「${kind || "（空白）"}」` };
-    }
-
-    const key = `${kind}::${name}`;
-    if (existingKeys.has(key)) return { row: rowNum, ok: false, error: `「${name}」已經存在，略過不重複建立` };
-    if (seen.has(key)) return { row: rowNum, ok: false, error: `這個檔案裡「${name}」重複出現，只會建立一次` };
-    seen.add(key);
-
-    return { row: rowNum, ok: true, accountType: { name, kind, icon: (iconText ?? "").trim() || ICON_OTHER } };
-  });
-
-  return {
-    results,
-    validCount: results.filter((r) => r.ok).length,
-    invalidCount: results.filter((r) => !r.ok).length,
+    invalidCount: results.filter((r) => !r.ok && !r.skipped).length,
+    skippedCount: results.filter((r) => r.skipped).length,
   };
 }
 
@@ -364,33 +311,27 @@ export function parseAccountTypesCSV(
 // 範例列故意用最常見的那幾個分類，直接匯入也是一組能用的起手式。
 // ────────────────────────────────────────────────────────────────────────────
 
-export type CSVTemplateKind = "transactions" | "categories" | "budgets" | "accountTypes";
+export type CSVTemplateKind = "transactions" | "categories" | "budgets";
 
 const CSV_TEMPLATES: Record<CSVTemplateKind, string[][]> = {
   transactions: [
     ["日期", "分類", "金額", "備註", "明細"],
-    ["2026-01-05", "餐飲", "120", "早餐", ""],
-    ["2026-01-05", "交通", "30", "公車", ""],
-    ["2026-01-10", "薪資", "44000", "一月薪資", "本薪:+50000;勞健保:-6000"],
+    ["2026-01-05", "早餐", "120", "", ""],
+    ["2026-01-05", "月票", "1200", "", ""],
+    ["2026-01-10", "月薪", "44000", "一月薪資", "本薪:+50000;勞健保:-6000"],
   ],
   categories: [
-    ["名稱", "收支類型", "圖示", "顏色", "上層分類"],
-    ["餐飲", "支出", "🍜", "a", ""],
-    ["交通", "支出", "🚌", "b", ""],
-    ["薪資", "收入", "💰", "c", ""],
-    ["早餐", "支出", "🥐", "a", "餐飲"],
+    ["名稱", "收支類型", "顏色", "上層分類"],
+    ["餐飲", "支出", "a", ""],
+    ["交通", "支出", "b", ""],
+    ["薪水", "收入", "c", ""],
+    ["早餐", "支出", "a", "餐飲"],
   ],
   budgets: [
     ["分類", "生效月份", "每月預算"],
     ["餐飲", "2026-01", "8000"],
     ["交通", "2026-01", "2000"],
     ["餐飲", "2026-07", "9000"],
-  ],
-  accountTypes: [
-    ["名稱", "資產負債", "圖示"],
-    ["現金", "資產", "💵"],
-    ["銀行帳戶", "資產", "🏦"],
-    ["信用卡", "負債", "💳"],
   ],
 };
 

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ICON_OTHER } from "@/lib/expenses/presets";
 import { ObjectId } from "mongodb";
 import { requireTool } from "@/lib/auth";
 import type { CategoryColor, CategoryKind } from "@/lib/expenses/categories";
@@ -18,12 +19,16 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
   const name = typeof body?.name === "string" ? body.name.trim() : "";
-  const icon = typeof body?.icon === "string" ? body.icon.trim() : "";
+  // 沒送圖示就給共用的「其他」佔位圖：畫面上的新增彈窗一定會帶一張，但 CSV 匯入
+  // 沒有圖示欄（圖示是從固定清單裡挑的圖檔路徑，在試算表裡手打只會打錯，見 csv.ts），
+  // 匯進來的分類先掛佔位圖，之後在畫面上挑一張就好。
+  const icon = typeof body?.icon === "string" && body.icon.trim() ? body.icon.trim() : ICON_OTHER;
   const color = typeof body?.color === "string" ? (body.color as CategoryColor) : undefined;
   const kind = typeof body?.kind === "string" ? (body.kind as CategoryKind) : undefined;
   const parentId = typeof body?.parentId === "string" ? body.parentId : undefined;
-  // 子分類不用送圖示／顏色／收支類型，三個都由 createCategory 從父分類複製過來。
-  if (!name || (!parentId && (!icon || !color || !kind))) {
+  // 子分類不用送圖示／顏色／收支類型，三個都由 createCategory 從父分類複製過來；
+  // 大分類只有名稱跟收支類型是必填，顏色沒送就用 a。
+  if (!name || (!parentId && !kind)) {
     return NextResponse.json({ error: "缺少必要欄位" }, { status: 400 });
   }
 

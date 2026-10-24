@@ -41,8 +41,7 @@ const GROUPS: { heading: string; items: SettingItem[] }[] = [
   {
     heading: "匯出／匯入紀錄",
     items: [
-      { href: "/tools/expenses/more/export", label: "匯出資料", desc: "消費紀錄、分類、帳戶類型", icon: ICON_PATHS.settingExport },
-      { href: "/tools/expenses/more/import", label: "匯入資料", desc: "上傳 CSV 批次建立", icon: ICON_PATHS.settingImport },
+      { href: "/tools/expenses/more/data", label: "匯出／匯入資料", desc: "消費紀錄、分類、預算設定的 CSV", icon: ICON_PATHS.settingExport },
     ],
   },
 ];
