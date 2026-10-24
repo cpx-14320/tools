@@ -339,8 +339,14 @@ export function ReportsView() {
     return (
       <div className="flex flex-col gap-4">
         <PageHeader title="報表" />
-        <div className="h-[42px] animate-pulse rounded-full bg-[#EDE6FB]" />
-        <div className="h-[34px] w-[232px] animate-pulse rounded-full bg-[#EDE6FB]" />
+        {/* 三排控制項：四個分頁（size="lg"）、日月年全部自訂、月份膠囊。高度要跟真的
+            一樣，不然資料回來時底下整塊會往下跳一截。後兩排是 DateFilterPicker 的
+            flex-wrap，在手機寬度會折成兩行。 */}
+        <div className="h-[44px] animate-pulse rounded-full bg-[#EDE6FB]" />
+        <div className="flex flex-col gap-2">
+          <div className="h-[32px] w-[238px] animate-pulse rounded-full bg-[#EDE6FB]" />
+          <div className="h-[30px] w-[126px] animate-pulse rounded-full bg-[#EDE6FB]" />
+        </div>
         {kind === "資產" ? (
           <>
             <KpiCardSkeleton />
