@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { ListCardSkeleton } from "@/components/expenses/skeleton";
+import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
+import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { useSkeletonCount } from "@/components/expenses/skeleton-count";
 import { useSearchParams } from "next/navigation";
 import { SegmentedControl, PillButton } from "@/components/expenses/button";
@@ -65,6 +67,7 @@ export function TransactionsView() {
   // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
   const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:transactions", 8, ready ? transactions.length : undefined);
   const [query, setQuery] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
   const [kind, setKind] = useState<CategoryKind>(initialKind);
   // 只看某一個大分類（含它的子分類）的篩選，空字串＝全部分類。
   const [categoryFilter, setCategoryFilter] = useState(initialCategoryId);
@@ -158,6 +161,10 @@ export function TransactionsView() {
     baseline,
   );
 
+  // 多選刪除：可以選的就是「現在畫面上這批」（已經過分頁、搜尋、篩選），全選才不會把
+  // 看不到的紀錄也一起選進來——跟收支分類頁同一套（見 selection-bar.tsx）。
+  const selection = useSelection(rows.map((t) => t.id));
+
   // 依日期分組，App 常見的「日期當小標題」條列方式；搜尋時日期標題本身就能告訴使用者是哪個時間。
   const groups = new Map<string, typeof rows>();
   for (const t of rows) {
@@ -199,21 +206,23 @@ export function TransactionsView() {
     setModal(null);
   }
 
+  // 逐筆依序 DELETE：API 一次只收一個 id，而且每次都回傳最新的完整清單，照順序打完
+  // 最後那一份就是正確的結果（併發送出的話回傳順序不保證，可能拿到中間狀態）。
+  async function handleBulkDelete() {
+    let latest = transactions;
+    for (const id of selection.selectedIds) {
+      const data: { transactions?: TransactionDTO[] } = await fetch(`/api/expenses/transactions?id=${id}`, { method: "DELETE" })
+        .then((res) => res.json())
+        .catch(() => ({}));
+      if (data.transactions) latest = data.transactions;
+    }
+    setTransactions(latest);
+    setDeleteConfirm(null);
+    selection.exit();
+  }
+
   return (
     <div>
-      <label className="mb-4 flex items-center gap-2 rounded-full border border-[#ECE4FA] bg-white px-4 py-2.5">
-        <span aria-hidden className="text-[#9C94C4]">
-          🔍
-        </span>
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={`搜尋備註、分類⋯不限${filter.mode === "all" ? "" : "期間"}`}
-          className="w-full bg-transparent text-sm text-[#4A3B7C] outline-none placeholder:text-[#B3ABD4]"
-        />
-      </label>
-
       <DateFilterPicker className="mb-4" />
 
       <TransactionModal
@@ -318,6 +327,7 @@ export function TransactionsView() {
           ]}
         />
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+          <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />
           {/* 分類篩選：有選的時候按鈕變實心＋顯示分類名稱，一眼看得出清單是被篩過的。 */}
           <PillButton onClick={() => setFilterOpen(true)} active={filterCount > 0}>
             <span aria-hidden>⌕</span>
@@ -327,6 +337,40 @@ export function TransactionsView() {
           <ComparePicker />
         </div>
       </div>
+
+      {/* 搜尋列貼著清單：它篩的是下面那份清單，擺在整頁最上面（日期篩選器之上）看起來
+          像是跟期間同一組設定。 */}
+      <label className="mb-4 flex items-center gap-2 rounded-full border border-[#ECE4FA] bg-white px-4 py-2.5">
+        <span aria-hidden className="text-[#9C94C4]">
+          🔍
+        </span>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={`搜尋備註、分類⋯不限${filter.mode === "all" ? "" : "期間"}`}
+          className="w-full bg-transparent text-sm text-[#4A3B7C] outline-none placeholder:text-[#B3ABD4]"
+        />
+      </label>
+
+      {selection.selecting && (
+        <SelectionBar
+          count={selection.selectedIds.size}
+          total={selection.total}
+          onToggleAll={selection.toggleAll}
+          onCancel={selection.exit}
+          onDelete={() => setDeleteConfirm([...selection.selectedIds])}
+        />
+      )}
+
+      <ConfirmModal
+        open={deleteConfirm !== null}
+        title={`刪除 ${deleteConfirm?.length ?? 0} 筆紀錄`}
+        message="刪除後無法復原，確定要刪除選取的紀錄嗎？"
+        confirmLabel="刪除"
+        onClose={() => setDeleteConfirm(null)}
+        onConfirm={handleBulkDelete}
+      />
 
       {!ready ? (
         <ListCardSkeleton count={skeletonCount} />
@@ -384,7 +428,12 @@ export function TransactionsView() {
                       return (
                         <div key={t.id}>
                           <div className="flex w-full items-center gap-1 px-4 py-3">
-                            <button type="button" onClick={() => setModal(t)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                            {selection.selecting && <SelectionDot selected={selection.selectedIds.has(t.id)} />}
+                            <button
+                              type="button"
+                              onClick={() => (selection.selecting ? selection.toggle(t.id) : setModal(t))}
+                              className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                            >
                               <TransactionRowLabel
                                 icon={category?.icon ?? ""}
                                 iconClassName={category ? categoryColorClass[category.color] : undefined}

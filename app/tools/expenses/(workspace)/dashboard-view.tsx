@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
-import { ListCard, ListRow } from "@/components/expenses/list-row";
+import { EmptyListCard, ListCard, ListRow } from "@/components/expenses/list-row";
 import { Carousel } from "@/components/expenses/carousel";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
@@ -323,14 +323,16 @@ export function DashboardView() {
       {/* 收入來源擺在支出上方：先知道「這個月進來多少、從哪來」，再往下看花到哪去。
           每一列都可以點，帶著同一個月份導到消費紀錄的收入分頁並篩好那個分類——
           收入這邊本來沒有任何入口可以點進明細。 */}
-      {incomeRows.length > 0 && (
-        <div>
+      <div>
           <div className="mb-2 flex items-center justify-between px-1">
             <p className={text.sectionHeading}>{isCurrentMonth ? "本月收入來源" : `${budgetYearMonth} 收入來源`}</p>
             <Link href={`/tools/expenses/transactions?${incomeDetailQuery}`} className="text-xs font-medium text-[#6F5FD6]">
               查看全部
             </Link>
           </div>
+          {incomeRows.length === 0 ? (
+            <EmptyListCard>這個月還沒有收入紀錄</EmptyListCard>
+          ) : (
           <ListCard>
             {(incomeRowsExpanded ? incomeRows : incomeRows.slice(0, SUMMARY_LIMIT)).map((row) => (
               <Link
@@ -349,11 +351,11 @@ export function DashboardView() {
               </Link>
             ))}
           </ListCard>
+          )}
           {incomeRows.length > SUMMARY_LIMIT && (
             <ExpandToggle expanded={incomeRowsExpanded} total={incomeRows.length} onToggle={() => setIncomeRowsExpanded((v) => !v)} />
           )}
-        </div>
-      )}
+      </div>
 
       {/* 小標在白框外面、清單在框裡——跟資產總表的「資產」區塊同一種結構。 */}
       <div>
@@ -364,7 +366,7 @@ export function DashboardView() {
           </Link>
         </div>
         {expenseRows.length === 0 ? (
-          <p className={`px-1 ${text.muted}`}>這個月還沒有支出紀錄。</p>
+          <EmptyListCard>這個月還沒有支出紀錄</EmptyListCard>
         ) : (
           <ListCard>
             <div className="px-4 py-3.5">
@@ -452,7 +454,7 @@ export function DashboardView() {
           </Link>
         </div>
         {recentGroups.length === 0 ? (
-          <p className={`px-1 ${text.muted}`}>這段期間還沒有消費紀錄。</p>
+          <EmptyListCard>這段期間還沒有消費紀錄</EmptyListCard>
         ) : (
           // 版面跟「查看全部」進去的消費紀錄頁一樣：日期當小標、右邊掛當天小計，底下才是
           // 那一天的明細（標題是備註/分類、副標是分類路徑）。

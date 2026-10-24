@@ -1,6 +1,11 @@
 // 消費紀錄 CSV 匯出／匯入的純文字處理邏輯。不碰資料庫，伺服器端（import API route 重新
 // 驗證一次）跟 client component（匯入頁預覽、匯出頁下載）都直接 import 同一份。
 
+export interface AccountLookupItem {
+  id: string;
+  name: string;
+}
+
 export interface CategoryLookupItem {
   id: string;
   name: string;
@@ -40,6 +45,8 @@ export interface CSVTransactionRow {
   amount: number;
   note?: string;
   breakdown?: CSVBreakdownItem[];
+  /** 這筆記在哪個帳戶（現金錢包、銀行帳戶…）；沒指定帳戶就是 undefined。 */
+  accountId?: string;
 }
 
 /** 明細（薪資的本薪／勞健保那種加項扣項）在 CSV 裡壓成一欄文字：
@@ -85,11 +92,22 @@ export function parseBreakdownText(text: string | undefined): CSVBreakdownItem[]
 }
 
 /** 消費紀錄轉成 CSV 文字（含標題列）；日期統一用純文字格式，避免 Excel 自動轉成日期序號跑版。
- *  最後一欄是明細，沒有明細的紀錄就是空字串，匯入時可以原樣還原回來。 */
-export function transactionsToCSV(rows: CSVTransactionRow[], categories: CategoryLookupItem[]): string {
-  const header = ["日期", "分類", "金額", "備註", "明細"];
+ *  明細欄沒有明細的紀錄就是空字串，匯入時可以原樣還原回來。
+ *
+ *  帳戶欄放最後：絕大多數的紀錄不會指定帳戶（記帳時那一欄本來就收在「更多」裡），放
+ *  前面只會讓整份檔案中間空一長條。帳戶跟分類一樣用名稱對應。 */
+export function transactionsToCSV(rows: CSVTransactionRow[], categories: CategoryLookupItem[], accounts: AccountLookupItem[] = []): string {
+  const header = ["日期", "分類", "金額", "備註", "明細", "帳戶"];
+  const accountNameById = new Map(accounts.map((a) => [a.id, a.name]));
   const lines = rows.map((t) =>
-    [t.date, categoryPathOf(categories, t.categoryId), t.amount, t.note ?? "", breakdownToText(t.breakdown)]
+    [
+      t.date,
+      categoryPathOf(categories, t.categoryId),
+      t.amount,
+      t.note ?? "",
+      breakdownToText(t.breakdown),
+      t.accountId ? (accountNameById.get(t.accountId) ?? "") : "",
+    ]
       .map(csvEscape)
       .join(","),
   );
@@ -195,12 +213,13 @@ export interface ImportRowResult {
 export function parseTransactionsCSV(
   text: string,
   categories: CategoryLookupItem[],
+  accounts: AccountLookupItem[] = [],
 ): { results: ImportRowResult[]; validCount: number; invalidCount: number } {
   const rows = parseCSV(text);
   const dataRows = rows.slice(1); // 跳過標題列
   const results: ImportRowResult[] = dataRows.map((cols, idx) => {
     const rowNum = idx + 2;
-    const [dateText, categoryText, amountText, note, breakdownText] = cols;
+    const [dateText, categoryText, amountText, note, breakdownText, accountText] = cols;
 
     const date = normalizeDateCell(dateText);
     if (!date || !isValidISODate(date)) {
@@ -231,6 +250,14 @@ export function parseTransactionsCSV(
       }
     }
 
+    // 帳戶欄可以留空（絕大多數紀錄不指定帳戶）；有填就一定要對得到既有的帳戶，
+    // 打錯字默默當成「不指定帳戶」匯進去的話，餘額會莫名其妙少一截。
+    const accountName = (accountText ?? "").trim();
+    const account = accountName ? accounts.find((a) => a.name === accountName) : undefined;
+    if (accountName && !account) {
+      return { row: rowNum, ok: false, error: `找不到帳戶「${accountName}」，請先在「資產總表」建立` };
+    }
+
     return {
       row: rowNum,
       ok: true,
@@ -240,6 +267,7 @@ export function parseTransactionsCSV(
         date,
         note: note?.trim() || undefined,
         breakdown: breakdown.length > 0 ? breakdown : undefined,
+        accountId: account?.id,
       },
     };
   });
@@ -367,10 +395,10 @@ export type CSVTemplateKind = "transactions" | "categories" | "budgets";
 
 const CSV_TEMPLATES: Record<CSVTemplateKind, string[][]> = {
   transactions: [
-    ["日期", "分類", "金額", "備註", "明細"],
-    ["2026-01-05", "早餐", "120", "", ""],
-    ["2026-01-05", "月票", "1200", "", ""],
-    ["2026-01-10", "月薪", "44000", "一月薪資", "本薪:+50000;勞健保:-6000"],
+    ["日期", "分類", "金額", "備註", "明細", "帳戶"],
+    ["2026-01-05", "早餐", "120", "", "", "現金錢包"],
+    ["2026-01-05", "月票", "1200", "", "", ""],
+    ["2026-01-10", "月薪", "44000", "一月薪資", "本薪:+50000;勞健保:-6000", "銀行帳戶"],
   ],
   categories: [
     ["名稱", "收支類型", "顏色", "上層分類"],

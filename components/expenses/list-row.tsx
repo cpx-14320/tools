@@ -13,6 +13,16 @@ export function ListCard({ children, className = "" }: { children: ReactNode; cl
   );
 }
 
+/** 清單還沒有資料時擺在原地的那張卡——外框跟 ListCard 一模一樣，只是裡面放一行說明。
+ *  空的時候整塊消失的話，版面會上下跳動，而且看不出「這裡本來有東西」。 */
+export function EmptyListCard({ children = "還沒有任何資料" }: { children?: ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)]">
+      <div className="p-4 py-6 text-center text-xs text-[#9C94C4]">{children}</div>
+    </div>
+  );
+}
+
 /** 清單裡的一列：左邊圖示、中間名稱、右邊附註文字（金額／筆數／狀態），可選的右端箭頭。
  *
  *  把金額、進度條那些各頁不同的東西拿掉之後，預算設定的分類列、資產總表的負債列、

@@ -22,6 +22,7 @@ import {
 import type { BudgetRuleDTO } from "@/lib/expenses/budgets";
 import type { CategoryDTO } from "@/lib/expenses/categories";
 import type { TransactionDTO } from "@/lib/expenses/transactions";
+import type { AccountDTO } from "@/lib/expenses/accounts";
 import { formatCurrency } from "@/lib/format";
 
 /** 匯出跟匯入本來是兩頁，但它們講的是同一件事（同一組資料、同一種 CSV 格式、同一排
@@ -52,17 +53,18 @@ const UNIT_LABEL: Record<DataKind, string> = {
 };
 
 const FIELD_HINT: Record<DataKind, string> = {
-  transactions: "欄位：日期,分類,金額,備註,明細（薪資那種加項扣項會一起帶出去）",
+  transactions: "欄位：日期,分類,金額,備註,明細,帳戶（薪資那種加項扣項會一起帶出去）",
   categories: "欄位：名稱,收支類型,顏色,上層分類",
   budgets: "欄位：分類,生效月份,每月預算（每一列是一次調整，之後的月份沿用到下一次調整）",
 };
 
 const FORMAT_HINT: Record<DataKind, string[]> = {
   transactions: [
-    "欄位順序：日期,分類,金額,備註,明細",
+    "欄位順序：日期,分類,金額,備註,明細,帳戶",
     "日期用 2026-09-05；Excel 存成 2026/9/5 也收",
     "分類欄可以填完整路徑（例如「餐飲 › 早餐」）或只填分類名稱，分類必須已經存在",
     "明細欄可留空，有填用「本薪:+50000;勞健保:-6000」這種格式（冒號可省略），加減起來要等於金額欄",
+    "帳戶欄可留空；要指定就填帳戶名稱（例如「銀行帳戶」），帳戶必須已經存在",
   ],
   categories: [
     "欄位順序：名稱,收支類型,顏色,上層分類",
@@ -107,6 +109,7 @@ export function DataView() {
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [budgetRules, setBudgetRules] = useState<BudgetRuleDTO[]>([]);
+  const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -115,14 +118,23 @@ export function DataView() {
       fetch("/api/expenses/categories").then((res) => res.json()),
       fetch("/api/expenses/transactions").then((res) => res.json()),
       fetch("/api/expenses/budgets").then((res) => res.json()),
+      fetch("/api/expenses/accounts").then((res) => res.json()),
     ])
-      .then(([categoriesData, txData, budgetsData]: [{ categories?: CategoryDTO[] }, { transactions?: TransactionDTO[] }, { rules?: BudgetRuleDTO[] }]) => {
-        if (cancelled) return;
-        setCategories(categoriesData.categories ?? []);
-        setTransactions(txData.transactions ?? []);
-        setBudgetRules(budgetsData.rules ?? []);
-        setReady(true);
-      })
+      .then(
+        ([categoriesData, txData, budgetsData, accountsData]: [
+          { categories?: CategoryDTO[] },
+          { transactions?: TransactionDTO[] },
+          { rules?: BudgetRuleDTO[] },
+          { accounts?: AccountDTO[] },
+        ]) => {
+          if (cancelled) return;
+          setCategories(categoriesData.categories ?? []);
+          setTransactions(txData.transactions ?? []);
+          setBudgetRules(budgetsData.rules ?? []);
+          setAccounts(accountsData.accounts ?? []);
+          setReady(true);
+        },
+      )
       .catch(() => {
         if (!cancelled) setReady(true);
       });
@@ -145,9 +157,9 @@ export function DataView() {
       <SegmentedControl className="mb-4" fullWidth value={kind} onChange={setKind} options={KINDS} />
 
       {mode === "export" ? (
-        <ExportPanel kind={kind} ready={ready} categories={categories} transactions={transactions} budgetRules={budgetRules} />
+        <ExportPanel kind={kind} ready={ready} categories={categories} accounts={accounts} transactions={transactions} budgetRules={budgetRules} />
       ) : (
-        <ImportPanel key={kind} kind={kind} categories={categories} onCategoriesChange={setCategories} />
+        <ImportPanel key={kind} kind={kind} ready={ready} categories={categories} accounts={accounts} onCategoriesChange={setCategories} />
       )}
     </div>
   );
@@ -161,12 +173,14 @@ function ExportPanel({
   kind,
   ready,
   categories,
+  accounts,
   transactions,
   budgetRules,
 }: {
   kind: DataKind;
   ready: boolean;
   categories: CategoryDTO[];
+  accounts: AccountDTO[];
   transactions: TransactionDTO[];
   budgetRules: BudgetRuleDTO[];
 }) {
@@ -200,7 +214,7 @@ function ExportPanel({
     const files: [string, string][] = [
       [`${backupStamp}_消費分類.csv`, categoriesToCSV(categories)],
       [`${backupStamp}_預算設定.csv`, budgetRulesToCSV(budgetRules, nameById)],
-      [`${backupStamp}_消費紀錄.csv`, transactionsToCSV(allTx, categories)],
+      [`${backupStamp}_消費紀錄.csv`, transactionsToCSV(allTx, categories, accounts)],
     ];
     files.forEach(([name, csv], i) => {
       window.setTimeout(() => downloadCSV(name, csv), i * 400);
@@ -209,7 +223,7 @@ function ExportPanel({
 
   function handleExport() {
     if (kind === "transactions") {
-      downloadCSV(`消費紀錄_${rangeStart}_至_${rangeEnd}.csv`, transactionsToCSV(rows, categories));
+      downloadCSV(`消費紀錄_${rangeStart}_至_${rangeEnd}.csv`, transactionsToCSV(rows, categories, accounts));
     } else if (kind === "categories") {
       downloadCSV("消費分類.csv", categoriesToCSV(categories));
     } else {
@@ -298,11 +312,17 @@ type Stage = "pick" | "preview" | "done";
  *  撞名，混進「有問題」裡會變成滿滿一片紅字，看起來像整個檔案壞掉。 */
 function ImportPanel({
   kind,
+  ready,
   categories,
+  accounts,
   onCategoriesChange,
 }: {
   kind: DataKind;
+  /** 分類還沒抓回來之前不能選檔案——那時候 categories 是空陣列，解析出來每一列都會
+   *  說「找不到分類」，使用者只會覺得「第一次匯入失敗、再試一次就好了」。 */
+  ready: boolean;
   categories: CategoryDTO[];
+  accounts: AccountDTO[];
   onCategoriesChange: (categories: CategoryDTO[]) => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -334,7 +354,7 @@ function ImportPanel({
     try {
       const content = await file.text();
       if (kind === "transactions") {
-        const { results } = parseTransactionsCSV(content, categories);
+        const { results } = parseTransactionsCSV(content, categories, accounts);
         if (results.length === 0) return setParseError(emptyMessage);
         setTxResults(results);
       } else if (kind === "categories") {
@@ -537,7 +557,9 @@ function ImportPanel({
             ))}
           </div>
         </div>
-        <Button onClick={() => fileRef.current?.click()}>選擇檔案</Button>
+        <Button onClick={() => fileRef.current?.click()} disabled={!ready}>
+          {ready ? "選擇檔案" : "載入分類中…"}
+        </Button>
         {/* 還沒有任何資料時，先下載範本在試算表裡排好再匯入，比在手機上一個一個
             點彈窗建立快得多；範本裡的範例列可以直接改成自己的資料。 */}
         <button type="button" onClick={handleDownloadTemplate} className="text-xs font-medium text-[#6F5FD6] hover:underline">

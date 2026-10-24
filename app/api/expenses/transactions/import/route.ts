@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { requireTool } from "@/lib/auth";
 import { listCategories } from "@/lib/expenses/categories.server";
+import { listAccounts } from "@/lib/expenses/accounts.server";
 import { commitImportedTransactions, listTransactions } from "@/lib/expenses/transactions.server";
 import type { BreakdownItem } from "@/lib/expenses/transactions";
 
@@ -11,6 +12,7 @@ interface ImportRow {
   date: string;
   note?: string;
   breakdown?: BreakdownItem[];
+  accountId?: string;
 }
 
 /** 明細是前端從 CSV 的明細欄解析出來的，這裡重新驗證一次型別跟數值，壞掉的項目直接丟掉
@@ -28,10 +30,18 @@ function sanitizeBreakdown(value: unknown): BreakdownItem[] | undefined {
   return items.length > 0 ? items : undefined;
 }
 
-/** 日期、分類、金額、備註完全一樣就視為同一筆——用來跟現有紀錄比對、也用來抓同一份
- *  CSV 裡自己重複的列，不是比對 _id（匯入的資料本來就沒有 id）。 */
-function dedupeKey(t: ImportRow): string {
-  return `${t.date}|${t.categoryId}|${t.amount}|${t.note ?? ""}`;
+/** 整筆內容完全一樣就視為同一筆——用來跟現有紀錄比對、也用來抓同一份 CSV 裡自己重複
+ *  的列，不是比對 _id（匯入的資料本來就沒有 id）。
+ *
+ *  明細跟帳戶也要算進來：同一天、同一個分類、同一個金額，但一筆有拆明細一筆沒有、或是
+ *  記在不同帳戶，那就是兩筆不同的紀錄，不該被當成重複吃掉。明細先照「標籤+正負號+金額」
+ *  正規化再排序，順序不同但內容一樣的視為同一組。 */
+function dedupeKey(t: Pick<ImportRow, "date" | "categoryId" | "amount" | "note" | "breakdown" | "accountId">): string {
+  const breakdown = (t.breakdown ?? [])
+    .map((b) => `${b.label}${b.kind === "扣項" ? "-" : "+"}${b.amount}`)
+    .sort()
+    .join(";");
+  return `${t.date}|${t.categoryId}|${t.amount}|${t.note ?? ""}|${breakdown}|${t.accountId ?? ""}`;
 }
 
 /** 匯入頁已經用 parseTransactionsCSV 在前端驗證、解析過一次，這裡用使用者自己目前的分類清單
@@ -49,9 +59,10 @@ export async function POST(request: Request) {
   const userId = new ObjectId(user.id);
   const categories = await listCategories(userId);
   const categoryIds = new Set(categories.map((c) => c.id));
+  const accountIds = new Set((await listAccounts(userId)).map((a) => a.id));
 
   const valid = rows.flatMap((row): ImportRow[] => {
-    const r = row as { categoryId?: unknown; amount?: unknown; date?: unknown; note?: unknown; breakdown?: unknown };
+    const r = row as { categoryId?: unknown; amount?: unknown; date?: unknown; note?: unknown; breakdown?: unknown; accountId?: unknown };
     const ok =
       typeof r.categoryId === "string" &&
       categoryIds.has(r.categoryId) &&
@@ -67,6 +78,9 @@ export async function POST(request: Request) {
         date: r.date as string,
         note: typeof r.note === "string" && r.note.trim() ? r.note.trim() : undefined,
         breakdown: sanitizeBreakdown(r.breakdown),
+        // 帳戶在預覽階段已經用名稱對應過一次，這裡再確認那個 id 真的還在（預覽到確認
+        // 之間帳戶可能被刪掉）；對不到就當成不指定帳戶，不要讓整列進不來。
+        accountId: typeof r.accountId === "string" && accountIds.has(r.accountId) ? r.accountId : undefined,
       },
     ];
   });

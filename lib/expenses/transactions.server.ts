@@ -98,7 +98,7 @@ export async function deleteTransaction(userId: ObjectId, id: string): Promise<T
  *  的 resolveAmount 同一個規則），不信任 CSV 裡那個可能跟明細兜不起來的總額。 */
 export async function commitImportedTransactions(
   userId: ObjectId,
-  rows: { categoryId: string; amount: number; date: string; note?: string; breakdown?: BreakdownItem[] }[],
+  rows: { categoryId: string; amount: number; date: string; note?: string; breakdown?: BreakdownItem[]; accountId?: string }[],
 ): Promise<number> {
   if (rows.length === 0) return 0;
   const col = await collection();
@@ -110,6 +110,7 @@ export async function commitImportedTransactions(
     date: r.date,
     note: r.note,
     breakdown: r.breakdown,
+    accountId: r.accountId ? new ObjectId(r.accountId) : undefined,
     createdAt: new Date(),
   }));
   const result = await col.insertMany(docs);
