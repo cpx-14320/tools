@@ -5,17 +5,17 @@ import Link from "next/link";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { EmptyListCard, ListCard, ListRow } from "@/components/expenses/list-row";
-import { Carousel } from "@/components/expenses/carousel";
+import { Card, CardBody } from "@/components/expenses/card";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { HiddenAmountsToggle, useHiddenAmounts } from "@/components/expenses/hidden-amounts";
-import { GroupedSectionSkeleton, KpiCardSkeleton, SectionSkeleton } from "@/components/expenses/skeleton";
+import { CardSkeleton, GroupedSectionSkeleton, SectionSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
 import { useSkeletonCount, useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
-import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
+import { KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { text } from "@/components/expenses/theme";
-import { dateFilterRange, defaultDateFilter, referenceYearMonth } from "@/lib/expenses/date-filter";
+import { dateFilterRange, referenceYearMonth } from "@/lib/expenses/date-filter";
 import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
 import { categoryColorClass, categoryFillClass, categoryPath, displayCategoryOf, topLevelCategories, type CategoryDTO } from "@/lib/expenses/categories";
 import {
@@ -26,7 +26,8 @@ import {
   transactionDisplayName,
   type TransactionDTO,
 } from "@/lib/expenses/transactions";
-import { netWorth, type AccountDTO } from "@/lib/expenses/accounts";
+// 帳戶／類型／轉帳這一頁自己不顯示（淨資產卡已經移到資產總表），但新增交易的彈窗要用。
+import { type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
 import { monthDaysLeft, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
@@ -199,12 +200,6 @@ export function DashboardView() {
   // 兩塊疊在一起，月份不一樣的話數字對不起來。
   const incomeRows = incomeBreakdown(budgetMonthIncomeTx, categories);
 
-  // 固定收支本月已經自動入帳的金額——有 sourceRuleId 就代表這筆是規則產生的。只看交易
-  // 紀錄就算得出來，不用再去拉一次規則清單。
-  const recurringThisMonthTotal = transactions
-    .filter((t) => t.sourceRuleId && t.date.slice(0, 7) === referenceYearMonth(defaultDateFilter()))
-    .reduce((sum, t) => sum + t.amount, 0);
-  const net = netWorth(accounts, accountTypes, transactions, categories, transfers);
   // 帶上月份，點進去的紀錄頁會把共用篩選器切到同一個月，數字才對得起來。
   const budgetDetailQuery = `kind=支出&month=${budgetYearMonth}`;
   const incomeDetailQuery = `kind=收入&month=${budgetYearMonth}`;
@@ -247,11 +242,21 @@ export function DashboardView() {
     return (
       <HeroShell overlay={heroOverlay}>
         <div className="flex flex-col gap-5">
-          <KpiCardSkeleton />
-          <div className="grid grid-cols-2 gap-3">
-            <KpiCardSkeleton />
-            <KpiCardSkeleton />
-          </div>
+          {/* 結餘／收入／支出現在是同一張卡：大數字一行，底下兩欄。 */}
+          <CardSkeleton className="[&>div]:p-3">
+            <SkeletonBar width={32} height={12} />
+            <SkeletonBar width={148} height={24} className="mt-2" />
+            <div className="mt-3 grid grid-cols-2 gap-3 border-t border-[#F2EEFA] pt-3">
+              <div>
+                <SkeletonBar width={32} height={12} />
+                <SkeletonBar width={96} height={18} className="mt-1.5" />
+              </div>
+              <div className="border-l border-[#F2EEFA] pl-3">
+                <SkeletonBar width={32} height={12} />
+                <SkeletonBar width={96} height={18} className="mt-1.5" />
+              </div>
+            </div>
+          </CardSkeleton>
           <SectionSkeleton count={incomeSkeletonCount} progress />
           <SectionSkeleton count={budgetSkeletonCount} progress />
           <GroupedSectionSkeleton shape={recentSkeletonShape} />
@@ -286,44 +291,40 @@ export function DashboardView() {
           「＋」而不是其他 emoji，跟選單圖示區分開，一眼就看得出是「新增」的動作。 */}
       <FloatingAddButton onClick={() => setAddOpen(true)} label="新增交易" />
 
-      {/* 整寬的那張放「結餘」不是「收入」：收入一個月大概就那幾筆、不太會變，結餘才是
-          每記一筆都會動、而且直接回答「我這個月還能花多少」的那個數字，值得最大的版面。
-          收入退回輪播裡跟支出、固定收支、淨資產並列，剛好四張＝兩頁兩欄，不會留半格空白。 */}
-      <KpiCard
-        label="結餘"
-        value={mask(`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`)}
-        valueColor={balance >= 0 ? "#4A3B7C" : KPI_NEGATIVE}
-        // 眼睛只掛在這張最上面的卡上，但管的是下面整排（收入／支出／固定收支／淨資產）。
-        action={<HiddenAmountsToggle hidden={amountsHidden} onToggle={toggleAmounts} />}
-      />
-      <Carousel
-        perSlide={2}
-        slides={[
-          <KpiCard
-            key="income"
-            label="收入"
-            value={mask(formatCurrency(totalIncome))}
-            valueColor="#4A3B7C"
-            href={`/tools/expenses/transactions?kind=收入&month=${budgetYearMonth}`}
-          />,
-          <KpiCard
-            key="expense"
-            label="支出"
-            value={mask(formatCurrency(totalExpense))}
-            valueColor="#4A3B7C"
-            href={`/tools/expenses/transactions?kind=支出&month=${budgetYearMonth}`}
-          />,
-          <KpiCard key="recurring" label="固定收支" value={mask(formatCurrency(recurringThisMonthTotal))} valueColor="#4A3B7C" />,
-          // 淨資產用的是資產總表同一個算式，而且首頁本來就已經抓了帳戶／類型／轉帳
-          // （新增交易彈窗要用），所以多這張卡不用多打任何一支 API。
-          <KpiCard
-            key="networth"
-            label="淨資產"
-            value={mask(`${net >= 0 ? "" : "－"}${formatCurrency(Math.abs(net))}`)}
-            valueColor={net < 0 ? KPI_NEGATIVE : "#4A3B7C"}
-          />,
-        ]}
-      />
+      {/* 結餘、收入、支出三個數字合併成一張卡，不是三張（原本是一張整寬的結餘＋一個
+          兩欄輪播）：三者本來就是同一道算式的三個部分（收入－支出＝結餘），拆成三張卡
+          等於多兩組卡片留白跟兩道間距，在手機上光這一區就吃掉半個畫面，下面的預算跟
+          最近消費全被擠出第一屏。
+
+          版面是「結論在上、組成在下」：結餘用大字獨佔一行，收入／支出在同一張卡裡分成
+          左右兩半，中間一條分隔線。兩半各自可以點，帶同一個月份進到消費紀錄的對應分頁。
+
+          固定收支跟淨資產兩張卡移除：固定收支已經自動入帳、金額本來就含在收入／支出裡，
+          單獨再列一個數字只會讓人以為是另外一筆；淨資產是「現在總共有多少」，跟這一頁
+          「這個月進出多少」不是同一種數字，在資產總表（有月份、有各類型佔比）看才完整。 */}
+      <Card>
+        <CardBody className="p-3">
+          <div className="flex items-start justify-between gap-2">
+            <p className={text.muted}>結餘</p>
+            {/* 眼睛掛在這裡，但管的是整頁所有金額（收入、支出、底下各區塊）。 */}
+            <HiddenAmountsToggle hidden={amountsHidden} onToggle={toggleAmounts} />
+          </div>
+          <p className="mt-0.5 text-2xl font-bold tabular-nums" style={{ color: balance >= 0 ? "#4A3B7C" : KPI_NEGATIVE }}>
+            {mask(`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`)}
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-3 border-t border-[#F2EEFA] pt-3">
+            <Link href={`/tools/expenses/transactions?kind=收入&month=${budgetYearMonth}`} className="block">
+              <p className={text.muted}>收入</p>
+              <p className="mt-0.5 text-lg font-bold tabular-nums text-[#4A3B7C]">{mask(formatCurrency(totalIncome))}</p>
+            </Link>
+            {/* 左右兩半中間一條細線分開，不然兩組「小標＋數字」會像是同一組的四行。 */}
+            <Link href={`/tools/expenses/transactions?kind=支出&month=${budgetYearMonth}`} className="block border-l border-[#F2EEFA] pl-3">
+              <p className={text.muted}>支出</p>
+              <p className="mt-0.5 text-lg font-bold tabular-nums text-[#4A3B7C]">{mask(formatCurrency(totalExpense))}</p>
+            </Link>
+          </div>
+        </CardBody>
+      </Card>
 
       {/* 收入來源擺在支出上方：先知道「這個月進來多少、從哪來」，再往下看花到哪去。
           每一列都可以點，帶著同一個月份導到消費紀錄的收入分頁並篩好那個分類——

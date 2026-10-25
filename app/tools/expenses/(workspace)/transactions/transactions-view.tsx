@@ -38,7 +38,7 @@ import {
   transactionDisplayName,
   type TransactionDTO,
 } from "@/lib/expenses/transactions";
-import { transactionBalancesByAccount, type AccountDTO } from "@/lib/expenses/accounts";
+import { type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
 import { formatCurrency } from "@/lib/format";
@@ -131,9 +131,6 @@ export function TransactionsView() {
 
   const inKind = (t: TransactionDTO) => (categoryById(categories, t.categoryId)?.kind ?? "支出") === kind;
   const totals = totalsForRange(transactions, categories, range);
-  // 每筆交易「記完之後」掛的那個帳戶變成多少——跟分頁/篩選無關，一律用全部資料算，
-  // 不然切換篩選器看到的「交易後餘額」會跟著篩選範圍錯亂。
-  const accountBalances = transactionBalancesByAccount(accounts, accountTypes, transactions, categories, transfers);
 
   // 分類篩選比對的是「頂層分類」，所以選「餐飲」時連它底下的子分類（早餐…）也會留下來。
   const inCategoryFilter = (t: TransactionDTO) => !categoryFilter || topLevelCategoryId(categories, t.categoryId) === categoryFilter;
@@ -468,11 +465,6 @@ export function TransactionsView() {
                       const category = categoryById(categories, t.categoryId);
                       const breakdown = t.breakdown ?? [];
                       const expanded = expandedIds.has(t.id);
-                      // 有掛帳戶才顯示「記完之後帳戶變成多少」——沒指定帳戶的紀錄沒有
-                      // 「資產」可以講，帳戶被刪除（accounts 裡找不到）也不顯示，不然
-                      // 會冒出一個查無名稱的帳戶。
-                      const account = t.accountId ? accounts.find((a) => a.id === t.accountId) : undefined;
-                      const balanceAfter = account ? accountBalances.get(`tx:${t.id}`) : undefined;
                       return (
                         <div key={t.id}>
                           <div className="flex w-full items-center gap-1 px-4 py-3">
@@ -488,20 +480,13 @@ export function TransactionsView() {
                                 title={transactionDisplayName(t, categories)}
                                 subtitle={categoryPath(categories, t.categoryId)}
                               />
-                              <div className="flex shrink-0 flex-col items-end">
-                                <span className={`tabular-nums font-semibold text-[#4A3B7C] ${kind === "收入" ? "text-[#2FAE82]" : ""}`}>
-                                  {kind === "收入" ? "＋" : "－"}
-                                  {formatCurrency(t.amount)}
-                                </span>
-                                {/* 只有支出列才顯示「記完之後帳戶剩多少」：收入是把錢加
-                                    進帳戶，那個數字跟「還剩多少可以花」無關，掛在這裡
-                                    只是把列塞滿。 */}
-                                {kind === "支出" && account && balanceAfter !== undefined && (
-                                  <span className={`mt-0.5 max-w-[120px] truncate tabular-nums ${text.faint}`}>
-                                    {account.name} {formatCurrency(balanceAfter)}
-                                  </span>
-                                )}
-                              </div>
+                              {/* 只有金額，不再掛「記完之後帳戶剩多少」那行小字：那是
+                                  帳戶的餘額，要看哪個戶頭剩多少去資產總表，列在每一筆
+                                  消費旁邊只是讓每一列都多一行雜訊。 */}
+                              <span className={`shrink-0 tabular-nums font-semibold text-[#4A3B7C] ${kind === "收入" ? "text-[#2FAE82]" : ""}`}>
+                                {kind === "收入" ? "＋" : "－"}
+                                {formatCurrency(t.amount)}
+                              </span>
                             </button>
                             {breakdown.length > 0 && <BreakdownToggle expanded={expanded} onClick={() => toggleExpanded(t.id)} />}
                           </div>

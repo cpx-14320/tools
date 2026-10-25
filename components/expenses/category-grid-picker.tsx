@@ -54,14 +54,21 @@ export function CategoryGridPicker({
           onAddClick={onAddClick}
         />
       </div>
-      {subcategories.length > 0 && (
+      {/* 還沒有任何子項目、但可以當場新增時也要出現這一區（只有一顆「＋ 新增」）：
+          在這個彈窗裡剛建好一個大分類之後，下一步常常就是替它補第一個子項目，沒有這一區
+          的話只能關掉彈窗跑去設定頁。 */}
+      {activeParentId && (subcategories.length > 0 || onAddSubClick) && (
         // 標一行「項目」：這排圓角選項跟上面的分類格子長得完全不一樣，不寫清楚的話
         // 會被當成另一組分類，不知道是在選剛剛那個分類底下的細項。
         <div className="mt-3 flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <span className={text.label}>項目</span>
-            {/* 還停在大分類上就提醒一句，不要讓人按了儲存（灰的）之後才在猜哪裡沒填。 */}
-            {value === activeParentId && <span className="text-xs font-medium text-[#D1517E]">請選一個項目</span>}
+            {/* 還停在大分類上就提醒一句，不要讓人按了儲存（灰的）之後才在猜哪裡沒填。
+                一個子項目都還沒有的大分類本來就可以直接記在它身上，那時不用提醒。 */}
+            {subcategories.length > 0 && value === activeParentId && (
+              <span className="text-xs font-medium text-[#D1517E]">請選一個項目</span>
+            )}
+            {subcategories.length === 0 && <span className={text.faint}>可不填</span>}
           </div>
           <div className="flex flex-wrap gap-2">
             {subcategories.map((sub) => (
@@ -80,10 +87,7 @@ export function CategoryGridPicker({
             ))}
             {/* 「這筆要記的項目這裡沒有」是記帳當下才會發現的事——沒有這顆就只能放棄這筆、
                 跑去設定頁的分類設定補一則、再回來從頭填一次。虛線框跟實心的子項目區分開，
-                看得出它是「新增」不是另一個可以選的項目。
-                只有在已經有子項目時才出現：一個還沒有任何子項目的大分類本來就可以直接記在
-                它身上，在這裡幫它開第一個子項目等於順手改掉了這個分類的結構（之後每一筆
-                都被強制要選子項目），那是設定頁該做的決定，不是記一筆帳的副作用。 */}
+                看得出它是「新增」不是另一個可以選的項目。 */}
             {onAddSubClick && (
               <button
                 type="button"

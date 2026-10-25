@@ -99,10 +99,21 @@ export function AccountTypeBatchModal({
         onAdd={() => setItems((list) => [...list, blankDraft(effectiveKind)])}
         renderItem={(item, i) => (
           <>
-            {/* 欄位順序跟消費分類的彈窗一致：類型→名稱→圖示→顏色。鎖定 kind 時
-                （從「新增帳戶」彈窗裡開啟）不顯示類型——資產/負債在上一層已經選過了，
-                這裡再問一次只是多餘的欄位。 */}
-            {!lockedKind && (
+            {/* 欄位順序跟消費分類的彈窗一致：類型→名稱→圖示→顏色。
+                鎖定 kind 時（從「新增帳戶」彈窗裡開啟）不給切換——資產/負債在上一層已經
+                選過了，這裡再問一次就會出現「畫面停在負債分頁，卻建出一個資產類型」這種
+                對不起來的結果。但還是要寫出來是哪一種：少了這一行，建出來的東西是資產
+                還是負債只能靠「我剛剛點的是哪個分頁」用記的，看不到任何提示。 */}
+            {lockedKind ? (
+              i === 0 && (
+                <Field label="類型">
+                  <p className="text-sm font-medium text-[#4A3B7C]">
+                    {lockedKind === "asset" ? "資產" : "負債"}
+                    <span className="ml-2 text-xs font-normal text-[#9C94C4]">跟著上一層選的分頁，這裡不能改</span>
+                  </p>
+                </Field>
+              )
+            ) : (
               <Field label="類型">
                 <SegmentedControl
                   className="self-start"

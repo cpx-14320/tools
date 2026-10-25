@@ -43,6 +43,9 @@ export function AccountModal({
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [accountTypeId, setAccountTypeId] = useState(initial?.accountTypeId ?? "");
+  // 使用者自己打過名稱之後就不要再被類型蓋掉（見 chooseType）。編輯既有帳戶時名稱
+  // 本來就是他當初取的，一開始就算「動過」。
+  const [nameTouched, setNameTouched] = useState(!!initial?.name);
   // 期初餘額改用彈窗下方那個固定小鍵盤輸入（跟新增交易一致），存的是算式字串。
   const [openingBalanceExpr, setOpeningBalanceExpr] = useState(initial ? String(initial.openingBalance) : "");
   const [typeBatchOpen, setTypeBatchOpen] = useState(false);
@@ -58,12 +61,31 @@ export function AccountModal({
   const visibleTypes = accountTypesByKind(accountTypes, typeKindTab);
   const selectedKind = accountTypes.find((t) => t.id === accountTypeId)?.kind;
 
+  /** 選類型時順便把名稱帶出來。
+   *
+   *  絕大多數人一個類型底下就一個帳戶（「銀行帳戶」類型底下一個叫「銀行帳戶」的帳戶），
+   *  選完類型再把同一個詞打一次是多餘的一步。所以選到類型時名稱自動帶上類型名稱，
+   *  要分辨同類型的兩個帳戶（兩張信用卡、兩個銀行戶頭）時再自己改掉就好——名稱欄位
+   *  留著不拿掉，正是為了這種情況；全部拿掉的話那兩個帳戶在清單、帳戶選擇彈窗裡會
+   *  變成一模一樣的兩列，分不出誰是誰。
+   *
+   *  已經自己打過名稱就不覆蓋，不然打到一半換個類型，打好的字會不見。 */
+  function chooseType(id: string, types: AccountTypeDTO[] = accountTypes) {
+    setAccountTypeId(id);
+    if (nameTouched) return;
+    const typeName = types.find((t) => t.id === id)?.name ?? "";
+    // 類型名稱已經被某個帳戶用掉了就不帶，省得一選就跳出「名稱重複」的紅字。
+    setName(typeName && !accountNameTaken(accounts, typeName, excludeId) ? typeName : "");
+  }
+
   function switchTypeKindTab(kind: AccountKind) {
     setTypeKindTab(kind);
     // 切分頁之後畫面上看到的格子換了一批，原本選的類型（屬於另一個分頁）不該繼續悄悄
     // 生效——逼使用者在目前這個分頁裡重新選一次，不然會變成「畫面顯示資產分頁，存檔
     // 卻存成負債帳戶」這種看不出來的落差。
     setAccountTypeId("");
+    // 名稱是上一個類型自動帶出來的話一起清掉，不然會留著「現金錢包」卻在負債分頁。
+    if (!nameTouched) setName("");
   }
 
   // 逐筆依序 POST，理由跟其他批次新增一樣：新類型的 order 是用當下已存在筆數算出來的，
@@ -85,7 +107,9 @@ export function AccountModal({
       }
     }
     onAccountTypesChange(latest);
-    if (firstNewId) setAccountTypeId(firstNewId);
+    // 用 chooseType 而不是只設 id：剛建好的類型選進來時名稱也要跟著帶出來。latest 要
+    // 傳進去——setAccountTypes 要等重繪才生效，這一刻 accountTypes 裡還沒有這個新類型。
+    if (firstNewId) chooseType(firstNewId, latest);
     setTypeBatchOpen(false);
   }
 
@@ -131,14 +155,23 @@ export function AccountModal({
           <OptionGrid
             options={visibleTypes.map((t) => ({ id: t.id, name: t.name, icon: t.icon, colorClass: categoryColorClass[t.color] }))}
             value={accountTypeId}
-            onChange={setAccountTypeId}
+            onChange={chooseType}
             onAddClick={() => setTypeBatchOpen(true)}
           />
         </div>
       </div>
 
+      {/* 選了類型就自動帶上同名（見 chooseType），一般情況不用動它；同一個類型底下有
+          好幾個帳戶時才需要改成「台新」「國泰」這種分得出來的名字。 */}
       <Field label="名稱">
-        <input value={name} onChange={(e) => setName(e.target.value)} className={fieldInputClass} />
+        <input
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            setNameTouched(true);
+          }}
+          className={fieldInputClass}
+        />
       </Field>
       {isDuplicateName && <p className="text-xs text-[#D1517E]">已經有同樣名稱的帳戶了，換一個名稱吧。</p>}
 
