@@ -5,10 +5,9 @@ import { useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { CardSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
 import { Card, CardBody } from "@/components/expenses/card";
-import { PillButton } from "@/components/expenses/button";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { ProgressBar } from "@/components/expenses/progress-bar";
-import { PetSprite, type PetMood } from "@/components/expenses/pet-sprite";
+import { PetSprite, petStage, PET_EATING_MS, type PetMood } from "@/components/expenses/pet-sprite";
 import { PetShopModal } from "@/components/expenses/pet-shop";
 import { IconImg } from "@/components/expenses/icon-img";
 import { text } from "@/components/expenses/theme";
@@ -42,6 +41,9 @@ export function PetView() {
   const [ready, setReady] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
   const [mood, setMood] = useState<PetMood>("idle");
+  // 連續餵第二次時 mood 已經是 "eating"、setMood 等於沒變，下面那個計時器就不會重新
+  // 計時，第二次的動畫會被第一次的計時器提早切掉。用這個每次遞增的數字當重新計時的依據。
+  const [feedNonce, setFeedNonce] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
   // 「今天」掛載時算一次固定住（本地日期，不是 UTC）——伺服器時區不一定跟使用者同一個，
   // 所以結算要看的「今天」由這邊決定。
@@ -103,6 +105,11 @@ export function PetView() {
     }
     if (data.pet) {
       setPet(data.pet);
+      // 餵食時切成吃東西的動畫，跑完一輪（PET_EATING_MS）自己回到待機。
+      if (action === "feed") {
+        setMood("eating");
+        setFeedNonce((n) => n + 1);
+      }
       const item = petItemById(itemId);
       setMessage(
         action === "feed"
@@ -120,6 +127,14 @@ export function PetView() {
     }
   }
 
+  // 吃東西的動畫跑完一輪就回到待機。計時器掛在 mood 上而不是寫在 act() 裡：連續餵
+  // 好幾次時每次都會重新計時，不會被前一次的 setTimeout 提早切回待機。
+  useEffect(() => {
+    if (mood !== "eating") return;
+    const timer = setTimeout(() => setMood("idle"), PET_EATING_MS);
+    return () => clearTimeout(timer);
+  }, [mood, feedNonce]);
+
   // 骨架等掛載後才畫：列數只有瀏覽器讀得到，伺服器端畫出來的一定是預設值，
   // 不擋的話會先閃一次錯的列數再換成記住的（見 useSkeletonReady）。
   if (!skeletonReady) return null;
@@ -131,13 +146,10 @@ export function PetView() {
       <div>
         <PageHeader title="養成" />
         <CardSkeleton className="mb-4">
-          <div className="aspect-square w-full animate-pulse rounded-2xl bg-[#EDE6FB]" />
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <div>
-              <SkeletonBar width={56} height={14} />
-              <SkeletonBar width={140} height={12} className="mt-1.5" />
-            </div>
-            <SkeletonBar width={64} height={30} className="rounded-full" />
+          <div className="h-40 w-full animate-pulse rounded-2xl bg-[#EDE6FB]" />
+          <div className="mt-3">
+            <SkeletonBar width={56} height={14} />
+            <SkeletonBar width={140} height={12} className="mt-1.5" />
           </div>
           <div className="mt-3">
             <div className="mb-1 flex items-center justify-between">
@@ -201,25 +213,23 @@ export function PetView() {
         }
       />
 
-      {/* 角色場地：待機會呼吸，按「散步」會沿著場地走來走去、碰到邊緣自己轉身。 */}
+      {/* 角色場地：平常待機呼吸，餵食時切成吃東西的動畫、跑完一輪自己回到待機。 */}
       <Card className="mb-4">
         <CardBody>
-          {/* 場地固定 1:1 正方形，角色站在底部、高度佔場地的七成多；換背景、換裝都只是
-              換這塊的底色跟角色色相，版面不會跟著變動。 */}
-          <div className="aspect-square w-full rounded-2xl p-3" style={{ background: petBackground(pet?.backgroundId ?? "") }}>
-            <PetSprite mood={mood} hueRotate={outfit?.hueRotate ?? 0} />
+          {/* 場地高度固定，角色置中；換背景、換裝都只是換這塊的底色跟角色色相，版面
+              不會跟著變動。角色本身是固定 110px（見 PetSprite 的 size），所以場地不用
+              跟著螢幕寬度長成一個很大的正方形——那只會在角色四周留一大片空白。 */}
+          <div className="grid h-40 w-full place-items-center rounded-2xl p-3" style={{ background: petBackground(pet?.backgroundId ?? "") }}>
+            <PetSprite stage={petStage(level.level)} mood={mood} hueRotate={outfit?.hueRotate ?? 0} />
           </div>
 
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className={text.sectionHeading}>Lv.{level.level}</p>
-              <p className={text.muted}>
-                {tier.name}・淨資產 {formatCurrency(net)}
-              </p>
-            </div>
-            <PillButton onClick={() => setMood((m) => (m === "walking" ? "idle" : "walking"))} active={mood === "walking"}>
-              {mood === "walking" ? "休息一下" : "散步"}
-            </PillButton>
+          {/* 「散步」拿掉了：新的角色圖只有正面定點的待機／吃東西兩種動畫，沒有側面
+              走路那一組，留著一顆按不出動作的按鈕只會讓人以為壞了。 */}
+          <div className="mt-3 min-w-0">
+            <p className={text.sectionHeading}>Lv.{level.level}</p>
+            <p className={text.muted}>
+              {tier.name}・淨資產 {formatCurrency(net)}
+            </p>
           </div>
 
           <div className="mt-3">
@@ -291,6 +301,7 @@ export function PetView() {
       <PetShopModal
         open={shopOpen}
         onClose={() => setShopOpen(false)}
+        stage={petStage(level.level)}
         pet={{
           coins: pet?.coins ?? 0,
           outfitId: pet?.outfitId ?? "",

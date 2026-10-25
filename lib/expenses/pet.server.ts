@@ -145,17 +145,30 @@ export async function settlePetRewards(userId: ObjectId, today: string): Promise
   return toDTO(updated ?? pet, granted);
 }
 
+// 買／餵／買服裝這三個都是「先讀出來檢查夠不夠，再 $inc 扣掉」。那個先讀後寫之間有
+// 空隙：同一個人連點兩下、或兩個分頁同時按，兩個請求會讀到同一份餘額、各自都通過檢查、
+// 然後各扣一次——星星幣會被扣成負的，背包數量也會。（跟 settlePetRewards 當初重複發獎
+// 是同一種 TOCTOU。）
+//
+// 所以條件直接寫進 updateOne 的 filter 裡，由資料庫在同一個原子操作裡判斷：條件不成立
+// 就不會有任何一筆被改到，回傳的 matchedCount 是 0，那時才回報錯誤。findOneAndUpdate
+// 一併把更新後的文件拿回來，不用自己在記憶體裡算一份可能已經過期的狀態。
+
 /** 買食物——先進背包，不會立刻吃掉，要另外呼叫 feedPet 才會消耗。 */
 export async function buyFood(userId: ObjectId, itemId: string): Promise<PetStateDTO | { error: string }> {
   const item = petItemById(itemId);
   if (!item || item.kind !== "食物") return { error: "找不到這個食物" };
 
   const pet = await ensurePet(userId);
-  if (pet.coins < item.price) return { error: "星星幣不夠" };
-
   const col = await collection();
-  await col.updateOne({ _id: pet._id }, { $inc: { coins: -item.price, [`foodCounts.${itemId}`]: 1 } });
-  return toDTO({ ...pet, coins: pet.coins - item.price, foodCounts: { ...pet.foodCounts, [itemId]: (pet.foodCounts?.[itemId] ?? 0) + 1 } });
+  // coins: { $gte: price } 是「錢夠才扣」的條件，不是先查再扣。
+  const updated = await col.findOneAndUpdate(
+    { _id: pet._id, coins: { $gte: item.price } },
+    { $inc: { coins: -item.price, [`foodCounts.${itemId}`]: 1 } },
+    { returnDocument: "after" },
+  );
+  if (!updated) return { error: "星星幣不夠" };
+  return toDTO(updated);
 }
 
 /** 餵食——只能餵背包裡已經買好的，吃掉一份換成經驗值，不另外扣星星幣（買的時候已經扣過了）。 */
@@ -164,12 +177,16 @@ export async function feedPet(userId: ObjectId, itemId: string): Promise<PetStat
   if (!item || item.kind !== "食物" || !item.xp) return { error: "找不到這個食物" };
 
   const pet = await ensurePet(userId);
-  const owned = pet.foodCounts?.[itemId] ?? 0;
-  if (owned <= 0) return { error: "背包裡沒有這個食物，先去商店買" };
-
   const col = await collection();
-  await col.updateOne({ _id: pet._id }, { $inc: { xp: item.xp, [`foodCounts.${itemId}`]: -1 } });
-  return toDTO({ ...pet, xp: pet.xp + item.xp, foodCounts: { ...pet.foodCounts, [itemId]: owned - 1 } });
+  // 「背包裡至少還有一份」當成更新條件，連點兩下的第二下會匹配不到、直接失敗，
+  // 不會把數量扣成負的。
+  const updated = await col.findOneAndUpdate(
+    { _id: pet._id, [`foodCounts.${itemId}`]: { $gte: 1 } },
+    { $inc: { xp: item.xp, [`foodCounts.${itemId}`]: -1 } },
+    { returnDocument: "after" },
+  );
+  if (!updated) return { error: "背包裡沒有這個食物，先去商店買" };
+  return toDTO(updated);
 }
 
 /** 服裝跟背景的規則完全一樣：買一次就永久擁有、可以無限次換來換去、換的時候不用再付錢，
@@ -198,19 +215,17 @@ export async function buyWearable(userId: ObjectId, itemId: string): Promise<Pet
 
   const pet = await ensurePet(userId);
   if (ownedList(pet, item.kind).includes(itemId)) return { error: fields.duplicate };
-  if (pet.coins < item.price) return { error: "星星幣不夠" };
 
   const col = await collection();
-  await col.updateOne(
-    { _id: pet._id },
+  // 跟 buyFood 同一個道理：錢夠不夠、以及「還沒買過」都寫進 filter，連點兩下的第二下
+  // 匹配不到（第一下已經把 itemId $push 進去了），不會扣兩次錢也不會在清單裡存兩筆。
+  const updated = await col.findOneAndUpdate(
+    { _id: pet._id, coins: { $gte: item.price }, [fields.owned]: { $ne: itemId } },
     { $inc: { coins: -item.price }, $push: { [fields.owned]: itemId }, $set: { [fields.current]: itemId } },
+    { returnDocument: "after" },
   );
-  return toDTO({
-    ...pet,
-    coins: pet.coins - item.price,
-    [fields.owned]: [...ownedList(pet, item.kind), itemId],
-    [fields.current]: itemId,
-  });
+  if (!updated) return { error: pet.coins < item.price ? "星星幣不夠" : fields.duplicate };
+  return toDTO(updated);
 }
 
 /** 換上已經擁有的服裝或背景。 */

@@ -13,13 +13,21 @@ import { ICON_PATHS } from "./icon-paths";
 const tabs = [
   { href: "/tools/expenses", label: "首頁", icon: ICON_PATHS.navHome, owns: ["/tools/expenses/transactions"] },
   { href: "/tools/expenses/reports", label: "報表", icon: ICON_PATHS.navReports, owns: [] },
-  { href: "/tools/expenses/assets", label: "資產", icon: ICON_PATHS.navAssets, owns: ["/tools/expenses/account-types"] },
+  { href: "/tools/expenses/assets", label: "資產", icon: ICON_PATHS.navAssets, owns: [] },
   { href: "/tools/expenses/pet", label: "養成", icon: ICON_PATHS.navPet, owns: [] },
   {
     href: "/tools/expenses/more",
     label: "設定",
     icon: ICON_PATHS.navSettings,
-    owns: ["/tools/expenses/categories", "/tools/expenses/goals", "/tools/expenses/recurring", "/tools/expenses/budgets"],
+    // 帳戶類型歸在設定底下，不是資產：它現在是純管理頁（只改名稱、圖示、顏色），
+    // 而且唯一的入口就是設定頁，進去之後亮資產會讓人以為自己是從資產總表點進來的。
+    owns: [
+      "/tools/expenses/categories",
+      "/tools/expenses/goals",
+      "/tools/expenses/recurring",
+      "/tools/expenses/budgets",
+      "/tools/expenses/account-types",
+    ],
   },
 ];
 

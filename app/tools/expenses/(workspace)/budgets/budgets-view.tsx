@@ -4,22 +4,11 @@ import { useEffect, useState } from "react";
 import { ListCardSkeleton } from "@/components/expenses/skeleton";
 import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
-import { Card, CardBody } from "@/components/expenses/card";
-import { DateField } from "@/components/expenses/date-field";
-import { ListProgressRow } from "@/components/expenses/list-progress-row";
-import { ListCard, ListRow } from "@/components/expenses/list-row";
+import { ListRow } from "@/components/expenses/list-row";
 import { BudgetModal } from "@/components/expenses/budget-modal";
 import { text } from "@/components/expenses/theme";
-import { budgetForMonth, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
-import {
-  topLevelCategories,
-  topLevelCategoryId,
-  categoryById,
-  categoryColorClass,
-  categoryFillClass,
-  type CategoryDTO,
-} from "@/lib/expenses/categories";
-import type { TransactionDTO } from "@/lib/expenses/transactions";
+import { budgetForMonth, isLegacyRule, rulesForCategory, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
+import { topLevelCategories, categoryColorClass, type CategoryDTO } from "@/lib/expenses/categories";
 import { formatCurrency } from "@/lib/format";
 
 function currentYearMonth(): string {
@@ -27,32 +16,42 @@ function currentYearMonth(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
-/** 預算設定頁——預算從「新增分類」彈窗搬出來獨立成一頁，而且改成可以按月份分別設定：
- *  上面選月份，下面列出所有支出分類在那個月各自的預算。設定時存的是「從這個月起生效」
- *  的規則，之後的月份自動沿用，不用每個月重設（見 lib/expenses/budgets.ts）。 */
+/** 要開哪一個分類的預算彈窗，以及要編的是哪一筆（rule 為 undefined＝新增一筆）。 */
+type EditTarget = { category: CategoryDTO; rule?: BudgetRuleDTO };
+
+/** 預算設定頁——列出所有支出分類，每個分類底下直接攤開它設過的幾筆「從某月起多少」。
+ *
+ *  版面刻意跟「收支分類」那一頁長一樣：主分類一列，它的細項列在同一張卡底下的淡色
+ *  區塊裡。那一頁的細項是子分類，這一頁的細項是生效月份，但「點主分類列＝新增一筆、
+ *  點細項＝編輯那一筆」的操作是同一套。
+ *
+ *  頁面最上面不再有全域的月份選擇器跟總預算卡：預算是一個分類一個分類決定的，全域
+ *  月份會讓人以為那是「在看哪個月的預算」，其實它是「這次要從哪個月開始改」——那個
+ *  選擇現在搬進各別分類的編輯彈窗裡（見 BudgetModal）。想看「這個月總共編了多少、
+ *  花到哪」請看首頁的本月預算支出跟報表頁。 */
 export function BudgetsView() {
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const skeletonReady = useSkeletonReady();
   const [rules, setRules] = useState<BudgetRuleDTO[]>([]);
-  const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [ready, setReady] = useState(false);
   // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
-  const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:budgets", 6, ready ? categories.filter((c) => !c.parentId && c.kind === "支出").length : undefined);
-  const [yearMonth, setYearMonth] = useState(currentYearMonth());
-  const [editing, setEditing] = useState<CategoryDTO | null>(null);
+  const skeletonCount = useSkeletonCount(
+    "cpx-tools:expenses-skeleton:budgets",
+    6,
+    ready ? categories.filter((c) => !c.parentId && c.kind === "支出").length : undefined,
+  );
+  const [editing, setEditing] = useState<EditTarget | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     Promise.all([
       fetch("/api/expenses/categories").then((res) => res.json()),
       fetch("/api/expenses/budgets").then((res) => res.json()),
-      fetch("/api/expenses/transactions").then((res) => res.json()),
     ])
-      .then(([catData, budgetData, txData]: [{ categories?: CategoryDTO[] }, { rules?: BudgetRuleDTO[] }, { transactions?: TransactionDTO[] }]) => {
+      .then(([catData, budgetData]: [{ categories?: CategoryDTO[] }, { rules?: BudgetRuleDTO[] }]) => {
         if (cancelled) return;
         setCategories(catData.categories ?? []);
         setRules(budgetData.rules ?? []);
-        setTransactions(txData.transactions ?? []);
         setReady(true);
       })
       .catch(() => {
@@ -63,16 +62,26 @@ export function BudgetsView() {
     };
   }, []);
 
-  async function handleSave(amount: number) {
+  async function handleSave(yearMonth: string, amount: number) {
     if (!editing) return;
     const data: { rules?: BudgetRuleDTO[] } = await fetch("/api/expenses/budgets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ categoryId: editing.id, effectiveFrom: yearMonth, amount }),
+      body: JSON.stringify({ categoryId: editing.category.id, effectiveFrom: yearMonth, amount }),
     })
       .then((res) => res.json())
       .catch(() => ({}));
-    if (data.rules) setRules(data.rules);
+    // 編輯既有的那一筆時如果把月份也改掉了，原本那一筆要刪掉——upsert 是用
+    // 「分類＋生效月份」當鍵，換了月份等於另外新增一筆，不刪的話舊的會留著。
+    let latest = data.rules;
+    const old = editing.rule;
+    if (old && !isLegacyRule(old) && old.effectiveFrom !== yearMonth) {
+      const after: { rules?: BudgetRuleDTO[] } = await fetch(`/api/expenses/budgets?id=${old.id}`, { method: "DELETE" })
+        .then((res) => res.json())
+        .catch(() => ({}));
+      if (after.rules) latest = after.rules;
+    }
+    if (latest) setRules(latest);
     setEditing(null);
   }
 
@@ -86,114 +95,86 @@ export function BudgetsView() {
   const expenseCategories = topLevelCategories(categories, "支出");
   // 改版前存在分類身上的舊預算會補成一筆虛擬規則，使用者的舊設定不會因為改版就不見。
   const effectiveRules = withLegacyCategoryBudgets(rules, categories);
-  const monthTotal = expenseCategories.reduce((sum, c) => sum + (budgetForMonth(effectiveRules, c.id, yearMonth) ?? 0), 0);
-
-  // 這個月各大分類實際花掉多少（子分類的金額算到它的大分類底下，跟首頁的預算卡一致）。
-  const spentByCategory = new Map<string, number>();
-  for (const t of transactions) {
-    if (t.date.slice(0, 7) !== yearMonth) continue;
-    const cat = categoryById(categories, t.categoryId);
-    if (cat?.kind !== "支出") continue;
-    const topId = topLevelCategoryId(categories, t.categoryId);
-    spentByCategory.set(topId, (spentByCategory.get(topId) ?? 0) + t.amount);
-  }
-  const monthSpent = expenseCategories.reduce(
-    (sum, c) => sum + ((budgetForMonth(effectiveRules, c.id, yearMonth) ?? 0) > 0 ? (spentByCategory.get(c.id) ?? 0) : 0),
-    0,
-  );
-  const monthPct = monthTotal > 0 ? Math.round((monthSpent / monthTotal) * 100) : 0;
+  const thisMonth = currentYearMonth();
 
   return (
     <div>
-      <PageHeader title="預算設定" help="選月份設定各分類的預算，設定後往後的月份會沿用，要調整時再設一筆新的就好" />
-
-      <div className="mb-4">
-        <label className="flex flex-col gap-1.5">
-          <span className={text.label}>月份</span>
-          <DateField value={yearMonth} onChange={setYearMonth} granularity="month" />
-        </label>
-      </div>
-
-      <Card className="mb-4">
-        <CardBody>
-          <p className={text.muted}>{yearMonth} 總預算</p>
-          <div className="mt-0.5 flex items-end justify-between">
-            <p className={text.statValue}>
-              {formatCurrency(monthSpent)}
-              <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {formatCurrency(monthTotal)}</span>
-            </p>
-            <span className={`text-xs font-semibold ${monthSpent > monthTotal ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>{monthPct}%</span>
-          </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#F3EFFC]">
-            <div
-              className={`h-full rounded-full ${monthSpent > monthTotal ? "bg-[#D1517E]" : "bg-[#6F5FD6]"}`}
-              style={{ width: `${Math.min(100, Math.max(monthPct, 0))}%` }}
-            />
-          </div>
-        </CardBody>
-      </Card>
+      <PageHeader title="預算設定" help="點分類設定「從哪個月起每月多少」，之後的月份會沿用；要調整時再設一筆新的，之前的月份不會被追溯蓋掉" />
 
       {!skeletonReady ? null : !ready ? (
-        <ListCardSkeleton count={skeletonCount} progress />
+        <ListCardSkeleton count={skeletonCount} />
       ) : expenseCategories.length === 0 ? (
         <p className={text.faint}>還沒有任何支出分類，先去「收支分類」建立分類才能編預算</p>
       ) : (
-        <ListCard>
+        <div className="flex flex-col gap-3">
           {expenseCategories.map((c) => {
-            const amount = budgetForMonth(effectiveRules, c.id, yearMonth) ?? 0;
-            const spent = spentByCategory.get(c.id) ?? 0;
-            // 沒編預算的分類不畫進度條（沒有分母），但仍然顯示這個月已經花了多少——
-            // 看到「這類其實每個月都在花」正是決定要不要幫它編預算的依據。
-            if (amount <= 0) {
-              return (
+            const history = rulesForCategory(effectiveRules, c.id);
+            const current = budgetForMonth(effectiveRules, c.id, thisMonth);
+            return (
+              <div key={c.id} className="overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
                 <ListRow
-                  key={c.id}
                   icon={c.icon}
                   iconClassName={categoryColorClass[c.color]}
                   name={c.name}
-                  right={<span className="text-sm text-[#B3ABD4]">{spent > 0 ? `已花 ${formatCurrency(spent)}・未編預算` : "未編預算"}</span>}
-                  chevron
-                  onClick={() => setEditing(c)}
+                  // 右邊是「這個月實際生效的金額」，不是最後一筆設定——最後一筆有可能是
+                  // 設在未來的月份，那筆現在還沒生效。
+                  right={
+                    <span className={current && current > 0 ? "tabular-nums text-sm font-semibold text-[#4A3B7C]" : `text-sm ${text.faint}`}>
+                      {current === undefined ? "未編預算" : current > 0 ? formatCurrency(current) : "不編預算"}
+                    </span>
+                  }
+                  onClick={() => setEditing({ category: c })}
                 />
-              );
-            }
-            const pct = Math.round((spent / amount) * 100);
-            const over = spent > amount;
-            // 這一頁是「設定預算」，不是看進度的地方——花費速度的提醒只放在首頁的本月預算，
-            // 這裡每一列都掛一行紅字只會讓設定清單變得很吵。
-            return (
-              <button key={c.id} type="button" onClick={() => setEditing(c)} className="w-full px-4 py-3.5 text-left">
-                <div className="flex w-full items-center gap-3">
-                  <ListProgressRow
-                    icon={c.icon}
-                    iconClassName={categoryColorClass[c.color]}
-                    name={c.name}
-                    amount={`${formatCurrency(spent)} / ${formatCurrency(amount)}`}
-                    pct={pct}
-                    pctLabel={
-                      <span className={over ? "font-semibold text-[#D1517E]" : undefined}>
-                        {over ? `超支 ${formatCurrency(spent - amount)}` : `剩 ${formatCurrency(amount - spent)}`}
-                      </span>
-                    }
-                    barColorClass={over ? "bg-[#D1517E]" : categoryFillClass[c.color]}
-                  />
-                </div>
-              </button>
+
+                {/* 設過的幾筆直接攤在分類名稱下方，不用點進去才看得到「幾月改成多少」。
+                    排法跟收支分類頁的子項目同一套（淡色區塊＋分隔線）。 */}
+                {history.length > 0 && (
+                  <div className="flex flex-col divide-y divide-[#F2EEFA] border-t border-[#ECE4FA] bg-[#F9F7FE]">
+                    {history.map((rule) => {
+                      // 舊版存在分類身上的預算會補成一筆沒有生效月份的虛擬規則，資料庫裡
+                      // 沒有這一筆可以刪或改；設一筆新的就會蓋過它。
+                      const legacy = isLegacyRule(rule);
+                      return (
+                        <div key={rule.id} className="flex items-center gap-3 px-4 py-3">
+                          <button
+                            type="button"
+                            disabled={legacy}
+                            onClick={() => setEditing({ category: c, rule })}
+                            className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
+                          >
+                            <span className={text.body}>{legacy ? "改版前的設定" : `${rule.effectiveFrom} 起`}</span>
+                            <span className="shrink-0 tabular-nums text-sm font-medium text-[#4A3B7C]">
+                              {rule.amount > 0 ? formatCurrency(rule.amount) : "不編預算"}
+                            </span>
+                          </button>
+                          {legacy ? (
+                            <span className={`shrink-0 text-xs ${text.faint}`}>沿用中</span>
+                          ) : (
+                            <button type="button" onClick={() => handleDeleteRule(rule.id)} className="shrink-0 text-xs font-medium text-[#D1517E]">
+                              刪除
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
-        </ListCard>
+        </div>
       )}
 
       <BudgetModal
-        key={editing ? `${editing.id}-${yearMonth}` : "closed"}
+        // key 綁在「哪個分類、哪一筆」上，換一個目標再開時彈窗裡的月份跟金額才會是
+        // 那一筆的值，不是上一次留下的。
+        key={editing ? `${editing.category.id}-${editing.rule?.id ?? "new"}` : "closed"}
         open={editing !== null}
-        category={editing}
-        yearMonth={yearMonth}
-        rules={effectiveRules}
-        currentAmount={editing ? (budgetForMonth(effectiveRules, editing.id, yearMonth) ?? 0) : 0}
+        category={editing?.category ?? null}
+        initialYearMonth={editing?.rule?.effectiveFrom && !isLegacyRule(editing.rule) ? editing.rule.effectiveFrom : thisMonth}
+        currentAmount={editing?.rule?.amount ?? (editing ? (budgetForMonth(effectiveRules, editing.category.id, thisMonth) ?? 0) : 0)}
         onClose={() => setEditing(null)}
         onSave={handleSave}
-        onDeleteRule={handleDeleteRule}
       />
     </div>
   );

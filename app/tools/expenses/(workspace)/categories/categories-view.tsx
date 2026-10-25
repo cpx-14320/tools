@@ -187,6 +187,19 @@ export function CategoriesView() {
     .flatMap((c) => [c.id, ...subCategoriesOf(categories, c.id).map((sub) => sub.id)]);
   const selection = useSelection(selectableIds);
 
+  /** 一個主分類右邊要顯示的筆數＝它自己的 ＋ 底下所有子項目的。
+   *
+   *  有子項目的主分類一定要選到子項目才能記帳（見 categories.ts 的 needsSubcategory），
+   *  所以它自己的筆數永遠是 0——直接顯示那個 0 會讓人以為「餐飲完全沒在花錢」，其實
+   *  錢都記在早餐／午餐／晚餐上。沒有子項目的主分類則本來就是終點，加總起來就是它
+   *  自己的筆數，同一條算式兩種情況都對。
+   *
+   *  還是把自己的加進去：改版前（還沒拆子分類時）記在主分類身上的舊紀錄、以及強制
+   *  刪除子分類後被改掛回主分類的紀錄，都會掛在主分類自己身上，漏掉就對不上總數。 */
+  function totalCount(parentId: string): number {
+    return (counts[parentId] ?? 0) + subCategoriesOf(categories, parentId).reduce((sum, sub) => sum + (counts[sub.id] ?? 0), 0);
+  }
+
   // 多選模式一律全部攤開——收起來的子項目也會被「全選」勾到，看不到就刪掉太危險。
   const subsExpanded = (parentId: string) => selection.selecting || expandedParents.includes(parentId);
   const toggleSubs = (parentId: string) =>
@@ -289,7 +302,7 @@ export function CategoriesView() {
                       c.name
                     )
                   }
-                  right={<span className={text.muted}>{counts[c.id] ?? 0} 筆紀錄</span>}
+                  right={<span className={text.muted}>{totalCount(c.id)} 筆紀錄</span>}
                   leading={selection.selecting && !c.isUncategorized ? <SelectionDot selected={selection.selectedIds.has(c.id)} /> : undefined}
                   onClick={() => (selection.selecting ? (c.isUncategorized ? undefined : selection.toggle(c.id)) : setModal(c))}
                 />

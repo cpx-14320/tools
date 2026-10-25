@@ -363,7 +363,7 @@ export function ReportsView() {
     // 趨勢。前兩排是固定的控制項，直接畫出它們的形狀，資料回來時只有數字長出來。
     return (
       <div className="flex flex-col gap-4">
-        <PageHeader title="報表" />
+        <PageHeader title="報表" flush />
         {/* 三排控制項：四個分頁（size="lg"）、日月年全部自訂、月份膠囊。高度要跟真的
             一樣，不然資料回來時底下整塊會往下跳一截。後兩排是 DateFilterPicker 的
             flex-wrap，在手機寬度會折成兩行。 */}
@@ -400,7 +400,7 @@ export function ReportsView() {
     <div className="flex flex-col gap-4">
       {/* 「跟誰比」放在標題右邊，四個分頁共用同一個設定——本來只有資產分頁裡面有
           一顆自己的基準日選擇器，切到別的分頁就不見了，而且跟首頁那顆各記各的。 */}
-      <PageHeader title="報表" actions={<ComparePicker />} />
+      <PageHeader title="報表" flush actions={<ComparePicker />} />
 
       <SegmentedControl
         value={kind}

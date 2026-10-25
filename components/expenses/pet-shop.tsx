@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Modal } from "./modal";
 import { Button, SegmentedControl } from "./button";
 import { IconImg } from "./icon-img";
-import { PetSprite } from "./pet-sprite";
+import { PetSprite, type PetStage } from "./pet-sprite";
 import { text } from "./theme";
 import { PET_ITEMS, petBackground, petItemById, type PetItem, type PetItemKind } from "@/lib/expenses/pet";
 
@@ -41,12 +41,15 @@ export function PetShopModal({
   open,
   onClose,
   pet,
+  stage,
   message,
   onAct,
 }: {
   open: boolean;
   onClose: () => void;
   pet: ShopPetState;
+  /** 預覽要畫蛋還是角色，由呼叫端依等級決定（見 pet-sprite.ts 的 petStage）。 */
+  stage: PetStage;
   /** 最近一次動作的提示文字，彈窗開著的時候原本頁面底下的訊息看不到，這裡另外顯示一份。 */
   message?: string | null;
   onAct: (action: "buy" | "equip", itemId: string) => void;
@@ -111,10 +114,10 @@ export function PetShopModal({
         )
       }
     >
-      {/* 跟養成頁的場地一樣是 1:1，只是限一個最大寬度——彈窗裡還要放頁籤跟商品格子，
-          讓預覽撐滿整個寬度的話下面就只剩一點點位置。 */}
-      <div className="mx-auto aspect-square w-full max-w-[200px] rounded-2xl p-3" style={{ background: petBackground(pet.backgroundId) }}>
-        <PetSprite mood="idle" hueRotate={outfit?.hueRotate ?? 0} />
+      {/* 跟養成頁的場地一樣是固定高度、角色置中，只是矮一點——彈窗裡還要放頁籤跟
+          商品格子，預覽佔太高的話下面就只剩一點點位置。 */}
+      <div className="grid h-36 w-full place-items-center rounded-2xl p-3" style={{ background: petBackground(pet.backgroundId) }}>
+        <PetSprite stage={stage} mood="idle" hueRotate={outfit?.hueRotate ?? 0} size={96} />
       </div>
 
       {message && <div className="rounded-2xl bg-[#F3EFFC] px-4 py-2.5 text-center text-xs text-[#4A3B7C]">{message}</div>}
