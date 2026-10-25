@@ -104,6 +104,26 @@ export async function createCategory(
   return { category: toDTO(doc), categories };
 }
 
+/** 重排同一層的分類——`ids` 是那一層排好的完整順序，`order` 直接寫成陣列索引。
+ *
+ *  送整串而不是「跟上一個交換」：交換要兩次寫入、中間失敗就會留下兩個一樣的 order，
+ *  而且沒辦法修正舊資料裡本來就重複或跳號的 order。整串重寫是冪等的，每存一次順便
+ *  把那一層的 order 正規化成 0..n-1。
+ *
+ *  只會動 `ids` 裡面的那幾筆，而且一定要屬於同一個使用者——前端送進來的 id 不可信，
+ *  用 userId 一起當條件，別人的分類不會被重排。 */
+export async function reorderCategories(userId: ObjectId, ids: string[]): Promise<CategoryDTO[]> {
+  if (ids.length > 0) {
+    const col = await collection();
+    await col.bulkWrite(
+      ids.map((id, index) => ({
+        updateOne: { filter: { _id: new ObjectId(id), userId }, update: { $set: { order: index } } },
+      })),
+    );
+  }
+  return listCategories(userId);
+}
+
 export interface UpdateCategoryInput {
   name?: string;
   icon?: string;

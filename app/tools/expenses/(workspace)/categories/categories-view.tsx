@@ -13,6 +13,7 @@ import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
+import { SortArrows, SortToggle } from "@/components/expenses/sort-controls";
 import { ListRow } from "@/components/expenses/list-row";
 import { topLevelCategories, subCategoriesOf, categoryColorClass, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 
@@ -33,6 +34,9 @@ export function CategoriesView() {
   const [batchTarget, setBatchTarget] = useState<BatchTarget | null>(null);
   const [kind, setKind] = useState<CategoryKind>("支出");
   const [deleteConfirm, setDeleteConfirm] = useState<{ ids: string[]; inUseCount: number; subCount: number } | null>(null);
+  // 排序模式：每一列右邊長出 ↑↓。跟多選模式互斥——兩個都開的話一列右邊會擠進打勾、
+  // 筆數跟兩顆箭頭，而且點一下到底是要選取還是要移動也說不清楚。
+  const [sorting, setSorting] = useState(false);
   // 載入中畫骨架。這一頁是「一個主分類一張卡、底下掛它的子項目」，所以記的是形狀
   // （每張卡有幾個子項目）而不是單一列數；支出跟收入的分類數差很多，兩個分頁各記各的。
   const skeletonShape = useSkeletonShape(
@@ -195,6 +199,47 @@ export function CategoriesView() {
     return (counts[parentId] ?? 0) + subCategoriesOf(categories, parentId).reduce((sum, sub) => sum + (counts[sub.id] ?? 0), 0);
   }
 
+  /** 把 group 這一層重排成 nextIds 的順序，回傳整份 categories 的新陣列。
+   *
+   *  categories 這個陣列本身就是顯示順序（伺服器已經照 order 排好，而 topLevelCategories／
+   *  subCategoriesOf 都只是 filter、不會改變順序），所以本地端要立刻反映，只要把這一層
+   *  原本佔的那幾個位置，按新順序重新填回去就好——不用自己維護一份 order 數字。 */
+  function reorderLocal(group: CategoryDTO[], nextIds: string[]): CategoryDTO[] {
+    const positions = group.map((g) => categories.findIndex((c) => c.id === g.id)).sort((a, b) => a - b);
+    const byId = new Map(categories.map((c) => [c.id, c]));
+    const next = [...categories];
+    nextIds.forEach((id, i) => {
+      const cat = byId.get(id);
+      if (cat) next[positions[i]] = cat;
+    });
+    return next;
+  }
+
+  /** 把 group 裡第 index 筆往上／往下移一格。
+   *
+   *  先改本地畫面再送出（樂觀更新）：點一下就要看到它動，等伺服器來回的話連點幾下會
+   *  一卡一卡的。送出的是整層排好的 id 順序，不是「跟上一個交換」（見
+   *  categories.server.ts 的 reorderCategories）。 */
+  async function move(group: CategoryDTO[], index: number, delta: number) {
+    const target = index + delta;
+    if (target < 0 || target >= group.length) return;
+    const nextGroup = [...group];
+    [nextGroup[index], nextGroup[target]] = [nextGroup[target], nextGroup[index]];
+    const nextIds = nextGroup.map((c) => c.id);
+    setCategories(reorderLocal(group, nextIds));
+
+    const data: { categories?: CategoryDTO[] } = await fetch("/api/expenses/categories/order", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: nextIds }),
+    })
+      .then((res) => res.json())
+      .catch(() => ({}));
+    // 用伺服器回來的那份覆蓋，順便把 order 正規化的結果同步回畫面；失敗就留著樂觀更新
+    // 的結果，重新整理後會回到伺服器上真正的順序。
+    if (data.categories) setCategories(data.categories);
+  }
+
   return (
     <div>
       <PageHeader title="收支分類" help="支出與收入的分類都在這裡；分類底下可以再開子分類，方便細看同一種消費裡哪種類型花最多" />
@@ -256,8 +301,31 @@ export function CategoriesView() {
             { value: "收入", label: "收入" },
           ]}
         />
-        <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />
+        {/* 排序跟選取兩個模式互斥，開一個就把另一個關掉。 */}
+        <div className="flex shrink-0 items-center gap-2">
+          <SortToggle
+            sorting={sorting}
+            onToggle={() => {
+              if (!sorting) selection.exit();
+              setSorting((v) => !v);
+            }}
+          />
+          <SelectionToggle
+            selecting={selection.selecting}
+            onToggle={() => {
+              if (!selection.selecting) setSorting(false);
+              selection.toggleMode();
+            }}
+          />
+        </div>
       </div>
+
+      {sorting && (
+        <p className={`mb-3 rounded-2xl bg-[#F9F7FE] px-4 py-2.5 text-xs ${text.muted}`}>
+          用每一列右邊的 ↑↓ 調整順序。子項目只會在自己的主分類裡面移動；排好的順序會同步到
+          新增消費紀錄的分類格子、預算設定等所有列出分類的地方。
+        </p>
+      )}
 
       {selection.selecting && (
         <SelectionBar
@@ -270,13 +338,13 @@ export function CategoriesView() {
       )}
 
       {!skeletonReady ? null : !ready ? (
-        // 多選模式下每張卡最後那一列「＋ 新增子分類」不顯示，骨架也跟著不畫。
-        <GroupedCardsSkeleton shape={skeletonShape} footer={!selection.selecting} />
+        // 多選／排序模式下每張卡最後那一列「＋ 新增子分類」不顯示，骨架也跟著不畫。
+        <GroupedCardsSkeleton shape={skeletonShape} footer={!selection.selecting && !sorting} />
       ) : parents.length === 0 ? (
         <p className={text.faint}>還沒有任何{kind}分類，點右下角的＋建立第一個</p>
       ) : (
         <div className="flex flex-col gap-3">
-          {parents.map((c) => {
+          {parents.map((c, parentIndex) => {
             const subs = subCategoriesOf(categories, c.id);
             return (
               <div key={c.id} className="overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
@@ -293,26 +361,53 @@ export function CategoriesView() {
                       c.name
                     )
                   }
-                  right={<span className={text.muted}>{totalCount(c.id)} 筆紀錄</span>}
+                  // 排序模式下右邊換成 ↑↓：筆數跟箭頭擠在一起會太滿，而且排序時在意的
+                  // 是順序不是筆數。主分類只在同一個收支分頁裡面移動（parents 已經篩過 kind）。
+                  right={
+                    sorting ? (
+                      <SortArrows
+                        onUp={() => move(parents, parentIndex, -1)}
+                        onDown={() => move(parents, parentIndex, 1)}
+                        canUp={parentIndex > 0}
+                        canDown={parentIndex < parents.length - 1}
+                      />
+                    ) : (
+                      <span className={text.muted}>{totalCount(c.id)} 筆紀錄</span>
+                    )
+                  }
                   leading={selection.selecting && !c.isUncategorized ? <SelectionDot selected={selection.selectedIds.has(c.id)} /> : undefined}
-                  onClick={() => (selection.selecting ? (c.isUncategorized ? undefined : selection.toggle(c.id)) : setModal(c))}
+                  onClick={
+                    sorting ? undefined : () => (selection.selecting ? (c.isUncategorized ? undefined : selection.toggle(c.id)) : setModal(c))
+                  }
                 />
 
                 {subs.length > 0 && (
                   <div className="flex flex-col divide-y divide-[#F2EEFA] border-t border-[#ECE4FA] bg-[#F9F7FE]">
-                    {subs.map((sub) => (
+                    {subs.map((sub, subIndex) => (
                       <ListRow
                         key={sub.id}
                         name={sub.name}
-                        right={<span className={text.muted}>{counts[sub.id] ?? 0} 筆</span>}
+                        // 子項目的 ↑↓ 只在 subs（同一個主分類底下）裡面移動，不會跨到別的分類。
+                        right={
+                          sorting ? (
+                            <SortArrows
+                              onUp={() => move(subs, subIndex, -1)}
+                              onDown={() => move(subs, subIndex, 1)}
+                              canUp={subIndex > 0}
+                              canDown={subIndex < subs.length - 1}
+                            />
+                          ) : (
+                            <span className={text.muted}>{counts[sub.id] ?? 0} 筆</span>
+                          )
+                        }
                         leading={selection.selecting ? <SelectionDot selected={selection.selectedIds.has(sub.id)} /> : undefined}
-                        onClick={() => (selection.selecting ? selection.toggle(sub.id) : setModal(sub))}
+                        onClick={sorting ? undefined : () => (selection.selecting ? selection.toggle(sub.id) : setModal(sub))}
                       />
                     ))}
                   </div>
                 )}
 
-                {!selection.selecting && (
+                {!selection.selecting && !sorting && (
                   <div className="border-t border-[#ECE4FA] px-4 py-2">
                     <button
                       type="button"

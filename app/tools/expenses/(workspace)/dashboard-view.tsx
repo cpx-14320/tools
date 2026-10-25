@@ -245,19 +245,21 @@ export function DashboardView() {
     return (
       <HeroShell overlay={heroOverlay}>
         <div className="flex flex-col gap-5">
-          {/* 結餘／收入／支出現在是同一張卡：大數字一行，底下兩欄。 */}
+          {/* 收入／支出同一張卡分兩欄，每一欄是「小標一行、金額＋眼睛一行」——跟下面
+              載入完成後那張卡（含 p-3、gap-3、中間那條分隔線、金額列的 min-h-8）
+              對齊，資料回來時高度不會跳。 */}
           <CardSkeleton className="[&>div]:p-3">
-            <SkeletonBar width={32} height={12} />
-            <SkeletonBar width={148} height={24} className="mt-2" />
-            <div className="mt-3 grid grid-cols-2 gap-3 border-t border-[#F2EEFA] pt-3">
-              <div>
-                <SkeletonBar width={32} height={12} />
-                <SkeletonBar width={96} height={18} className="mt-1.5" />
-              </div>
-              <div className="border-l border-[#F2EEFA] pl-3">
-                <SkeletonBar width={32} height={12} />
-                <SkeletonBar width={96} height={18} className="mt-1.5" />
-              </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[false, true].map((divider, i) => (
+                <div key={i} className={divider ? "border-l border-[#F2EEFA] pl-3" : undefined}>
+                  <SkeletonBar width={32} height={12} />
+                  <div className="mt-0.5 flex min-h-8 items-center justify-between gap-1">
+                    <SkeletonBar width={96} height={18} />
+                    {/* 眼睛按鈕是 size-8 的圓，骨架也要佔掉同樣的位置。 */}
+                    <div className="size-8 shrink-0 animate-pulse rounded-full bg-[#EDE6FB]" />
+                  </div>
+                </div>
+              ))}
             </div>
           </CardSkeleton>
           <SectionSkeleton count={incomeSkeletonCount} progress />

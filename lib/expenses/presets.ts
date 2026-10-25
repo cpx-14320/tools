@@ -85,8 +85,30 @@ export interface IconOption {
   label: string;
 }
 
+/** 預設支出分類以外、只拿來給使用者挑的支出圖——有圖檔但不會自動建立對應的分類
+ *  （跟 EXTRA_ACCOUNT_ICONS 同一個做法）。label 是給讀螢幕軟體用的（選擇器只排圖、
+ *  不顯示文字），所以寫的是「這張圖畫的是什麼」。
+ *
+ *  public/expenses 裡還有一張 expenses-category-other.png，沒有收進來：它跟共用的
+ *  ICON_OTHER（category-other.png）都是「…」，只差圓形跟圓角方形，排在同一個選擇器裡
+ *  會變成兩個看起來一樣的「其他」，挑了也分不出差別。 */
+const EXTRA_EXPENSE_ICONS: IconOption[] = [
+  { path: expenseCategoryIcon("beverage"), label: "飲料" },
+  { path: expenseCategoryIcon("dessert"), label: "甜點" },
+  { path: expenseCategoryIcon("transportation"), label: "汽車" },
+  { path: expenseCategoryIcon("clothing"), label: "服飾" },
+  { path: expenseCategoryIcon("beauty"), label: "美容保養" },
+  { path: expenseCategoryIcon("electronics"), label: "3C" },
+  { path: expenseCategoryIcon("fitness"), label: "健身" },
+  { path: expenseCategoryIcon("pet"), label: "寵物" },
+  { path: expenseCategoryIcon("phone"), label: "電話費" },
+  { path: expenseCategoryIcon("bill"), label: "帳單" },
+  { path: expenseCategoryIcon("subscription"), label: "訂閱" },
+];
+
 export const EXPENSE_ICON_OPTIONS: IconOption[] = [
   ...PRESET_EXPENSE_CATEGORIES.filter((c) => c.icon !== ICON_OTHER).map((c) => ({ path: c.icon, label: c.name })),
+  ...EXTRA_EXPENSE_ICONS,
   { path: ICON_OTHER, label: "其他" },
 ];
 
