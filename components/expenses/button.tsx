@@ -63,28 +63,9 @@ export function ButtonLink({
   );
 }
 
-export function IconButton({
-  children,
-  onClick,
-  "aria-label": ariaLabel,
-  className = "",
-}: {
-  children: ReactNode;
-  onClick?: () => void;
-  "aria-label": string;
-  className?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={ariaLabel}
-      className={`grid size-8 shrink-0 place-items-center rounded-full text-[#9C94C4] transition-colors hover:bg-[#F3EFFC] hover:text-[#6F5FD6] ${className}`}
-    >
-      {children}
-    </button>
-  );
-}
+// 圓形的圖示按鈕搬到 components/expenses/icon-button.tsx（IconButton／IconLink）：
+// 那一份走 Font Awesome、而且跟搭乘車的 IconButton 同一組規格（plain/soft/white 三種
+// 底色）。這裡原本那一份是吃 children 的 emoji 版，已經沒有人用。
 
 type BadgeTone = "positive" | "negative" | "neutral";
 

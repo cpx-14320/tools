@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/expenses/page-header";
-import { IconButton } from "@/components/expenses/button";
+import { IconButton } from "@/components/expenses/icon-button";
 import { BackLink } from "@/components/expenses/back-link";
 import { Card, CardBody } from "@/components/expenses/card";
 import { DeltaBadge } from "@/components/expenses/delta-badge";
@@ -256,9 +256,9 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
         }
         actions={
           <div className="flex items-center gap-2">
-            <IconButton aria-label="編輯帳戶資料" onClick={() => setEditOpen(true)}>
-              ✏️
-            </IconButton>
+            {/* 鉛筆走 Font Awesome，不用 emoji ✏️——emoji 在不同系統長得不一樣，
+                也吃不到品牌紫。規格比照搭乘車那顆（見 icon-button.tsx）。 */}
+            <IconButton icon="pen" tone="white" aria-label="編輯帳戶資料" onClick={() => setEditOpen(true)} size={32} iconSize={14} />
             <BackLink href="/tools/expenses/assets" label="返回資產總表" />
           </div>
         }
@@ -360,15 +360,19 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
         valueColor="#4A3B7C"
         delta={incomeDelta && <DeltaBadge delta={incomeDelta.delta} pct={incomeDelta.pct} goodWhenUp suffix={deltaSuffix} className="shrink-0" />}
       />
+      {/* 兩欄並排的窄卡：小標跟漲跌幅改成上下兩行（stackHeader），不然「這段期間支出」
+          這種長標題會跟徽章擠在同一行被壓到斷行。 */}
       <div className="grid grid-cols-2 gap-3">
         <KpiCard
           label="這段期間支出"
+          stackHeader
           value={formatCurrency(totalExpense)}
           valueColor="#4A3B7C"
           delta={expenseDelta && <DeltaBadge delta={expenseDelta.delta} pct={expenseDelta.pct} goodWhenUp={false} suffix={deltaSuffix} className="shrink-0" />}
         />
         <KpiCard
           label="這段期間結餘"
+          stackHeader
           value={`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`}
           valueColor={balance >= 0 ? "#4A3B7C" : KPI_NEGATIVE}
           delta={balanceDelta && <DeltaBadge delta={balanceDelta.delta} pct={balanceDelta.pct} goodWhenUp suffix={deltaSuffix} className="shrink-0" />}

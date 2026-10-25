@@ -33,11 +33,18 @@ export function KpiCard({
   delta,
   action,
   href,
+  stackHeader = false,
 }: {
   label: string;
   value: ReactNode;
   valueColor: string;
   delta?: ReactNode;
+  /** 小標跟漲跌幅改成上下兩行，不是左右並排。
+   *
+   *  兩欄並排的窄卡（帳戶明細的「這段期間支出／結餘」）裡，標題本來就長，再跟漲跌幅
+   *  擠同一行會被壓到斷行，變成「這段期間」「支出」兩行、右邊的徽章還孤零零吊在上面。
+   *  整寬的卡不需要這個，所以是選項不是預設。 */
+  stackHeader?: boolean;
   /** 金額右邊的操作按鈕（目前只有首頁結餘卡的隱藏金額眼睛）。跟金額同一行，不是另外
    *  一列，不然這張卡會為了一顆小按鈕多長一截。 */
   action?: ReactNode;
@@ -46,7 +53,7 @@ export function KpiCard({
 }) {
   const body = (
     <CardBody className="p-3">
-      <div className="flex items-start justify-between gap-2">
+      <div className={`flex gap-2 ${stackHeader ? "flex-col items-start gap-0.5" : "items-start justify-between"}`}>
         <p className={text.muted}>{label}</p>
         {delta}
       </div>
