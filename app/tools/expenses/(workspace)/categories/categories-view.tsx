@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ListCardSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
+import { GroupedCardsSkeleton } from "@/components/expenses/skeleton";
+import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
-import { ExpandToggle } from "@/components/expenses/expand-toggle";
 import { SegmentedControl, Badge } from "@/components/expenses/button";
 import { text } from "@/components/expenses/theme";
 import { CategoryModal, type CategoryModalDraft } from "@/components/expenses/category-modal";
@@ -21,12 +20,6 @@ import { topLevelCategories, subCategoriesOf, categoryColorClass, type CategoryD
  *  batchTarget／CategoryBatchModal，兩種彈窗各自管各自的狀態。 */
 type BatchTarget = { parentId?: string };
 
-/** 一個主分類底下預設只攤開三則子項目，再多就收起來、用首頁那顆「顯示全部 (n)／收合」
- *  （ExpandToggle）展開。子項目可能很多（薪水底下光是各種獎金禮金就快十則），全部攤開
- *  的話光是一個分類就佔滿整個畫面，下面還有幾個主分類完全看不到。三則足夠看出「這個
- *  分類底下大概是哪一類的東西」，要編輯特定一則再展開。 */
-const SUB_PREVIEW_COUNT = 3;
-
 export function CategoriesView() {
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   // 編輯分類時可以指定「預設帳戶」，所以這一頁要知道有哪些帳戶；帳戶選擇彈窗還要靠
@@ -36,15 +29,17 @@ export function CategoriesView() {
   const skeletonReady = useSkeletonReady();
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [ready, setReady] = useState(false);
-  // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
-  const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:categories", 6, ready ? categories.filter((c) => !c.parentId).length : undefined);
   const [modal, setModal] = useState<CategoryDTO | null>(null);
   const [batchTarget, setBatchTarget] = useState<BatchTarget | null>(null);
   const [kind, setKind] = useState<CategoryKind>("支出");
   const [deleteConfirm, setDeleteConfirm] = useState<{ ids: string[]; inUseCount: number; subCount: number } | null>(null);
-  // 哪幾個主分類的子項目被展開了（見 SUB_PREVIEW_COUNT）。存 id 陣列而不是 Set：
-  // 要產生新的值才會觸發重繪，Set 就地 add/delete 是同一個物件、畫面不會更新。
-  const [expandedParents, setExpandedParents] = useState<string[]>([]);
+  // 載入中畫骨架。這一頁是「一個主分類一張卡、底下掛它的子項目」，所以記的是形狀
+  // （每張卡有幾個子項目）而不是單一列數；支出跟收入的分類數差很多，兩個分頁各記各的。
+  const skeletonShape = useSkeletonShape(
+    `cpx-tools:expenses-skeleton:categories:${kind}`,
+    [3, 2, 0, 0],
+    ready ? topLevelCategories(categories, kind).map((c) => subCategoriesOf(categories, c.id).length) : undefined,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -200,11 +195,6 @@ export function CategoriesView() {
     return (counts[parentId] ?? 0) + subCategoriesOf(categories, parentId).reduce((sum, sub) => sum + (counts[sub.id] ?? 0), 0);
   }
 
-  // 多選模式一律全部攤開——收起來的子項目也會被「全選」勾到，看不到就刪掉太危險。
-  const subsExpanded = (parentId: string) => selection.selecting || expandedParents.includes(parentId);
-  const toggleSubs = (parentId: string) =>
-    setExpandedParents((list) => (list.includes(parentId) ? list.filter((id) => id !== parentId) : [...list, parentId]));
-
   return (
     <div>
       <PageHeader title="收支分類" help="支出與收入的分類都在這裡；分類底下可以再開子分類，方便細看同一種消費裡哪種類型花最多" />
@@ -280,7 +270,8 @@ export function CategoriesView() {
       )}
 
       {!skeletonReady ? null : !ready ? (
-        <ListCardSkeleton count={skeletonCount} />
+        // 多選模式下每張卡最後那一列「＋ 新增子分類」不顯示，骨架也跟著不畫。
+        <GroupedCardsSkeleton shape={skeletonShape} footer={!selection.selecting} />
       ) : parents.length === 0 ? (
         <p className={text.faint}>還沒有任何{kind}分類，點右下角的＋建立第一個</p>
       ) : (
@@ -308,25 +299,16 @@ export function CategoriesView() {
                 />
 
                 {subs.length > 0 && (
-                  <div className="border-t border-[#ECE4FA] bg-[#F9F7FE]">
-                    <div className="flex flex-col divide-y divide-[#F2EEFA]">
-                      {(subsExpanded(c.id) ? subs : subs.slice(0, SUB_PREVIEW_COUNT)).map((sub) => (
-                        <ListRow
-                          key={sub.id}
-                          name={sub.name}
-                          right={<span className={text.muted}>{counts[sub.id] ?? 0} 筆</span>}
-                          leading={selection.selecting ? <SelectionDot selected={selection.selectedIds.has(sub.id)} /> : undefined}
-                          onClick={() => (selection.selecting ? selection.toggle(sub.id) : setModal(sub))}
-                        />
-                      ))}
-                    </div>
-                    {/* 多選模式下不收合（上面的 subsExpanded 已經一律回 true）：收起來的那幾則
-                        還是會被「全選」勾到，按下刪除時使用者看不到自己正要刪掉什麼。 */}
-                    {subs.length > SUB_PREVIEW_COUNT && !selection.selecting && (
-                      <div className="pb-2">
-                        <ExpandToggle expanded={subsExpanded(c.id)} total={subs.length} onToggle={() => toggleSubs(c.id)} />
-                      </div>
-                    )}
+                  <div className="flex flex-col divide-y divide-[#F2EEFA] border-t border-[#ECE4FA] bg-[#F9F7FE]">
+                    {subs.map((sub) => (
+                      <ListRow
+                        key={sub.id}
+                        name={sub.name}
+                        right={<span className={text.muted}>{counts[sub.id] ?? 0} 筆</span>}
+                        leading={selection.selecting ? <SelectionDot selected={selection.selectedIds.has(sub.id)} /> : undefined}
+                        onClick={() => (selection.selecting ? selection.toggle(sub.id) : setModal(sub))}
+                      />
+                    ))}
                   </div>
                 )}
 

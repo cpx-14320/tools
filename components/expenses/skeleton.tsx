@@ -121,6 +121,72 @@ export function GroupedSectionSkeleton({ shape }: { shape: number[] }) {
   );
 }
 
+/** 一疊各自獨立的白卡（存錢目標、固定收支那種「一筆一張卡」的版面），不是一張卡切成
+ *  好幾列。兩者的高度差很多：N 張卡有 N 份卡片內距跟 N-1 道間距，用 ListCardSkeleton
+ *  充數的話資料回來整頁會往下掉一大截。每張卡長得一樣，所以 children 只要給一張的內容。 */
+export function StackedCardsSkeleton({ count, gapClass = "gap-4", children }: { count: number; gapClass?: string; children: ReactNode }) {
+  if (count <= 0) return <SkeletonBar width={220} height={12} />;
+  return (
+    <div className={`flex flex-col ${gapClass}`}>
+      {Array.from({ length: count }, (_, i) => (
+        <Card key={i}>
+          <CardBody>{children}</CardBody>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+/** 「主列＋底下幾個子列」的卡片一疊（收支分類、預算設定）。
+ *
+ *  shape[i] 是第 i 張卡底下有幾個子列。只記總數還原不出「哪張卡有幾個子項」，畫成一張
+ *  大卡會少掉每張卡之間的間距跟淡色子區塊，高度一定對不上。 */
+export function GroupedCardsSkeleton({ shape, footer = false }: { shape: number[]; footer?: boolean }) {
+  if (shape.length === 0) return <SkeletonBar width={220} height={12} />;
+  return (
+    <div className="flex flex-col gap-3">
+      {shape.map((subs, i) => (
+        <div key={i} className="overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
+          <RowSkeleton progress={false} />
+          {subs > 0 && (
+            <div className="flex flex-col divide-y divide-[#F2EEFA] border-t border-[#ECE4FA] bg-[#F9F7FE]">
+              {Array.from({ length: subs }, (_, r) => (
+                <div key={r} className="flex items-center justify-between gap-3 px-4 py-3.5">
+                  <SkeletonBar width="30%" />
+                  <SkeletonBar width={72} />
+                </div>
+              ))}
+            </div>
+          )}
+          {/* 收支分類每張卡最後還有一列「＋ 新增子分類」。 */}
+          {footer && (
+            <div className="border-t border-[#ECE4FA] px-4 py-2">
+              <SkeletonBar width={84} height={12} />
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** 「小標題＋一張清單卡」重複幾段（帳戶類型的資產／負債兩段）。counts[i] 是第 i 段有幾列，
+ *  0 代表那一段整段不顯示——資產/負債其中一邊是空的時候，真的畫面上就沒有那個小標。 */
+export function SectionedListSkeleton({ counts }: { counts: number[] }) {
+  const sections = counts.filter((n) => n > 0);
+  if (sections.length === 0) return <SkeletonBar width={220} height={12} />;
+  return (
+    <div className="flex flex-col gap-5">
+      {sections.map((n, i) => (
+        <div key={i}>
+          <SkeletonBar width={32} height={14} className="mb-2 ml-1" />
+          <ListCardSkeleton count={n} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** 一張白卡的骨架外框——內容自己傳，給各頁刻自己的形狀用。 */
 export function CardSkeleton({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (

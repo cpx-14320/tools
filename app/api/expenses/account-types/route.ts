@@ -46,9 +46,12 @@ export async function PUT(request: Request) {
   const id = typeof body?.id === "string" ? body.id : "";
   const name = typeof body?.name === "string" ? body.name.trim() : "";
   const icon = typeof body?.icon === "string" ? body.icon.trim() : "";
+  // kind 可不送（只改名稱／圖示／顏色時）；有送才會嘗試搬動資產/負債，而且底下已經有
+  // 帳戶在用的話伺服器會擋下來（見 updateAccountType）。
+  const kind = body?.kind === "asset" || body?.kind === "liability" ? body.kind : undefined;
   if (!id || !name || !icon) return NextResponse.json({ error: "缺少必要欄位" }, { status: 400 });
 
-  const result = await updateAccountType(new ObjectId(user.id), id, { name, icon, color: parseColor(body?.color) });
+  const result = await updateAccountType(new ObjectId(user.id), id, { name, icon, color: parseColor(body?.color), kind });
   if ("error" in result) return NextResponse.json(result, { status: 409 });
   return NextResponse.json(result);
 }

@@ -12,7 +12,6 @@ import { HiddenAmountsToggle, useHiddenAmounts } from "@/components/expenses/hid
 import { CardSkeleton, GroupedSectionSkeleton, SectionSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
 import { useSkeletonCount, useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
-import { KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { text } from "@/components/expenses/theme";
 import { dateFilterRange, referenceYearMonth } from "@/lib/expenses/date-filter";
@@ -98,7 +97,11 @@ export function DashboardView() {
   const [incomeRowsExpanded, setIncomeRowsExpanded] = useState(false);
   const [recentExpanded, setRecentExpanded] = useState(false);
   // 在外面看記帳本時把金額遮起來，記在這台裝置上（見 hidden-amounts.tsx）。
-  const { hidden: amountsHidden, toggle: toggleAmounts, mask } = useHiddenAmounts();
+  // 收入跟支出各一顆眼睛、各自記各自的狀態：只想遮薪水、不在意別人看到今天花了多少，
+  // 這種情況比「全部一起遮」常見。收入來源那一區的金額跟著收入那顆走、預算支出跟著
+  // 支出那顆走——它們本來就是同一個數字的明細，分開遮會自相矛盾。
+  const income = useHiddenAmounts("income");
+  const expense = useHiddenAmounts("expense");
   // 「今天」掛載時算一次固定住——render 當中讀時鐘是不純的。
   const [todayISO] = useState(() => {
     const d = new Date();
@@ -156,7 +159,7 @@ export function DashboardView() {
 
   const range = dateFilterRange(filter);
 
-  const { totalIncome, totalExpense, balance, expenseTx } = totalsForRange(transactions, categories, range);
+  const { totalIncome, totalExpense, expenseTx } = totalsForRange(transactions, categories, range);
   // 「最近消費」只看近 7 天，而且是以「這段期間裡最新的一筆」為基準往回推——用今天當
   // 基準的話，翻到過去的月份時這一區會整個空掉。依日期分組（新的在上面），跟消費紀錄
   // 頁同一種版面。
@@ -302,27 +305,34 @@ export function DashboardView() {
           固定收支跟淨資產兩張卡移除：固定收支已經自動入帳、金額本來就含在收入／支出裡，
           單獨再列一個數字只會讓人以為是另外一筆；淨資產是「現在總共有多少」，跟這一頁
           「這個月進出多少」不是同一種數字，在資產總表（有月份、有各類型佔比）看才完整。 */}
+      {/* 同一張卡分兩欄：左邊收入、右邊支出，中間一條細線分開。
+          原本最上面那一行大字的「結餘」移除了：它是「收入減支出」，兩個加數就在同一張卡
+          上，看得到就算得出來；而且它獨佔一行大字，是這一區最佔版面的東西，拿掉之後預算
+          支出跟最近消費才回得到第一屏。數字本身沒有消失，報表頁的「淨額」分頁就是結餘。
+
+          眼睛各一顆、就放在金額右邊，兩邊各自記各自的狀態。金額那一行用 min-h 卡住高度：
+          遮起來時星號的字級比數字小，沒卡住的話按一下卡片會抽動一下。 */}
       <Card>
-        <CardBody className="p-3">
-          <div className="flex items-start justify-between gap-2">
-            <p className={text.muted}>結餘</p>
-            {/* 眼睛掛在這裡，但管的是整頁所有金額（收入、支出、底下各區塊）。 */}
-            <HiddenAmountsToggle hidden={amountsHidden} onToggle={toggleAmounts} />
-          </div>
-          <p className="mt-0.5 text-2xl font-bold tabular-nums" style={{ color: balance >= 0 ? "#4A3B7C" : KPI_NEGATIVE }}>
-            {mask(`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`)}
-          </p>
-          <div className="mt-3 grid grid-cols-2 gap-3 border-t border-[#F2EEFA] pt-3">
-            <Link href={`/tools/expenses/transactions?kind=收入&month=${budgetYearMonth}`} className="block">
-              <p className={text.muted}>收入</p>
-              <p className="mt-0.5 text-lg font-bold tabular-nums text-[#4A3B7C]">{mask(formatCurrency(totalIncome))}</p>
-            </Link>
-            {/* 左右兩半中間一條細線分開，不然兩組「小標＋數字」會像是同一組的四行。 */}
-            <Link href={`/tools/expenses/transactions?kind=支出&month=${budgetYearMonth}`} className="block border-l border-[#F2EEFA] pl-3">
-              <p className={text.muted}>支出</p>
-              <p className="mt-0.5 text-lg font-bold tabular-nums text-[#4A3B7C]">{mask(formatCurrency(totalExpense))}</p>
-            </Link>
-          </div>
+        <CardBody className="grid grid-cols-2 gap-3 p-3">
+          {[
+            { label: "收入", total: totalIncome, state: income, divider: false },
+            { label: "支出", total: totalExpense, state: expense, divider: true },
+          ].map(({ label, total, state, divider }) => (
+            <div key={label} className={divider ? "border-l border-[#F2EEFA] pl-3" : undefined}>
+              <p className={text.muted}>{label}</p>
+              <div className="mt-0.5 flex min-h-8 items-center justify-between gap-1">
+                {/* 數字本身可以點，帶同一個月份進到消費紀錄的對應分頁；眼睛是另一顆按鈕，
+                    不能包在連結裡（HTML 不允許 a 裡面再放互動元素）。 */}
+                <Link
+                  href={`/tools/expenses/transactions?kind=${label}&month=${budgetYearMonth}`}
+                  className="min-w-0 truncate text-lg font-bold tabular-nums text-[#4A3B7C]"
+                >
+                  {state.mask(formatCurrency(total))}
+                </Link>
+                <HiddenAmountsToggle hidden={state.hidden} onToggle={state.toggle} />
+              </div>
+            </div>
+          ))}
         </CardBody>
       </Card>
 
@@ -350,7 +360,7 @@ export function DashboardView() {
                   icon={row.icon}
                   iconClassName="bg-[#E3F6EC] text-[#2FAE82]"
                   name={row.name}
-                  amount={mask(formatCurrency(row.amount))}
+                  amount={income.mask(formatCurrency(row.amount))}
                   pct={row.pct}
                   barColorClass="bg-[#2FAE82]"
                 />
@@ -380,8 +390,14 @@ export function DashboardView() {
                   靠底部對齊的話小字會沉下去，看起來沒對齊。 */}
               <div className="flex items-center justify-between gap-2">
                 <p className={text.statValue}>
-                  {formatCurrency(budget.totalSpent)}
-                  <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {formatCurrency(budget.totalBudget)}</span>
+                  {expense.hidden ? (
+                    expense.mask("")
+                  ) : (
+                    <>
+                      {formatCurrency(budget.totalSpent)}
+                      <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {formatCurrency(budget.totalBudget)}</span>
+                    </>
+                  )}
                 </p>
                 {/* 超支與否用小標籤講清楚，旁邊再附「這個月還剩幾天」——只看百分比的話，
                     不知道是「才過幾天就用掉八成」還是「月底了剛好用到八成」。 */}
@@ -412,7 +428,7 @@ export function DashboardView() {
                     icon={row.category.icon}
                     iconClassName={categoryColorClass[row.category.color]}
                     name={row.category.name}
-                    amount={`${formatCurrency(row.budget.spent)} / ${formatCurrency(row.budget.budgetAmount)}`}
+                    amount={expense.mask(`${formatCurrency(row.budget.spent)} / ${formatCurrency(row.budget.budgetAmount)}`)}
                     pct={row.budget.pct}
                     pctLabel={<span className={row.budget.pct > 100 ? "text-[#D1517E]" : undefined}>{row.budget.pct}%</span>}
                     barColorClass={row.budget.pct > 100 ? "bg-[#D1517E]" : categoryFillClass[row.category.color]}
@@ -427,7 +443,7 @@ export function DashboardView() {
                   name={row.category.name}
                   right={
                     <span className="text-sm">
-                      <span className="tabular-nums font-semibold text-[#4A3B7C]">{formatCurrency(row.spent)}</span>
+                      <span className="tabular-nums font-semibold text-[#4A3B7C]">{expense.mask(formatCurrency(row.spent))}</span>
                       <span className={`ml-1.5 ${text.muted}`}>未編預算</span>
                     </span>
                   }
@@ -462,7 +478,9 @@ export function DashboardView() {
               <div key={date}>
                 <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
                   <p className={`font-medium ${text.muted}`}>{date}</p>
-                  <p className={`font-medium tabular-nums ${text.muted}`}>－{formatCurrency(recentDayTotals.get(date) ?? 0)}</p>
+                  <p className={`font-medium tabular-nums ${text.muted}`}>
+                    {expense.hidden ? expense.mask("") : `－${formatCurrency(recentDayTotals.get(date) ?? 0)}`}
+                  </p>
                 </div>
                 <ListCard>
                   {items.map((t) => {
@@ -477,7 +495,9 @@ export function DashboardView() {
                           title={transactionDisplayName(t, categories)}
                           subtitle={categoryPath(categories, t.categoryId)}
                         />
-                        <span className="shrink-0 tabular-nums font-semibold text-[#4A3B7C]">－{formatCurrency(t.amount)}</span>
+                        <span className="shrink-0 tabular-nums font-semibold text-[#4A3B7C]">
+                          {expense.hidden ? expense.mask("") : `－${formatCurrency(t.amount)}`}
+                        </span>
                       </Link>
                     );
                   })}

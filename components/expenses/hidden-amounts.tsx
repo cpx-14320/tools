@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 
-const STORAGE_KEY = "cpx-tools:expenses-amounts-hidden";
+const STORAGE_PREFIX = "cpx-tools:expenses-amounts-hidden";
 
 /** 遮起來時顯示的字樣——保留 NT$ 前綴，看得出這一格本來就是金額、只是被蓋住了。
  *
@@ -14,32 +14,36 @@ const MaskedAmount = (
   </>
 );
 
-/** 「把首頁的金額遮起來」的開關，記在這台裝置上。
+/** 「把金額遮起來」的開關，記在這台裝置上。
  *
- *  在外面（捷運上、辦公室）打開記帳本的時候，結餘、收入、支出、淨資產這幾個數字是最
- *  不想被旁邊的人看到的。遮住的只有畫面，資料照常載入、圖表跟清單照常計算，按一下就
- *  看得回來——這不是密碼鎖，只是擋一眼。
+ *  在外面（捷運上、辦公室）打開記帳本的時候，收入、支出這幾個數字是最不想被旁邊的人
+ *  看到的。遮住的只有畫面，資料照常載入、圖表跟清單照常計算，按一下就看得回來——
+ *  這不是密碼鎖，只是擋一眼。
+ *
+ *  `scope` 讓同一頁可以有好幾個互相獨立的開關（首頁的收入、支出各一顆眼睛，各自記各自
+ *  的狀態）：只想遮薪水、不在意別人看到今天花了多少，這種情況比「全部一起遮」常見。
  *
  *  初始值一律是「不遮」、localStorage 等掛載後才讀：這頁在伺服器端也會先算繪一次，而
  *  伺服器沒有 localStorage，在 useState 的初始值裡讀會讓兩邊的 HTML 對不起來（hydration
  *  失敗）。同 date-filter-context.tsx 的處理。 */
-export function useHiddenAmounts() {
+export function useHiddenAmounts(scope: string) {
   const [hidden, setHidden] = useState(false);
+  const storageKey = `${STORAGE_PREFIX}:${scope}`;
 
   useEffect(() => {
     try {
       /* eslint-disable-next-line react-hooks/set-state-in-effect */
-      if (localStorage.getItem(STORAGE_KEY) === "1") setHidden(true);
+      setHidden(localStorage.getItem(storageKey) === "1");
     } catch {
       /* 私密視窗等情況，忽略，用預設值 */
     }
-  }, []);
+  }, [storageKey]);
 
   function toggle() {
     const next = !hidden;
     setHidden(next);
     try {
-      localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+      localStorage.setItem(storageKey, next ? "1" : "0");
     } catch {
       /* 忽略 */
     }

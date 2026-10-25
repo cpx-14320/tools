@@ -69,20 +69,43 @@ export async function createAccountType(
   return { accountType: toDTO(doc), accountTypes };
 }
 
-/** 類型（資產／負債）建立後不能改——跟分類的 kind 一樣，改了會讓既有帳戶跟類型的
- *  資產/負債認定兜不起來，要改的話請刪除後重新新增。 */
+/** 資產／負債只有在「還沒有任何帳戶掛在這個類型底下」時才能改。
+ *
+ *  不是不想讓人改，是改了之後算出來的錢會是錯的：帳戶餘額的正負號看的就是它所屬類型的
+ *  kind（見 accounts.ts 的 signedDelta）——資產帳戶「支出扣錢、收入加錢」，負債帳戶
+ *  反過來（支出＝刷卡消費，欠更多；收入＝還款，欠更少）。把一個底下有帳戶的類型從資產
+ *  翻成負債，等於把那個帳戶每一筆歷史交易的方向整個倒過來，餘額會從 +500 萬變成完全
+ *  不同的數字，淨資產跟著跳動兩倍，而且沒有任何地方會提示發生了什麼事。
+ *
+ *  但「剛建好、還沒拿來開帳戶」的類型沒有這個問題——沒有任何資料引用它，翻面只是改一個
+ *  標籤。剛建錯邊（把「定存」建成負債）正是最常見的情況，所以這種情況放行。 */
 export async function updateAccountType(
   userId: ObjectId,
   id: string,
-  input: { name: string; icon: string; color: CategoryColor },
+  input: { name: string; icon: string; color: CategoryColor; kind?: AccountKind },
 ): Promise<{ accountTypes: AccountTypeDTO[] } | { error: string }> {
   const col = await collection();
   const current = await col.findOne({ _id: new ObjectId(id), userId });
-  if (current) {
-    const existing = await listAccountTypes(userId);
-    if (accountTypeNameTaken(existing, current.kind, input.name, id)) return { error: "已經有同樣名稱的類型了，換一個名稱吧。" };
+  if (!current) return { error: "找不到這個類型" };
+
+  const nextKind = input.kind ?? current.kind;
+  if (nextKind !== current.kind) {
+    const inUse = await countAccountTypeUsage(userId, id);
+    if (inUse > 0) {
+      return {
+        error: `還有 ${inUse} 個帳戶掛著這個類型，改成${nextKind === "asset" ? "資產" : "負債"}會讓那些帳戶的餘額整個反過來算。請先把帳戶改到別的類型。`,
+      };
+    }
   }
-  await col.updateOne({ _id: new ObjectId(id), userId }, { $set: { name: input.name, icon: input.icon, color: input.color } });
+
+  // 撞名要比對「改完之後的那一邊」：從負債搬到資產時，資產那邊可能已經有同名的了。
+  const existing = await listAccountTypes(userId);
+  if (accountTypeNameTaken(existing, nextKind, input.name, id)) return { error: "已經有同樣名稱的類型了，換一個名稱吧。" };
+
+  await col.updateOne(
+    { _id: new ObjectId(id), userId },
+    { $set: { name: input.name, icon: input.icon, color: input.color, kind: nextKind } },
+  );
   return { accountTypes: await listAccountTypes(userId) };
 }
 

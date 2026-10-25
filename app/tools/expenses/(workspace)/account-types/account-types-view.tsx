@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ListCardSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
+import { SectionedListSkeleton } from "@/components/expenses/skeleton";
+import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { text } from "@/components/expenses/theme";
@@ -17,23 +17,27 @@ import { categoryColorClass } from "@/lib/expenses/categories";
 export function AccountTypesView() {
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const skeletonReady = useSkeletonReady();
-  // 這一頁只需要類型本身——帳戶、交易、轉帳、分類全都不用了，金額的部分整塊搬去資產
-  // 總表（見下面 section 的說明）。「還有帳戶在用所以不能刪」是由伺服器回報的
-  // （見 tryDeleteTypes），不是在這裡自己算。
+  // 交易、轉帳、分類都不用了——金額的部分整塊搬去資產總表（見下面 section 的說明）。
+  // 帳戶還是要抓一份，但不是為了顯示筆數，而是為了知道「這個類型底下還有沒有帳戶」：
+  // 有的話編輯彈窗裡的資產/負債要鎖住（見 account-type-modal.tsx）。
+  const [accounts, setAccounts] = useState<{ accountTypeId: string }[]>([]);
   const [ready, setReady] = useState(false);
-  // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
-  const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:account-types", 4, ready ? accountTypes.length : undefined);
   const [modal, setModal] = useState<AccountTypeDTO | null>(null);
   const [batchOpen, setBatchOpen] = useState(false);
-  const [blockedInfo, setBlockedInfo] = useState<{ inUseCount: number } | null>(null);
+  // 擋下來的理由（刪不掉、或資產/負債換不了）直接存成一句話——兩種情況的說明不一樣，
+  // 存 inUseCount 再在畫面上拼字串的話只能講刪除那一種。
+  const [blockedInfo, setBlockedInfo] = useState<{ message: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/expenses/account-types")
-      .then((res) => res.json())
-      .then((data: { accountTypes?: AccountTypeDTO[] }) => {
+    Promise.all([
+      fetch("/api/expenses/account-types").then((res) => res.json()),
+      fetch("/api/expenses/accounts").then((res) => res.json()),
+    ])
+      .then(([data, accountsData]: [{ accountTypes?: AccountTypeDTO[] }, { accounts?: { accountTypeId: string }[] }]) => {
         if (cancelled) return;
         setAccountTypes(data.accountTypes ?? []);
+        setAccounts(accountsData.accounts ?? []);
         setReady(true);
       })
       .catch(() => {
@@ -46,13 +50,18 @@ export function AccountTypesView() {
 
   async function handleSave(draft: AccountTypeModalDraft) {
     if (!modal) return;
-    const data: { accountTypes?: AccountTypeDTO[] } = await fetch("/api/expenses/account-types", {
+    const data: { accountTypes?: AccountTypeDTO[]; error?: string } = await fetch("/api/expenses/account-types", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: modal.id, ...draft }),
     })
       .then((res) => res.json())
       .catch(() => ({}));
+    // 伺服器會擋下「底下還有帳戶卻想換資產/負債」，把理由顯示出來、彈窗留著讓人改回去。
+    if (data.error) {
+      setBlockedInfo({ message: data.error });
+      return;
+    }
     if (data.accountTypes) setAccountTypes(data.accountTypes);
     setModal(null);
   }
@@ -83,13 +92,13 @@ export function AccountTypesView() {
     if (!modal) return;
     const { blockedCount, totalInUse } = await tryDeleteTypes([modal.id]);
     setModal(null);
-    if (blockedCount > 0) setBlockedInfo({ inUseCount: totalInUse });
+    if (blockedCount > 0) setBlockedInfo({ message: `還有 ${totalInUse} 個帳戶掛著選取的類型，無法刪除。請先把這些帳戶改成別的類型，再回來刪除。` });
   }
 
   async function handleBulkDelete() {
     const { blockedCount, totalInUse } = await tryDeleteTypes([...selection.selectedIds]);
     selection.exit();
-    if (blockedCount > 0) setBlockedInfo({ inUseCount: totalInUse });
+    if (blockedCount > 0) setBlockedInfo({ message: `還有 ${totalInUse} 個帳戶掛著選取的類型，無法刪除。請先把這些帳戶改成別的類型，再回來刪除。` });
   }
 
   // 批次新增：逐筆依序 POST（不是 Promise.all 併發），理由跟分類批次新增一樣——
@@ -113,6 +122,13 @@ export function AccountTypesView() {
   const assetTypes = accountTypesByKind(accountTypes, "asset");
   const liabilityTypes = accountTypesByKind(accountTypes, "liability");
   const selection = useSelection(accountTypes.map((t) => t.id));
+  // 載入中畫骨架。這一頁是「資產一段、負債一段」，各自有小標題跟一張清單卡，所以記的是
+  // 兩段各有幾列，不是一個總數——只記總數會畫成一張大卡，少掉中間那個小標跟段落間距。
+  const skeletonShape = useSkeletonShape(
+    "cpx-tools:expenses-skeleton:account-types",
+    [3, 2],
+    ready ? [assetTypes.length, liabilityTypes.length] : undefined,
+  );
 
   /** 資產／負債各一段：小標、清單，每一列是「類型名稱＋底下掛了幾個帳戶」。 */
   function section(title: string, types: AccountTypeDTO[]) {
@@ -159,6 +175,7 @@ export function AccountTypesView() {
         initial={modal ?? undefined}
         accountTypes={accountTypes}
         kind={modal?.kind ?? "asset"}
+        inUseCount={modal ? accounts.filter((a) => a.accountTypeId === modal.id).length : 0}
         excludeId={modal?.id}
         onClose={() => setModal(null)}
         onSave={handleSave}
@@ -169,7 +186,8 @@ export function AccountTypesView() {
       <ConfirmModal
         open={blockedInfo !== null}
         title="這個類型還有帳戶在用"
-        message={`還有 ${blockedInfo?.inUseCount ?? 0} 個帳戶掛著選取的類型，無法刪除。請先把這些帳戶改成別的類型，再回來刪除。`}
+        // 兩種情況共用這個彈窗：刪不掉、以及資產/負債換不了。訊息由各自的呼叫端組好。
+        message={blockedInfo?.message ?? ""}
         onlyAcknowledge
         onClose={() => setBlockedInfo(null)}
       />
@@ -185,7 +203,7 @@ export function AccountTypesView() {
       )}
 
       {!skeletonReady ? null : !ready ? (
-        <ListCardSkeleton count={skeletonCount} />
+        <SectionedListSkeleton counts={skeletonShape} />
       ) : accountTypes.length === 0 ? (
         <p className={text.faint}>還沒有任何帳戶類型，點右下角的＋新增</p>
       ) : (

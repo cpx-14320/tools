@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ListCardSkeleton } from "@/components/expenses/skeleton";
+import { SkeletonBar, StackedCardsSkeleton } from "@/components/expenses/skeleton";
 import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
@@ -198,7 +198,21 @@ export function RecurringView() {
       )}
 
       {!skeletonReady ? null : !ready ? (
-        <ListCardSkeleton count={skeletonCount} />
+        // 一筆固定收支一張獨立的卡：左圖右文（標題＋金額一排、週期說明一排），
+        // 底下還有一排循環進度。
+        <StackedCardsSkeleton count={skeletonCount}>
+          <div className="flex items-start gap-3">
+            <div className="size-9 shrink-0 animate-pulse rounded-xl bg-[#EDE6FB]" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <SkeletonBar width={96} height={14} />
+                <SkeletonBar width={72} height={14} />
+              </div>
+              <SkeletonBar width="80%" height={12} className="mt-1.5" />
+              <SkeletonBar width="55%" height={12} className="mt-1.5" />
+            </div>
+          </div>
+        </StackedCardsSkeleton>
       ) : visibleRules.length === 0 ? (
         <p className={text.faint}>還沒有任何固定{kind}，點右下角的＋新增第一筆</p>
       ) : (

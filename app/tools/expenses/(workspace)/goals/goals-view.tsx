@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ListCardSkeleton } from "@/components/expenses/skeleton";
+import { SkeletonBar, StackedCardsSkeleton } from "@/components/expenses/skeleton";
 import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { Button, Badge } from "@/components/expenses/button";
@@ -154,7 +154,26 @@ export function GoalsView() {
       )}
 
       {!skeletonReady ? null : !ready ? (
-        <ListCardSkeleton count={skeletonCount} progress />
+        // 一個目標一張獨立的卡（不是一張卡切成好幾列）：圖示＋名稱／期限一排，底下
+        // 金額、進度條、百分比各一行。
+        <StackedCardsSkeleton count={skeletonCount}>
+          <div className="flex items-start gap-3">
+            <div className="size-11 shrink-0 animate-pulse rounded-2xl bg-[#EDE6FB]" />
+            <div className="min-w-0 flex-1">
+              <SkeletonBar width={96} height={14} />
+              <SkeletonBar width={160} height={12} className="mt-1.5" />
+            </div>
+            <SkeletonBar width={64} height={30} className="rounded-full" />
+          </div>
+          <div className="mt-4 flex items-end justify-between">
+            <SkeletonBar width={148} height={20} />
+            <SkeletonBar width={88} height={12} />
+          </div>
+          <SkeletonBar width="100%" height={8} className="mt-2" />
+          <div className="mt-1 flex justify-end">
+            <SkeletonBar width={28} height={12} />
+          </div>
+        </StackedCardsSkeleton>
       ) : goals.length === 0 ? (
         <p className={text.faint}>還沒有任何目標，點右下角的＋新增第一個</p>
       ) : (
