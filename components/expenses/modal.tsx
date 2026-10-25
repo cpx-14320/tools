@@ -58,7 +58,9 @@ export function Modal({
     <div className="fixed inset-0 z-50" onClick={onClose}>
       <div className="absolute inset-0 bg-black/30" />
       <div className="relative flex h-full w-full justify-center px-0 py-0 sm:px-4 sm:py-6">
-        <div className="flex h-dvh w-full max-w-[430px] items-end sm:h-[850px]">
+        {/* max-h-dvh：sm 以上固定 850px 高是為了模擬手機卡片，但瀏覽器視窗比 850 矮時
+            （筆電常見）彈窗會長到畫面外、「儲存」按不到，而且外層沒有捲軸可以捲下去。 */}
+        <div className="flex h-dvh max-h-dvh w-full max-w-[430px] items-end sm:h-[850px]">
           <div
             // 滿版的彈窗不要上圓角：圓角切掉的那兩個角會透出底下那層的顏色，看起來像
             // 沒蓋滿。只有半高的彈窗需要圓角，那是它「從下面滑上來」的視覺。

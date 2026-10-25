@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { CardSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
 import { Card, CardBody } from "@/components/expenses/card";
@@ -32,6 +33,7 @@ interface PetState {
 
 export function PetView() {
   const [pet, setPet] = useState<PetState | null>(null);
+  const skeletonReady = useSkeletonReady();
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
@@ -117,6 +119,10 @@ export function PetView() {
       );
     }
   }
+
+  // 骨架等掛載後才畫：列數只有瀏覽器讀得到，伺服器端畫出來的一定是預設值，
+  // 不擋的話會先閃一次錯的列數再換成記住的（見 useSkeletonReady）。
+  if (!skeletonReady) return null;
 
   if (!ready) {
     // 這一頁的版面是固定的（角色場地、食物背包、商店入口三張卡），不像清單頁會隨

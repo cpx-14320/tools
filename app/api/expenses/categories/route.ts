@@ -56,11 +56,18 @@ export async function PUT(request: Request) {
         ? body.budgetAmount
         : null
       : undefined;
+  // 預設帳戶跟 budgetAmount 同一套三態：沒帶＝不動，帶空字串／null＝清掉，帶 id＝設定。
+  const defaultAccountId =
+    body && typeof body === "object" && "defaultAccountId" in body
+      ? typeof body.defaultAccountId === "string" && body.defaultAccountId.trim()
+        ? body.defaultAccountId.trim()
+        : null
+      : undefined;
   // 只有名稱是必填：子分類的編輯只會送名稱，圖示／顏色跟著父分類，沒送就維持原值
   // （updateCategory 會濾掉 undefined 的欄位）。
   if (!id || !name) return NextResponse.json({ error: "缺少必要欄位" }, { status: 400 });
 
-  const result = await updateCategory(new ObjectId(user.id), id, { name, icon, color, budgetAmount });
+  const result = await updateCategory(new ObjectId(user.id), id, { name, icon, color, budgetAmount, defaultAccountId });
   if ("error" in result) return NextResponse.json(result, { status: 409 });
   return NextResponse.json(result);
 }

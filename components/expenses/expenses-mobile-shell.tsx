@@ -20,7 +20,8 @@ export function ExpensesMobileShell({ children }: { children: ReactNode }) {
         // overflow-y-auto 在卡片「內部」自己捲動，不會被內容撐到比螢幕還高、連帶讓
         // sticky／回頂部按鈕失效——這正是原本 min-h-screen 版本的問題，跟搭乘車
         // TransitMobileShell 當初修正的理由一樣，這裡直接比照辦理。
-        className="relative flex h-dvh w-full max-w-[430px] flex-col overflow-hidden sm:h-[850px] sm:rounded-[2.25rem] sm:border-[6px] sm:border-white sm:shadow-2xl"
+        // max-h-dvh：視窗比 850px 矮時（筆電），卡片會長到畫面外、底部導覽列整排看不到。
+        className="relative flex h-dvh max-h-dvh w-full max-w-[430px] flex-col overflow-hidden sm:h-[850px] sm:rounded-[2.25rem] sm:border-[6px] sm:border-white sm:shadow-2xl"
         style={{ background: "linear-gradient(180deg, #EDE6FB 0%, #F3E7F3 45%, #E7DEF9 100%)", transform: "translateZ(0)" }}
       >
         {/* main 本身的間距比照搭乘車 TransitMobileShell 那份（min-h-0 flex-1 overflow-y-auto

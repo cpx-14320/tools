@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ListCardSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonCount } from "@/components/expenses/skeleton-count";
+import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { Button, Badge, SegmentedControl } from "@/components/expenses/button";
@@ -35,6 +35,7 @@ type ModalState = { mode: "create" } | { mode: "edit"; rule: RecurringRuleDTO };
 
 export function RecurringView() {
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
+  const skeletonReady = useSkeletonReady();
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [rules, setRules] = useState<RecurringRuleDTO[]>([]);
   const [goals, setGoals] = useState<SavingsGoalDTO[]>([]);
@@ -196,7 +197,7 @@ export function RecurringView() {
         />
       )}
 
-      {!ready ? (
+      {!skeletonReady ? null : !ready ? (
         <ListCardSkeleton count={skeletonCount} />
       ) : visibleRules.length === 0 ? (
         <p className={text.faint}>還沒有任何固定{kind}，點右下角的＋新增第一筆</p>

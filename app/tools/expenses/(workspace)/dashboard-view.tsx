@@ -10,7 +10,7 @@ import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { HiddenAmountsToggle, useHiddenAmounts } from "@/components/expenses/hidden-amounts";
 import { GroupedSectionSkeleton, KpiCardSkeleton, SectionSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonCount, useSkeletonShape } from "@/components/expenses/skeleton-count";
+import { useSkeletonCount, useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
@@ -29,7 +29,7 @@ import {
 import { netWorth, type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
-import { budgetPace, monthDaysLeft, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
+import { monthDaysLeft, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
 import { formatCurrency } from "@/lib/format";
 
 /** 首頁的主視覺＋底下那張蓋上來的白色內容面板，比照搭乘車首頁的版型
@@ -84,6 +84,7 @@ const SUMMARY_LIMIT = PREVIEW_COUNT;
 export function DashboardView() {
   const { filter } = useDateFilter();
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
+  const skeletonReady = useSkeletonReady();
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
@@ -182,8 +183,6 @@ export function DashboardView() {
   const budgetMonthRange = dateFilterRange({ ...filter, mode: "month", year: budgetYear, month: budgetMonth });
   const { expenseTx: budgetMonthExpenseTx, incomeTx: budgetMonthIncomeTx } = totalsForRange(transactions, categories, budgetMonthRange);
   const budget = budgetSummary(budgetMonthExpenseTx, categories, withLegacyCategoryBudgets(budgetRules, categories), budgetYearMonth);
-  const isCurrentMonth = budgetYearMonth === referenceYearMonth(defaultDateFilter());
-  const budgetTotalPace = budgetPace(budget.totalSpent, budget.totalBudget, budgetYearMonth, todayISO);
   const budgetDaysLeft = monthDaysLeft(budgetYearMonth, todayISO);
 
   // 首頁的支出清單把「有編預算」跟「沒編預算」的分類列在一起（跟預算設定頁同一種列法），
@@ -238,6 +237,10 @@ export function DashboardView() {
     </div>
   );
 
+  // 骨架等掛載後才畫：列數只有瀏覽器讀得到，伺服器端畫出來的一定是預設值，
+  // 不擋的話會先閃一次錯的列數再換成記住的（見 useSkeletonReady）。
+  if (!skeletonReady) return null;
+
   if (!ready) {
     // 骨架照著載入完成後的版面排——連外層的 gap 都要一樣（下面是 gap-5），不然資料
     // 回來時每一塊的間距都會變一次。三塊清單的列數各自來自上次記住的實際筆數。
@@ -287,7 +290,7 @@ export function DashboardView() {
           每記一筆都會動、而且直接回答「我這個月還能花多少」的那個數字，值得最大的版面。
           收入退回輪播裡跟支出、固定收支、淨資產並列，剛好四張＝兩頁兩欄，不會留半格空白。 */}
       <KpiCard
-        label="本月結餘"
+        label="結餘"
         value={mask(`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`)}
         valueColor={balance >= 0 ? "#4A3B7C" : KPI_NEGATIVE}
         // 眼睛只掛在這張最上面的卡上，但管的是下面整排（收入／支出／固定收支／淨資產）。
@@ -298,14 +301,14 @@ export function DashboardView() {
         slides={[
           <KpiCard
             key="income"
-            label="本月收入"
+            label="收入"
             value={mask(formatCurrency(totalIncome))}
             valueColor="#4A3B7C"
             href={`/tools/expenses/transactions?kind=收入&month=${budgetYearMonth}`}
           />,
           <KpiCard
             key="expense"
-            label="本月支出"
+            label="支出"
             value={mask(formatCurrency(totalExpense))}
             valueColor="#4A3B7C"
             href={`/tools/expenses/transactions?kind=支出&month=${budgetYearMonth}`}
@@ -327,7 +330,7 @@ export function DashboardView() {
           收入這邊本來沒有任何入口可以點進明細。 */}
       <div>
           <div className="mb-2 flex items-center justify-between px-1">
-            <p className={text.sectionHeading}>{isCurrentMonth ? "本月收入來源" : `${budgetYearMonth} 收入來源`}</p>
+            <p className={text.sectionHeading}>收入來源</p>
             <Link href={`/tools/expenses/transactions?${incomeDetailQuery}`} className="text-xs font-medium text-[#6F5FD6]">
               查看全部
             </Link>
@@ -362,7 +365,7 @@ export function DashboardView() {
       {/* 小標在白框外面、清單在框裡——跟資產總表的「資產」區塊同一種結構。 */}
       <div>
         <div className="mb-2 flex items-center justify-between px-1">
-          <p className={text.sectionHeading}>{isCurrentMonth ? "本月預算支出" : `${budgetYearMonth} 預算支出`}</p>
+          <p className={text.sectionHeading}>預算支出</p>
           <Link href={`/tools/expenses/transactions?${budgetDetailQuery}`} className="text-xs font-medium text-[#6F5FD6]">
             查看全部
           </Link>
@@ -393,13 +396,6 @@ export function DashboardView() {
                   <span className={`text-xs font-semibold ${budget.pct > 100 ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>{budget.pct}%</span>
                 </span>
               </div>
-              {/* 還沒超支、但照目前的速度月底會超支時才提醒（見 lib/expenses/budgets.ts）。 */}
-              {budgetTotalPace && (
-                <p className="mt-1 text-xs text-[#D1517E]">
-                  照這個速度，月底大約會花到 {formatCurrency(budgetTotalPace.projected)}（超出 {formatCurrency(budgetTotalPace.projectedOver)}）・還剩{" "}
-                  {budgetTotalPace.daysLeft} 天
-                </p>
-              )}
             </div>
             {/* 每一列都可以點，直接跳到紀錄頁、而且已經幫你篩好那個分類的明細。
                 有編預算的畫「花了多少／預算多少」的進度條，沒編預算的只報金額——沒有

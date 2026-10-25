@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CardSkeleton, KpiCardSkeleton, SectionSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
-import { useSkeletonCount } from "@/components/expenses/skeleton-count";
+import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
@@ -20,6 +20,7 @@ import { formatCurrency } from "@/lib/format";
 
 export function AssetsView() {
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
+  const skeletonReady = useSkeletonReady();
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
@@ -145,7 +146,7 @@ export function AssetsView() {
         </div>
       )}
 
-      {!ready ? (
+      {!skeletonReady ? null : !ready ? (
         // 骨架照著載入完成後的版面排：淨資產大卡、資產/負債兩張小卡，再來是兩段帳戶清單。
         <div>
           <div className="mb-5 flex flex-col gap-3">

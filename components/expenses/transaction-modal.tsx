@@ -9,7 +9,7 @@ import { CategoryGridPicker } from "./category-grid-picker";
 import { CategoryBatchModal, type CategoryBatchItem } from "./category-batch-modal";
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { text } from "./theme";
-import { categoryPath, needsSubcategory, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
+import { categoryPath, defaultAccountForCategory, needsSubcategory, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 import { breakdownNet, type BreakdownItem, type BreakdownKind, type TransactionDTO } from "@/lib/expenses/transactions";
 import { type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
@@ -80,6 +80,8 @@ export function TransactionModal({
   const [date, setDate] = useState(initial?.date ?? todayISO());
   const [note, setNote] = useState(initial?.note ?? "");
   const [accountId, setAccountId] = useState(initial?.accountId ?? "");
+  // 使用者自己動過帳戶欄之後就不要再自動覆蓋——選分類帶出來的只是預設值，不是鎖定。
+  const [accountTouched, setAccountTouched] = useState(!!initial?.accountId);
   const [accountPickerOpen, setAccountPickerOpen] = useState(false);
   const [categoryBatchOpen, setCategoryBatchOpen] = useState(false);
   // 明細是依附在這筆交易上的輔助資訊（見 lib/expenses/transactions.ts 開頭的說明），平常
@@ -92,12 +94,6 @@ export function TransactionModal({
   // 現在在編哪一個，scratchExpr 是編明細時的暫存字串（明細本身存的是數字，不是算式）。
   const [target, setTarget] = useState<KeypadTarget>({ kind: "amount" });
   const [scratchExpr, setScratchExpr] = useState("");
-  // 帳戶／備註／明細收在「更多」裡：絕大多數的紀錄只要分類＋金額＋日期，三個欄位攤開
-  // 擺著只會把分類格子跟鍵盤擠到要捲動才看得到。編輯既有紀錄時，那筆本來就有填這幾欄
-  // 的話預設展開，不然會以為資料不見了。
-  const [moreOpen, setMoreOpen] = useState(
-    () => !!initial && (!!initial.accountId || !!initial.note || (initial.breakdown?.length ?? 0) > 0),
-  );
 
   const breakdownTotal = hasBreakdown ? breakdownNet(breakdown) : 0;
   const amountNum = hasBreakdown ? breakdownTotal : evaluateExpr(amountExpr);
@@ -144,6 +140,18 @@ export function TransactionModal({
     setTarget({ kind: "amount" });
   }
 
+  /** 選分類時連帶把帳戶帶出來。
+   *
+   *  同一個分類的錢幾乎都是從同一個帳戶出（吃飯刷同一張卡、房租固定從某個戶頭扣），
+   *  每記一筆都要再挑一次帳戶是多餘的一步。預設值設在主分類上（見 categories.ts 的
+   *  defaultAccountForCategory），子分類沿用。使用者自己改過帳戶就不再覆蓋。 */
+  function chooseCategory(id: string) {
+    setCategoryId(id);
+    if (accountTouched) return;
+    const preset = defaultAccountForCategory(categories, id);
+    setAccountId(preset ?? "");
+  }
+
   // 逐筆依序 POST，理由跟帳戶類型／分類頁的批次新增一樣：新分類的 order 是用當下已存在
   // 筆數算出來的，併發送出會拿到同一個 order。建好之後直接選進這筆交易，不用使用者
   // 關掉彈窗後再手動點一次剛新增的分類。
@@ -164,7 +172,7 @@ export function TransactionModal({
       }
     }
     onCategoriesChange(latest);
-    if (firstNewId) setCategoryId(firstNewId);
+    if (firstNewId) chooseCategory(firstNewId);
     setCategoryBatchOpen(false);
   }
 
@@ -215,7 +223,7 @@ export function TransactionModal({
         </div>
         {/* 只有這一塊自己捲動——分類一多，捲的是這個格子區塊，不是整個彈窗（彈窗本身的
             標題／底部按鈕已經固定不動，見 modal.tsx）。 */}
-        <CategoryGridPicker categories={categories} kind={kind} value={categoryId} onChange={setCategoryId} onAddClick={() => setCategoryBatchOpen(true)} />
+        <CategoryGridPicker categories={categories} kind={kind} value={categoryId} onChange={chooseCategory} onAddClick={() => setCategoryBatchOpen(true)} />
       </div>
 
       {/* 記帳絕大多數是記「今天」或「昨天剛花的」，這兩顆直接點比開日期選擇器快很多；
@@ -236,18 +244,8 @@ export function TransactionModal({
           />
         </div>
       </Field>
-      {!moreOpen && (
-        <button
-          type="button"
-          onClick={() => setMoreOpen(true)}
-          className="self-start text-xs font-medium text-[#6F5FD6] hover:underline"
-        >
-          ＋ 更多（帳戶、備註、明細）
-        </button>
-      )}
-
-      {moreOpen && (
-        <>
+      {/* 帳戶跟備註直接攤開，不再收在「＋ 更多」裡：帳戶幾乎每一筆都要選，多一次展開
+          等於每記一筆就多按一下。只有明細維持收合——那是薪資那種少數情況才用的東西。 */}
           <Field label="帳戶（可不填）">
             <button type="button" onClick={() => setAccountPickerOpen(true)} className={`${fieldInputClass} text-left`}>
               {/* 只有名稱、不放類型圖示：這一欄顯示的是「哪一個帳戶」，圖示是帳戶類型的，
@@ -260,11 +258,8 @@ export function TransactionModal({
           <Field label="備註（可不填）">
             <input value={note} onChange={(e) => setNote(e.target.value)} className={fieldInputClass} />
           </Field>
-        </>
-      )}
 
-      {moreOpen &&
-        (hasBreakdown ? (
+      {hasBreakdown ? (
         <div className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
             <span className={text.label}>明細（例如薪資的本薪／加班費／勞保／所得稅）</span>
@@ -344,7 +339,7 @@ export function TransactionModal({
           >
             ＋ 新增明細
           </button>
-        ))}
+      )}
 
       <AccountPickerModal
         open={accountPickerOpen}
@@ -355,7 +350,10 @@ export function TransactionModal({
         transfers={transfers}
         value={accountId || undefined}
         onClose={() => setAccountPickerOpen(false)}
-        onSelect={(id) => setAccountId(id ?? "")}
+        onSelect={(id) => {
+          setAccountId(id ?? "");
+          setAccountTouched(true);
+        }}
       />
       <CategoryBatchModal
         open={categoryBatchOpen}

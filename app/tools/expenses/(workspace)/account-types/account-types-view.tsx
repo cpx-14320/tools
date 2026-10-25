@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ListCardSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonCount } from "@/components/expenses/skeleton-count";
+import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { text } from "@/components/expenses/theme";
@@ -35,6 +35,7 @@ function monthEnd(yearMonth: string): string {
 
 export function AccountTypesView() {
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
+  const skeletonReady = useSkeletonReady();
   // 餘額要靠帳戶＋交易＋轉帳才算得出來，所以這一頁不只抓類型本身。
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
@@ -280,7 +281,7 @@ export function AccountTypesView() {
         </CardBody>
       </Card>
 
-      {!ready ? (
+      {!skeletonReady ? null : !ready ? (
         <ListCardSkeleton count={skeletonCount} progress />
       ) : accountTypes.length === 0 ? (
         <p className={text.faint}>還沒有任何帳戶類型，點右下角的＋新增</p>

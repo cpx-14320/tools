@@ -34,7 +34,7 @@ import {
 import { compareDateFilter, dateFilterRange, previousPeriodSuffix } from "@/lib/expenses/date-filter";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { DonutCardSkeleton, KpiCardSkeleton, SummaryCardSkeleton, TrendCardSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonCount } from "@/components/expenses/skeleton-count";
+import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { formatCurrency } from "@/lib/format";
 
 type ReportKind = "支出" | "收入" | "淨額" | "資產";
@@ -64,6 +64,7 @@ const TOP_N = PREVIEW_COUNT;
 export function ReportsView() {
   const { filter, compare } = useDateFilter();
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
+  const skeletonReady = useSkeletonReady();
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
@@ -332,6 +333,10 @@ export function ReportsView() {
 
   const selectedIncomePoint = kind === "淨額" ? (incomeTrendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
   const selectedExpensePoint = kind === "淨額" ? (expenseTrendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
+
+  // 骨架等掛載後才畫：列數只有瀏覽器讀得到，伺服器端畫出來的一定是預設值，
+  // 不擋的話會先閃一次錯的列數再換成記住的（見 useSkeletonReady）。
+  if (!skeletonReady) return null;
 
   if (!ready) {
     // 骨架照著載入完成後的版面排：分頁切換、日期篩選器、期間總額、明細（圓餅＋清單）、

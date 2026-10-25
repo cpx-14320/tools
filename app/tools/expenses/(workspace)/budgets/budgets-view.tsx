@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ListCardSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonCount } from "@/components/expenses/skeleton-count";
+import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { Card, CardBody } from "@/components/expenses/card";
 import { DateField } from "@/components/expenses/date-field";
@@ -32,6 +32,7 @@ function currentYearMonth(): string {
  *  的規則，之後的月份自動沿用，不用每個月重設（見 lib/expenses/budgets.ts）。 */
 export function BudgetsView() {
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
+  const skeletonReady = useSkeletonReady();
   const [rules, setRules] = useState<BudgetRuleDTO[]>([]);
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [ready, setReady] = useState(false);
@@ -132,7 +133,7 @@ export function BudgetsView() {
         </CardBody>
       </Card>
 
-      {!ready ? (
+      {!skeletonReady ? null : !ready ? (
         <ListCardSkeleton count={skeletonCount} progress />
       ) : expenseCategories.length === 0 ? (
         <p className={text.faint}>還沒有任何支出分類，先去「收支分類」建立分類才能編預算</p>

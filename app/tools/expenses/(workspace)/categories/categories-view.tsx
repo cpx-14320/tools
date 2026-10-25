@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ListCardSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonCount } from "@/components/expenses/skeleton-count";
+import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { SegmentedControl, Badge } from "@/components/expenses/button";
@@ -10,6 +10,7 @@ import { text } from "@/components/expenses/theme";
 import { CategoryModal, type CategoryModalDraft } from "@/components/expenses/category-modal";
 import { CategoryBatchModal, type CategoryBatchItem } from "@/components/expenses/category-batch-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
+import { type AccountDTO } from "@/lib/expenses/accounts";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { ListRow } from "@/components/expenses/list-row";
 import { topLevelCategories, subCategoriesOf, categoryColorClass, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
@@ -20,6 +21,9 @@ type BatchTarget = { parentId?: string };
 
 export function CategoriesView() {
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
+  // 編輯分類時可以指定「預設帳戶」，所以這一頁要知道有哪些帳戶。
+  const [accounts, setAccounts] = useState<AccountDTO[]>([]);
+  const skeletonReady = useSkeletonReady();
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [ready, setReady] = useState(false);
   // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
@@ -34,11 +38,17 @@ export function CategoriesView() {
     Promise.all([
       fetch("/api/expenses/categories").then((res) => res.json()),
       fetch("/api/expenses/transactions/counts").then((res) => res.json()),
+      fetch("/api/expenses/accounts").then((res) => res.json()),
     ])
-      .then(([categoriesData, countsData]: [{ categories?: CategoryDTO[] }, { counts?: Record<string, number> }]) => {
+      .then(([categoriesData, countsData, accountsData]: [
+        { categories?: CategoryDTO[] },
+        { counts?: Record<string, number> },
+        { accounts?: AccountDTO[] },
+      ]) => {
         if (cancelled) return;
         setCategories(categoriesData.categories ?? []);
         setCounts(countsData.counts ?? {});
+        setAccounts(accountsData.accounts ?? []);
         setReady(true);
       })
       .catch(() => {
@@ -50,7 +60,8 @@ export function CategoriesView() {
   }, []);
 
   async function handleSave(
-    draft: Pick<CategoryModalDraft, "name"> & Partial<Pick<CategoryModalDraft, "icon" | "color" | "kind">> & { budgetAmount?: number | null },
+    draft: Pick<CategoryModalDraft, "name"> &
+      Partial<Pick<CategoryModalDraft, "icon" | "color" | "kind" | "defaultAccountId">> & { budgetAmount?: number | null },
   ) {
     if (!modal) return;
     const data: { categories?: CategoryDTO[] } = await fetch("/api/expenses/categories", {
@@ -173,6 +184,7 @@ export function CategoriesView() {
         isSubcategory={!!modal?.parentId}
         parentId={modal?.parentId}
         categories={categories}
+        accounts={accounts}
         excludeId={modal?.id}
         initial={modal ?? undefined}
         onClose={() => setModal(null)}
@@ -232,7 +244,7 @@ export function CategoriesView() {
         />
       )}
 
-      {!ready ? (
+      {!skeletonReady ? null : !ready ? (
         <ListCardSkeleton count={skeletonCount} />
       ) : parents.length === 0 ? (
         <p className={text.faint}>還沒有任何{kind}分類，點右下角的＋建立第一個</p>

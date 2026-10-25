@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ListCardSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonCount } from "@/components/expenses/skeleton-count";
+import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { Button, Badge } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
@@ -20,6 +20,7 @@ type ModalState = { mode: "create" } | { mode: "edit"; goal: SavingsGoalDTO };
 
 export function GoalsView() {
   const [goals, setGoals] = useState<SavingsGoalDTO[]>([]);
+  const skeletonReady = useSkeletonReady();
   const [ready, setReady] = useState(false);
   // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
   const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:goals", 3, ready ? goals.length : undefined);
@@ -152,7 +153,7 @@ export function GoalsView() {
         />
       )}
 
-      {!ready ? (
+      {!skeletonReady ? null : !ready ? (
         <ListCardSkeleton count={skeletonCount} progress />
       ) : goals.length === 0 ? (
         <p className={text.faint}>還沒有任何目標，點右下角的＋新增第一個</p>

@@ -36,17 +36,34 @@ export function saveSkeletonCount(key: string, count: number) {
   }
 }
 
-/** 每一頁都要「掛載後讀上次的筆數、載入完成後記住這次的筆數」，包成 hook 讓各頁一行接上。
+/** 骨架可以畫了嗎——掛載完成才是 true。
  *
- *  初始值一律是 fallback、localStorage 等掛載後才讀：這些頁在伺服器端也會先算繪一次
- *  （那時 ready 還是 false，畫的就是骨架），在 useState 的初始值裡讀 localStorage 會讓
- *  伺服器跟瀏覽器算出不同的列數，hydration 就會失敗。讀取的 effect 在抓資料之前就跑完，
- *  所以使用者看到的還是記住的那個數字。
+ *  列數只有瀏覽器讀得到（localStorage），伺服器端畫出來的一定是 fallback。如果骨架在
+ *  伺服器端就畫出來，使用者會先看到 fallback 的五列、hydration 完才換成記住的兩列，
+ *  變成「骨架自己先跳一次」。所以骨架一律等掛載後才畫：呼叫端在 !ready 的分支前面先
+ *  擋一道 `if (!skeletonReady) return null`，第一次畫出來的就是正確的列數。
+ *
+ *  掛載 effect 跟抓資料的 effect 是同一輪跑的，所以「什麼都不畫」的那一瞬間只有一個
+ *  frame，不會看到空白停留。 */
+export function useSkeletonReady(): boolean {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    setMounted(true);
+  }, []);
+  return mounted;
+}
+
+/** 每一頁都要「讀上次的筆數、載入完成後記住這次的筆數」，包成 hook 讓各頁一行接上。
+ *
+ *  初始值在瀏覽器端就直接讀 localStorage（不是等 effect），搭配上面的 useSkeletonReady
+ *  一起用：骨架等掛載後才畫，所以伺服器端跟瀏覽器端算出不同的數字也不會造成 hydration
+ *  不一致——那個數字在 hydration 當下根本沒被畫出來。
  *
  *  `actual` 是「這一頁載入完成後實際有幾列」，還在載入時傳 undefined——寫入由這個 hook
  *  自己在 effect 裡做，呼叫端的抓資料流程完全不用動。 */
 export function useSkeletonCount(key: string, fallback: number, actual?: number): number {
-  const [count, setCount] = useState(fallback);
+  const [count, setCount] = useState(() => (typeof window === "undefined" ? fallback : loadSkeletonCount(key, fallback)));
 
   useEffect(() => {
     /* eslint-disable-next-line react-hooks/set-state-in-effect */
@@ -60,24 +77,31 @@ export function useSkeletonCount(key: string, fallback: number, actual?: number)
   return count;
 }
 
+function loadSkeletonShape(key: string): number[] | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    const counts = parsed.filter((n): n is number => typeof n === "number" && Number.isFinite(n) && n >= 0);
+    return counts.slice(0, MAX_SKELETON).map((n) => Math.min(n, MAX_SKELETON));
+  } catch {
+    return null;
+  }
+}
+
 /** 巢狀清單（「最近消費」是日期底下再掛幾筆）的骨架形狀：每一組各有幾列。
  *  只記總筆數的話還原不出組數，骨架會少掉每一組之間的日期小標跟間距。 */
 export function useSkeletonShape(key: string, fallback: number[], actual?: number[]): number[] {
-  const [shape, setShape] = useState(fallback);
+  const [shape, setShape] = useState(() => (typeof window === "undefined" ? fallback : loadSkeletonShape(key) ?? fallback));
   const actualKey = actual === undefined ? undefined : actual.join(",");
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw === null) return;
-      const parsed: unknown = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return;
-      const counts = parsed.filter((n): n is number => typeof n === "number" && Number.isFinite(n) && n >= 0);
-      /* eslint-disable-next-line react-hooks/set-state-in-effect */
-      setShape(counts.slice(0, MAX_SKELETON).map((n) => Math.min(n, MAX_SKELETON)));
-    } catch {
-      /* 讀不到或壞掉就用 fallback */
-    }
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    setShape(loadSkeletonShape(key) ?? fallback);
+    // fallback 是字面陣列、每次 render 都是新的參考，放進相依陣列會讓這個 effect 每次
+    // 都重跑；它只是「沒存過時用什麼」，不需要追蹤。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
   useEffect(() => {

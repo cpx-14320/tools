@@ -21,6 +21,18 @@ export interface CategoryDTO {
   /** 每月預算，只對頂層「支出」分類有意義——子分類跟收入分類沒有自己的預算，花費算進
    *  它們的頂層大分類裡一起比對。沒填代表這個分類沒設預算。 */
   budgetAmount?: number;
+  /** 這個分類的預設帳戶——記一筆新的消費／收入選到這個分類時，帳戶欄會自動帶上它
+   *  （還是可以當場改成別的）。只設在頂層分類：子分類是掛在主分類底下的細項，錢從
+   *  哪個帳戶出通常是一樣的，每個子分類各設一次只是重複工。沒設就是不自動帶。 */
+  defaultAccountId?: string;
+}
+
+/** 選到某個分類時要自動帶哪個帳戶——子分類沿用它主分類的設定（見 CategoryDTO
+ *  的 defaultAccountId）。沒設定就回傳 undefined，呼叫端不要動帳戶欄。 */
+export function defaultAccountForCategory(categories: CategoryDTO[], categoryId: string): string | undefined {
+  if (!categoryId) return undefined;
+  const top = categories.find((c) => c.id === topLevelCategoryId(categories, categoryId));
+  return top?.defaultAccountId || undefined;
 }
 
 export function topLevelCategories(categories: CategoryDTO[], kind?: CategoryKind): CategoryDTO[] {

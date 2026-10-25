@@ -17,6 +17,8 @@ interface CategoryDoc {
   order: number;
   createdAt: Date;
   budgetAmount?: number;
+  /** 記一筆新紀錄選到這個分類時自動帶上的帳戶（只設在頂層分類，見 categories.ts）。 */
+  defaultAccountId?: ObjectId;
   /** 系統第一次幫使用者建立的預設分類（見 presets.server.ts）——「清除全部資料」會
    *  略過這些，不會把每個人記帳的起點也一起拆掉。 */
   isPreset?: boolean;
@@ -34,6 +36,7 @@ function toDTO(doc: CategoryDoc): CategoryDTO {
     kind: doc.kind,
     parentId: doc.parentId?.toHexString(),
     budgetAmount: doc.budgetAmount,
+    defaultAccountId: doc.defaultAccountId?.toHexString(),
     isPreset: doc.isPreset,
     isUncategorized: doc.isUncategorized,
   };
@@ -109,6 +112,9 @@ export interface UpdateCategoryInput {
    *  跟 name／icon／color 不同，這個欄位需要區分「沒傳」跟「傳了但要清空」兩種情況，
    *  所以不能套用下面同一招「過濾掉 undefined 就丟進 $set」。 */
   budgetAmount?: number | null;
+  /** 同上，要區分「沒傳」跟「傳了但要清掉」：undefined＝不動，null＝清掉預設帳戶，
+   *  字串＝設成那個帳戶。 */
+  defaultAccountId?: string | null;
 }
 
 export async function updateCategory(
@@ -128,17 +134,21 @@ export async function updateCategory(
     }
   }
 
-  const { budgetAmount, ...rest } = input;
+  const { budgetAmount, defaultAccountId, ...rest } = input;
   // 子分類編輯時不會送 color（顏色跟父分類一致、不能自己改），這裡要過濾掉 undefined 欄位，
   // 不然 $set 可能把欄位整個設成 null，蓋掉原本繼承來的顏色。
   const fields: Record<string, unknown> = Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== undefined));
   if (typeof budgetAmount === "number") fields.budgetAmount = budgetAmount;
+  if (typeof defaultAccountId === "string" && defaultAccountId) fields.defaultAccountId = new ObjectId(defaultAccountId);
 
   // budgetAmount 不能跟 name/icon/color 一樣直接丟進同一個過濾流程：$set 跟 $unset
   // 不能同時出現在同一個欄位上，null 代表「清空」要走 $unset，不能也留在 $set 裡。
   const update: Record<string, unknown> = {};
   if (Object.keys(fields).length > 0) update.$set = fields;
-  if (budgetAmount === null) update.$unset = { budgetAmount: "" };
+  const unset: Record<string, string> = {};
+  if (budgetAmount === null) unset.budgetAmount = "";
+  if (defaultAccountId === null || defaultAccountId === "") unset.defaultAccountId = "";
+  if (Object.keys(unset).length > 0) update.$unset = unset;
   if (Object.keys(update).length > 0) {
     await col.updateOne({ _id: new ObjectId(id), userId }, update);
   }

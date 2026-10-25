@@ -5,7 +5,7 @@ import { FaIcon } from "@/components/expenses/fa-icon";
 import { DateGroupsSkeleton, SummaryCardSkeleton } from "@/components/expenses/skeleton";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
-import { useSkeletonShape } from "@/components/expenses/skeleton-count";
+import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { useSearchParams } from "next/navigation";
 import { SegmentedControl, PillButton } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
@@ -17,6 +17,7 @@ import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { ComparePicker } from "@/components/expenses/compare-picker";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
+import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { BreakdownToggle, TransactionBreakdown } from "@/components/expenses/transaction-breakdown";
 import { compareDateFilter, compareLabel, dateFilterRange, defaultDateFilter } from "@/lib/expenses/date-filter";
 import { isValidYearMonth } from "@/lib/expenses/budgets";
@@ -60,6 +61,7 @@ export function TransactionsView() {
   // 不然首頁顯示的是 10 月預算、進來卻還停在篩選器上次留著的區間，兩邊數字對不起來。
   const requestedMonth = searchParams.get("month") ?? "";
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
+  const skeletonReady = useSkeletonReady();
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
@@ -81,6 +83,7 @@ export function TransactionsView() {
   // 這頁現在只處理既有紀錄的編輯（新增交易改到首頁的浮動按鈕），所以只需要存「正在編輯
   // 哪一筆」，不用再分 create/edit 兩種模式。
   const [modal, setModal] = useState<TransactionDTO | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
   const isSearching = query.trim().length > 0;
   const range = dateFilterRange(filter);
 
@@ -203,6 +206,18 @@ export function TransactionsView() {
     setModal(null);
   }
 
+  async function handleCreate(draft: TransactionModalDraft) {
+    const data: { transactions?: TransactionDTO[] } = await fetch("/api/expenses/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(draft),
+    })
+      .then((res) => res.json())
+      .catch(() => ({}));
+    if (data.transactions) setTransactions(data.transactions);
+    setAddOpen(false);
+  }
+
   async function handleDelete() {
     if (!modal) return;
     const data: { transactions?: TransactionDTO[] } = await fetch(`/api/expenses/transactions?id=${modal.id}`, {
@@ -232,6 +247,25 @@ export function TransactionsView() {
   return (
     <div>
       <DateFilterPicker className="mb-4" />
+
+      {/* 這一頁本來只能編輯既有紀錄，要新增得先回首頁——但看著清單想到「啊還有一筆沒記」
+          才是最常見的時機。跟首頁同一顆浮動鈕、同一個彈窗。 */}
+      <FloatingAddButton onClick={() => setAddOpen(true)} label="新增消費紀錄" />
+
+      {/* key 跟著開關變動＝每次打開都是一個乾淨的彈窗，不會留著上一筆填過的內容。 */}
+      <TransactionModal
+        key={addOpen ? "add-open" : "add-closed"}
+        open={addOpen}
+        categories={categories}
+        accounts={accounts}
+        accountTypes={accountTypes}
+        transactions={transactions}
+        transfers={transfers}
+        defaultKind={kind}
+        onClose={() => setAddOpen(false)}
+        onSave={handleCreate}
+        onCategoriesChange={setCategories}
+      />
 
       <TransactionModal
         key={modal ? modal.id : "closed"}
@@ -380,7 +414,7 @@ export function TransactionsView() {
         onConfirm={handleBulkDelete}
       />
 
-      {!ready ? (
+      {!skeletonReady ? null : !ready ? (
         // 骨架照著載入完成後的版面排：一張期間合計卡，底下是依日期分組的清單。
         <div className="flex flex-col gap-4">
           <SummaryCardSkeleton delta />
