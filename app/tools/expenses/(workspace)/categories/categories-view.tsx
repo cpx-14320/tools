@@ -5,12 +5,14 @@ import { ListCardSkeleton } from "@/components/expenses/skeleton";
 import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
+import { ExpandToggle } from "@/components/expenses/expand-toggle";
 import { SegmentedControl, Badge } from "@/components/expenses/button";
 import { text } from "@/components/expenses/theme";
 import { CategoryModal, type CategoryModalDraft } from "@/components/expenses/category-modal";
 import { CategoryBatchModal, type CategoryBatchItem } from "@/components/expenses/category-batch-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { type AccountDTO } from "@/lib/expenses/accounts";
+import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { ListRow } from "@/components/expenses/list-row";
 import { topLevelCategories, subCategoriesOf, categoryColorClass, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
@@ -19,10 +21,18 @@ import { topLevelCategories, subCategoriesOf, categoryColorClass, type CategoryD
  *  batchTarget／CategoryBatchModal，兩種彈窗各自管各自的狀態。 */
 type BatchTarget = { parentId?: string };
 
+/** 一個主分類底下預設只攤開三則子項目，再多就收起來、用首頁那顆「顯示全部 (n)／收合」
+ *  （ExpandToggle）展開。子項目可能很多（薪水底下光是各種獎金禮金就快十則），全部攤開
+ *  的話光是一個分類就佔滿整個畫面，下面還有幾個主分類完全看不到。三則足夠看出「這個
+ *  分類底下大概是哪一類的東西」，要編輯特定一則再展開。 */
+const SUB_PREVIEW_COUNT = 3;
+
 export function CategoriesView() {
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
-  // 編輯分類時可以指定「預設帳戶」，所以這一頁要知道有哪些帳戶。
+  // 編輯分類時可以指定「預設帳戶」，所以這一頁要知道有哪些帳戶；帳戶選擇彈窗還要靠
+  // 帳戶類型分資產／負債兩組、取得類型圖示。
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
+  const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const skeletonReady = useSkeletonReady();
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [ready, setReady] = useState(false);
@@ -32,6 +42,9 @@ export function CategoriesView() {
   const [batchTarget, setBatchTarget] = useState<BatchTarget | null>(null);
   const [kind, setKind] = useState<CategoryKind>("支出");
   const [deleteConfirm, setDeleteConfirm] = useState<{ ids: string[]; inUseCount: number; subCount: number } | null>(null);
+  // 哪幾個主分類的子項目被展開了（見 SUB_PREVIEW_COUNT）。存 id 陣列而不是 Set：
+  // 要產生新的值才會觸發重繪，Set 就地 add/delete 是同一個物件、畫面不會更新。
+  const [expandedParents, setExpandedParents] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,16 +52,19 @@ export function CategoriesView() {
       fetch("/api/expenses/categories").then((res) => res.json()),
       fetch("/api/expenses/transactions/counts").then((res) => res.json()),
       fetch("/api/expenses/accounts").then((res) => res.json()),
+      fetch("/api/expenses/account-types").then((res) => res.json()),
     ])
-      .then(([categoriesData, countsData, accountsData]: [
+      .then(([categoriesData, countsData, accountsData, accountTypesData]: [
         { categories?: CategoryDTO[] },
         { counts?: Record<string, number> },
         { accounts?: AccountDTO[] },
+        { accountTypes?: AccountTypeDTO[] },
       ]) => {
         if (cancelled) return;
         setCategories(categoriesData.categories ?? []);
         setCounts(countsData.counts ?? {});
         setAccounts(accountsData.accounts ?? []);
+        setAccountTypes(accountTypesData.accountTypes ?? []);
         setReady(true);
       })
       .catch(() => {
@@ -171,6 +187,11 @@ export function CategoriesView() {
     .flatMap((c) => [c.id, ...subCategoriesOf(categories, c.id).map((sub) => sub.id)]);
   const selection = useSelection(selectableIds);
 
+  // 多選模式一律全部攤開——收起來的子項目也會被「全選」勾到，看不到就刪掉太危險。
+  const subsExpanded = (parentId: string) => selection.selecting || expandedParents.includes(parentId);
+  const toggleSubs = (parentId: string) =>
+    setExpandedParents((list) => (list.includes(parentId) ? list.filter((id) => id !== parentId) : [...list, parentId]));
+
   return (
     <div>
       <PageHeader title="收支分類" help="支出與收入的分類都在這裡；分類底下可以再開子分類，方便細看同一種消費裡哪種類型花最多" />
@@ -185,6 +206,7 @@ export function CategoriesView() {
         parentId={modal?.parentId}
         categories={categories}
         accounts={accounts}
+        accountTypes={accountTypes}
         excludeId={modal?.id}
         initial={modal ?? undefined}
         onClose={() => setModal(null)}
@@ -273,16 +295,25 @@ export function CategoriesView() {
                 />
 
                 {subs.length > 0 && (
-                  <div className="flex flex-col divide-y divide-[#F2EEFA] border-t border-[#ECE4FA] bg-[#F9F7FE]">
-                    {subs.map((sub) => (
-                      <ListRow
-                        key={sub.id}
-                        name={sub.name}
-                        right={<span className={text.muted}>{counts[sub.id] ?? 0} 筆</span>}
-                        leading={selection.selecting ? <SelectionDot selected={selection.selectedIds.has(sub.id)} /> : undefined}
-                        onClick={() => (selection.selecting ? selection.toggle(sub.id) : setModal(sub))}
-                      />
-                    ))}
+                  <div className="border-t border-[#ECE4FA] bg-[#F9F7FE]">
+                    <div className="flex flex-col divide-y divide-[#F2EEFA]">
+                      {(subsExpanded(c.id) ? subs : subs.slice(0, SUB_PREVIEW_COUNT)).map((sub) => (
+                        <ListRow
+                          key={sub.id}
+                          name={sub.name}
+                          right={<span className={text.muted}>{counts[sub.id] ?? 0} 筆</span>}
+                          leading={selection.selecting ? <SelectionDot selected={selection.selectedIds.has(sub.id)} /> : undefined}
+                          onClick={() => (selection.selecting ? selection.toggle(sub.id) : setModal(sub))}
+                        />
+                      ))}
+                    </div>
+                    {/* 多選模式下不收合（上面的 subsExpanded 已經一律回 true）：收起來的那幾則
+                        還是會被「全選」勾到，按下刪除時使用者看不到自己正要刪掉什麼。 */}
+                    {subs.length > SUB_PREVIEW_COUNT && !selection.selecting && (
+                      <div className="pb-2">
+                        <ExpandToggle expanded={subsExpanded(c.id)} total={subs.length} onToggle={() => toggleSubs(c.id)} />
+                      </div>
+                    )}
                   </div>
                 )}
 

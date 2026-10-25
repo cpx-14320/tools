@@ -58,8 +58,12 @@ export function CategoryBatchModal({
    *  這裡就不再顯示收支類型切換，避免在支出分頁底下卻建出一個收入分類，兩邊對不起來。 */
   lockedKind?: CategoryKind;
   onClose: () => void;
-  /** 只會收到名稱與圖示都有填、且名稱沒有撞名的草稿。 */
-  onSave: (items: CategoryBatchItem[]) => void;
+  /** 只會收到名稱與圖示都有填、且名稱沒有撞名的草稿。
+   *
+   *  回傳 Promise（呼叫端寫成 async function 就會是）很重要：ModalFooter 要靠這個
+   *  Promise 知道「還在送出中」，送出期間才會把儲存鍵鎖住。下面的 onConfirm 一定要把它
+   *  原封不動 return 出去，中途吞掉的話鎖會在送出前就解開（見那裡的說明）。 */
+  onSave: (items: CategoryBatchItem[]) => void | Promise<unknown>;
 }) {
   const effectiveKind = lockedKind ?? defaultKind;
   const [items, setItems] = useState<Draft[]>([blankDraft(effectiveKind)]);
@@ -78,7 +82,15 @@ export function CategoryBatchModal({
   }
 
   // 子分類只填名稱，圖示由父分類決定，不能拿它當必填條件。
-  const canSave = items.some((it, i) => it.name.trim() && (isSubcategory || it.icon.trim()) && !isDuplicateDraft(items, i, categories, parentId));
+  //
+  // 「有填名稱的那幾則」全部都要合格才能存，不是只要有一則合格就放行：原本是 some()，
+  // 一則撞名、另一則正常時儲存鍵照樣亮著，按下去只會存正常的那一則，撞名的那則被默默丟掉
+  // ——畫面同時出現紅字警告又顯示新增成功，看起來像是警告誤判。完全空白的那幾則不算數
+  // （批次清單本來就會留空白列給人繼續填）。
+  const filledIndexes = items.map((it, i) => (it.name.trim() ? i : -1)).filter((i) => i >= 0);
+  const canSave =
+    filledIndexes.length > 0 &&
+    filledIndexes.every((i) => (isSubcategory || items[i].icon.trim()) && !isDuplicateDraft(items, i, categories, parentId));
 
   return (
     <Modal
@@ -92,7 +104,12 @@ export function CategoryBatchModal({
             const valid = items
               .map((it, i) => ({ ...it, name: it.name.trim(), icon: it.icon.trim(), _dup: isDuplicateDraft(items, i, categories, parentId) }))
               .filter((it) => it.name && (isSubcategory || it.icon) && !it._dup);
-            onSave(
+            // return 不能省：onSave 是非同步的（逐筆 POST），把它的 Promise 交回給
+            // ModalFooter，儲存鍵才會在送出期間鎖住。少了這個 return，onConfirm 會在
+            // 第一個 fetch 還在路上時就「結束」，鍵馬上解鎖、彈窗也還開著，手快點第二下
+            // 就會再送一次——第二筆打到伺服器時第一筆已經寫進去了，於是跳出「已經有同樣
+            // 名稱的分類了」的 alert，但分類其實已經新增成功，看起來就像誤判。
+            return onSave(
               isSubcategory
                 ? valid.map(({ name }) => ({ name }))
                 : valid.map(({ name, icon, color, kind }) => ({ name, icon, color, kind })),

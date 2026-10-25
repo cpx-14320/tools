@@ -416,8 +416,10 @@ export function TransactionsView() {
 
       {!skeletonReady ? null : !ready ? (
         // 骨架照著載入完成後的版面排：一張期間合計卡，底下是依日期分組的清單。
+        // 合計卡只有「這段期間真的有紀錄」時才會出現（見下面 rows.length > 0 那段），所以
+        // 上次是空的（shape 是空陣列）就不要畫，不然骨架會比真的畫面多出一整張卡。
         <div className="flex flex-col gap-4">
-          <SummaryCardSkeleton delta />
+          {skeletonShape.length > 0 && <SummaryCardSkeleton delta />}
           <DateGroupsSkeleton shape={skeletonShape} />
         </div>
       ) : (

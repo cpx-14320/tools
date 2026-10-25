@@ -4,8 +4,10 @@ import { useState } from "react";
 import { SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
 import { CategoryColorPicker, CategoryIconPicker, DEFAULT_PICKER_ICON } from "./category-field-pickers";
+import { AccountPickerModal } from "./account-picker-modal";
 import { categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 import { type AccountDTO } from "@/lib/expenses/accounts";
+import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 
 export interface CategoryModalDraft {
   name: string;
@@ -22,6 +24,7 @@ export function CategoryModal({
   parentId,
   categories,
   accounts,
+  accountTypes,
   excludeId,
   initial,
   onClose,
@@ -37,6 +40,8 @@ export function CategoryModal({
   categories: CategoryDTO[];
   /** 可以當預設帳戶的帳戶清單；空陣列（還沒建任何帳戶）就不顯示那一欄。 */
   accounts: AccountDTO[];
+  /** 帳戶選擇彈窗用來分資產／負債兩組、並取得每個帳戶的類型圖示。 */
+  accountTypes: AccountTypeDTO[];
   /** 編輯既有分類時傳自己的 id，重複檢查才不會把自己判定成跟自己撞名。 */
   excludeId?: string;
   initial?: CategoryModalDraft;
@@ -52,7 +57,9 @@ export function CategoryModal({
   const [color, setColor] = useState<CategoryColor>(initial?.color ?? "a");
   const [kind, setKind] = useState<CategoryKind>(initial?.kind ?? "支出");
   const [defaultAccountId, setDefaultAccountId] = useState(initial?.defaultAccountId ?? "");
+  const [accountPickerOpen, setAccountPickerOpen] = useState(false);
 
+  const selectedAccount = accounts.find((a) => a.id === defaultAccountId);
   const title = initial ? "編輯分類" : isSubcategory ? "新增子分類" : "新增分類";
   const isDuplicate = categoryNameTaken(categories, name, { kind, parentId }, excludeId);
   // 子分類只填名稱，圖示由父分類決定，不能拿它當必填條件。
@@ -106,23 +113,33 @@ export function CategoryModal({
               categories.ts 的 defaultAccountForCategory）。還沒建任何帳戶就不顯示。 */}
           {accounts.length > 0 && (
             <Field label="預設帳戶（可不填）">
-              <select
-                value={defaultAccountId}
-                onChange={(e) => setDefaultAccountId(e.target.value)}
-                className={`${fieldInputClass} appearance-none`}
-              >
-                <option value="">不指定</option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
+              {/* 跟新增消費紀錄挑帳戶用同一個 AccountPickerModal，不用原生 <select>：
+                  原生選單在手機上是作業系統自己的滾輪，樣式跟整個記帳本格格不入，而且
+                  只剩一行純文字，看不到帳戶的類型圖示、也分不出資產還負債。 */}
+              <button type="button" onClick={() => setAccountPickerOpen(true)} className={`${fieldInputClass} text-left`}>
+                <span className={selectedAccount ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}>
+                  {selectedAccount ? selectedAccount.name : "不指定"}
+                </span>
+              </button>
             </Field>
           )}
         </>
       )}
       {/* 每月預算已經搬到獨立的「預算設定」頁（可以按月份分別設定），不在這裡輸入。 */}
+
+      {/* 這裡選的是「這個分類平常從哪個帳戶出」，跟帳戶當下剩多少錢無關，所以不顯示餘額
+          （showBalance）——顯示的話這一頁就得為了一行數字再去撈全部交易跟轉帳。 */}
+      <AccountPickerModal
+        open={accountPickerOpen}
+        title="選擇預設帳戶"
+        accounts={accounts}
+        accountTypes={accountTypes}
+        showBalance={false}
+        unsetLabel="不指定"
+        value={defaultAccountId || undefined}
+        onClose={() => setAccountPickerOpen(false)}
+        onSelect={(id) => setDefaultAccountId(id ?? "")}
+      />
     </Modal>
   );
 }

@@ -143,36 +143,69 @@ export function SummaryCardSkeleton({ delta = false }: { delta?: boolean }) {
   );
 }
 
-/** 圓餅＋圖例＋底下的清單——報表頁「明細」那張卡。 */
-export function DonutCardSkeleton({ rows }: { rows: number }) {
+/** 圓餅＋圖例＋底下的清單——報表頁「明細」／「資產配置」那張卡。
+ *
+ *  圖例的列數跟底下清單的列數是兩個不同的數字，要分開傳：圖例最多只列前幾名（報表頁的
+ *  TOP_N），底下的清單則是每一個分類／每一個帳戶都有一列，資產分頁更是兩邊各自獨立
+ *  （圖例是「資產類型」有幾種、清單是「資產帳戶」有幾個）。本來兩邊共用同一個 rows，
+ *  資料回來時一定有一邊的高度是錯的。
+ *
+ *  legendRows 是 0 代表上次這張卡裡沒有圓餅，只有一行「這段期間還沒有◯◯紀錄。」，骨架
+ *  也照那個形狀畫。 */
+export function DonutCardSkeleton({
+  legendRows,
+  listRows,
+  /** 底下那一段的樣子：`"rows"` 是一排帶進度條的分類／帳戶列（支出、收入、資產分頁）；
+   *  `"line"` 是淨額分頁那一行「結餘　NT$ ◯◯」的單行總結。 */
+  variant = "rows",
+}: {
+  legendRows: number;
+  listRows?: number;
+  variant?: "rows" | "line";
+}) {
   return (
     <CardSkeleton>
       <SkeletonBar width={48} height={14} />
-      <div className="mt-4 flex items-center gap-5">
-        <div className={`size-[120px] shrink-0 animate-pulse rounded-full ${SKELETON_BG}`} />
-        <div className="flex flex-1 flex-col gap-2.5">
-          {Array.from({ length: Math.max(rows, 1) }, (_, i) => (
-            <div key={i} className="flex items-center justify-between gap-2">
-              <SkeletonBar width="45%" height={10} />
-              <SkeletonBar width={36} height={10} />
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="mt-5 flex flex-col gap-3 border-t border-[#F2EEFA] pt-4">
-        {Array.from({ length: Math.max(rows, 1) }, (_, i) => (
-          <div key={i} className="flex w-full items-center gap-3">
-            <div className={`size-9 shrink-0 animate-pulse rounded-xl ${SKELETON_BG}`} />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-2">
-                <SkeletonBar width="35%" />
-                <SkeletonBar width="30%" />
-              </div>
-              <SkeletonBar width="100%" height={8} className="mt-2" />
+      {legendRows <= 0 ? (
+        <SkeletonBar width={168} height={12} className="mt-3" />
+      ) : (
+        <>
+          <div className="mt-4 flex items-center gap-5">
+            <div className={`size-[120px] shrink-0 animate-pulse rounded-full ${SKELETON_BG}`} />
+            <div className="flex flex-1 flex-col gap-2.5">
+              {Array.from({ length: legendRows }, (_, i) => (
+                <div key={i} className="flex items-center justify-between gap-2">
+                  <SkeletonBar width="45%" height={10} />
+                  <SkeletonBar width={36} height={10} />
+                </div>
+              ))}
             </div>
           </div>
-        ))}
-      </div>
+          {variant === "line" ? (
+            <div className="mt-5 flex items-center justify-between border-t border-[#F2EEFA] pt-4">
+              <SkeletonBar width={32} height={14} />
+              <SkeletonBar width={96} height={14} />
+            </div>
+          ) : (
+            (listRows ?? 0) > 0 && (
+              <div className="mt-5 flex flex-col gap-3 border-t border-[#F2EEFA] pt-4">
+                {Array.from({ length: listRows ?? 0 }, (_, i) => (
+                  <div key={i} className="flex w-full items-center gap-3">
+                    <div className={`size-9 shrink-0 animate-pulse rounded-xl ${SKELETON_BG}`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <SkeletonBar width="35%" />
+                        <SkeletonBar width="30%" />
+                      </div>
+                      <SkeletonBar width="100%" height={8} className="mt-2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+        </>
+      )}
     </CardSkeleton>
   );
 }
@@ -199,9 +232,21 @@ export function TrendCardSkeleton() {
   );
 }
 
-/** 依日期分組、但沒有區塊小標的清單骨架（消費紀錄頁的列表）。 */
+/** 依日期分組、但沒有區塊小標的清單骨架（消費紀錄頁的列表）。
+ *
+ *  shape 是空的（上次這個分頁／這段期間就是沒有紀錄）時畫的是消費紀錄頁那張「這段期間
+ *  還沒有支出紀錄。」的空卡——它是 py-10 的大留白卡，跟首頁那種 EmptyListCard 的矮卡
+ *  不一樣，用錯一張資料回來時高度就會跳。 */
 export function DateGroupsSkeleton({ shape }: { shape: number[] }) {
-  if (shape.length === 0) return <ListCardSkeleton count={0} />;
+  if (shape.length === 0) {
+    return (
+      <Card>
+        <CardBody className="flex justify-center py-10">
+          <SkeletonBar width={160} height={12} />
+        </CardBody>
+      </Card>
+    );
+  }
   return (
     <div className="flex flex-col gap-5">
       {shape.map((rows, i) => (

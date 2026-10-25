@@ -34,7 +34,9 @@ export function ReconcileModal({
   /** 調整交易要記在哪一天，預設帶今天（由呼叫端決定，這個元件不讀時鐘）。 */
   date: string;
   onClose: () => void;
-  onSave: (draft: { categoryId: string; amount: number; date: string; note: string }) => void;
+  /** 回傳 Promise 時 ModalFooter 會在送出期間鎖住儲存鍵——下面的 onConfirm 要記得把它
+   *  return 出去，不然鎖會在 fetch 還沒回來前就解開，連點兩下會送出兩筆。 */
+  onSave: (draft: { categoryId: string; amount: number; date: string; note: string }) => void | Promise<unknown>;
 }) {
   const [expr, setExpr] = useState(String(currentBalance));
   const [categoryId, setCategoryId] = useState("");
@@ -55,7 +57,7 @@ export function ReconcileModal({
           onClose={onClose}
           onConfirm={() => {
             if (!adjustment) return;
-            onSave({ categoryId, amount: adjustment.amount, date, note: "對帳調整" });
+            return onSave({ categoryId, amount: adjustment.amount, date, note: "對帳調整" });
           }}
           confirmDisabled={!canSave}
           confirmLabel="補上調整"

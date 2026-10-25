@@ -21,6 +21,7 @@ export function CategoryGridPicker({
   value,
   onChange,
   onAddClick,
+  onAddSubClick,
   maxHeightClass = "max-h-[260px]",
 }: {
   categories: CategoryDTO[];
@@ -28,6 +29,9 @@ export function CategoryGridPicker({
   value: string;
   onChange: (id: string) => void;
   onAddClick?: () => void;
+  /** 「項目」那一排最後面多一顆「＋ 新增」，可以當場補一個子項目。收到的是目前選中的
+   *  大分類 id。不給就不顯示那一顆。 */
+  onAddSubClick?: (parentId: string) => void;
   maxHeightClass?: string;
 }) {
   const activeParentId = value ? topLevelCategoryId(categories, value) : "";
@@ -74,6 +78,21 @@ export function CategoryGridPicker({
                 {sub.name}
               </button>
             ))}
+            {/* 「這筆要記的項目這裡沒有」是記帳當下才會發現的事——沒有這顆就只能放棄這筆、
+                跑去設定頁的分類設定補一則、再回來從頭填一次。虛線框跟實心的子項目區分開，
+                看得出它是「新增」不是另一個可以選的項目。
+                只有在已經有子項目時才出現：一個還沒有任何子項目的大分類本來就可以直接記在
+                它身上，在這裡幫它開第一個子項目等於順手改掉了這個分類的結構（之後每一筆
+                都被強制要選子項目），那是設定頁該做的決定，不是記一筆帳的副作用。 */}
+            {onAddSubClick && (
+              <button
+                type="button"
+                onClick={() => onAddSubClick(activeParentId)}
+                className="rounded-full border border-dashed border-[#C7BFE6] px-3 py-1.5 text-xs font-medium text-[#6F5FD6]"
+              >
+                ＋ 新增
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -84,6 +84,8 @@ export function TransactionModal({
   const [accountTouched, setAccountTouched] = useState(!!initial?.accountId);
   const [accountPickerOpen, setAccountPickerOpen] = useState(false);
   const [categoryBatchOpen, setCategoryBatchOpen] = useState(false);
+  // 「項目」那一排的「＋ 新增」要補的是哪個大分類底下的子項目——空字串代表沒在新增。
+  const [subBatchParentId, setSubBatchParentId] = useState("");
   // 明細是依附在這筆交易上的輔助資訊（見 lib/expenses/transactions.ts 開頭的說明），平常
   // 大多數交易都不需要，預設收合成一般的單一金額輸入；只有使用者主動展開才出現逐項列表，
   // 這時金額欄位改成唯讀顯示明細加總，避免兩邊數字兜不起來。
@@ -145,24 +147,24 @@ export function TransactionModal({
    *  同一個分類的錢幾乎都是從同一個帳戶出（吃飯刷同一張卡、房租固定從某個戶頭扣），
    *  每記一筆都要再挑一次帳戶是多餘的一步。預設值設在主分類上（見 categories.ts 的
    *  defaultAccountForCategory），子分類沿用。使用者自己改過帳戶就不再覆蓋。 */
-  function chooseCategory(id: string) {
+  function chooseCategory(id: string, list: CategoryDTO[] = categories) {
     setCategoryId(id);
     if (accountTouched) return;
-    const preset = defaultAccountForCategory(categories, id);
+    const preset = defaultAccountForCategory(list, id);
     setAccountId(preset ?? "");
   }
 
   // 逐筆依序 POST，理由跟帳戶類型／分類頁的批次新增一樣：新分類的 order 是用當下已存在
   // 筆數算出來的，併發送出會拿到同一個 order。建好之後直接選進這筆交易，不用使用者
   // 關掉彈窗後再手動點一次剛新增的分類。
-  async function handleCreateCategories(items: CategoryBatchItem[]) {
+  async function handleCreateCategories(items: CategoryBatchItem[], parentId?: string) {
     let latest = categories;
     let firstNewId: string | undefined;
     for (const item of items) {
       const data: { category?: CategoryDTO; categories?: CategoryDTO[] } = await fetch("/api/expenses/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(item),
+        body: JSON.stringify(parentId ? { ...item, parentId } : item),
       })
         .then((res) => res.json())
         .catch(() => ({}));
@@ -172,8 +174,12 @@ export function TransactionModal({
       }
     }
     onCategoriesChange(latest);
-    if (firstNewId) chooseCategory(firstNewId);
+    // 新增完直接選起來：剛補的子項目十之八九就是這筆要記的那一個，還要再點一次是多的。
+    // 這裡要用 latest 而不是 categories——setState 要等重繪才生效，chooseCategory 裡面
+    // 的 defaultAccountForCategory 這一刻在舊的清單裡找不到剛建好的分類。
+    if (firstNewId) chooseCategory(firstNewId, latest);
     setCategoryBatchOpen(false);
+    setSubBatchParentId("");
   }
 
   return (
@@ -223,7 +229,14 @@ export function TransactionModal({
         </div>
         {/* 只有這一塊自己捲動——分類一多，捲的是這個格子區塊，不是整個彈窗（彈窗本身的
             標題／底部按鈕已經固定不動，見 modal.tsx）。 */}
-        <CategoryGridPicker categories={categories} kind={kind} value={categoryId} onChange={chooseCategory} onAddClick={() => setCategoryBatchOpen(true)} />
+        <CategoryGridPicker
+          categories={categories}
+          kind={kind}
+          value={categoryId}
+          onChange={chooseCategory}
+          onAddClick={() => setCategoryBatchOpen(true)}
+          onAddSubClick={setSubBatchParentId}
+        />
       </div>
 
       {/* 記帳絕大多數是記「今天」或「昨天剛花的」，這兩顆直接點比開日期選擇器快很多；
@@ -362,6 +375,18 @@ export function TransactionModal({
         lockedKind={kind}
         onClose={() => setCategoryBatchOpen(false)}
         onSave={handleCreateCategories}
+      />
+      {/* 「項目」那排的「＋ 新增」開的是同一個批次彈窗，只是 isSubcategory／parentId 不同。
+          key 綁 parentId：換一個大分類再開時要是全新的空白草稿，不是上一個分類沒存完的殘留。 */}
+      <CategoryBatchModal
+        key={subBatchParentId || "sub-closed"}
+        open={subBatchParentId !== ""}
+        isSubcategory
+        parentId={subBatchParentId}
+        categories={categories}
+        lockedKind={kind}
+        onClose={() => setSubBatchParentId("")}
+        onSave={(items) => handleCreateCategories(items, subBatchParentId)}
       />
     </Modal>
   );

@@ -34,7 +34,7 @@ import {
 import { compareDateFilter, dateFilterRange, previousPeriodSuffix } from "@/lib/expenses/date-filter";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { DonutCardSkeleton, KpiCardSkeleton, SummaryCardSkeleton, TrendCardSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
+import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { formatCurrency } from "@/lib/format";
 
 type ReportKind = "支出" | "收入" | "淨額" | "資產";
@@ -328,8 +328,28 @@ export function ReportsView() {
   }
 
   const selectedPoint = kind !== "淨額" ? (trendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
-  // 載入中畫骨架，明細列數用上次記住的實際筆數（見 skeleton-count.ts）。
-  const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:reports", TOP_N, ready ? Math.min(breakdown.length, TOP_N) : undefined);
+
+  // 載入中畫骨架，「明細」那張卡的形狀用上次記住的實際數量（見 skeleton-count.ts）。
+  //
+  // 記的是 [圖例幾列, 底下清單幾列] 兩個數字，不是單一個列數：這兩段的數量本來就不一樣
+  // （圖例只列前 TOP_N 名、清單是每個分類／帳戶一列），資產分頁更是兩件不同的東西
+  // （有幾種資產類型 vs 有幾個資產帳戶）。而且四個分頁的內容差很多，各記各的——用同一把
+  // 鑰匙的話，看完支出（六列）切到收入（一列）就會先閃六列骨架。
+  const detailShapeKey = `cpx-tools:expenses-skeleton:reports:${kind}`;
+  const actualDetailShape = !ready
+    ? undefined
+    : kind === "資產"
+      ? [assetTypeBreakdown.length, assetAccountRows.length]
+      : kind === "淨額"
+        ? // 淨額的明細卡在沒有收支資料時整張不出現，所以第二個數字當成「這張卡在不在」。
+          [netDonutData.length, netDonutData.length > 0 ? 1 : 0]
+        : [Math.min(donutData.length, TOP_N), Math.min(breakdown.length, TOP_N)];
+  const detailShape = useSkeletonShape(
+    detailShapeKey,
+    kind === "資產" ? [3, 3] : kind === "淨額" ? [2, 1] : [TOP_N, TOP_N],
+    actualDetailShape,
+  );
+  const [legendSkeletonRows = 0, listSkeletonRows = 0] = detailShape;
 
   const selectedIncomePoint = kind === "淨額" ? (incomeTrendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
   const selectedExpensePoint = kind === "淨額" ? (expenseTrendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
@@ -353,17 +373,24 @@ export function ReportsView() {
           <div className="h-[30px] w-[126px] animate-pulse rounded-full bg-[#EDE6FB]" />
         </div>
         {kind === "資產" ? (
-          <>
+          // 淨資產一張、資產／負債兩張並排——間距是 gap-3 包在一起的，跟外層的 gap-4
+          // 不一樣，分開放會多撐出 4px。
+          <div className="flex flex-col gap-3">
             <KpiCardSkeleton />
             <div className="grid grid-cols-2 gap-3">
               <KpiCardSkeleton />
               <KpiCardSkeleton />
             </div>
-          </>
+          </div>
         ) : (
           <SummaryCardSkeleton delta />
         )}
-        <DonutCardSkeleton rows={skeletonCount} />
+        {kind === "淨額" ? (
+          // 沒有收支資料時整張明細卡不出現，骨架也不畫（見 actualDetailShape 的說明）。
+          listSkeletonRows > 0 && <DonutCardSkeleton legendRows={legendSkeletonRows} variant="line" />
+        ) : (
+          <DonutCardSkeleton legendRows={legendSkeletonRows} listRows={listSkeletonRows} />
+        )}
         <TrendCardSkeleton />
       </div>
     );

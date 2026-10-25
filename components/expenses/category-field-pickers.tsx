@@ -25,7 +25,10 @@ function IconPicker({ options, value, onChange }: { options: IconOption[]; value
       {/* 只排圖、不寫名稱——這裡挑的是「長什麼樣子」，不是在選一個已經定義好的分類，
           圖下面掛一行名稱反而會讓人以為選了圖就等於選了那個分類。名稱留在 aria-label
           給讀螢幕軟體用。 */}
-      <div className="flex flex-wrap gap-2">
+      {/* 固定六欄等寬的格狀排列，不是 flex-wrap：flex-wrap 是「排得下就塞」，一行塞幾張
+          取決於彈窗寬度，上下兩行的圖對不齊，最後一行還會靠左擠成一團。六欄則是每一欄
+          寬度相同、每一列都對齊，整塊看起來是一個規矩的圖庫。 */}
+      <div className="grid grid-cols-6 gap-2">
         {options.map((option) => (
           <button
             key={option.path}
@@ -33,10 +36,11 @@ function IconPicker({ options, value, onChange }: { options: IconOption[]; value
             onClick={() => onChange(option.path)}
             aria-label={`圖示 ${option.label}`}
             aria-pressed={value === option.path}
-            className={`transition-opacity ${value === option.path ? "" : unselectedOption}`}
+            className={`flex justify-center transition-opacity ${value === option.path ? "" : unselectedOption}`}
           >
-            {/* 要 block：InlineIcon 是 <span>，行內元素吃不到寬高，不加的話整排會是空的。 */}
-            <InlineIcon icon={option.path} className="block size-10" />
+            {/* 要 block：InlineIcon 是 <span>，行內元素吃不到寬高，不加的話整排會是空的。
+                w-full + aspect-square：圖跟著欄寬縮放，六欄在窄螢幕上才不會擠爆。 */}
+            <InlineIcon icon={option.path} className="block aspect-square w-full max-w-10" />
           </button>
         ))}
       </div>
