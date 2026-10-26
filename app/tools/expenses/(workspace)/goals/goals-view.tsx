@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { SkeletonBar, StackedCardsSkeleton } from "@/components/expenses/skeleton";
 import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
-import { Button, Badge } from "@/components/expenses/button";
+import { Badge } from "@/components/expenses/button";
+import { IconButton } from "@/components/expenses/icon-button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ProgressBar } from "@/components/expenses/progress-bar";
@@ -184,9 +185,11 @@ export function GoalsView() {
             return (
               <Card key={goal.id}>
                 <CardBody>
-                  <div className="flex items-start gap-3">
+                  {/* 圖示跟文字垂直置中（items-center）；鉛筆用 self-start 吊在區塊右上角，
+                      不要跟著一起置中——它是這張卡的操作入口，釘在角落才不會隨文字行數浮動。 */}
+                  <div className="flex items-center gap-3">
                     {selection.selecting ? (
-                      <button type="button" onClick={() => selection.toggle(goal.id)} className="shrink-0 pt-1">
+                      <button type="button" onClick={() => selection.toggle(goal.id)} className="shrink-0">
                         <SelectionDot selected={selection.selectedIds.has(goal.id)} />
                       </button>
                     ) : (
@@ -197,6 +200,7 @@ export function GoalsView() {
                         {selection.selecting ? (
                           <span className={text.sectionHeading}>{goal.name}</span>
                         ) : (
+                          // 目標本身（名稱、目標金額、期限）還是點名稱進去改。
                           <button
                             type="button"
                             onClick={() => setModal({ mode: "edit", goal })}
@@ -211,14 +215,22 @@ export function GoalsView() {
                         {formatDateRange(goal.startDate, goal.targetDate) || "沒有設定期限"}
                       </p>
                     </div>
+                    {/* 一顆鉛筆取代原本的「＋ 存入」文字鈕——點了開存入彈窗，改這次要存多少。
+                        已達成的目標不用再存，就不顯示。 */}
                     {!selection.selecting && !achieved && (
-                      <Button variant="secondary" className="shrink-0" onClick={() => setContributeId(goal.id)}>
-                        ＋ 存入
-                      </Button>
+                      <IconButton
+                        icon="pen"
+                        tone="soft"
+                        size={32}
+                        iconSize={13}
+                        className="self-start"
+                        aria-label={`存入${goal.name}`}
+                        onClick={() => setContributeId(goal.id)}
+                      />
                     )}
                   </div>
 
-                  <div className="mt-4 flex items-end justify-between">
+                  <div className="mt-2 flex items-end justify-between">
                     <p className={text.statValue}>
                       {formatCurrency(goal.currentAmount)}
                       <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {formatCurrency(goal.targetAmount)}</span>

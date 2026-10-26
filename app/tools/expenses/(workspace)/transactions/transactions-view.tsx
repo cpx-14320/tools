@@ -291,7 +291,6 @@ export function TransactionsView() {
           <ModalFooter
             onClose={() => setFilterOpen(false)}
             onConfirm={() => setFilterOpen(false)}
-            confirmLabel="套用"
             onDelete={filterCount > 0 ? () => {
               setCategoryFilter("");
               setMinAmount("");
@@ -369,7 +368,6 @@ export function TransactionsView() {
           <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />
           {/* 分類篩選：有選的時候按鈕變實心＋顯示分類名稱，一眼看得出清單是被篩過的。 */}
           <PillButton onClick={() => setFilterOpen(true)} active={filterCount > 0}>
-            <span aria-hidden>⌕</span>
             <span className="max-w-[64px] truncate">{filterCategory ? filterCategory.name : "篩選"}</span>
             {filterCount > 1 && <span className="tabular-nums">+{filterCount - 1}</span>}
           </PillButton>
@@ -467,7 +465,7 @@ export function TransactionsView() {
                       const expanded = expandedIds.has(t.id);
                       return (
                         <div key={t.id}>
-                          <div className="flex w-full items-center gap-1 px-4 py-3">
+                          <div className="flex w-full items-center gap-3 px-4 py-3">
                             {selection.selecting && <SelectionDot selected={selection.selectedIds.has(t.id)} />}
                             <button
                               type="button"

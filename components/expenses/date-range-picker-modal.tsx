@@ -65,7 +65,7 @@ export function DateRangePickerModal({
       open={open}
       onClose={onClose}
       title="選擇區間"
-      footer={<ModalFooter onClose={onClose} onConfirm={() => onSave(start, end)} confirmLabel="確定" />}
+      footer={<ModalFooter onClose={onClose} onConfirm={() => onSave(start, end)} />}
     >
       <div className="flex flex-col items-center gap-3">
         <div className="flex w-full items-center justify-center gap-2 rounded-full bg-[#F9F7FE] px-3 py-2 text-sm font-medium text-[#4A3B7C]">

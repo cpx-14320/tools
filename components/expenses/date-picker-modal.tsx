@@ -73,7 +73,6 @@ export function DatePickerModal({
         <ModalFooter
           onClose={onClose}
           onConfirm={() => onSave(granularity === "month" ? `${year}-${pad2(month)}` : toISO(year, month, day))}
-          confirmLabel="確定"
         />
       }
     >

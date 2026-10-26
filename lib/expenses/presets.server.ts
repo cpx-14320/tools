@@ -80,24 +80,32 @@ export async function seedExpensesPresets(userId: ObjectId): Promise<void> {
   pushCategories(PRESET_INCOME_CATEGORIES, "收入");
   if (categoryDocs.length > 0) await db.collection("expenses.categories").insertMany(categoryDocs);
 
-  // ── 帳戶類型 + 同名帳戶 ──────────────────────────────────────────────────
-  // 每個預設類型都配一個期初餘額 0 的同名帳戶，使用者一進資產頁就有現成帳戶可以掛交易，
-  // 不用先建類型再建帳戶兩道手續。
+  // ── 帳戶類型（＋部分類型配一個同名帳戶）────────────────────────────────
+  // 資產、負債兩邊的常見類型都先建好，省得每個人都要自己補一輪。只有 withAccount 的
+  // 那幾個（現金錢包、銀行帳戶）會順便建一個期初餘額 0 的同名帳戶，使用者一進資產頁
+  // 就有現成帳戶可以掛交易；其餘的只建類型，要用的時候再自己開帳戶。
+  //
+  // order 要在「同一個 kind 裡面」從 0 開始數（listAccountTypes 是 sort({ kind, order })），
+  // 直接用整個陣列的 index 會讓負債那幾個的 order 從 5 起跳，之後重排時對不起來。
   const accountTypeDocs: Record<string, unknown>[] = [];
   const accountDocs: Record<string, unknown>[] = [];
-  PRESET_ACCOUNTS.forEach((seed, index) => {
+  const orderByKind: Record<string, number> = {};
+  PRESET_ACCOUNTS.forEach((seed) => {
     const typeId = new ObjectId();
+    const order = orderByKind[seed.kind] ?? 0;
+    orderByKind[seed.kind] = order + 1;
     accountTypeDocs.push({
       _id: typeId,
       userId,
       name: seed.name,
       icon: seed.icon,
-      kind: "asset",
+      kind: seed.kind,
       color: seed.color,
-      order: index,
+      order,
       createdAt: now,
       isPreset: true,
     });
+    if (!seed.withAccount) return;
     accountDocs.push({
       _id: new ObjectId(),
       userId,

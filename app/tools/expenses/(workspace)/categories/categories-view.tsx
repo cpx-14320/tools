@@ -320,13 +320,6 @@ export function CategoriesView() {
         </div>
       </div>
 
-      {sorting && (
-        <p className={`mb-3 rounded-2xl bg-[#F9F7FE] px-4 py-2.5 text-xs ${text.muted}`}>
-          用每一列右邊的 ↑↓ 調整順序。子項目只會在自己的主分類裡面移動；排好的順序會同步到
-          新增消費紀錄的分類格子、預算設定等所有列出分類的地方。
-        </p>
-      )}
-
       {selection.selecting && (
         <SelectionBar
           count={selection.selectedIds.size}

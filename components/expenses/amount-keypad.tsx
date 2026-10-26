@@ -72,6 +72,7 @@ export function AmountKeypad({
   expr,
   onExprChange,
   label,
+  prefix = "NT$",
 }: {
   expr: string;
   onExprChange: (expr: string) => void;
@@ -79,6 +80,9 @@ export function AmountKeypad({
    *  明細項目的金額）；平常不傳，因為旁邊就是一個大大的 NT$ 金額，再寫一次「金額」
    *  是多餘的。 */
   label?: string;
+  /** 數字前面的單位。預設「NT$」因為絕大多數用途都是金額；輸入數量這種非金額的場合
+   *  傳空字串，不然會變成「NT$ 3」份。 */
+  prefix?: string;
 }) {
   function pressDigit(d: string) {
     const seg = lastSegment(expr);
@@ -115,9 +119,11 @@ export function AmountKeypad({
           這個大大的 NT$ 數字，再標一次是多餘的。 */}
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-baseline gap-1.5">
-          <span className="text-xl font-bold" style={{ color: AMOUNT_COLOR }}>
-            NT$
-          </span>
+          {prefix && (
+            <span className="text-xl font-bold" style={{ color: AMOUNT_COLOR }}>
+              {prefix}
+            </span>
+          )}
           <span className="truncate text-3xl font-bold tabular-nums text-[#4A3B7C]">{expr || "0"}</span>
         </span>
         <button type="button" onClick={pressBackspace} aria-label="刪除一位數" className="shrink-0 text-lg text-[#9C94C4] hover:text-[#6F5FD6]">

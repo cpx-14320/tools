@@ -19,6 +19,7 @@
 // IconAvatar 會顯示漸層佔位，404 不會弄壞畫面。
 
 import type { CategoryColor } from "./categories";
+import type { AccountKind } from "./account-types";
 
 /** 沒有專屬圖檔時共用的佔位圖——收入分類、支出分類、帳戶類型三種情境共用這一張。 */
 export const ICON_OTHER = "/expenses/category-other.png";
@@ -35,46 +36,75 @@ export interface PresetCategorySeed {
   children?: string[];
 }
 
-/** 支出主分類。顏色在 a～f 六色之間輪，相鄰的分類不會同色。 */
+/** 支出主分類——內容跟順序就是實際用下來覺得好用的那一套，新帳號一進來就是這個狀態，
+ *  不夠用或用不到都可以在「設定 › 收支分類」自己增刪、排序。
+ *
+ *  分得比以前細（原本是「購物」「生活」兩個大籃子，現在拆成電商購物／服飾／保養品／
+ *  日用品／電話費／服務訂閱…）：大籃子記起來快，但月底看報表只會知道「生活花了八千」，
+ *  想知道是日用品還是電話費就得一筆一筆翻。 */
 export const PRESET_EXPENSE_CATEGORIES: PresetCategorySeed[] = [
   { name: "餐飲", icon: expenseCategoryIcon("food"), color: "a", children: ["早餐", "午餐", "晚餐"] },
-  { name: "交通", icon: expenseCategoryIcon("transport"), color: "b", children: ["月票", "加油"] },
-  { name: "購物", icon: expenseCategoryIcon("shopping"), color: "c", children: ["服裝", "保養品", "化妝品", "禮物"] },
-  { name: "生活", icon: expenseCategoryIcon("life"), color: "d", children: ["日用品", "電話費", "水電費"] },
-  { name: "房租", icon: expenseCategoryIcon("rent"), color: "e" },
+  { name: "零食", icon: expenseCategoryIcon("dessert"), color: "f" },
+  { name: "大眾交通", icon: expenseCategoryIcon("transport"), color: "a", children: ["月票"] },
+  { name: "電商購物", icon: expenseCategoryIcon("shopping"), color: "c" },
+  { name: "服飾", icon: expenseCategoryIcon("clothing"), color: "c", children: ["衣服", "包包"] },
+  { name: "保養品", icon: expenseCategoryIcon("beauty"), color: "e" },
+  { name: "日用品", icon: expenseCategoryIcon("life"), color: "d" },
+  { name: "寵物", icon: expenseCategoryIcon("pet"), color: "c" },
+  { name: "學習", icon: expenseCategoryIcon("education"), color: "d" },
   { name: "娛樂", icon: expenseCategoryIcon("entertainment"), color: "f" },
+  { name: "社交", icon: expenseCategoryIcon("social"), color: "c" },
+  { name: "旅遊", icon: expenseCategoryIcon("travel"), color: "e" },
   { name: "醫療", icon: expenseCategoryIcon("medical"), color: "a" },
   { name: "保險", icon: expenseCategoryIcon("insurance"), color: "b" },
-  { name: "社交", icon: expenseCategoryIcon("social"), color: "c" },
-  { name: "學習", icon: expenseCategoryIcon("education"), color: "d" },
-  { name: "旅遊", icon: expenseCategoryIcon("travel"), color: "e" },
+  { name: "房租", icon: expenseCategoryIcon("rent"), color: "e" },
+  { name: "繳稅", icon: expenseCategoryIcon("bill"), color: "a" },
+  { name: "電話費", icon: expenseCategoryIcon("phone"), color: "c" },
+  { name: "服務訂閱", icon: expenseCategoryIcon("subscription"), color: "b" },
   { name: "其他", icon: ICON_OTHER, color: "f" },
 ];
 
 export const PRESET_INCOME_CATEGORIES: PresetCategorySeed[] = [
-  // 各種節慶禮金、加班費這類項目不另外開子分類——它們是「某一筆薪水裡的一個項目」，
-  // 記在那筆薪水的明細裡（見 lib/expenses/transactions.ts 的 breakdown）比拆成子分類精準。
-  // 「月薪」排第一：有子項目的大分類現在一定要選到項目才能記帳（見 categories.ts 的
-  // needsSubcategory），最常記的那一筆「這個月的薪水」要有地方放，底薪／勞保這些則是
-  // 記在那一筆底下的明細。
-  { name: "薪水", icon: incomeCategoryIcon("salary"), color: "a", children: ["月薪", "獎金", "年終", "分紅"] },
+  // 薪水底下把各種名目都開成子項目：有子項目的大分類一定要選到項目才能記帳
+  // （見 categories.ts 的 needsSubcategory），所以「這個月的薪水」要有「月薪」可以選；
+  // 年終、分紅、各種節慶禮金則是一年只來幾次、但來的時候要分得開的那些。
+  // 用不到的直接在設定頁刪掉就好。
+  {
+    name: "薪水",
+    icon: incomeCategoryIcon("salary"),
+    color: "a",
+    children: ["月薪", "獎金", "年終", "分紅", "其他獎金", "端午禮金", "中秋禮金", "聖誕禮金", "勞動禮金", "春酒禮金", "生日禮金", "開工禮金", "特休換錢"],
+  },
   { name: "投資", icon: incomeCategoryIcon("investment"), color: "b" },
   { name: "利息", icon: incomeCategoryIcon("interest"), color: "c" },
   { name: "其他", icon: ICON_OTHER, color: "d" },
 ];
 
 export interface PresetAccountSeed {
-  /** 帳戶類型名稱，同時也是一併建立的那個帳戶的名稱——預設就給一個同名的帳戶，
-   *  使用者一進來就有東西可以記帳，不用先建類型再建帳戶。 */
   name: string;
   icon: string;
   color: CategoryColor;
+  kind: AccountKind;
+  /** true 的話連帶建一個同名的帳戶——使用者一進來就有東西可以記帳，不用先建類型再建帳戶。
+   *  只給最基本的現金跟銀行：定存、股票這些不是每個人都有，建一個餘額 0 的空帳戶放在
+   *  資產總表上只是噪音，要用的時候在資產總表按右下角的＋就好。 */
+  withAccount?: boolean;
 }
 
-/** 預設只建資產類型；負債（信用卡、貸款…）不是每個人都有，要用再自己新增。 */
+/** 預設帳戶類型——資產負債兩邊都先建好常見的，省得每個人都要自己補一輪。
+ *  用不到的可以在「設定 › 帳戶類型」刪掉（底下沒有帳戶在用才刪得掉）。 */
 export const PRESET_ACCOUNTS: PresetAccountSeed[] = [
-  { name: "現金錢包", icon: accountIcon("cash"), color: "a" },
-  { name: "銀行帳戶", icon: accountIcon("bank"), color: "b" },
+  { name: "現金錢包", icon: accountIcon("cash"), color: "a", kind: "asset", withAccount: true },
+  { name: "銀行帳戶", icon: accountIcon("bank"), color: "b", kind: "asset", withAccount: true },
+  { name: "定存", icon: accountIcon("fund"), color: "c", kind: "asset" },
+  // 股票／黃金的圖還沒放進 public/expenses，先指到之後要放的檔名；圖檔補上去就會自己
+  // 出現，在那之前 IconAvatar 會顯示漸層佔位，不會壞版。
+  { name: "股票", icon: "/expenses/category-stocks.png", color: "d", kind: "asset" },
+  { name: "黃金", icon: "/expenses/category-gold.png", color: "e", kind: "asset" },
+  { name: "信用卡", icon: accountIcon("card"), color: "a", kind: "liability" },
+  { name: "房貸", icon: accountIcon("home"), color: "b", kind: "liability" },
+  { name: "車貸", icon: accountIcon("car"), color: "c", kind: "liability" },
+  { name: "學貸", icon: accountIcon("education"), color: "d", kind: "liability" },
 ];
 
 /** 圖示選擇器可以選的圖——使用者新增自訂分類時從這裡挑，挑不到合適的就用「其他」那張
@@ -117,25 +147,23 @@ export const INCOME_ICON_OPTIONS: IconOption[] = [
   { path: ICON_OTHER, label: "其他" },
 ];
 
-/** 預設帳戶（現金錢包、銀行帳戶）以外、只拿來給使用者挑的帳戶類型圖——有圖檔但不會
- *  自動建立對應的帳戶，想用哪一張自己在新增類型時挑。label 是給讀螢幕軟體用的（選擇器
- *  只排圖、不顯示文字），所以寫的是「這張圖畫的是什麼」。 */
+/** 預設類型以外、只拿來給使用者挑的帳戶類型圖——有圖檔但不會自動建立對應的類型，
+ *  想用哪一張自己在新增類型時挑。label 是給讀螢幕軟體用的（選擇器只排圖、不顯示
+ *  文字），所以寫的是「這張圖畫的是什麼」。 */
 const EXTRA_ACCOUNT_ICONS: IconOption[] = [
-  { path: accountIcon("card"), label: "信用卡" },
-  { path: accountIcon("fund"), label: "基金" },
   { path: accountIcon("calendar"), label: "定存" },
-  { path: accountIcon("home"), label: "房屋" },
-  { path: accountIcon("car"), label: "汽車" },
-  { path: accountIcon("education"), label: "學貸" },
   { path: accountIcon("business"), label: "店面" },
   { path: accountIcon("deduction"), label: "扣款" },
 ];
 
+/** 預設類型的圖排前面、額外的接在後面，同一張圖只出現一次——預設類型現在涵蓋了信用卡、
+ *  房貸、車貸、學貸，跟 EXTRA_ACCOUNT_ICONS 原本列的那幾張重疊，不去重的話選擇器裡會
+ *  有兩顆一模一樣的圖。 */
 export const ACCOUNT_ICON_OPTIONS: IconOption[] = [
   ...PRESET_ACCOUNTS.map((a) => ({ path: a.icon, label: a.name })),
   ...EXTRA_ACCOUNT_ICONS,
   { path: ICON_OTHER, label: "其他" },
-];
+].filter((opt, i, all) => all.findIndex((o) => o.path === opt.path) === i);
 
 /** 圖示字串是圖片路徑還是表情符號——舊資料（改版前使用者自己建的分類）存的是表情符號，
  *  新的預設資料跟選擇器存的是 `/expenses/...png` 路徑，顯示時要分開處理。 */

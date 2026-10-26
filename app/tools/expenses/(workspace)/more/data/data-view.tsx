@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { Card, CardBody } from "@/components/expenses/card";
 import { Button, ButtonLink, SegmentedControl } from "@/components/expenses/button";
 import { PageHeader } from "@/components/expenses/page-header";
@@ -145,9 +144,6 @@ export function DataView() {
 
   return (
     <div>
-      <Link href="/tools/expenses/more" className={`mb-3 inline-block font-medium ${text.muted} hover:text-[#6F5FD6]`}>
-        ← 設定
-      </Link>
       <PageHeader
         title="匯出／匯入資料"
         help="換環境或還原備份時順序是：先匯入消費分類，再匯入預算設定跟消費紀錄——後兩種都要分類已經存在才掛得上去。帳戶類型不走 CSV，在「設定 › 帳戶類型」直接新增就好"

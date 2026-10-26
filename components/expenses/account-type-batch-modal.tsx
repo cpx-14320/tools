@@ -127,7 +127,7 @@ export function AccountTypeBatchModal({
               </Field>
             )}
             <Field label="名稱">
-              <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} placeholder="例如「定存」" className={fieldInputClass} />
+              <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} className={fieldInputClass} />
             </Field>
             {isDuplicateDraft(items, i, accountTypes) && (
               <p className="text-xs text-[#D1517E]">已經有同樣名稱的{item.kind === "asset" ? "資產" : "負債"}類型了，換一個名稱吧。</p>

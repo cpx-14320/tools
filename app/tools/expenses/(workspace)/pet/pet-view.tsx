@@ -92,11 +92,12 @@ export function PetView() {
     };
   }, [todayISO]);
 
-  async function act(action: "feed" | "buy" | "equip", itemId: string) {
+  /** count 只有「買食物」會用到，一次買好幾份（見 pet-shop.tsx 的數量選擇器）。 */
+  async function act(action: "feed" | "buy" | "equip", itemId: string, count = 1) {
     const res = await fetch("/api/expenses/pet", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, itemId }),
+      body: JSON.stringify({ action, itemId, count }),
     }).catch(() => null);
     const data: { pet?: PetState; error?: string } = (await res?.json().catch(() => ({}))) ?? {};
     if (data.error) {

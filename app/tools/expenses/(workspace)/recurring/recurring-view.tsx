@@ -6,6 +6,7 @@ import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skelet
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { Button, Badge, SegmentedControl } from "@/components/expenses/button";
+import { IconButton } from "@/components/expenses/icon-button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ProgressBar } from "@/components/expenses/progress-bar";
@@ -115,6 +116,19 @@ export function RecurringView() {
     });
   }
 
+  /** 重抓待確認清單。
+   *
+   *  待確認的那幾期不是另外存起來的資料，是每次查詢時從規則現算的（見
+   *  listPendingOccurrences），所以規則一改——金額、備註、起始日、頻率、期數——還沒確認
+   *  的那幾期內容就跟著變，甚至整組期數都不一樣了。新增、編輯、刪除、暫停／恢復之後
+   *  都要重抓，不然畫面上那張「待確認」還停在舊的金額。 */
+  async function refreshPending() {
+    const data: { pending?: PendingOccurrence[] } = await fetch("/api/expenses/recurring-rules/pending")
+      .then((res) => res.json())
+      .catch(() => ({}));
+    if (data.pending) setPending(data.pending);
+  }
+
   async function handleSave(draft: RecurringRuleModalDraft) {
     if (!modal) return;
     const method = modal.mode === "edit" ? "PUT" : "POST";
@@ -128,6 +142,7 @@ export function RecurringView() {
       .catch(() => ({}));
     if (data.rules) setRules(data.rules);
     setModal(null);
+    await refreshPending();
   }
 
   async function performDelete(ids: string[]) {
@@ -139,6 +154,7 @@ export function RecurringView() {
       if (data.rules) latest = data.rules;
     }
     setRules(latest);
+    await refreshPending();
   }
 
   function requestDelete() {
@@ -163,6 +179,8 @@ export function RecurringView() {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.rules) setRules(data.rules);
+    // 暫停的規則不會再產生待確認的期數，恢復之後又會補回來。
+    await refreshPending();
   }
 
   const today = todayISO();
@@ -172,7 +190,7 @@ export function RecurringView() {
 
   return (
     <div>
-      <PageHeader title="固定收支" help="每月電話費、房租這種會重複出現的收支，到期會在你下次打開記帳本時自動入帳" />
+      <PageHeader title="固定收支" help="每月電話費、房租這種會重複出現的收支。到期不會自動入帳，會列在上面的「待確認」等你按確認——金額每個月不一樣時才有機會先改或略過" />
 
       {/* 新增搬到右下角的浮動按鈕，跟首頁新增交易、消費分類頁同一招。 */}
       <FloatingAddButton onClick={() => setModal({ mode: "create" })} label="新增固定收支" />
@@ -334,70 +352,69 @@ export function RecurringView() {
                       右邊這一欄裡，文字左緣才會通通對齊。金額跟標題擺在同一列（不是跟整個
                       文字區塊並排），下面那行「每月・無限期循環・起訖」就能吃滿整欄寬度、
                       不會被金額擠到換行。 */}
-                  <div className="flex items-start gap-3">
+                  {/* 版面比照存錢目標那張卡：圖示＋名稱／說明垂直置中一排，鉛筆吊在右上角，
+                      底下才是金額與進度。原本是「名稱可以點＝編輯」，看不出來可以改，所以
+                      改成跟存錢目標一樣掛一顆明確的鉛筆。 */}
+                  <div className="flex items-center gap-3">
                     {selection.selecting ? (
-                      <button type="button" onClick={() => selection.toggle(rule.id)} className="shrink-0 pt-1">
+                      <button type="button" onClick={() => selection.toggle(rule.id)} className="shrink-0">
                         <SelectionDot selected={selection.selectedIds.has(rule.id)} />
                       </button>
                     ) : (
-                      <IconAvatar icon={category?.icon ?? ""} size="sm" className={category ? categoryColorClass[category.color] : undefined} />
+                      <IconAvatar icon={category?.icon ?? ""} className={category ? categoryColorClass[category.color] : undefined} />
                     )}
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex min-w-0 flex-wrap items-center gap-2">
-                          {selection.selecting ? (
-                            <span className={text.sectionHeading}>{category?.name ?? "（已刪除分類）"}</span>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => setModal({ mode: "edit", rule })}
-                              className={`${text.sectionHeading} hover:underline`}
-                            >
-                              {category?.name ?? "（已刪除分類）"}
-                            </button>
-                          )}
-                          {!rule.active && <Badge>已暫停</Badge>}
-                          {rule.active && finished && <Badge tone="positive">已完成</Badge>}
-                        </div>
-                        <span className={`shrink-0 tabular-nums font-semibold text-[#4A3B7C] ${isIncome ? "text-[#2FAE82]" : ""}`}>
-                          {isIncome ? "＋" : "－"}
-                          {formatCurrency(rule.amount)}
-                          <span className={`ml-1 font-normal ${text.muted}`}>／期</span>
-                        </span>
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <span className={text.sectionHeading}>{category?.name ?? "（已刪除分類）"}</span>
+                        {!rule.active && <Badge>已暫停</Badge>}
+                        {rule.active && finished && <Badge tone="positive">已完成</Badge>}
                       </div>
-
-                      {rule.note && <p className={`mt-0.5 ${text.muted}`}>{rule.note}</p>}
                       <p className={`mt-0.5 truncate ${text.muted}`}>
                         {describeFrequency(rule)}・{describeCycle(rule)}・{rule.startDate} ～ {endDate ?? "無限期"}
                       </p>
-                      {linkedGoal && <p className={`mt-0.5 ${text.muted}`}>🎯 同時存入「{linkedGoal.name}」</p>}
-
-                      {rule.cycleCount ? (
-                        <div className="mt-3">
-                          <p className={text.statValue}>
-                            {confirmedCount}
-                            <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {rule.cycleCount} 期已入帳</span>
-                          </p>
-                          <div className="mt-2">
-                            <ProgressBar pct={(confirmedCount / rule.cycleCount) * 100} tone={finished ? "positive" : "brand"} />
-                          </div>
-                        </div>
-                      ) : (
-                        <p className={`mt-2 ${text.muted}`}>已入帳 {confirmedCount} 期（無限期循環）</p>
-                      )}
-
-                      {nextDate && <p className={`mt-1 ${text.muted}`}>下次預計入帳：{nextDate}</p>}
-
-                      {!selection.selecting && (
-                        <div className="mt-2 flex items-center justify-end">
-                          <Button variant="ghost" onClick={() => handleToggleActive(rule)}>
-                            {rule.active ? "暫停" : "恢復"}
-                          </Button>
-                        </div>
-                      )}
+                      {rule.note && <p className={`mt-0.5 truncate ${text.muted}`}>{rule.note}</p>}
                     </div>
+
+                    {!selection.selecting && (
+                      <IconButton
+                        icon="pen"
+                        tone="soft"
+                        size={32}
+                        iconSize={13}
+                        className="self-start"
+                        aria-label={`編輯${category?.name ?? "固定收支"}`}
+                        onClick={() => setModal({ mode: "edit", rule })}
+                      />
+                    )}
                   </div>
+
+                  <div className="mt-2 flex items-end justify-between">
+                    <p className={text.statValue}>
+                      {isIncome ? "＋" : "－"}
+                      {formatCurrency(rule.amount)}
+                      <span className="ml-1 text-sm font-normal text-[#9C94C4]">／期</span>
+                    </p>
+                    <p className={text.muted}>
+                      {rule.cycleCount ? `已入帳 ${confirmedCount} / ${rule.cycleCount} 期` : `已入帳 ${confirmedCount} 期`}
+                    </p>
+                  </div>
+                  {rule.cycleCount ? (
+                    <div className="mt-2">
+                      <ProgressBar pct={(confirmedCount / rule.cycleCount) * 100} tone={finished ? "positive" : "brand"} />
+                    </div>
+                  ) : null}
+
+                  {linkedGoal && <p className={`mt-2 ${text.muted}`}>🎯 同時存入「{linkedGoal.name}」</p>}
+                  {nextDate && <p className={`mt-1 ${text.muted}`}>下次預計入帳：{nextDate}</p>}
+
+                  {!selection.selecting && (
+                    <div className="mt-2 flex items-center justify-end">
+                      <Button variant="ghost" onClick={() => handleToggleActive(rule)}>
+                        {rule.active ? "暫停" : "恢復"}
+                      </Button>
+                    </div>
+                  )}
                 </CardBody>
               </Card>
             );

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Modal } from "./modal";
+import { Modal, ModalFooter } from "./modal";
+import { AmountKeypad, evaluateExpr } from "./amount-keypad";
+import { IconButton } from "./icon-button";
 import { Button, SegmentedControl } from "./button";
 import { IconImg } from "./icon-img";
 import { PetSprite, type PetStage } from "./pet-sprite";
@@ -52,14 +54,23 @@ export function PetShopModal({
   stage: PetStage;
   /** 最近一次動作的提示文字，彈窗開著的時候原本頁面底下的訊息看不到，這裡另外顯示一份。 */
   message?: string | null;
-  onAct: (action: "buy" | "equip", itemId: string) => void;
+  /** 食物可以一次買好幾份，count 只對食物有意義（服裝／背景固定一份）。 */
+  onAct: (action: "buy" | "equip", itemId: string, count?: number) => void;
 }) {
   const [kind, setKind] = useState<PetItemKind>("食物");
   const [selected, setSelected] = useState<string | null>(null);
+  // 要買幾份（只有食物會用到）。選別的品項時歸 1，不要把上一個品項的數量帶過去。
+  const [qty, setQty] = useState(1);
+  // 直接打數字用的小鍵盤彈窗——不用原生 <input type="number">：它在手機上會跳出系統鍵盤，
+  // 跟記帳本其他輸入金額的地方（新增交易、存入、對帳）用的自製鍵盤長得完全不一樣。
+  const [qtyKeypadOpen, setQtyKeypadOpen] = useState(false);
   const items = PET_ITEMS.filter((i) => i.kind === kind);
   const outfit = petItemById(pet.outfitId);
   const selectedItem = selected ? petItemById(selected) : undefined;
-  const canAfford = selectedItem ? pet.coins >= selectedItem.price : false;
+  const isFood = selectedItem?.kind === "食物";
+  // 食物看的是「買這麼多份夠不夠」，不是單價夠不夠。
+  const totalPrice = selectedItem ? selectedItem.price * (isFood ? qty : 1) : 0;
+  const canAfford = selectedItem ? pet.coins >= totalPrice : false;
 
   function handleTileClick(item: PetItem) {
     const wearable = wearableState(item, pet);
@@ -70,11 +81,12 @@ export function PetShopModal({
       return;
     }
     setSelected(item.id);
+    setQty(1);
   }
 
   function confirmBuy() {
     if (!selectedItem) return;
-    onAct("buy", selectedItem.id);
+    onAct("buy", selectedItem.id, isFood ? qty : 1);
     // 服裝／背景一買就直接換上，選取面板的任務結束；食物保持選取，方便連續多買幾份。
     if (selectedItem.kind !== "食物") setSelected(null);
   }
@@ -99,15 +111,32 @@ export function PetShopModal({
               )}
               <div className="min-w-0">
                 <p className={`truncate ${text.body}`}>{selectedItem.name}</p>
-                <p className={text.muted}>{selectedItem.price === 0 ? "免費" : `⭐ ${selectedItem.price}`}</p>
+                {/* 買好幾份時顯示的是總價——單價寫在商品格子上，這裡要回答的是「這次要花多少」。 */}
+                <p className={text.muted}>{totalPrice === 0 ? "免費" : `⭐ ${totalPrice}`}</p>
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
+              {/* 數量：減、數字、加。數字本身可以點，開小鍵盤直接打（一次買 20 份時
+                  按 19 下加號太荒謬）。只有食物有數量，服裝／背景買一份就永久擁有。 */}
+              {isFood && (
+                <span className="flex shrink-0 items-center gap-1">
+                  <IconButton icon="minus" tone="soft" size={28} iconSize={11} aria-label="減少一份" disabled={qty <= 1} onClick={() => setQty((n) => Math.max(1, n - 1))} />
+                  <button
+                    type="button"
+                    onClick={() => setQtyKeypadOpen(true)}
+                    aria-label="輸入數量"
+                    className="min-w-9 rounded-full bg-[#F3EFFC] px-2 py-1 text-sm font-semibold tabular-nums text-[#4A3B7C]"
+                  >
+                    {qty}
+                  </button>
+                  <IconButton icon="plus" tone="soft" size={28} iconSize={11} aria-label="增加一份" disabled={qty >= 99} onClick={() => setQty((n) => Math.min(99, n + 1))} />
+                </span>
+              )}
               <Button variant="ghost" onClick={() => setSelected(null)}>
                 取消
               </Button>
               <Button disabled={!canAfford} onClick={confirmBuy}>
-                確認購買
+                儲存
               </Button>
             </div>
           </div>
@@ -143,6 +172,51 @@ export function PetShopModal({
           <ShopTile key={item.id} item={item} pet={pet} selected={item.id === selected} onClick={() => handleTileClick(item)} />
         ))}
       </div>
+
+      {/* key 綁目前數量：彈窗是常駐掛著、只靠 open 切換顯示的，不換 key 的話裡面的
+          useState 只會在第一次掛載時初始化，第二次打開看到的還是上一次的數字。 */}
+      <QtyKeypadModal key={`qty-${qty}`} open={qtyKeypadOpen} initial={qty} onClose={() => setQtyKeypadOpen(false)} onSave={setQty} />
+    </Modal>
+  );
+}
+
+/** 直接打數量用的小鍵盤彈窗——跟記帳本其他輸入金額的地方（新增交易、存入、對帳）同一個
+ *  AmountKeypad，不用原生 `<input type="number">`：那個在手機上跳的是系統鍵盤，跟整個
+ *  記帳本的輸入體驗對不上，而且在這種第二層彈窗裡還會把版面頂掉。 */
+function QtyKeypadModal({
+  open,
+  initial,
+  onClose,
+  onSave,
+}: {
+  open: boolean;
+  initial: number;
+  onClose: () => void;
+  onSave: (qty: number) => void;
+}) {
+  const [expr, setExpr] = useState(String(initial));
+  const value = evaluateExpr(expr);
+  // 1～99，跟伺服器端的上限一致（見 app/api/expenses/pet/route.ts）。
+  const canSave = Number.isFinite(value) && value >= 1 && value <= 99;
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="要買幾份"
+      stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} label="數量" prefix="" />}
+      footer={
+        <ModalFooter
+          onClose={onClose}
+          onConfirm={() => {
+            onSave(Math.floor(value));
+            onClose();
+          }}
+          confirmDisabled={!canSave}
+        />
+      }
+    >
+      <></>
     </Modal>
   );
 }

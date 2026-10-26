@@ -60,7 +60,6 @@ export function ReconcileModal({
             return onSave({ categoryId, amount: adjustment.amount, date, note: "對帳調整" });
           }}
           confirmDisabled={!canSave}
-          confirmLabel="補上調整"
         />
       }
     >

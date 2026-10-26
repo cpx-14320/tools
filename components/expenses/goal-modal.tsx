@@ -78,10 +78,12 @@ export function GoalModal({
       }
     >
       <Field label="名稱">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如「日本旅遊基金」" className={fieldInputClass} />
+        <input value={name} onChange={(e) => setName(e.target.value)} className={fieldInputClass} />
       </Field>
       <GoalIconPicker value={icon} onChange={setIcon} />
-      <AmountField label="目標金額" value={targetAmountNum} active={target === "target"} onFocus={() => setTarget("target")} />
+      {/* placeholder 留空：欄位本來就標著「目標金額」，再寫一次「點這裡用下方鍵盤輸入」
+          只是把同一件事說兩遍。 */}
+      <AmountField label="目標金額" value={targetAmountNum} active={target === "target"} onFocus={() => setTarget("target")} placeholder="" />
       {!isEdit && (
         <AmountField
           label="目前已經存了多少（可不填，預設 0）"
@@ -118,16 +120,11 @@ export function ContributeModal({ open, onClose, onSave }: { open: boolean; onCl
       onClose={onClose}
       title="存入"
       stickyBottom={<AmountKeypad expr={amount} onExprChange={setAmount} label="這次要存入多少" />}
-      footer={
-        <ModalFooter
-          onClose={onClose}
-          onConfirm={() => onSave(amountNum)}
-          confirmDisabled={!canSave}
-          confirmLabel="確認存入"
-        />
-      }
+      footer={<ModalFooter onClose={onClose} onConfirm={() => onSave(amountNum)} confirmDisabled={!canSave} />}
     >
-      <p className={`${text.muted} leading-relaxed`}>用下方的鍵盤輸入這次要存入的金額。</p>
+      {/* 內容區刻意留空：金額直接在下方那個固定鍵盤上輸入，再寫一行「用下方的鍵盤輸入」
+          等於把看得到的東西再講一次。 */}
+      <></>
     </Modal>
   );
 }
