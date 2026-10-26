@@ -147,7 +147,8 @@ export function PetView() {
       <div>
         <PageHeader title="養成" />
         <CardSkeleton className="mb-4">
-          <div className="h-40 w-full animate-pulse rounded-2xl bg-[#EDE6FB]" />
+          {/* 骨架跟著場地的 16:9 走（見下面的 aspect-[16/9]）。 */}
+          <div className="aspect-[16/9] w-full animate-pulse rounded-2xl bg-[#EDE6FB]" />
           <div className="mt-3">
             <SkeletonBar width={56} height={14} />
             <SkeletonBar width={140} height={12} className="mt-1.5" />
@@ -220,7 +221,7 @@ export function PetView() {
           {/* 場地高度固定，角色置中；換背景、換裝都只是換這塊的底色跟角色色相，版面
               不會跟著變動。角色本身是固定 110px（見 PetSprite 的 size），所以場地不用
               跟著螢幕寬度長成一個很大的正方形——那只會在角色四周留一大片空白。 */}
-          <div className="grid h-40 w-full place-items-center rounded-2xl p-3" style={{ background: petBackground(pet?.backgroundId ?? "") }}>
+          <div className="grid aspect-[16/9] w-full place-items-center rounded-2xl p-3" style={{ background: petBackground(pet?.backgroundId ?? "") }}>
             <PetSprite stage={petStage(level.level)} mood={mood} hueRotate={outfit?.hueRotate ?? 0} />
           </div>
 

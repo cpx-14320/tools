@@ -281,7 +281,6 @@ export function TransactionModal({
                 <input
                   value={item.label}
                   onChange={(e) => updateBreakdownItem(i, { label: e.target.value })}
-                  placeholder="例如「本薪」「勞保費」"
                   className={`${fieldInputClass} flex-1`}
                 />
                 <button type="button" onClick={() => removeBreakdownItem(i)} className="shrink-0 text-xs font-medium text-[#D1517E]">

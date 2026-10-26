@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import { categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "./categories";
 import { deleteBudgetRulesForCategories } from "./budgets.server";
+import { ICON_UNCATEGORIZED } from "./presets";
 
 interface CategoryDoc {
   _id: ObjectId;
@@ -213,7 +214,7 @@ async function ensureUncategorized(userId: ObjectId, kind: CategoryKind): Promis
     _id: new ObjectId(),
     userId,
     name: "未分類",
-    icon: "📦",
+    icon: ICON_UNCATEGORIZED,
     color: "f",
     kind,
     parentId: null,

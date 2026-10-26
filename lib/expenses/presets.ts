@@ -24,6 +24,11 @@ import type { AccountKind } from "./account-types";
 /** 沒有專屬圖檔時共用的佔位圖——收入分類、支出分類、帳戶類型三種情境共用這一張。 */
 export const ICON_OTHER = "/expenses/category-other.png";
 
+/** 「未分類」專用的圖——刪掉還有紀錄在用的分類時，那些紀錄會被收容到這裡
+ *  （見 categories.server.ts 的 ensureUncategorized）。圖檔還沒放進 public/expenses，
+ *  在那之前 IconAvatar 會顯示漸層佔位，不會壞版。 */
+export const ICON_UNCATEGORIZED = "/expenses/category-uncategorized.png";
+
 export const expenseCategoryIcon = (slug: string) => `/expenses/expenses-category-${slug}.png`;
 export const incomeCategoryIcon = (slug: string) => `/expenses/income-category-${slug}.png`;
 export const accountIcon = (slug: string) => `/expenses/account-${slug}.png`;
@@ -136,16 +141,22 @@ const EXTRA_EXPENSE_ICONS: IconOption[] = [
   { path: expenseCategoryIcon("subscription"), label: "訂閱" },
 ];
 
-export const EXPENSE_ICON_OPTIONS: IconOption[] = [
+/** 同一張圖只留第一筆——選擇器是用 path 當 React key 的，重複的話畫面上會出現兩顆一模
+ *  一樣的圖、而且 React 會噴 "Encountered two children with the same key"。 */
+const dedupeByPath = (all: IconOption[]) => all.filter((opt, i) => all.findIndex((o) => o.path === opt.path) === i);
+
+/** EXTRA_EXPENSE_ICONS 裡的甜點／服飾／保養品／寵物／電話費／帳單／訂閱，跟
+ *  PRESET_EXPENSE_CATEGORIES 用的是同一張圖，所以這裡一定要去重。 */
+export const EXPENSE_ICON_OPTIONS: IconOption[] = dedupeByPath([
   ...PRESET_EXPENSE_CATEGORIES.filter((c) => c.icon !== ICON_OTHER).map((c) => ({ path: c.icon, label: c.name })),
   ...EXTRA_EXPENSE_ICONS,
   { path: ICON_OTHER, label: "其他" },
-];
+]);
 
-export const INCOME_ICON_OPTIONS: IconOption[] = [
+export const INCOME_ICON_OPTIONS: IconOption[] = dedupeByPath([
   ...PRESET_INCOME_CATEGORIES.filter((c) => c.icon !== ICON_OTHER).map((c) => ({ path: c.icon, label: c.name })),
   { path: ICON_OTHER, label: "其他" },
-];
+]);
 
 /** 預設類型以外、只拿來給使用者挑的帳戶類型圖——有圖檔但不會自動建立對應的類型，
  *  想用哪一張自己在新增類型時挑。label 是給讀螢幕軟體用的（選擇器只排圖、不顯示
@@ -159,11 +170,11 @@ const EXTRA_ACCOUNT_ICONS: IconOption[] = [
 /** 預設類型的圖排前面、額外的接在後面，同一張圖只出現一次——預設類型現在涵蓋了信用卡、
  *  房貸、車貸、學貸，跟 EXTRA_ACCOUNT_ICONS 原本列的那幾張重疊，不去重的話選擇器裡會
  *  有兩顆一模一樣的圖。 */
-export const ACCOUNT_ICON_OPTIONS: IconOption[] = [
+export const ACCOUNT_ICON_OPTIONS: IconOption[] = dedupeByPath([
   ...PRESET_ACCOUNTS.map((a) => ({ path: a.icon, label: a.name })),
   ...EXTRA_ACCOUNT_ICONS,
   { path: ICON_OTHER, label: "其他" },
-].filter((opt, i, all) => all.findIndex((o) => o.path === opt.path) === i);
+]);
 
 /** 圖示字串是圖片路徑還是表情符號——舊資料（改版前使用者自己建的分類）存的是表情符號，
  *  新的預設資料跟選擇器存的是 `/expenses/...png` 路徑，顯示時要分開處理。 */

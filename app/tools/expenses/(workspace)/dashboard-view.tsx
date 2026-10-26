@@ -360,11 +360,11 @@ export function DashboardView() {
               >
                 <ListProgressRow
                   icon={row.icon}
-                  iconClassName="bg-[#E3F6EC] text-[#2FAE82]"
+                  iconClassName={categoryColorClass[row.color]}
                   name={row.name}
                   amount={income.mask(formatCurrency(row.amount))}
                   pct={row.pct}
-                  barColorClass="bg-[#2FAE82]"
+                  barColorClass={categoryFillClass[row.color]}
                 />
               </Link>
             ))}

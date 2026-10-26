@@ -102,10 +102,12 @@ export function SegmentedControl<T extends string>({
   className?: string;
   /** 容器改用 flex＋每個選項 flex-1，選項會平均等分寬度，不是跟著文字內容走。 */
   fullWidth?: boolean;
-  /** "lg" 用比預設寬、高一點的 padding——報表頁的支出/收入/淨額切換要比同頁的日/週/月/年明顯大一階。 */
-  size?: "sm" | "lg";
+  /** "lg" 用比預設寬、高一點的 padding——報表頁的支出/收入/淨額切換要比同頁的日/週/月/年
+   *  明顯大一階。"xs" 反過來，左右再收窄一點，給「要跟旁邊的東西擠在同一列」的情況用
+   *  （日期篩選的日/月/年/全部/自訂＋期間膠囊）。 */
+  size?: "xs" | "sm" | "lg";
 }) {
-  const sizeClass = size === "lg" ? "px-4 py-2.5 text-sm" : "px-3.5 py-1.5 text-xs";
+  const sizeClass = size === "lg" ? "px-4 py-2.5 text-sm" : size === "xs" ? "px-2.5 py-1.5 text-xs" : "px-3.5 py-1.5 text-xs";
   return (
     <div className={`${fullWidth ? "flex" : "inline-flex"} items-center gap-0.5 rounded-full bg-[#F3EFFC] p-1 ${className}`}>
       {options.map((o) => (

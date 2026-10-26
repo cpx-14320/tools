@@ -17,6 +17,15 @@ const MODES: { value: DateFilterMode; label: string }[] = [
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
+/** 期間膠囊的文字——是今年就不寫年份。
+ *
+ *  「2026/10」「2026/10/27」太長，跟左邊那排日／月／年／全部／自訂加起來超過一列的寬度，
+ *  在手機上會折成兩行。而看帳本九成的時間都停在今年，年份是一個幾乎不會變的前綴，
+ *  省掉之後「10 月」「10/27」就塞得進同一列；真的翻到別的年份才補回年份，不會看錯。 */
+function periodLabel(year: number, thisYear: number, parts: string[]): string {
+  return year === thisYear ? parts.join("/") : [String(year), ...parts].join("/");
+}
+
 /** 從 `YYYY-MM-DD` 取出年月。選了自訂區間時 year/month 也要跟著更新——「本月預算」那種
  *  以月為單位的卡片是讀 filter.year/month（見 referenceYearMonth），不更新的話畫面上
  *  會變成期間寫著 10 月、預算卡卻還停在 9 月。 */
@@ -79,13 +88,16 @@ export function DateFilterPicker({ className = "", compact = false }: { classNam
   const { filter, setFilter, setMode } = useDateFilter();
   const [dayPickerOpen, setDayPickerOpen] = useState(false);
   const [rangePickerOpen, setRangePickerOpen] = useState(false);
+  // 「今年」掛載時算一次固定住——在 render 當中讀時鐘是不純的（年份本身一整年都一樣，
+  // 伺服器端與瀏覽器端算出來的值不會不同，不會造成 hydration 不一致）。
+  const [thisYear] = useState(() => new Date().getFullYear());
 
   if (compact) return <CompactDateFilterPicker className={className} />;
 
   return (
     <div className={className}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <SegmentedControl value={filter.mode} onChange={setMode} options={MODES} />
+        <SegmentedControl size="xs" value={filter.mode} onChange={setMode} options={MODES} />
 
         {filter.mode === "year" && (
           <PeriodNav
@@ -97,7 +109,7 @@ export function DateFilterPicker({ className = "", compact = false }: { classNam
 
         {filter.mode === "month" && (
           <PeriodNav
-            label={`${filter.year}/${pad2(filter.month)}`}
+            label={filter.year === thisYear ? `${filter.month} 月` : `${filter.year}/${pad2(filter.month)}`}
             onPrev={() => {
               const d = new Date(filter.year, filter.month - 2, 1);
               setFilter({ ...filter, year: d.getFullYear(), month: d.getMonth() + 1 });
@@ -111,7 +123,7 @@ export function DateFilterPicker({ className = "", compact = false }: { classNam
 
         {filter.mode === "day" && (
           <PeriodNav
-            label={`${filter.year}/${pad2(filter.month)}/${pad2(filter.day)}`}
+            label={periodLabel(filter.year, thisYear, [pad2(filter.month), pad2(filter.day)])}
             onPrev={() => setFilter({ ...filter, ...shiftDay(filter.year, filter.month, filter.day, -1) })}
             onNext={() => setFilter({ ...filter, ...shiftDay(filter.year, filter.month, filter.day, 1) })}
             onLabelClick={() => setDayPickerOpen(true)}

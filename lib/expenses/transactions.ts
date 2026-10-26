@@ -130,10 +130,12 @@ export function incomeBreakdown(incomeTx: TransactionDTO[], categories: Category
     const topId = topLevelCategoryId(categories, t.categoryId);
     byCategory.set(topId, (byCategory.get(topId) ?? 0) + t.amount);
   }
-  const rows: { id: string; name: string; icon: string; amount: number }[] = [];
+  // 帶上 color：首頁的收入來源本來把每一列都畫成同一個綠色，等於無視使用者在收支分類
+  // 裡替每個分類挑的顏色（支出那邊的預算清單一直都是照分類顏色畫的，兩邊不一致）。
+  const rows: { id: string; name: string; icon: string; color: CategoryDTO["color"]; amount: number }[] = [];
   for (const c of topLevelCategories(categories, "收入")) {
     const amount = byCategory.get(c.id) ?? 0;
-    if (amount > 0) rows.push({ id: c.id, name: c.name, icon: c.icon, amount });
+    if (amount > 0) rows.push({ id: c.id, name: c.name, icon: c.icon, color: c.color, amount });
   }
   const total = rows.reduce((sum, r) => sum + r.amount, 0) || 1;
   return rows.sort((a, b) => b.amount - a.amount).map((row) => ({ ...row, pct: Math.round((row.amount / total) * 100) }));
