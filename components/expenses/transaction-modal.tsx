@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
+import { SelectField } from "./select-field";
 import { DateField } from "./date-field";
 import { AccountPickerModal } from "./account-picker-modal";
 import { CategoryGridPicker } from "./category-grid-picker";
@@ -260,13 +261,9 @@ export function TransactionModal({
       {/* 帳戶跟備註直接攤開，不再收在「＋ 更多」裡：帳戶幾乎每一筆都要選，多一次展開
           等於每記一筆就多按一下。只有明細維持收合——那是薪資那種少數情況才用的東西。 */}
           <Field label="帳戶（可不填）">
-            <button type="button" onClick={() => setAccountPickerOpen(true)} className={`${fieldInputClass} text-left`}>
-              {/* 只有名稱、不放類型圖示：這一欄顯示的是「哪一個帳戶」，圖示是帳戶類型的，
-                  同一種類型底下好幾個帳戶會掛同一張圖，分辨不出任何東西。 */}
-              <span className={selectedAccount ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}>
-                {selectedAccount ? selectedAccount.name : "不指定帳戶"}
-              </span>
-            </button>
+            {/* 只有名稱、不放類型圖示：這一欄顯示的是「哪一個帳戶」，圖示是帳戶類型的，
+                同一種類型底下好幾個帳戶會掛同一張圖，分辨不出任何東西。 */}
+            <SelectField value={selectedAccount?.name} placeholder="不指定帳戶" onClick={() => setAccountPickerOpen(true)} />
           </Field>
           <Field label="備註（可不填）">
             <input value={note} onChange={(e) => setNote(e.target.value)} className={fieldInputClass} />

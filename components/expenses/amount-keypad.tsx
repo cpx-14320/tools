@@ -1,6 +1,7 @@
 "use client";
 
-import { Field, fieldInputClass } from "./modal";
+import { Field } from "./modal";
+import { SelectField } from "./select-field";
 import { gradient } from "./theme";
 import { formatCurrency } from "@/lib/format";
 
@@ -175,11 +176,11 @@ export function AmountField({
   onFocus: () => void;
   placeholder?: string;
 }) {
+  // 跟日期、帳戶那幾欄共用同一顆 SelectField，樣式才會完全一致（含 placeholder 的顏色、
+  // 還有「placeholder 是空字串時不要塌成 0 高」這件事）。
   return (
     <Field label={label}>
-      <button type="button" onClick={onFocus} className={`${fieldInputClass} text-left tabular-nums ${active ? "border-[#6F5FD6] bg-[#F9F7FE]" : ""}`}>
-        <span className={value ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}>{value ? formatCurrency(value) : placeholder}</span>
-      </button>
+      <SelectField value={value ? formatCurrency(value) : undefined} placeholder={placeholder} active={active} onClick={onFocus} className="tabular-nums" />
     </Field>
   );
 }

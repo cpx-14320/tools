@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { SegmentedControl } from "./button";
 import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
+import { SelectField } from "./select-field";
 import { CategoryColorPicker, CategoryIconPicker, DEFAULT_PICKER_ICON } from "./category-field-pickers";
 import { AccountPickerModal } from "./account-picker-modal";
 import { categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
@@ -116,11 +117,7 @@ export function CategoryModal({
               {/* 跟新增消費紀錄挑帳戶用同一個 AccountPickerModal，不用原生 <select>：
                   原生選單在手機上是作業系統自己的滾輪，樣式跟整個記帳本格格不入，而且
                   只剩一行純文字，看不到帳戶的類型圖示、也分不出資產還負債。 */}
-              <button type="button" onClick={() => setAccountPickerOpen(true)} className={`${fieldInputClass} text-left`}>
-                <span className={selectedAccount ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}>
-                  {selectedAccount ? selectedAccount.name : "不指定"}
-                </span>
-              </button>
+              <SelectField value={selectedAccount?.name} placeholder="不指定" onClick={() => setAccountPickerOpen(true)} />
             </Field>
           )}
         </>

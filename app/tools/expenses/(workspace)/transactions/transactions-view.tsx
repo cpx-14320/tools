@@ -304,8 +304,10 @@ export function TransactionsView() {
           <p className={`mb-2 ${text.label}`}>分類</p>
           <div className="grid grid-cols-5 gap-x-1 gap-y-2.5">
             <button type="button" onClick={() => setCategoryFilter("")} className="flex flex-col items-center gap-1 py-0.5">
+              {/* 圖檔還沒放進 public/expenses，先指到之後要放的檔名；在那之前 IconAvatar
+                  會顯示漸層佔位，不會壞版。 */}
               <IconAvatar
-                icon="全"
+                icon="/expenses/income-category-all.png"
                 size="sm"
                 className={`bg-[#F3EFFC] text-[#6F5FD6] ${!categoryFilter ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`}
               />

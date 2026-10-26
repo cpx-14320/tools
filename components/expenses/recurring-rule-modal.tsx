@@ -7,6 +7,7 @@ import { DateField } from "./date-field";
 import { CategoryGridPicker } from "./category-grid-picker";
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { CategoryBatchModal, type CategoryBatchItem } from "./category-batch-modal";
+import { text } from "./theme";
 import { categoryPath, needsSubcategory, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 import type { RecurrenceFrequencyUnit } from "@/lib/expenses/recurring-rules";
 import type { SavingsGoalDTO } from "@/lib/expenses/goals";
@@ -167,24 +168,23 @@ export function RecurringRuleModal({
       <Field label="頻率">
         <SegmentedControl className="self-start" value={frequencyUnit} onChange={setFrequencyUnit} options={FREQUENCY_OPTIONS} />
       </Field>
-      <Field label="每隔幾個單位（例如每 2 週填 2）">
-        <input type="number" min={1} value={interval} onChange={(e) => setInterval_(e.target.value)} className={fieldInputClass} />
-      </Field>
+      {/* 間隔跟循環次數兩欄一列：兩個都是「這條規則要重複幾次、隔多久」的數字，並排
+          才看得出是一組；各佔一整列會把彈窗拉長到要捲動。標籤縮短成兩個字，不然兩欄
+          各自會擠成兩行——詳細說明收到底下那行小字。 */}
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="間隔">
+          <input type="number" min={1} value={interval} onChange={(e) => setInterval_(e.target.value)} className={fieldInputClass} />
+        </Field>
+        <Field label="循環次數">
+          <input type="number" min={1} value={cycleCount} onChange={(e) => setCycleCount(e.target.value)} className={fieldInputClass} />
+        </Field>
+      </div>
+      <p className={`-mt-1 ${text.faint}`}>間隔是「每隔幾個單位來一次」（每 2 週就填 2）。循環次數留空＝無限期循環，房租這種沒有結束日的就不用填。</p>
 
       <Field label="開始日期">
         <DateField value={startDate} onChange={setStartDate} />
       </Field>
-      <Field label="循環次數（留空＝無限期循環，例如房租）">
-        <input
-          type="number"
-          min={1}
-          placeholder="留空＝無限期"
-          value={cycleCount}
-          onChange={(e) => setCycleCount(e.target.value)}
-          className={fieldInputClass}
-        />
-      </Field>
-      <Field label="備註（可不填，例如「手機月租・綁約 2 年」）">
+      <Field label="備註（可不填）">
         <input value={note} onChange={(e) => setNote(e.target.value)} className={fieldInputClass} />
       </Field>
 

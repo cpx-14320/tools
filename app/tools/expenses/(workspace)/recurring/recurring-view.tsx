@@ -376,16 +376,27 @@ export function RecurringView() {
                       {rule.note && <p className={`mt-0.5 truncate ${text.muted}`}>{rule.note}</p>}
                     </div>
 
+                    {/* 鉛筆＝編輯、暫停／恢復＝停掉或重啟這條規則，兩顆同一種風格排在右上角。
+                        原本「暫停」是卡片最下面一顆文字鈕，跟上面的編輯入口離很遠。 */}
                     {!selection.selecting && (
-                      <IconButton
-                        icon="pen"
-                        tone="soft"
-                        size={32}
-                        iconSize={13}
-                        className="self-start"
-                        aria-label={`編輯${category?.name ?? "固定收支"}`}
-                        onClick={() => setModal({ mode: "edit", rule })}
-                      />
+                      <span className="flex shrink-0 items-center gap-1 self-start">
+                        <IconButton
+                          icon="pen"
+                          tone="soft"
+                          size={32}
+                          iconSize={13}
+                          aria-label={`編輯${category?.name ?? "固定收支"}`}
+                          onClick={() => setModal({ mode: "edit", rule })}
+                        />
+                        <IconButton
+                          icon={rule.active ? "pause" : "play"}
+                          tone="soft"
+                          size={32}
+                          iconSize={13}
+                          aria-label={rule.active ? `暫停${category?.name ?? "固定收支"}` : `恢復${category?.name ?? "固定收支"}`}
+                          onClick={() => handleToggleActive(rule)}
+                        />
+                      </span>
                     )}
                   </div>
 
@@ -408,13 +419,6 @@ export function RecurringView() {
                   {linkedGoal && <p className={`mt-2 ${text.muted}`}>🎯 同時存入「{linkedGoal.name}」</p>}
                   {nextDate && <p className={`mt-1 ${text.muted}`}>下次預計入帳：{nextDate}</p>}
 
-                  {!selection.selecting && (
-                    <div className="mt-2 flex items-center justify-end">
-                      <Button variant="ghost" onClick={() => handleToggleActive(rule)}>
-                        {rule.active ? "暫停" : "恢復"}
-                      </Button>
-                    </div>
-                  )}
                 </CardBody>
               </Card>
             );

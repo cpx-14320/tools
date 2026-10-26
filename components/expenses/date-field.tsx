@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { DatePickerModal, type DateGranularity } from "./date-picker-modal";
-import { fieldInputClass } from "./modal";
+import { SelectField } from "./select-field";
 
 function formatLabel(value: string, granularity: DateGranularity): string {
   const [y, m, d] = value.split("-");
@@ -33,14 +33,8 @@ export function DateField({
 
   return (
     <>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen(true)}
-        className={`${fieldInputClass} text-left disabled:opacity-60 ${className}`}
-      >
-        <span className={label ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}>{label || placeholder}</span>
-      </button>
+      {/* 跟帳戶、金額那幾欄共用同一顆 SelectField，樣式統一在那裡維護。 */}
+      <SelectField value={label || undefined} placeholder={placeholder} disabled={disabled} onClick={() => setOpen(true)} className={className} />
       {/* 只在打開的時候才掛上去：DatePickerModal 的年／月／日是 useState 初始值，元件
           一直掛著的話只會在第一次讀 initial，之後欄位的值變了（或換成編輯另一筆資料）
           再打開看到的還是上一次留下來的年月日。 */}

@@ -188,13 +188,14 @@ export function GoalsView() {
                   {/* 圖示跟文字垂直置中（items-center）；鉛筆用 self-start 吊在區塊右上角，
                       不要跟著一起置中——它是這張卡的操作入口，釘在角落才不會隨文字行數浮動。 */}
                   <div className="flex items-center gap-3">
-                    {selection.selecting ? (
+                    {/* 選取模式下打勾圓點排在圖示左邊，圖示不要換掉——少了圖只剩文字，
+                        一整排目標長得一模一樣，很難確認自己勾的是哪一個。 */}
+                    {selection.selecting && (
                       <button type="button" onClick={() => selection.toggle(goal.id)} className="shrink-0">
                         <SelectionDot selected={selection.selectedIds.has(goal.id)} />
                       </button>
-                    ) : (
-                      <IconAvatar icon={goal.icon} />
                     )}
+                    <IconAvatar icon={goal.icon} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         {selection.selecting ? (

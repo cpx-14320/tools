@@ -90,7 +90,7 @@ export function GoalModal({
           value={currentAmountNum}
           active={target === "current"}
           onFocus={() => setTarget("current")}
-          placeholder="還沒存就不用填"
+          placeholder=""
         />
       )}
       {/* 起訖兩欄一列：它們是同一件事的兩端，並排才看得出是一段期間；上下排的話中間還隔

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
+import { SelectField } from "./select-field";
 import { DateField } from "./date-field";
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { InlineIcon } from "./icon-avatar";
@@ -29,23 +30,13 @@ export interface TransferModalDraft {
  *  的 accountBalance）。比照新增交易彈窗同一套「主彈窗＋最多一層」原則：轉出/轉入
  *  帳戶各自用同一個 AccountPickerModal（唯一允許的第二層），金額用共用的小算盤，
  *  不再另外跳窗。 */
-/** 帳戶的圖示＋名稱——圖示現在是圖片路徑，不能再直接接進字串裡當文字輸出。 */
-function AccountLabel({
-  id,
-  accounts,
-  accountTypes,
-  placeholder,
-}: {
-  id: string;
-  accounts: AccountDTO[];
-  accountTypes: AccountTypeDTO[];
-  placeholder: string;
-}) {
+/** 帳戶的圖示＋名稱；還沒選的話回傳 undefined，交給 SelectField 去顯示未選的提示。 */
+function accountLabel(id: string, accounts: AccountDTO[], accountTypes: AccountTypeDTO[]) {
   const account = accounts.find((a) => a.id === id);
-  if (!account) return <span className="text-[#B3ABD4]">{placeholder}</span>;
+  if (!account) return undefined;
   const icon = accountTypeById(accountTypes, account.accountTypeId)?.icon ?? "";
   return (
-    <span className="flex items-center gap-1.5 text-[#4A3B7C]">
+    <span className="flex items-center gap-1.5">
       {icon && <InlineIcon icon={icon} />}
       {account.name}
     </span>
@@ -126,14 +117,10 @@ export function TransferModal({
           看得出方向；而且各佔一整列會把彈窗拉長到要捲動。 */}
       <div className="grid grid-cols-2 gap-3">
         <Field label="從（轉出帳戶）">
-          <button type="button" onClick={() => setPickingFrom(true)} className={`${fieldInputClass} truncate text-left`}>
-            <AccountLabel id={fromAccountId} accounts={accounts} accountTypes={accountTypes} placeholder="選擇帳戶" />
-          </button>
+          <SelectField value={accountLabel(fromAccountId, accounts, accountTypes)} placeholder="選擇帳戶" onClick={() => setPickingFrom(true)} />
         </Field>
         <Field label="到（轉入帳戶）">
-          <button type="button" onClick={() => setPickingTo(true)} className={`${fieldInputClass} truncate text-left`}>
-            <AccountLabel id={toAccountId} accounts={accounts} accountTypes={accountTypes} placeholder="選擇帳戶" />
-          </button>
+          <SelectField value={accountLabel(toAccountId, accounts, accountTypes)} placeholder="選擇帳戶" onClick={() => setPickingTo(true)} />
         </Field>
       </div>
 
