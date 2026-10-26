@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { IconImg } from "@/components/expenses/icon-img";
 import { ICON_PATHS } from "@/components/expenses/icon-paths";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
+import { Badge } from "@/components/expenses/button";
 import { PageHeader } from "@/components/expenses/page-header";
 import { text } from "@/components/expenses/theme";
 import { TOOLS_REGISTRY } from "@/lib/tools-registry";
@@ -55,8 +56,25 @@ export function MoreView() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const otherTools = TOOLS_REGISTRY.filter((t) => t.toolId !== CURRENT_TOOL_ID && (user?.tools ?? []).includes(t.toolId));
+  // 固定收支有幾期到期還沒確認——只拿來在那一列右邊掛一顆數字徽章。到期的那幾期現在
+  // 不會自動入帳（見 recurring-rules.server.ts 的 listPendingOccurrences），不在這裡提示
+  // 的話，使用者要自己想到去固定收支頁才看得到。
+  const [pendingCount, setPendingCount] = useState(0);
   const [resetScope, setResetScope] = useState<ResetScope | null>(null);
   const [result, setResult] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/expenses/recurring-rules/pending")
+      .then((res) => res.json())
+      .then((data: { pending?: unknown[] }) => {
+        if (!cancelled) setPendingCount(data.pending?.length ?? 0);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleLogout() {
     await logout();
@@ -93,6 +111,9 @@ export function MoreView() {
                     <span className={`block ${text.body}`}>{item.label}</span>
                     <span className={`block ${text.muted}`}>{item.desc}</span>
                   </span>
+                  {item.href === "/tools/expenses/recurring" && pendingCount > 0 && (
+                    <Badge tone="negative">{pendingCount} 筆待確認</Badge>
+                  )}
                   <span aria-hidden className="text-[#C7BFE6]">
                     ›
                   </span>

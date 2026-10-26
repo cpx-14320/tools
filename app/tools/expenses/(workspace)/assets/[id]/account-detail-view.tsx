@@ -7,7 +7,7 @@ import { IconButton } from "@/components/expenses/icon-button";
 import { BackLink } from "@/components/expenses/back-link";
 import { Card, CardBody } from "@/components/expenses/card";
 import { DeltaBadge } from "@/components/expenses/delta-badge";
-import { IconAvatar, InlineIcon } from "@/components/expenses/icon-avatar";
+import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
 import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { text } from "@/components/expenses/theme";
@@ -242,18 +242,10 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* 標題底下不再重複「圖示＋類型名稱」：類型的圖示就掛在下面那張餘額卡的右上角，
+          而且多數帳戶跟它的類型同名（新增帳戶會自動帶類型名），等於把同一個詞寫兩次。 */}
       <PageHeader
         title={account.name}
-        description={
-          type ? (
-            <span className="flex items-center gap-1.5">
-              <InlineIcon icon={type.icon} />
-              {type.name}
-            </span>
-          ) : (
-            "（未知類型）"
-          )
-        }
         actions={
           <div className="flex items-center gap-2">
             {/* 鉛筆走 Font Awesome，不用 emoji ✏️——emoji 在不同系統長得不一樣，

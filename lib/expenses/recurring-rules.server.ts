@@ -15,6 +15,10 @@ interface RecurringRuleDoc {
   cycleCount?: number;
   active: boolean;
   linkedGoalId?: ObjectId;
+  /** 使用者按「略過」的那幾期（發生日期 YYYY-MM-DD）。略過＝這一期不入帳、也不要再
+   *  出現在待確認清單裡（那個月剛好停用電話、沒繳房租…）。沒有這個欄位的話，不想要的
+   *  那一期會一直掛在待確認區催下去。 */
+  skippedDates?: string[];
   createdAt: Date;
 }
 
@@ -146,23 +150,62 @@ async function confirmOneOccurrence(userId: ObjectId, rule: RecurringRuleDoc, oc
   }
 }
 
-/** 固定收支到期自動入帳——由 app/tools/expenses/layout.tsx 在使用者每次進入記帳本任何
- *  頁面時呼叫，不是靠真的排程器。多久沒開都沒關係，缺的那幾期會一次全部依序補齊；
- *  沒有任何到期但還沒入帳的期數就完全不寫資料庫。 */
-export async function autoConfirmDueOccurrences(userId: ObjectId): Promise<void> {
+/** 已經到期、但還沒入帳也還沒被略過的那幾期。
+ *
+ *  以前這些是在使用者每次打開記帳本時自動寫進交易紀錄的（autoConfirmDueOccurrences，
+ *  已移除）。問題是「固定」收支其實沒那麼固定——電話費每個月金額不一樣、這個月房東
+ *  調租、某個月根本沒扣款，自動入帳會默默生出跟實際不符的紀錄，而且使用者不會發現。
+ *  改成列出來等使用者按確認，才有機會在入帳前改金額或直接略過。 */
+export async function listPendingOccurrences(
+  userId: ObjectId,
+): Promise<{ ruleId: string; categoryId: string; amount: number; note?: string; date: string }[]> {
   const col = await collection();
   const rules = await col.find({ userId, active: true }).toArray();
-  if (rules.length === 0) return;
+  if (rules.length === 0) return [];
 
   const today = todayInTaipei();
+  const out: { ruleId: string; categoryId: string; amount: number; note?: string; date: string }[] = [];
   for (const rule of rules) {
     const confirmed = await listConfirmedOccurrences(userId, rule._id.toHexString());
-    const pending = occurrencesUpTo(
+    const skipped = new Set(rule.skippedDates ?? []);
+    for (const occ of occurrencesUpTo(
       { startDate: rule.startDate, frequencyUnit: rule.frequencyUnit, interval: rule.interval, cycleCount: rule.cycleCount },
       today,
-    ).filter((occ) => !confirmed.has(occ.date));
-    for (const occ of pending) {
-      await confirmOneOccurrence(userId, rule, occ.date);
+    )) {
+      if (confirmed.has(occ.date) || skipped.has(occ.date)) continue;
+      out.push({
+        ruleId: rule._id.toHexString(),
+        categoryId: rule.categoryId.toHexString(),
+        amount: rule.amount,
+        note: rule.note,
+        date: occ.date,
+      });
     }
+  }
+  // 舊的排前面：補好幾個月的時候，由遠到近一期一期確認比較符合直覺。
+  return out.sort((a, b) => (a.date < b.date ? -1 : 1));
+}
+
+/** 確認其中幾期，真正寫成交易紀錄。
+ *
+ *  `amount` 可以由呼叫端覆寫——待確認清單上可以當場改金額（這個月電話費比較貴），
+ *  改過的值只影響這一筆交易，規則本身的預設金額不動。 */
+export async function confirmOccurrences(
+  userId: ObjectId,
+  items: { ruleId: string; date: string; amount?: number }[],
+): Promise<void> {
+  const col = await collection();
+  for (const item of items) {
+    const rule = await col.findOne({ _id: new ObjectId(item.ruleId), userId });
+    if (!rule) continue;
+    await confirmOneOccurrence(userId, { ...rule, amount: item.amount ?? rule.amount }, item.date);
+  }
+}
+
+/** 略過其中幾期——不入帳，也不再出現在待確認清單。$addToSet 所以重複按不會長出重複值。 */
+export async function skipOccurrences(userId: ObjectId, items: { ruleId: string; date: string }[]): Promise<void> {
+  const col = await collection();
+  for (const item of items) {
+    await col.updateOne({ _id: new ObjectId(item.ruleId), userId }, { $addToSet: { skippedDates: item.date } });
   }
 }

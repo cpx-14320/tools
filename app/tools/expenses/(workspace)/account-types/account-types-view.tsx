@@ -10,6 +10,7 @@ import { AccountTypeModal, type AccountTypeModalDraft } from "@/components/expen
 import { AccountTypeBatchModal, type AccountTypeBatchItem } from "@/components/expenses/account-type-batch-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
+import { SortArrows, SortToggle } from "@/components/expenses/sort-controls";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { accountTypesByKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { categoryColorClass } from "@/lib/expenses/categories";
@@ -27,6 +28,8 @@ export function AccountTypesView() {
   // 擋下來的理由（刪不掉、或資產/負債換不了）直接存成一句話——兩種情況的說明不一樣，
   // 存 inUseCount 再在畫面上拼字串的話只能講刪除那一種。
   const [blockedInfo, setBlockedInfo] = useState<{ message: string } | null>(null);
+  // 排序模式：每一列右邊長出 ↑↓。跟多選模式互斥（理由同收支分類頁）。
+  const [sorting, setSorting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -130,6 +133,38 @@ export function AccountTypesView() {
     ready ? [assetTypes.length, liabilityTypes.length] : undefined,
   );
 
+  /** 把 group（資產或負債其中一段）裡第 index 筆往上／往下移一格。
+   *
+   *  跟收支分類頁同一套：先改本地畫面再送出，送的是那一段排好的完整 id 順序。
+   *  資產跟負債各自是一段，不會互相跨越——要換邊是改類型本身的資產/負債，不是排序。 */
+  async function move(group: AccountTypeDTO[], index: number, delta: number) {
+    const target = index + delta;
+    if (target < 0 || target >= group.length) return;
+    const nextGroup = [...group];
+    [nextGroup[index], nextGroup[target]] = [nextGroup[target], nextGroup[index]];
+    const nextIds = nextGroup.map((t) => t.id);
+
+    // accountTypes 這個陣列本身就是顯示順序（伺服器已照 kind+order 排好），本地端要
+    // 立刻反映只要把這一段原本佔的那幾個位置按新順序填回去。
+    const positions = group.map((g) => accountTypes.findIndex((t) => t.id === g.id)).sort((a, b) => a - b);
+    const byId = new Map(accountTypes.map((t) => [t.id, t]));
+    const nextAll = [...accountTypes];
+    nextIds.forEach((id, i) => {
+      const found = byId.get(id);
+      if (found) nextAll[positions[i]] = found;
+    });
+    setAccountTypes(nextAll);
+
+    const data: { accountTypes?: AccountTypeDTO[] } = await fetch("/api/expenses/account-types/order", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: nextIds }),
+    })
+      .then((res) => res.json())
+      .catch(() => ({}));
+    if (data.accountTypes) setAccountTypes(data.accountTypes);
+  }
+
   /** 資產／負債各一段：小標、清單，每一列是「類型名稱＋底下掛了幾個帳戶」。 */
   function section(title: string, types: AccountTypeDTO[]) {
     if (types.length === 0) return null;
@@ -140,14 +175,25 @@ export function AccountTypesView() {
             資產還是負債），那是跟月份無關的定義。「這個類型有多少錢、佔多少比例」是
             分析，在資產總表看（那裡有月份、佔比進度條，還連著底下是哪幾個帳戶）。 */}
         <ListCard>
-          {types.map((t) => (
+          {types.map((t, i) => (
             <ListRow
               key={t.id}
               icon={t.icon}
               iconClassName={categoryColorClass[t.color]}
               name={t.name}
+              // 排序模式下右邊長出 ↑↓，只在自己這一段（資產或負債）裡面移動。
+              right={
+                sorting ? (
+                  <SortArrows
+                    onUp={() => move(types, i, -1)}
+                    onDown={() => move(types, i, 1)}
+                    canUp={i > 0}
+                    canDown={i < types.length - 1}
+                  />
+                ) : undefined
+              }
               leading={selection.selecting ? <SelectionDot selected={selection.selectedIds.has(t.id)} /> : undefined}
-              onClick={() => (selection.selecting ? selection.toggle(t.id) : setModal(t))}
+              onClick={sorting ? undefined : () => (selection.selecting ? selection.toggle(t.id) : setModal(t))}
             />
           ))}
         </ListCard>
@@ -164,7 +210,25 @@ export function AccountTypesView() {
         title="帳戶類型"
         // 這一頁現在是從「設定」進來的，標題列不再掛「返回資產總表」那顆箭頭——
         // 指回一個不是上一頁的地方只會讓人迷路，要回去按瀏覽器/系統的返回就好。
-        actions={<SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />}
+        actions={
+          // 排序跟選取兩個模式互斥，開一個就把另一個關掉。
+          <div className="flex shrink-0 items-center gap-2">
+            <SortToggle
+              sorting={sorting}
+              onToggle={() => {
+                if (!sorting) selection.exit();
+                setSorting((v) => !v);
+              }}
+            />
+            <SelectionToggle
+              selecting={selection.selecting}
+              onToggle={() => {
+                if (!selection.selecting) setSorting(false);
+                selection.toggleMode();
+              }}
+            />
+          </div>
+        }
       />
 
       <FloatingAddButton onClick={() => setBatchOpen(true)} label="新增帳戶類型" />

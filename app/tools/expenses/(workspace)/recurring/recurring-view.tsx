@@ -33,6 +33,16 @@ function todayISO(): string {
 
 type ModalState = { mode: "create" } | { mode: "edit"; rule: RecurringRuleDTO };
 
+/** 一期已經到期、等使用者確認的固定收支（見 lib/expenses/recurring-rules.server.ts
+ *  的 listPendingOccurrences）。 */
+interface PendingOccurrence {
+  ruleId: string;
+  categoryId: string;
+  amount: number;
+  note?: string;
+  date: string;
+}
+
 export function RecurringView() {
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const skeletonReady = useSkeletonReady();
@@ -47,6 +57,10 @@ export function RecurringView() {
   // 跟消費分類頁一樣用支出／收入分頁切換——固定收支兩種都會有（房租 vs 薪水），
   // 混在同一份清單裡要自己用金額顏色分辨，分頁之後一次只看一種。
   const [kind, setKind] = useState<CategoryKind>("支出");
+  // 到期但還沒入帳的那幾期。以前是進記帳本就自動寫進交易紀錄，現在改成列在這裡等確認。
+  const [pending, setPending] = useState<PendingOccurrence[]>([]);
+  // 正在送出的那幾期（"ruleId|date"），避免連點送出兩次、按鈕也變成不能按。
+  const [busy, setBusy] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -55,19 +69,22 @@ export function RecurringView() {
       fetch("/api/expenses/transactions").then((res) => res.json()),
       fetch("/api/expenses/recurring-rules").then((res) => res.json()),
       fetch("/api/expenses/goals").then((res) => res.json()),
+      fetch("/api/expenses/recurring-rules/pending").then((res) => res.json()),
     ])
       .then(
-        ([categoriesData, txData, rulesData, goalsData]: [
+        ([categoriesData, txData, rulesData, goalsData, pendingData]: [
           { categories?: CategoryDTO[] },
           { transactions?: TransactionDTO[] },
           { rules?: RecurringRuleDTO[] },
           { goals?: SavingsGoalDTO[] },
+          { pending?: PendingOccurrence[] },
         ]) => {
           if (cancelled) return;
           setCategories(categoriesData.categories ?? []);
           setTransactions(txData.transactions ?? []);
           setRules(rulesData.rules ?? []);
           setGoals(goalsData.goals ?? []);
+          setPending(pendingData.pending ?? []);
           setReady(true);
         },
       )
@@ -78,6 +95,25 @@ export function RecurringView() {
       cancelled = true;
     };
   }, []);
+
+  /** 確認或略過其中幾期。送出後伺服器會回傳新的待確認清單跟交易紀錄，直接換上。 */
+  async function resolvePending(action: "confirm" | "skip", items: { ruleId: string; date: string }[]) {
+    const keys = items.map((it) => `${it.ruleId}|${it.date}`);
+    setBusy((set) => new Set([...set, ...keys]));
+    const data: { pending?: PendingOccurrence[]; transactions?: TransactionDTO[] } = await fetch(
+      "/api/expenses/recurring-rules/pending",
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, items }) },
+    )
+      .then((res) => res.json())
+      .catch(() => ({}));
+    if (data.pending) setPending(data.pending);
+    if (data.transactions) setTransactions(data.transactions);
+    setBusy((set) => {
+      const next = new Set(set);
+      for (const k of keys) next.delete(k);
+      return next;
+    });
+  }
 
   async function handleSave(draft: RecurringRuleModalDraft) {
     if (!modal) return;
@@ -195,6 +231,67 @@ export function RecurringView() {
           onCancel={selection.exit}
           onDelete={() => setDeleteConfirm([...selection.selectedIds])}
         />
+      )}
+
+      {/* 待確認：到期但還沒入帳的那幾期。排在清單最上面、而且不分支出／收入分頁——
+          它是「現在要你處理的事」，被分頁藏起來等於沒有提醒到。全部處理完就整張消失。 */}
+      {ready && pending.length > 0 && !selection.selecting && (
+        <Card className="mb-4">
+          <CardBody>
+            <div className="flex items-center justify-between gap-2">
+              <p className={text.sectionHeading}>待確認 {pending.length} 筆</p>
+              <Button
+                variant="secondary"
+                className="shrink-0"
+                disabled={busy.size > 0}
+                onClick={() => resolvePending("confirm", pending.map(({ ruleId, date }) => ({ ruleId, date })))}
+              >
+                全部確認
+              </Button>
+            </div>
+            <p className={`mt-1 ${text.muted}`}>確認後才會寫進消費紀錄。金額跟實際不一樣的話，先略過再手動記一筆。</p>
+
+            <div className="mt-3 flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA]">
+              {pending.map((p) => {
+                const category = categoryById(categories, p.categoryId);
+                const isIncome = category?.kind === "收入";
+                const key = `${p.ruleId}|${p.date}`;
+                const isBusy = busy.has(key);
+                return (
+                  <div key={key} className="flex items-center gap-3 px-4 py-3">
+                    <IconAvatar icon={category?.icon ?? ""} size="sm" className={category ? categoryColorClass[category.color] : undefined} />
+                    <div className="min-w-0 flex-1">
+                      <p className={`truncate ${text.body}`}>{p.note || category?.name || "（已刪除分類）"}</p>
+                      <p className={text.muted}>{p.date}</p>
+                    </div>
+                    <span className={`shrink-0 tabular-nums text-sm font-semibold ${isIncome ? "text-[#2FAE82]" : "text-[#4A3B7C]"}`}>
+                      {isIncome ? "＋" : "－"}
+                      {formatCurrency(p.amount)}
+                    </span>
+                    <span className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => resolvePending("skip", [{ ruleId: p.ruleId, date: p.date }])}
+                        className="rounded-full px-2 py-1 text-xs font-medium text-[#9C94C4] disabled:opacity-50"
+                      >
+                        略過
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => resolvePending("confirm", [{ ruleId: p.ruleId, date: p.date }])}
+                        className="rounded-full bg-[#F3EFFC] px-3 py-1 text-xs font-medium text-[#6F5FD6] disabled:opacity-50"
+                      >
+                        確認
+                      </button>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardBody>
+        </Card>
       )}
 
       {!skeletonReady ? null : !ready ? (

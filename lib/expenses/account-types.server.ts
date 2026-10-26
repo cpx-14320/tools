@@ -69,6 +69,21 @@ export async function createAccountType(
   return { accountType: toDTO(doc), accountTypes };
 }
 
+/** 重排帳戶類型——`ids` 是那一段（資產或負債）排好的完整順序，`order` 直接寫成陣列索引。
+ *  做法跟 categories.server.ts 的 reorderCategories 一樣，理由也一樣（整串重寫是冪等的，
+ *  順便把 order 正規化）。 */
+export async function reorderAccountTypes(userId: ObjectId, ids: string[]): Promise<AccountTypeDTO[]> {
+  if (ids.length > 0) {
+    const col = await collection();
+    await col.bulkWrite(
+      ids.map((id, index) => ({
+        updateOne: { filter: { _id: new ObjectId(id), userId }, update: { $set: { order: index } } },
+      })),
+    );
+  }
+  return listAccountTypes(userId);
+}
+
 /** 資產／負債只有在「還沒有任何帳戶掛在這個類型底下」時才能改。
  *
  *  不是不想讓人改，是改了之後算出來的錢會是錯的：帳戶餘額的正負號看的就是它所屬類型的

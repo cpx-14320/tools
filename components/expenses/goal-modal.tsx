@@ -91,12 +91,18 @@ export function GoalModal({
           placeholder="還沒存就不用填"
         />
       )}
-      <Field label="開始日期（可不填，純顯示用）">
-        <DateField value={startDate} onChange={setStartDate} placeholder="不設定" />
-      </Field>
-      <Field label="目標日期（可不填）">
-        <DateField value={targetDate} onChange={setTargetDate} placeholder="不設期限" />
-      </Field>
+      {/* 起訖兩欄一列：它們是同一件事的兩端，並排才看得出是一段期間；上下排的話中間還隔
+          著一行標籤，像兩個不相干的欄位。標籤也跟著縮短，不然兩欄會各自擠成兩行
+          ——「可不填」三個字統一收到下面那行說明。 */}
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="開始日期">
+          <DateField value={startDate} onChange={setStartDate} placeholder="不設定" />
+        </Field>
+        <Field label="目標日期">
+          <DateField value={targetDate} onChange={setTargetDate} placeholder="不設期限" />
+        </Field>
+      </div>
+      <p className={`-mt-1 ${text.faint}`}>兩個都可以不填。開始日期純顯示用，目標日期會用來算「平均每週要存多少」。</p>
     </Modal>
   );
 }
