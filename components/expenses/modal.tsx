@@ -5,8 +5,11 @@ import { createPortal } from "react-dom";
 import { Button } from "./button";
 import { text } from "./theme";
 
+// placeholder 的顏色寫在這裡，不要讓瀏覽器自己配灰色：同一列裡常常一邊是真 input、
+// 一邊是假成輸入框的 SelectField（它的提示文字是自己畫的 #B3ABD4，見 select-field.tsx），
+// 兩種灰擺在一起會看得出不是同一種欄位。
 export const fieldInputClass =
-  "w-full rounded-2xl border border-[#ECE4FA] bg-white px-4 py-2.5 text-sm text-[#4A3B7C] outline-none focus:border-[#6F5FD6]";
+  "w-full rounded-2xl border border-[#ECE4FA] bg-white px-4 py-2.5 text-sm text-[#4A3B7C] outline-none placeholder:text-[#B3ABD4] focus:border-[#6F5FD6]";
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (

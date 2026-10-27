@@ -7,19 +7,18 @@ import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/com
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { useSearchParams } from "next/navigation";
-import { SegmentedControl, PillButton } from "@/components/expenses/button";
+import { SegmentedControl } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
-import { DeltaBadge } from "@/components/expenses/delta-badge";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
+import { LineIconButton } from "@/components/expenses/line-icon-button";
 import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
 import { text } from "@/components/expenses/theme";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
-import { ComparePicker } from "@/components/expenses/compare-picker";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { BreakdownToggle, TransactionBreakdown } from "@/components/expenses/transaction-breakdown";
-import { compareDateFilter, compareLabel, dateFilterRange, defaultDateFilter } from "@/lib/expenses/date-filter";
+import { dateFilterRange, defaultDateFilter } from "@/lib/expenses/date-filter";
 import { isValidYearMonth } from "@/lib/expenses/budgets";
 import { Modal, ModalFooter, fieldInputClass } from "@/components/expenses/modal";
 import {
@@ -32,16 +31,14 @@ import {
   type CategoryKind,
 } from "@/lib/expenses/categories";
 import {
-  transactionsInDateRange,
   totalsForRange,
-  rangeDelta,
   transactionDisplayName,
   type TransactionDTO,
 } from "@/lib/expenses/transactions";
 import { type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDateWithWeekday } from "@/lib/format";
 
 function matchesQuery(t: TransactionDTO, categories: CategoryDTO[], query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -51,7 +48,7 @@ function matchesQuery(t: TransactionDTO, categories: CategoryDTO[], query: strin
 }
 
 export function TransactionsView() {
-  const { filter, setFilter, compare } = useDateFilter();
+  const { filter, setFilter } = useDateFilter();
   // 首頁那幾個區塊的「查看全部」會帶 ?kind=收入 過來、點某一類的列會再多帶
   // &categoryId=xxx，直接幫使用者切到對的分頁並且篩好分類，不用進來之後再點一次。
   const searchParams = useSearchParams();
@@ -134,7 +131,6 @@ export function TransactionsView() {
 
   // 分類篩選比對的是「頂層分類」，所以選「餐飲」時連它底下的子分類（早餐…）也會留下來。
   const inCategoryFilter = (t: TransactionDTO) => !categoryFilter || topLevelCategoryId(categories, t.categoryId) === categoryFilter;
-  const filterCategory = categoryFilter ? categoryById(categories, categoryFilter) : undefined;
 
   // 空字串＝那一邊不設限；填了不是數字的東西也當成沒設限，不要讓清單忽然全空。
   const minNum = Number(minAmount);
@@ -151,15 +147,8 @@ export function TransactionsView() {
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 
   const total = rows.reduce((sum, t) => sum + t.amount, 0);
-  // 「跟誰比」由使用者選的比較基準決定，徽章後綴也跟著換（vs 上期／vs 去年同期…）。
-  const baseline = compareDateFilter(filter, compare);
-  const deltaSuffix = compareLabel(filter, compare);
-  const delta = rangeDelta(
-    (r) => totalsForRange(transactions, categories, r)[kind === "支出" ? "totalExpense" : "totalIncome"],
-    filter,
-    (r) => transactionsInDateRange(transactions, r).length > 0,
-    baseline,
-  );
+  // 這一頁刻意不做跟上一期的比較：它是「翻這段期間的每一筆」的地方，合計卡只負責講
+  // 這段期間總共多少。期間之間的漲跌要看就去報表頁，比較基準的選擇器也只留在那裡。
 
   // 多選刪除：可以選的就是「現在畫面上這批」（已經過分頁、搜尋、篩選），全選才不會把
   // 看不到的紀錄也一起選進來——跟收支分類頁同一套（見 selection-bar.tsx）。
@@ -243,7 +232,21 @@ export function TransactionsView() {
 
   return (
     <div>
-      <DateFilterPicker className="mb-4" />
+      {/* 篩選掛在日期篩選器同一列最右邊：期間跟篩選條件都是「這份清單要看什麼」，擺在
+          一起就不用為了一顆按鈕再多一排。有設條件時圖示變實心紫底（跟分類的名稱一起
+          顯示在彈窗裡），一眼看得出清單是被篩過的。 */}
+      <DateFilterPicker
+        className="mb-4"
+        actions={
+          <LineIconButton
+            icon="filter"
+            active={filterCount > 0}
+            onClick={() => setFilterOpen(true)}
+            aria-label={filterCount > 0 ? `篩選（${filterCount} 個條件）` : "篩選"}
+            title="篩選"
+          />
+        }
+      />
 
       {/* 這一頁本來只能編輯既有紀錄，要新增得先回首頁——但看著清單想到「啊還有一筆沒記」
           才是最常見的時機。跟首頁同一顆浮動鈕、同一個彈窗。 */}
@@ -355,8 +358,8 @@ export function TransactionsView() {
         </div>
       </Modal>
 
-      {/* 支出／收入切換、分類篩選、比較基準排同一列——三個都是「這份清單要看什麼」的
-          開關，拆成兩三列反而要找。PillButton 跟 SegmentedControl 等高，並排不會一高一低。 */}
+      {/* 支出／收入切換跟多選排同一列。篩選本來也在這一列，改成圖示之後搬去日期那一排
+          （見上面的 DateFilterPicker actions）。 */}
       <div className="mb-4 flex items-center gap-2">
         <SegmentedControl
           value={kind}
@@ -368,12 +371,6 @@ export function TransactionsView() {
         />
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
           <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />
-          {/* 分類篩選：有選的時候按鈕變實心＋顯示分類名稱，一眼看得出清單是被篩過的。 */}
-          <PillButton onClick={() => setFilterOpen(true)} active={filterCount > 0}>
-            <span className="max-w-[64px] truncate">{filterCategory ? filterCategory.name : "篩選"}</span>
-            {filterCount > 1 && <span className="tabular-nums">+{filterCount - 1}</span>}
-          </PillButton>
-          <ComparePicker />
         </div>
       </div>
 
@@ -416,7 +413,7 @@ export function TransactionsView() {
         // 合計卡只有「這段期間真的有紀錄」時才會出現（見下面 rows.length > 0 那段），所以
         // 上次是空的（shape 是空陣列）就不要畫，不然骨架會比真的畫面多出一整張卡。
         <div className="flex flex-col gap-4">
-          {skeletonShape.length > 0 && <SummaryCardSkeleton delta />}
+          {skeletonShape.length > 0 && <SummaryCardSkeleton />}
           <DateGroupsSkeleton shape={skeletonShape} />
         </div>
       ) : (
@@ -428,12 +425,9 @@ export function TransactionsView() {
           ) : (
             rows.length > 0 && (
               <Card className="mb-4">
-                <CardBody className="flex items-center justify-between py-3.5">
-                  <div>
-                    <p className={text.muted}>這段期間共{kind === "支出" ? "花費" : "收入"}</p>
-                    <p className={`mt-0.5 ${text.statValue}`}>{formatCurrency(total)}</p>
-                  </div>
-                  {delta && <DeltaBadge delta={delta.delta} pct={delta.pct} goodWhenUp={kind === "收入"} suffix={deltaSuffix} />}
+                <CardBody className="py-3.5">
+                  <p className={text.muted}>這段期間共{kind === "支出" ? "花費" : "收入"}</p>
+                  <p className={`mt-0.5 ${text.statValue}`}>{formatCurrency(total)}</p>
                 </CardBody>
               </Card>
             )
@@ -452,7 +446,7 @@ export function TransactionsView() {
                   {/* 日期右邊掛當天的小計——只有「這段期間總共花多少」的話，要知道某一天花了
                       多少還得自己把那幾列加起來。金額的正負號跟下面每一列一致。 */}
                   <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
-                    <p className={`font-medium ${text.muted}`}>{date}</p>
+                    <p className={`font-medium ${text.muted}`}>{formatDateWithWeekday(date)}</p>
                     {/* 跟左邊的日期同一個字級字色——當天小計是這一組的標頭資訊，不是要跟
                         下面每一列的金額搶眼睛。 */}
                     <p className={`font-medium tabular-nums ${text.muted}`}>

@@ -1,7 +1,7 @@
-// 日期區間篩選（年／月／日／全部／自訂）。純邏輯、不碰資料庫，伺服器端（API route）跟
+// 日期區間篩選（天／週／月／年／全部／自訂）。純邏輯、不碰資料庫，伺服器端（API route）跟
 // client component 都能直接 import。原本待在 mock-data.ts 裡，搬過來後內容不變。
 
-export type DateFilterMode = "year" | "month" | "day" | "all" | "custom";
+export type DateFilterMode = "year" | "month" | "week" | "day" | "all" | "custom";
 
 export interface DateFilter {
   mode: DateFilterMode;
@@ -40,6 +40,20 @@ export function referenceYearMonth(f: DateFilter): string {
   return `${f.year}-${pad2(f.month)}`;
 }
 
+const toISO = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+/** 週模式看的是哪一段——以 year/month/day 這個「基準日」所在的那一週，週日起、週六止。
+ *
+ *  週模式沒有自己的欄位，直接借用日模式的那三個：天跟週切來切去時基準日不會跑掉（今天
+ *  看 10/28，切到週就是 10/28 那一週，切回天還是 10/28）。週起始日是週日，跟月曆
+ *  （calendar.tsx 的 WEEKDAYS 從「日」開始）一致，不然同一個 App 裡兩種週界線。 */
+export function weekRangeOf(year: number, month: number, day: number): DateRange {
+  const anchor = new Date(year, month - 1, day);
+  const start = new Date(year, month - 1, day - anchor.getDay());
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+  return { start: toISO(start), end: toISO(end) };
+}
+
 export function dateFilterRange(f: DateFilter): DateRange | null {
   switch (f.mode) {
     case "all":
@@ -50,6 +64,8 @@ export function dateFilterRange(f: DateFilter): DateRange | null {
       const lastDay = new Date(f.year, f.month, 0).getDate();
       return { start: `${f.year}-${pad2(f.month)}-01`, end: `${f.year}-${pad2(f.month)}-${pad2(lastDay)}` };
     }
+    case "week":
+      return weekRangeOf(f.year, f.month, f.day);
     case "day": {
       const d = `${f.year}-${pad2(f.month)}-${pad2(f.day)}`;
       return { start: d, end: d };
@@ -68,8 +84,8 @@ export function shiftYearMonth(yearMonth: string, delta: number): string {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
 }
 
-/** vs 上一期的「上一期」是什麼意思，依模式而定：年模式比去年、月模式比上個月、日模式比前一天；
- *  全部／自訂沒有明確的「上一期」，回傳 null（畫面上就不顯示比較）。 */
+/** vs 上一期的「上一期」是什麼意思，依模式而定：年模式比去年、月模式比上個月、週模式比上週、
+ *  天模式比前一天；全部／自訂沒有明確的「上一期」，回傳 null（畫面上就不顯示比較）。 */
 export function previousDateFilter(f: DateFilter): DateFilter | null {
   switch (f.mode) {
     case "year":
@@ -79,8 +95,10 @@ export function previousDateFilter(f: DateFilter): DateFilter | null {
       const [y, m] = ym.split("-").map(Number);
       return { ...f, year: y, month: m };
     }
+    case "week":
     case "day": {
-      const d = new Date(f.year, f.month - 1, f.day - 1);
+      // 週模式往前移七天、天模式往前移一天，兩者都是移同一個基準日（見 weekRangeOf）。
+      const d = new Date(f.year, f.month - 1, f.day - (f.mode === "week" ? 7 : 1));
       return { ...f, year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() };
     }
     default:
@@ -88,9 +106,10 @@ export function previousDateFilter(f: DateFilter): DateFilter | null {
   }
 }
 
-/** vs 上一期徽章要用的字——年模式講「vs 去年」、日模式講「vs 前一天」，其餘講「vs 上期」。 */
+/** vs 上一期徽章要用的字——年模式講「vs 去年」、天模式講「vs 前一天」，其餘講「vs 上期」。 */
 export function previousPeriodSuffix(mode: DateFilterMode): string {
   if (mode === "year") return "vs 去年";
+  if (mode === "week") return "vs 上週";
   if (mode === "day") return "vs 前一天";
   return "vs 上期";
 }

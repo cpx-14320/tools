@@ -272,15 +272,18 @@ export function TransactionModal({
       {hasBreakdown ? (
         <div className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
-            <span className={text.label}>明細（例如薪資的本薪／加班費／勞保／所得稅）</span>
+            <span className={text.label}>明細</span>
             <span className="text-sm font-semibold tabular-nums text-[#4A3B7C]">淨額 {formatCurrency(breakdownTotal)}</span>
           </div>
           {breakdown.map((item, i) => (
             <div key={i} className="flex flex-col gap-2 rounded-2xl border border-[#ECE4FA] p-3">
               <div className="flex items-center gap-2">
+                {/* 標籤那一欄的提示文字接手原本寫在區塊標題上的例子：「明細」兩個字講不出
+                    這裡要填什麼，placeholder 擺一個實際的項目名最直接。 */}
                 <input
                   value={item.label}
                   onChange={(e) => updateBreakdownItem(i, { label: e.target.value })}
+                  placeholder="例如：底薪"
                   className={`${fieldInputClass} flex-1`}
                 />
                 <button type="button" onClick={() => removeBreakdownItem(i)} className="shrink-0 text-xs font-medium text-[#D1517E]">
@@ -305,8 +308,11 @@ export function TransactionModal({
                     activeBreakdownIndex === i ? "border-[#6F5FD6] bg-[#F9F7FE]" : ""
                   }`}
                 >
+                  {/* 還沒輸入時就先顯示 NT$ 0，不寫「點這裡用下方鍵盤輸入」——這一欄長得
+                      就是金額欄，淡色的 NT$ 0 已經看得出是還沒填的狀態，而且數字的位置、
+                      寬度跟填完之後一致，不會在打第一個數字時整列跳動。 */}
                   <span className={item.amount ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}>
-                    {item.amount ? formatCurrency(item.amount) : "點這裡用下方鍵盤輸入"}
+                    {formatCurrency(item.amount || 0)}
                   </span>
                 </button>
               </div>

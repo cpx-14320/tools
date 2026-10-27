@@ -30,7 +30,7 @@ import { type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
 import { monthDaysLeft, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDateWithWeekday } from "@/lib/format";
 
 /** 首頁的主視覺＋底下那張蓋上來的白色內容面板，比照搭乘車首頁的版型
  *  （app/tools/transit/home-view.tsx）。
@@ -479,7 +479,7 @@ export function DashboardView() {
             {visibleRecentGroups.map(([date, items]) => (
               <div key={date}>
                 <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
-                  <p className={`font-medium ${text.muted}`}>{date}</p>
+                  <p className={`font-medium ${text.muted}`}>{formatDateWithWeekday(date)}</p>
                   <p className={`font-medium tabular-nums ${text.muted}`}>
                     {expense.hidden ? expense.mask("") : `－${formatCurrency(recentDayTotals.get(date) ?? 0)}`}
                   </p>

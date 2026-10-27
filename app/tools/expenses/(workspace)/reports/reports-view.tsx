@@ -364,13 +364,13 @@ export function ReportsView() {
     return (
       <div className="flex flex-col gap-4">
         <PageHeader title="報表" flush />
-        {/* 三排控制項：四個分頁（size="lg"）、日月年全部自訂、月份膠囊。高度要跟真的
-            一樣，不然資料回來時底下整塊會往下跳一截。後兩排是 DateFilterPicker 的
-            flex-wrap，在手機寬度會折成兩行。 */}
+        {/* 兩排控制項：四個分頁（size="lg"）、期間膠囊＋日曆圖示。高度要跟真的一樣，
+            不然資料回來時底下整塊會往下跳一截。期間單位那排頁籤收進日曆彈窗之後只剩
+            一排，所以這裡也只畫一排（見 date-filter-picker.tsx）。 */}
         <div className="h-[44px] animate-pulse rounded-full bg-[#EDE6FB]" />
-        <div className="flex flex-col gap-2">
-          <div className="h-[32px] w-[238px] animate-pulse rounded-full bg-[#EDE6FB]" />
-          <div className="h-[30px] w-[126px] animate-pulse rounded-full bg-[#EDE6FB]" />
+        <div className="flex items-center gap-2">
+          <div className="h-[34px] w-[116px] animate-pulse rounded-full bg-[#EDE6FB]" />
+          <div className="size-[32px] animate-pulse rounded-full bg-[#EDE6FB]" />
         </div>
         {kind === "資產" ? (
           // 淨資產一張、資產／負債兩張並排——間距是 gap-3 包在一起的，跟外層的 gap-4
@@ -574,7 +574,7 @@ export function ReportsView() {
       {kind !== "淨額" && (
         <Card>
           <CardBody>
-            <p className={text.sectionHeading}>明細</p>
+            <p className={text.sectionHeading}>分類佔比</p>
             {breakdown.length === 0 ? (
               <p className={`mt-3 ${text.muted}`}>這段期間還沒有{kind}紀錄。</p>
             ) : (

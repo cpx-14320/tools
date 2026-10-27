@@ -1,30 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { SegmentedControl } from "@/components/expenses/button";
+import { useState, type ReactNode } from "react";
+import { LineIconButton } from "@/components/expenses/line-icon-button";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { DatePickerModal } from "@/components/expenses/date-picker-modal";
 import { DateRangePickerModal } from "@/components/expenses/date-range-picker-modal";
-import type { DateFilterMode } from "@/lib/expenses/date-filter";
+import { Modal } from "@/components/expenses/modal";
+import { text } from "@/components/expenses/theme";
+import { weekRangeOf, type DateFilter, type DateFilterMode } from "@/lib/expenses/date-filter";
 
-const MODES: { value: DateFilterMode; label: string }[] = [
-  { value: "day", label: "日" },
-  { value: "month", label: "月" },
-  { value: "year", label: "年" },
-  { value: "all", label: "全部" },
-  { value: "custom", label: "自訂" },
+/** 彈窗裡那排可以選的期間單位。順序是從短到長，最後才是「全部」——翻帳本最常切的是
+ *  天／週／月，擺在手指最容易按到的上面幾列。 */
+const MODE_OPTIONS: { value: DateFilterMode; label: string; hint: string }[] = [
+  { value: "day", label: "天", hint: "一次看一天，箭頭一天一天翻" },
+  { value: "week", label: "週", hint: "週日到週六算一週，箭頭一週一週翻" },
+  { value: "month", label: "月", hint: "一次看一整個月" },
+  { value: "year", label: "年", hint: "一次看一整年" },
+  { value: "custom", label: "自訂", hint: "自己挑起訖日期，跨月跨年都可以" },
+  { value: "all", label: "全部", hint: "不分期間，從第一筆看到最後一筆" },
 ];
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
-
-/** 期間膠囊的文字——是今年就不寫年份。
- *
- *  「2026/10」「2026/10/27」太長，跟左邊那排日／月／年／全部／自訂加起來超過一列的寬度，
- *  在手機上會折成兩行。而看帳本九成的時間都停在今年，年份是一個幾乎不會變的前綴，
- *  省掉之後「10 月」「10/27」就塞得進同一列；真的翻到別的年份才補回年份，不會看錯。 */
-function periodLabel(year: number, thisYear: number, parts: string[]): string {
-  return year === thisYear ? parts.join("/") : [String(year), ...parts].join("/");
-}
 
 /** 從 `YYYY-MM-DD` 取出年月。選了自訂區間時 year/month 也要跟著更新——「本月預算」那種
  *  以月為單位的卡片是讀 filter.year/month（見 referenceYearMonth），不更新的話畫面上
@@ -38,29 +34,76 @@ function shiftDay(year: number, month: number, day: number, delta: number) {
   return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() };
 }
 
-/** 上一期／下一期的小箭頭 + 當前期間文字，統一這個樣式，年／月／日三種模式各自只是
- *  傳進來的文字跟換期邏輯不同。寬度跟著內容走（不是 w-full），才擠得進分類切換旁邊
- *  同一列。 */
+/** 膠囊上那一行字——現在看的是哪一段。
+ *
+ *  年份一律寫出來（`2026/10/28`、`2026/10`）：日／月／年那排頁籤收進日曆彈窗之後這一列
+ *  只剩膠囊跟兩顆圖示，寬度夠了，不用再像以前那樣「是今年就省掉年份」去擠版面——省年份
+ *  的代價是翻到別的年份時兩種寫法交替出現，反而要多看一眼才確定自己在哪一年。 */
+function periodLabel(f: DateFilter): string {
+  switch (f.mode) {
+    case "day":
+      return `${f.year}/${pad2(f.month)}/${pad2(f.day)}`;
+    case "week": {
+      const { start, end } = weekRangeOf(f.year, f.month, f.day);
+      const monthDay = (iso: string) => `${iso.slice(5, 7)}/${iso.slice(8, 10)}`;
+      // 同一年就只寫月日（`10/25-10/31`）。跨年的那一週才把年份補回來，不然
+      // 「12/27-01/02」看不出後面那幾天已經算下一年的了。
+      return start.slice(0, 4) === end.slice(0, 4)
+        ? `${monthDay(start)}-${monthDay(end)}`
+        : `${start.replaceAll("-", "/")}-${end.replaceAll("-", "/")}`;
+    }
+    case "month":
+      return `${f.year}/${pad2(f.month)}`;
+    case "year":
+      return `${f.year}`;
+    case "custom": {
+      // 自訂是兩個完整日期，寫成四位數年份會長到膠囊裝不下，年份只留後兩位
+      // （`26/10/01-26/10/31`）——起訖都在同一列，看得出是一段區間就夠了。
+      const short = (iso: string) => iso.slice(2).replaceAll("-", "/");
+      return `${short(f.customStart)}-${short(f.customEnd)}`;
+    }
+    case "all":
+      return "全部";
+  }
+}
+
+/** 上一期／下一期的小箭頭 + 當前期間文字。天／週／月／年四種模式只差在傳進來的文字跟
+ *  換期邏輯；「全部」沒有上下一期，箭頭傳 disabled（留著位子但是灰的，一眼看得出
+ *  這個模式不能翻）；「自訂」不傳 onPrev/onNext，整個箭頭就不畫——它的區間是使用者
+ *  自己挑的長度，往前一期要移幾天沒有合理的答案。
+ *
+ *  寬度跟著內容走（不是 w-full），才擠得進圖示按鈕旁邊同一列。 */
 function PeriodNav({
   label,
   onPrev,
   onNext,
   onLabelClick,
+  disabled = false,
   nextDisabled = false,
 }: {
   label: string;
-  onPrev: () => void;
-  onNext: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
   onLabelClick?: () => void;
-  /** 已經是最新的一期（例如本月）時把「下一期」變灰——還沒發生的月份沒有紀錄可以看。 */
+  /** 兩邊的箭頭都變灰（「全部」模式）。 */
+  disabled?: boolean;
+  /** 只有「下一期」變灰——已經是最新的一期（例如本月）時，還沒發生的月份沒紀錄可看。 */
   nextDisabled?: boolean;
 }) {
-  const arrowClass = "grid size-6 shrink-0 place-items-center rounded-full text-[#9C94C4] hover:bg-[#F3EFFC] hover:text-[#6F5FD6]";
+  const arrowClass =
+    "grid size-6 shrink-0 place-items-center rounded-full text-[#9C94C4] hover:bg-[#F3EFFC] hover:text-[#6F5FD6] disabled:pointer-events-none disabled:text-[#DDD6F3]";
+  const hasArrows = Boolean(onPrev || onNext);
   return (
-    <div className="flex shrink-0 items-center gap-1 rounded-full border border-[#ECE4FA] bg-white py-1 pl-1 pr-2">
-      <button type="button" onClick={onPrev} aria-label="上一期" className={arrowClass}>
-        ‹
-      </button>
+    <div
+      className={`flex shrink-0 items-center gap-1 rounded-full border border-[#ECE4FA] bg-white py-1 ${
+        hasArrows ? "pl-1 pr-2" : "px-3"
+      }`}
+    >
+      {hasArrows && (
+        <button type="button" onClick={onPrev} disabled={disabled} aria-label="上一期" className={arrowClass}>
+          ‹
+        </button>
+      )}
       {onLabelClick ? (
         <button type="button" onClick={onLabelClick} className="whitespace-nowrap text-sm font-semibold tabular-nums text-[#4A3B7C]">
           {label}
@@ -68,70 +111,113 @@ function PeriodNav({
       ) : (
         <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-[#4A3B7C]">{label}</span>
       )}
-      <button
-        type="button"
-        onClick={onNext}
-        disabled={nextDisabled}
-        aria-label="下一期"
-        className={`${arrowClass} disabled:pointer-events-none disabled:text-[#DDD6F3]`}
-      >
-        ›
-      </button>
+      {hasArrows && (
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={disabled || nextDisabled}
+          aria-label="下一期"
+          className={arrowClass}
+        >
+          ›
+        </button>
+      )}
     </div>
   );
 }
 
-/** 分類切換（年／月／日／全部／自訂）跟當前期間導覽並排在同一列——跟「趨勢」區塊的
- *  頻率切換＋標題同一種「一排放不下就自動換行」的排法（flex-wrap），不用另外處理
- *  窄螢幕的特例。「自訂」的起訖日期欄位比較寬，擺不進同一列，另外佔一整列。 */
-export function DateFilterPicker({ className = "", compact = false }: { className?: string; compact?: boolean }) {
+/** 期間膠囊 ＋ 日曆圖示一列。按日曆開彈窗挑期間單位（天／週／月／年／自訂／全部），
+ *  挑完就用膠囊的 ‹ › 一期一期翻、點中間的文字跳著挑。
+ *
+ *  本來這一列是「日／月／年/全部/自訂」五顆頁籤加一顆膠囊，在手機寬度一定折成兩行，
+ *  而且單位這種「設定好就很少再動」的東西佔掉的面積比每天都在按的 ‹ › 還大。改成單位
+ *  收進彈窗、列上只留現在看的這一段＋一顆日曆，省下一整列給下面的清單。
+ *
+ *  `actions` 是同一列最右邊可以外掛的按鈕（消費紀錄頁的篩選圖示）——那是「這份清單要
+ *  看什麼」的開關，跟期間是一組的，擺同一列才不用再多一排。 */
+export function DateFilterPicker({
+  className = "",
+  compact = false,
+  actions,
+}: {
+  className?: string;
+  compact?: boolean;
+  actions?: ReactNode;
+}) {
   const { filter, setFilter, setMode } = useDateFilter();
+  const [modeOpen, setModeOpen] = useState(false);
   const [dayPickerOpen, setDayPickerOpen] = useState(false);
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const [rangePickerOpen, setRangePickerOpen] = useState(false);
-  // 「今年」掛載時算一次固定住——在 render 當中讀時鐘是不純的（年份本身一整年都一樣，
-  // 伺服器端與瀏覽器端算出來的值不會不同，不會造成 hydration 不一致）。
-  const [thisYear] = useState(() => new Date().getFullYear());
 
   if (compact) return <CompactDateFilterPicker className={className} />;
 
+  // 天跟週共用同一個基準日，差別只在一次移幾天（見 date-filter.ts 的 weekRangeOf）。
+  const stepDays = filter.mode === "week" ? 7 : 1;
+  const shiftMonths = (delta: number) => {
+    const d = new Date(filter.year, filter.month - 1 + delta, 1);
+    setFilter({ ...filter, year: d.getFullYear(), month: d.getMonth() + 1 });
+  };
+
+  const nav = (() => {
+    switch (filter.mode) {
+      case "day":
+      case "week":
+        return {
+          onPrev: () => setFilter({ ...filter, ...shiftDay(filter.year, filter.month, filter.day, -stepDays) }),
+          onNext: () => setFilter({ ...filter, ...shiftDay(filter.year, filter.month, filter.day, stepDays) }),
+          onLabelClick: () => setDayPickerOpen(true),
+        };
+      case "month":
+        return { onPrev: () => shiftMonths(-1), onNext: () => shiftMonths(1), onLabelClick: () => setMonthPickerOpen(true) };
+      case "year":
+        return {
+          onPrev: () => setFilter({ ...filter, year: filter.year - 1 }),
+          onNext: () => setFilter({ ...filter, year: filter.year + 1 }),
+        };
+      case "all":
+        // 箭頭留著位子但按不動：這個模式本來就沒有上下一期。
+        return { onPrev: () => {}, onNext: () => {}, disabled: true };
+      case "custom":
+        // 不給箭頭，點文字開區間選擇器。
+        return { onLabelClick: () => setRangePickerOpen(true) };
+    }
+  })();
+
   return (
-    <div className={className}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <SegmentedControl size="xs" value={filter.mode} onChange={setMode} options={MODES} />
+    <div className={`flex items-center gap-2 ${className}`}>
+      <PeriodNav label={periodLabel(filter)} {...nav} />
+      <LineIconButton icon="calendar" onClick={() => setModeOpen(true)} aria-label="選擇期間" title="選擇期間" />
+      {actions}
 
-        {filter.mode === "year" && (
-          <PeriodNav
-            label={`${filter.year}`}
-            onPrev={() => setFilter({ ...filter, year: filter.year - 1 })}
-            onNext={() => setFilter({ ...filter, year: filter.year + 1 })}
-          />
-        )}
+      <Modal open={modeOpen} onClose={() => setModeOpen(false)} title="期間">
+        <p className={`${text.muted} leading-relaxed`}>這一頁的數字都是算這一段期間裡的紀錄。挑好單位之後，用日期膠囊的 ‹ › 一期一期翻。</p>
+        <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA]">
+          {MODE_OPTIONS.map((opt) => {
+            const active = filter.mode === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  setMode(opt.value);
+                  setModeOpen(false);
+                }}
+                className={`px-4 py-3 text-left ${active ? "bg-[#F9F7FE]" : ""}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className={`text-sm font-medium ${active ? "text-[#6F5FD6]" : "text-[#4A3B7C]"}`}>{opt.label}</span>
+                  {active && <span className="text-xs font-semibold text-[#6F5FD6]">使用中</span>}
+                </div>
+                <p className={`mt-0.5 ${text.faint}`}>{opt.hint}</p>
+              </button>
+            );
+          })}
+        </div>
+      </Modal>
 
-        {filter.mode === "month" && (
-          <PeriodNav
-            label={filter.year === thisYear ? `${filter.month} 月` : `${filter.year}/${pad2(filter.month)}`}
-            onPrev={() => {
-              const d = new Date(filter.year, filter.month - 2, 1);
-              setFilter({ ...filter, year: d.getFullYear(), month: d.getMonth() + 1 });
-            }}
-            onNext={() => {
-              const d = new Date(filter.year, filter.month, 1);
-              setFilter({ ...filter, year: d.getFullYear(), month: d.getMonth() + 1 });
-            }}
-          />
-        )}
-
-        {filter.mode === "day" && (
-          <PeriodNav
-            label={periodLabel(filter.year, thisYear, [pad2(filter.month), pad2(filter.day)])}
-            onPrev={() => setFilter({ ...filter, ...shiftDay(filter.year, filter.month, filter.day, -1) })}
-            onNext={() => setFilter({ ...filter, ...shiftDay(filter.year, filter.month, filter.day, 1) })}
-            onLabelClick={() => setDayPickerOpen(true)}
-          />
-        )}
-      </div>
-
-      {filter.mode === "day" && (
+      {/* 天／週都是挑一個日期：天就是那一天，週是「那一天所在的那一週」。 */}
+      {(filter.mode === "day" || filter.mode === "week") && (
         <DatePickerModal
           open={dayPickerOpen}
           initial={`${filter.year}-${pad2(filter.month)}-${pad2(filter.day)}`}
@@ -144,40 +230,44 @@ export function DateFilterPicker({ className = "", compact = false }: { classNam
         />
       )}
 
+      {/* granularity="month"：選年、選月兩步就結束，不會再跳到選日。 */}
+      {filter.mode === "month" && (
+        <DatePickerModal
+          open={monthPickerOpen}
+          granularity="month"
+          initial={`${filter.year}-${pad2(filter.month)}`}
+          onClose={() => setMonthPickerOpen(false)}
+          onSave={(v) => {
+            const [y, m] = v.split("-").map(Number);
+            setFilter({ ...filter, year: y, month: m });
+            setMonthPickerOpen(false);
+          }}
+        />
+      )}
+
       {filter.mode === "custom" && (
-        <>
-          <button
-            type="button"
-            onClick={() => setRangePickerOpen(true)}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-[#ECE4FA] bg-white py-2 text-sm text-[#4A3B7C]"
-          >
-            <span>{filter.customStart}</span>
-            <span className="text-[#9C94C4]">～</span>
-            <span>{filter.customEnd}</span>
-          </button>
-          <DateRangePickerModal
-            open={rangePickerOpen}
-            initialStart={filter.customStart}
-            initialEnd={filter.customEnd}
-            onClose={() => setRangePickerOpen(false)}
-            onSave={(start, end) => {
-              setFilter({ ...filter, ...yearMonthOf(start), customStart: start, customEnd: end });
-              setRangePickerOpen(false);
-            }}
-          />
-        </>
+        <DateRangePickerModal
+          open={rangePickerOpen}
+          initialStart={filter.customStart}
+          initialEnd={filter.customEnd}
+          onClose={() => setRangePickerOpen(false)}
+          onSave={(start, end) => {
+            setFilter({ ...filter, ...yearMonthOf(start), customStart: start, customEnd: end });
+            setRangePickerOpen(false);
+          }}
+        />
       )}
     </div>
   );
 }
 
-/** 精簡版：只有一顆「2026/10 ‹ ›」的膠囊，沒有日／月／年／全部／自訂那排頁籤。
+/** 精簡版：只有一顆「2026/10 ‹ ›」的膠囊，沒有旁邊那顆日曆（換不了期間單位）。
  *
  *  ‹ › 一次換一個月，已經是本月時「下一月」變灰（還沒發生的月份沒東西可看）；點中間的
  *  日期開年月選擇器，只挑年跟月、不挑區間——首頁講的是「這個月」（本月結餘、本月收入、
  *  本月預算支出），挑一段任意區間的話那些標題就對不上了。要看任意區間請用報表頁。
  *
- *  給版面緊的頁面用（首頁）：頁籤那一排佔掉一整列，但九成的時候使用者只是要看某個月。 */
+ *  給版面緊的頁面用（首頁）：主視覺上只放得下一顆膠囊。 */
 function CompactDateFilterPicker({ className = "" }: { className?: string }) {
   const { filter, setFilter } = useDateFilter();
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
@@ -196,20 +286,7 @@ function CompactDateFilterPicker({ className = "" }: { className?: string }) {
   // 標籤一定要講真話：篩選器是跟其他頁共用的，在報表頁選了「全部」或「年」再回首頁，
   // 這顆以前照樣寫「2026/10」，但下面的數字其實是全部期間的——兩邊對不起來，而且看
   // 不出原因。現在直接把當下的模式寫出來，按一下箭頭就會回到按月瀏覽。
-  const label = (() => {
-    switch (filter.mode) {
-      case "all":
-        return "全部期間";
-      case "year":
-        return `${filter.year}年`;
-      case "day":
-        return `${filter.year}/${pad2(filter.month)}/${pad2(filter.day)}`;
-      case "custom":
-        return `${filter.customStart} ～ ${filter.customEnd}`;
-      case "month":
-        return `${filter.year}/${pad2(filter.month)}`;
-    }
-  })();
+  const label = filter.mode === "all" ? "全部期間" : filter.mode === "year" ? `${filter.year}年` : periodLabel(filter);
 
   function goMonth(delta: number) {
     const d = new Date(baseYear, baseMonth - 1 + delta, 1);

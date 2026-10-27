@@ -105,7 +105,8 @@ export function GroupedSectionSkeleton({ shape }: { shape: number[] }) {
           {shape.map((rows, i) => (
             <div key={i}>
               <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
-                <SkeletonBar width={80} height={12} />
+                {/* 96：日期小標是「2026-10-27 週一」，年月日後面還接了星期幾。 */}
+                <SkeletonBar width={96} height={12} />
                 <SkeletonBar width={64} height={12} />
               </div>
               <ListCard>
@@ -231,7 +232,9 @@ export function DonutCardSkeleton({
 }) {
   return (
     <CardSkeleton>
-      <SkeletonBar width={48} height={14} />
+      {/* 標題寬度跟著真的標題走："line"（淨額分頁）是「明細」兩個字，"rows"
+          則是「分類佔比」「資產配置」四個字。 */}
+      <SkeletonBar width={variant === "line" ? 48 : 64} height={14} />
       {legendRows <= 0 ? (
         <SkeletonBar width={168} height={12} className="mt-3" />
       ) : (
@@ -318,7 +321,8 @@ export function DateGroupsSkeleton({ shape }: { shape: number[] }) {
       {shape.map((rows, i) => (
         <div key={i}>
           <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
-            <SkeletonBar width={80} height={12} />
+            {/* 96：日期小標是「2026-10-27 週一」，年月日後面還接了星期幾。 */}
+            <SkeletonBar width={96} height={12} />
             <SkeletonBar width={64} height={12} />
           </div>
           <ListCard>
