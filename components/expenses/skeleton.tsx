@@ -91,12 +91,14 @@ export function SectionSkeleton({ count, progress = false }: { count: number; pr
  *
  *  `shape` 是「每一組各有幾列」，來自 skeleton-count.ts 記住的上次形狀。只記總筆數的話
  *  沒辦法還原組數，畫成一張大卡就會少掉每一組之間的小標跟間距，資料回來時高度照樣跳。 */
-export function GroupedSectionSkeleton({ shape }: { shape: number[] }) {
+export function GroupedSectionSkeleton({ shape, action = true }: { shape: number[]; action?: boolean }) {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between px-1">
         <SkeletonBar width={96} height={14} />
-        <SkeletonBar width={48} height={12} />
+        {/* 區塊標題右邊沒有「查看全部」那種連結的區塊（資產總表的轉帳明細）傳 action={false}
+            ——留一條假的灰條在那裡，資料回來時那個位置會空掉，看起來像東西載失敗了。 */}
+        {action && <SkeletonBar width={48} height={12} />}
       </div>
       {shape.length === 0 ? (
         <ListCardSkeleton count={0} />

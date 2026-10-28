@@ -9,6 +9,10 @@ export const ICON_PATHS = {
   navPet: "/expenses/nav-pet.png",
   navSettings: "/expenses/nav-settings.png",
 
+  // 帳戶之間搬錢（轉帳）——帳戶明細列表那一列的圖示。它不是「帳戶類型」，不會出現在
+  // 類型選擇器裡，所以不走使用者可選的圖示那一套，固定掛在這裡。
+  accountTransfer: "/expenses/account-transfer.png",
+
   // 設定頁各項功能
   settingCategories: "/expenses/setting-category.png",
   settingBudgets: "/expenses/setting-budget.png",

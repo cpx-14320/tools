@@ -184,3 +184,48 @@ export function inDateRange(date: string, range: DateRange | null): boolean {
   if (!range) return true;
   return date >= range.start && date <= range.end;
 }
+
+function isoOf(d: Date): string {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+/** 把 `YYYY-MM-DD` 往前／往後推幾天。用本地時區的 Date 做日曆運算，不碰 UTC
+ *  （理由見 lib/format.ts 的 weekdayLabel）。 */
+export function shiftDays(date: string, delta: number): string {
+  const [y, m, d] = date.split("-").map(Number);
+  return isoOf(new Date(y, m - 1, d + delta));
+}
+
+/** 把 `YYYY-MM-DD` 往前／往後推幾個月，日期超過目標月份的天數時夾到月底。
+ *
+ *  直接丟 `new Date(y, m - 1 + delta, d)` 的話「3/31 往前一個月」會溢位變成 3/3
+ *  （2 月沒有 31 日），拿來當「近一個月」的起點時窗口會莫名縮短好幾天。 */
+export function shiftMonths(date: string, delta: number): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const target = new Date(y, m - 1 + delta, 1);
+  const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  target.setDate(Math.min(d, lastDay));
+  return isoOf(target);
+}
+
+/** 依日期把清單分組，保留傳進來的順序（呼叫端先排好新的在前面，分出來的組就是新的在
+ *  前面）。首頁的最近消費、資產總表的轉帳明細都是「日期小標＋那天幾筆」的版面，本來
+ *  各自在元件裡寫一次同樣的 reduce。 */
+export function groupByDate<T extends { date: string }>(items: T[]): [string, T[]][] {
+  const map = new Map<string, T[]>();
+  for (const item of items) map.set(item.date, [...(map.get(item.date) ?? []), item]);
+  return [...map];
+}
+
+/** 依日期分組的清單，跨組往下數到第 limit 筆為止（數滿了的那一組只留前面幾筆，後面的
+ *  組整組捨去）。收合長清單用——照「天數」切的話，同一天記了五六筆時收合後還是一長串。 */
+export function limitDateGroups<T>(groups: [string, T[]][], limit: number): [string, T[]][] {
+  const out: [string, T[]][] = [];
+  let left = limit;
+  for (const [date, items] of groups) {
+    if (left <= 0) break;
+    out.push([date, items.slice(0, left)]);
+    left -= items.length;
+  }
+  return out;
+}

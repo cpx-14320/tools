@@ -24,6 +24,10 @@ const LINE_ICONS: Record<string, ReactNode> = {
   ),
   /** 漏斗：上寬下窄收到中線（x=12），再掛一截手把。 */
   filter: <path d="M3.5 5.5h17L14 13.2v5.4L10 16.6v-3.4L3.5 5.5Z" />,
+  /** 轉帳：上下兩根反方向的箭頭（錢從一個帳戶搬到另一個）。上面那根往右、下面那根
+   *  往左，兩根各自帶一個箭頭——只畫一根雙箭頭的線看起來像「交換排序」，兩根才讀得出
+   *  是兩筆相反方向的流動。 */
+  transfer: <path d="M3.8 9.2h15.4M16 6l3.2 3.2L16 12.4M20.2 14.8H4.8M8 11.6l-3.2 3.2L8 18" />,
 };
 
 export type LineIconName = keyof typeof LINE_ICONS;
@@ -60,7 +64,9 @@ export function LineIconButton({
   return (
     <button
       type="button"
-      className={`grid size-8 shrink-0 place-items-center rounded-full transition-colors hover:bg-[#F3EFFC] hover:text-[#6F5FD6] ${
+      // disabled 的那一組：線條淡到跟邊框同一階，而且不要再有 hover 的底色/變紫——
+      // 不壓掉的話按不動的鈕摸上去照樣會亮，看起來像沒反應的 bug。
+      className={`grid size-8 shrink-0 place-items-center rounded-full transition-colors hover:bg-[#F3EFFC] hover:text-[#6F5FD6] disabled:text-[#C7BFE6] disabled:hover:bg-transparent disabled:hover:text-[#C7BFE6] ${
         active ? "bg-[#F3EFFC] text-[#6F5FD6]" : "text-[#9C94C4]"
       } ${className}`}
       {...rest}

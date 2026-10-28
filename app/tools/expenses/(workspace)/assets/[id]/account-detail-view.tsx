@@ -9,6 +9,7 @@ import { Card, CardBody } from "@/components/expenses/card";
 import { DeltaBadge } from "@/components/expenses/delta-badge";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
+import { ICON_PATHS } from "@/components/expenses/icon-paths";
 import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { text } from "@/components/expenses/theme";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
@@ -426,18 +427,31 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
                       const otherAccount = accounts.find((a) => a.id === (isOutgoing ? transfer.toAccountId : transfer.fromAccountId));
                       const transferBalanceAfter = accountBalances.get(`transfer:${transfer.id}`);
                       return (
+                        // 轉帳列跟支出／收入列刻意長得不一樣：它不是支出也不是收入，不算進
+                        // 上面那三張 KPI 卡，但混在同一條依日期排的流水裡，光看金額顏色分不
+                        // 出來。所以同時給三個記號——左邊一道品牌紫的豎條、整列淡紫底、
+                        // 標題前面一顆「轉帳」膠囊。只靠顏色的話色弱的人分不出來，只靠膠囊
+                        // 的話快速往下捲會看漏；一道通欄的色帶才是掃一眼就看得到的那個。
+                        // pl 刻意是 9px（12 − 3）：豎條佔掉 3px，文字才跟上面的交易列對齊。
                         <button
                           key={transfer.id}
                           type="button"
                           onClick={() => setTransferModal(transfer)}
-                          className="flex w-full items-center gap-3 px-3 py-3 text-left"
+                          className="flex w-full items-center gap-3 border-l-[3px] border-[#6F5FD6] bg-[#FAF8FE] py-3 pl-[9px] pr-3 text-left"
                         >
                           {/* 標題放備註、副標放「轉到／來自 哪個帳戶」——跟上面的交易列
                               一致（標題是這筆是什麼、副標是它歸在哪裡）。沒寫備註的話
-                              標題就是「轉帳」兩個字。 */}
+                              標題就只剩那顆膠囊，不用再補「轉帳」兩個字跟它重複。 */}
                           <TransactionRowLabel
-                            icon="⇄"
-                            title={transfer.note || "轉帳"}
+                            icon={ICON_PATHS.accountTransfer}
+                            title={
+                              <span className="flex items-center gap-1.5">
+                                <span className="shrink-0 rounded-full bg-[#EFEAFC] px-1.5 py-px text-[10px] font-semibold text-[#6F5FD6]">
+                                  轉帳
+                                </span>
+                                {transfer.note && <span className="min-w-0 truncate">{transfer.note}</span>}
+                              </span>
+                            }
                             subtitle={`${isOutgoing ? "轉到" : "來自"} ${otherAccount?.name ?? "（未知帳戶）"}`}
                           />
                           <div className="flex shrink-0 flex-col items-end">

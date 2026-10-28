@@ -5,9 +5,8 @@ import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
 import { SelectField } from "./select-field";
 import { DateField } from "./date-field";
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
-import { InlineIcon } from "./icon-avatar";
 import { AccountPickerModal } from "./account-picker-modal";
-import { accountTypeById, type AccountTypeDTO } from "@/lib/expenses/account-types";
+import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type AccountDTO } from "@/lib/expenses/accounts";
 import { type CategoryDTO } from "@/lib/expenses/categories";
 import { type TransactionDTO } from "@/lib/expenses/transactions";
@@ -30,17 +29,13 @@ export interface TransferModalDraft {
  *  的 accountBalance）。比照新增交易彈窗同一套「主彈窗＋最多一層」原則：轉出/轉入
  *  帳戶各自用同一個 AccountPickerModal（唯一允許的第二層），金額用共用的小算盤，
  *  不再另外跳窗。 */
-/** 帳戶的圖示＋名稱；還沒選的話回傳 undefined，交給 SelectField 去顯示未選的提示。 */
-function accountLabel(id: string, accounts: AccountDTO[], accountTypes: AccountTypeDTO[]) {
-  const account = accounts.find((a) => a.id === id);
-  if (!account) return undefined;
-  const icon = accountTypeById(accountTypes, account.accountTypeId)?.icon ?? "";
-  return (
-    <span className="flex items-center gap-1.5">
-      {icon && <InlineIcon icon={icon} />}
-      {account.name}
-    </span>
-  );
+/** 選到的帳戶名稱；還沒選的話回傳 undefined，交給 SelectField 去顯示未選的提示。
+ *
+ *  刻意只有文字、不帶類型圖示：這兩格是並排的窄欄位（從／到各佔一半），圖示一擺進去
+ *  帳戶名稱就只剩幾個字的寬度，稍長一點的名字直接被截掉。要認是哪個帳戶靠的是名字，
+ *  圖示在這裡幫不上忙——點進去的帳戶選擇彈窗裡才有圖示可以看。 */
+function accountLabel(id: string, accounts: AccountDTO[]) {
+  return accounts.find((a) => a.id === id)?.name;
 }
 
 export function TransferModal({
@@ -117,10 +112,10 @@ export function TransferModal({
           看得出方向；而且各佔一整列會把彈窗拉長到要捲動。 */}
       <div className="grid grid-cols-2 gap-3">
         <Field label="從（轉出帳戶）">
-          <SelectField value={accountLabel(fromAccountId, accounts, accountTypes)} placeholder="選擇帳戶" onClick={() => setPickingFrom(true)} />
+          <SelectField value={accountLabel(fromAccountId, accounts)} placeholder="選擇帳戶" onClick={() => setPickingFrom(true)} />
         </Field>
         <Field label="到（轉入帳戶）">
-          <SelectField value={accountLabel(toAccountId, accounts, accountTypes)} placeholder="選擇帳戶" onClick={() => setPickingTo(true)} />
+          <SelectField value={accountLabel(toAccountId, accounts)} placeholder="選擇帳戶" onClick={() => setPickingTo(true)} />
         </Field>
       </div>
 

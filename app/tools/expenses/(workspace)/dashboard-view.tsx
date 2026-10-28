@@ -2,8 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
-import { useDateFilter } from "@/components/expenses/date-filter-context";
+import { MonthFilterPicker } from "@/components/expenses/date-filter-picker";
 import { EmptyListCard, ListCard, ListRow } from "@/components/expenses/list-row";
 import { Card, CardBody } from "@/components/expenses/card";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
@@ -14,7 +13,7 @@ import { useSkeletonCount, useSkeletonShape, useSkeletonReady } from "@/componen
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { text } from "@/components/expenses/theme";
-import { dateFilterRange, referenceYearMonth } from "@/lib/expenses/date-filter";
+import { dateFilterRange, defaultDateFilter, groupByDate, limitDateGroups, referenceYearMonth, shiftDays } from "@/lib/expenses/date-filter";
 import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
 import { categoryColorClass, categoryFillClass, categoryPath, displayCategoryOf, topLevelCategories, type CategoryDTO } from "@/lib/expenses/categories";
 import {
@@ -57,32 +56,16 @@ function HeroShell({ children, overlay }: { children: ReactNode; overlay: ReactN
   );
 }
 
-/** 依日期分組的清單，跨組往下數到第 limit 筆為止（數滿了的那一組只留前面幾筆，
- *  後面的組整組捨去）。給「最近消費」收合用。 */
-function limitEntries<T>(groups: [string, T[]][], limit: number): [string, T[]][] {
-  const out: [string, T[]][] = [];
-  let left = limit;
-  for (const [date, items] of groups) {
-    if (left <= 0) break;
-    out.push([date, items.slice(0, left)]);
-    left -= items.length;
-  }
-  return out;
-}
-
-/** 把 `YYYY-MM-DD` 往前／往後推幾天。用本地時區的 Date 做日曆運算，不碰 UTC。 */
-function shiftDays(date: string, delta: number): string {
-  const [y, m, d] = date.split("-").map(Number);
-  const shifted = new Date(y, m - 1, d + delta);
-  return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, "0")}-${String(shifted.getDate()).padStart(2, "0")}`;
-}
-
 // 首頁只做「摘要」，不是報表頁的另一份拷貝——這幾張卡片的清單固定只顯示前 5 筆，
 // 分類一多也不會把首頁拉得又臭又長，完整清單一律用「查看完整報表」導去報表頁看。
 const SUMMARY_LIMIT = PREVIEW_COUNT;
 
 export function DashboardView() {
-  const { filter } = useDateFilter();
+  // 首頁的期間自己拿著，不接共用的 DateFilterContext——其他頁（報表、消費紀錄、帳戶
+  // 明細）仍然共用一個篩選器，但首頁刻意獨立：它問的是「我這個月花得怎麼樣」，去報表頁
+  // 翻到 2025/03 或切成「全部」之後回首頁，首頁該還是停在本月。而且永遠是「月」模式
+  // （見 MonthFilterPicker），不會出現「全部期間」。
+  const [filter, setFilter] = useState(defaultDateFilter);
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const skeletonReady = useSkeletonReady();
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
@@ -165,18 +148,14 @@ export function DashboardView() {
   // 頁同一種版面。
   const sortedExpenses = [...expenseTx].sort((a, b) => (a.date < b.date ? 1 : -1));
   const recentCutoff = sortedExpenses.length > 0 ? shiftDays(sortedExpenses[0].date, -6) : "";
-  const recentGroups = [...
-    sortedExpenses
-      .filter((t) => t.date >= recentCutoff)
-      .reduce((map, t) => map.set(t.date, [...(map.get(t.date) ?? []), t]), new Map<string, TransactionDTO[]>())
-  ];
+  const recentGroups = groupByDate(sortedExpenses.filter((t) => t.date >= recentCutoff));
   const recentCount = recentGroups.reduce((sum, [, items]) => sum + items.length, 0);
   // 每一天的小計一律照「那一天全部的紀錄」算，不是照收合後看得到的那幾筆——被收起來的
   // 那天如果只剩兩筆，小計卻跟著縮水的話，展開前後同一天會出現兩個不同的金額。
   const recentDayTotals = new Map(recentGroups.map(([date, items]) => [date, items.reduce((sum, t) => sum + t.amount, 0)]));
   // 收起來時算的是「總共幾筆」，不是「幾天」——同一天可能有五六筆，照天數切的話收合後
   // 還是一長串。所以跨日期往下數到第 PREVIEW_COUNT 筆為止，那一天剩下的就一起收起來。
-  const visibleRecentGroups = recentExpanded ? recentGroups : limitEntries(recentGroups, PREVIEW_COUNT);
+  const visibleRecentGroups = recentExpanded ? recentGroups : limitDateGroups(recentGroups, PREVIEW_COUNT);
 
   // 預算本來就是以「月」為單位，所以不直接吃篩選器的區間（可能是一天、一年或自訂區間），
   // 而是取篩選器的參考月份：篩到 2026-08 就看 8 月的預算，切回本月就看本月。這樣卡片標題、
@@ -231,7 +210,7 @@ export function DashboardView() {
   // 「跟誰比」那組設定收斂到報表頁，四個分頁共用一顆就夠了。
   const heroOverlay = (
     <div className="absolute inset-x-5 top-5 flex items-start">
-      <DateFilterPicker compact />
+      <MonthFilterPicker filter={filter} onChange={setFilter} />
     </div>
   );
 
@@ -475,37 +454,43 @@ export function DashboardView() {
         ) : (
           // 版面跟「查看全部」進去的消費紀錄頁一樣：日期當小標、右邊掛當天小計，底下才是
           // 那一天的明細（標題是備註/分類、副標是分類路徑）。
-          <div className="flex flex-col gap-5">
-            {visibleRecentGroups.map(([date, items]) => (
-              <div key={date}>
-                <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
-                  <p className={`font-medium ${text.muted}`}>{formatDateWithWeekday(date)}</p>
-                  <p className={`font-medium tabular-nums ${text.muted}`}>
-                    {expense.hidden ? expense.mask("") : `－${formatCurrency(recentDayTotals.get(date) ?? 0)}`}
-                  </p>
+          //
+          // 收合連結刻意放在 gap-5 那層的外面，跟上面「本月預算支出」一樣直接接在清單
+          // 後面：擺進 gap-5 裡面的話它會同時吃到容器的 20px 間距跟自己的 mt-3，離清單
+          // 比預算支出那顆遠一截，同一頁兩個一樣的連結卻有兩種間距。
+          <>
+            <div className="flex flex-col gap-5">
+              {visibleRecentGroups.map(([date, items]) => (
+                <div key={date}>
+                  <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
+                    <p className={`font-medium ${text.muted}`}>{formatDateWithWeekday(date)}</p>
+                    <p className={`font-medium tabular-nums ${text.muted}`}>
+                      {expense.hidden ? expense.mask("") : `－${formatCurrency(recentDayTotals.get(date) ?? 0)}`}
+                    </p>
+                  </div>
+                  <ListCard>
+                    {items.map((t) => {
+                      // 子分類沿用大分類的圖示與顏色：「下午茶」顯示的是「餐飲」那顆。
+                      const cat = displayCategoryOf(categories, t.categoryId);
+                      return (
+                        // 整列都可以點，跟右上角的「查看全部」去同一頁。
+                        <Link key={t.id} href="/tools/expenses/transactions" className="flex w-full items-center gap-3 px-4 py-3 text-left">
+                          <TransactionRowLabel
+                            icon={cat?.icon ?? "🏷️"}
+                            iconClassName={cat ? categoryColorClass[cat.color] : undefined}
+                            title={transactionDisplayName(t, categories)}
+                            subtitle={categoryPath(categories, t.categoryId)}
+                          />
+                          <span className="shrink-0 tabular-nums font-semibold text-[#4A3B7C]">
+                            {expense.hidden ? expense.mask("") : `－${formatCurrency(t.amount)}`}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </ListCard>
                 </div>
-                <ListCard>
-                  {items.map((t) => {
-                    // 子分類沿用大分類的圖示與顏色：「下午茶」顯示的是「餐飲」那顆。
-                    const cat = displayCategoryOf(categories, t.categoryId);
-                    return (
-                      // 整列都可以點，跟右上角的「查看全部」去同一頁。
-                      <Link key={t.id} href="/tools/expenses/transactions" className="flex w-full items-center gap-3 px-4 py-3 text-left">
-                        <TransactionRowLabel
-                          icon={cat?.icon ?? "🏷️"}
-                          iconClassName={cat ? categoryColorClass[cat.color] : undefined}
-                          title={transactionDisplayName(t, categories)}
-                          subtitle={categoryPath(categories, t.categoryId)}
-                        />
-                        <span className="shrink-0 tabular-nums font-semibold text-[#4A3B7C]">
-                          {expense.hidden ? expense.mask("") : `－${formatCurrency(t.amount)}`}
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </ListCard>
-              </div>
-            ))}
+              ))}
+            </div>
             {recentCount > PREVIEW_COUNT && (
               <ExpandToggle
                 expanded={recentExpanded}
@@ -514,7 +499,7 @@ export function DashboardView() {
                 label="顯示近七日"
               />
             )}
-          </div>
+          </>
         )}
         </div>
       </div>
