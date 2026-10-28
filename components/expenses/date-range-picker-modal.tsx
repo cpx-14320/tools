@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Modal, ModalFooter } from "./modal";
-import { CalendarGrid, CalendarHeader, YearGrid, dayButtonClass, parseISO, shiftMonth, toISO } from "./calendar";
+import { CalendarGrid, CalendarHeader, MonthGrid, YearGrid, dayButtonClass, parseISO, shiftMonth, toISO } from "./calendar";
 
 /** 起訖日期選擇器——同一個彈窗裡選完起訖，不用分開跳兩次窗。第一下點選起始日，第二下
  *  點選結束日（點到比起始日早的話自動對調），選定的區間用連續色塊呈現（起訖兩端是
@@ -26,7 +26,10 @@ export function DateRangePickerModal({
   const startParsed = parseISO(initialStart);
   const [viewYear, setViewYear] = useState(startParsed.year);
   const [viewMonth, setViewMonth] = useState(startParsed.month);
-  const [view, setView] = useState<"year" | "day">("day");
+  // 年／月／日三層：點標題上的年份跳年份格、點月份跳月份格，挑完回到日期格。起訖的
+  // 年月日都從這一組操作裡設定，所以上面不用再掛一條「2026-10-01 ～ 2026-10-31」的
+  // 摘要列——那一列只是把已經看得到的資訊再寫一次，卻吃掉一整排高度。
+  const [view, setView] = useState<"year" | "month" | "day">("day");
   const [start, setStart] = useState(initialStart);
   const [end, setEnd] = useState(initialEnd);
   // 選區間的「錨點」：第一下點的那個日期先暫存在這，第二下點了才真的決定起訖兩端，
@@ -68,17 +71,22 @@ export function DateRangePickerModal({
       footer={<ModalFooter onClose={onClose} onConfirm={() => onSave(start, end)} />}
     >
       <div className="flex flex-col items-center gap-3">
-        <div className="flex w-full items-center justify-center gap-2 rounded-full bg-[#F9F7FE] px-3 py-2 text-sm font-medium text-[#4A3B7C]">
-          <span>{start}</span>
-          <span className="text-[#C7BFE6]">～</span>
-          <span>{end}</span>
-        </div>
-
         {view === "year" ? (
           <YearGrid
             year={viewYear}
             onSelect={(y) => {
               setViewYear(y);
+              // 挑完年份回到月份格：接著就是挑月，不用再點一次標題。
+              setView("month");
+            }}
+          />
+        ) : view === "month" ? (
+          <MonthGrid
+            year={viewYear}
+            month={viewMonth}
+            onSelectYear={() => setView("year")}
+            onSelectMonth={(m) => {
+              setViewMonth(m);
               setView("day");
             }}
           />
@@ -90,6 +98,7 @@ export function DateRangePickerModal({
               onPrev={() => changeMonth(-1)}
               onNext={() => changeMonth(1)}
               onSelectYear={() => setView("year")}
+              onSelectMonth={() => setView("month")}
             />
             <CalendarGrid
               year={viewYear}
@@ -98,20 +107,31 @@ export function DateRangePickerModal({
                 const isStart = iso === start;
                 const isEnd = iso === end;
                 const inRange = iso > start && iso < end;
-                // 外層這一格負責把區間中間的日子串成一條連續色塊（起訖兩端只圓一邊），
-                // 內層的圓鈕才是可以點的那一天。
-                const band =
-                  isStart && isEnd ? "" : isStart ? "rounded-l-full bg-[#F3EFFC]" : isEnd ? "rounded-r-full bg-[#F3EFFC]" : inRange ? "bg-[#F3EFFC]" : "";
+                const single = isStart && isEnd;
+                // 色塊（band）跟日期圓鈕分兩層疊：band 是絕對定位的一條，高度跟圓鈕
+                // 一樣（h-9），所以上下留白一致；起訖那兩格的 band 只蓋半格——從格子
+                // 中線（＝圓鈕的圓心）往區間內側延伸到格子邊緣，跟隔壁那格接起來就是
+                // 一條連續的色帶，而不是像以前那樣整格都鋪、在圓鈕外面凸出一截。
+                const band = single
+                  ? ""
+                  : isStart
+                    ? "inset-y-0 left-1/2 right-0"
+                    : isEnd
+                      ? "inset-y-0 left-0 right-1/2"
+                      : inRange
+                        ? "inset-0"
+                        : "";
                 return (
-                  <div className={band}>
+                  <div className="relative h-9">
+                    {band && <span aria-hidden className={`absolute bg-[#F3EFFC] ${band}`} />}
                     <button
                       type="button"
                       onClick={() => pickDay(iso)}
-                      className={
+                      className={`relative ${
                         inRange && !isStart && !isEnd
                           ? "mx-auto grid size-9 place-items-center rounded-full text-sm font-medium text-[#4A3B7C] transition-colors"
                           : dayButtonClass({ selected: isStart || isEnd, today: iso === todayStr })
-                      }
+                      }`}
                     >
                       {d}
                     </button>

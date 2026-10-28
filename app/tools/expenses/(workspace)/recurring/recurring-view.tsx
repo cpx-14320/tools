@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { SkeletonBar, StackedCardsSkeleton } from "@/components/expenses/skeleton";
 import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
+import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { Button, Badge, SegmentedControl } from "@/components/expenses/button";
@@ -46,6 +47,7 @@ interface PendingOccurrence {
 
 export function RecurringView() {
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
+  const showToast = useToast();
   const skeletonReady = useSkeletonReady();
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [rules, setRules] = useState<RecurringRuleDTO[]>([]);
@@ -109,6 +111,7 @@ export function RecurringView() {
       .catch(() => ({}));
     if (data.pending) setPending(data.pending);
     if (data.transactions) setTransactions(data.transactions);
+    showToast(action === "confirm" ? `已記帳 ${items.length} 筆` : `已略過 ${items.length} 筆`);
     setBusy((set) => {
       const next = new Set(set);
       for (const k of keys) next.delete(k);
@@ -141,6 +144,7 @@ export function RecurringView() {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.rules) setRules(data.rules);
+    showToast(modal.mode === "edit" ? TOAST.saved : TOAST.created);
     setModal(null);
     await refreshPending();
   }
@@ -154,6 +158,7 @@ export function RecurringView() {
       if (data.rules) latest = data.rules;
     }
     setRules(latest);
+    showToast(ids.length === 1 ? TOAST.deleted : `已刪除 ${ids.length} 筆`);
     await refreshPending();
   }
 
@@ -179,6 +184,7 @@ export function RecurringView() {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.rules) setRules(data.rules);
+    showToast(rule.active ? "已暫停" : "已恢復");
     // 暫停的規則不會再產生待確認的期數，恢復之後又會補回來。
     await refreshPending();
   }

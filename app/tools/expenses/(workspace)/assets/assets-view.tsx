@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { CardSkeleton, GroupedSectionSkeleton, KpiCardSkeleton, SectionSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
 import { useSkeletonCount, useSkeletonReady, useSkeletonShape } from "@/components/expenses/skeleton-count";
@@ -16,9 +16,10 @@ import { Card, CardBody } from "@/components/expenses/card";
 import { DateField } from "@/components/expenses/date-field";
 import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { text } from "@/components/expenses/theme";
+import { TOAST, useToast } from "@/components/expenses/toast";
 import { AccountModal, type AccountModalDraft } from "@/components/expenses/account-modal";
 import { TransferModal, type TransferModalDraft } from "@/components/expenses/transfer-modal";
-import { accountsByKind, accountBalance, netWorth, totalByKind, type AccountDTO } from "@/lib/expenses/accounts";
+import { accountBalance, netWorth, totalByKind, type AccountDTO } from "@/lib/expenses/accounts";
 import { accountTypesByKind, accountTypeColorClass, type AccountKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { categoryFillClass, type CategoryDTO } from "@/lib/expenses/categories";
 import { groupByDate, limitDateGroups, shiftMonths } from "@/lib/expenses/date-filter";
@@ -39,6 +40,7 @@ function monthEnd(yearMonth: string): string {
 }
 
 export function AssetsView() {
+  const showToast = useToast();
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const skeletonReady = useSkeletonReady();
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
@@ -99,6 +101,7 @@ export function AssetsView() {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.accounts) setAccounts(data.accounts);
+    showToast(TOAST.created);
     setCreateOpen(false);
   }
 
@@ -111,6 +114,7 @@ export function AssetsView() {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transfers) setTransfers(data.transfers);
+    showToast(TOAST.created);
     setTransferOpen(false);
   }
 
@@ -124,6 +128,7 @@ export function AssetsView() {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transfers) setTransfers(data.transfers);
+    showToast(TOAST.saved);
     setTransferEdit(null);
   }
 
@@ -133,15 +138,30 @@ export function AssetsView() {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transfers) setTransfers(data.transfers);
+    showToast(TOAST.deleted);
     setTransferEdit(null);
   }
 
-  const assets = accountsByKind(accounts, accountTypes, "asset");
-  const liabilities = accountsByKind(accounts, accountTypes, "liability");
+  /** 這一段實際會畫出幾列——骨架要照這個數字畫，不是帳戶數。常見情況是一個類型底下
+   *  只有一個同名帳戶，那整個類型只佔一列而不是兩列（見 section() 的 soloAccount）；
+   *  用帳戶數去猜的話，那種帳戶愈多骨架就超得愈多，資料回來整段會縮一截。 */
+  function sectionRowCount(kind: AccountKind): number {
+    return accountTypesByKind(accountTypes, kind).reduce((sum, type) => {
+      const typeAccounts = accounts.filter((a) => a.accountTypeId === type.id);
+      if (typeAccounts.length === 0) return sum;
+      const solo = typeAccounts.length === 1 && typeAccounts[0].name === type.name;
+      return sum + 1 + (solo ? 0 : typeAccounts.length);
+    }, 0);
+  }
+
   // 資產跟負債兩段各記各的筆數——大多數人資產好幾個、負債零到一個，共用一個數字一定
   // 有一段對不上。
-  const assetSkeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:assets-asset", 2, ready ? assets.length : undefined);
-  const liabilitySkeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:assets-liability", 1, ready ? liabilities.length : undefined);
+  const assetSkeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:assets-asset", 2, ready ? sectionRowCount("asset") : undefined);
+  const liabilitySkeletonCount = useSkeletonCount(
+    "cpx-tools:expenses-skeleton:assets-liability",
+    1,
+    ready ? sectionRowCount("liability") : undefined,
+  );
 
   // 選到的那個月月底當時的數字：餘額函式本來就是「傳進去哪些交易／轉帳就算哪些」，把
   // 那天之後的篩掉再算一次就是當時的狀況（見 lib/expenses/accounts.ts）。
@@ -193,7 +213,12 @@ export function AssetsView() {
       .filter((g) => g.accounts.length > 0);
   }
 
-  /** 資產／負債各一段：小標題、然後每個類型一張卡。 */
+  /** 資產／負債各一段：小標題、然後所有類型／帳戶併在同一張清單卡裡。
+   *
+   *  本來是「一個類型一張白卡」，但資產跟負債各自本來就是一個區塊，裡面再切成好幾個獨立
+   *  的白框等於同一件事被框了兩層，卡與卡之間的空隙也讓一整段看起來鬆散。改成跟首頁
+   *  「收入來源」同一種長相：一張 ListCard、每一列之間一條淡分隔線。類型底下的帳戶靠
+   *  淡底＋縮排區分層級（見 ListRow 的 nested）。 */
   function section(title: string, kind: AccountKind) {
     const groups = typeGroups(kind);
     if (groups.length === 0) return null;
@@ -202,11 +227,11 @@ export function AssetsView() {
         <div className="mb-2 px-1">
           <p className={text.sectionHeading}>{title}</p>
         </div>
-        <div className="flex flex-col gap-3">
+        <ListCard>
           {groups.map(({ type, accounts: typeAccounts, amount, total, pct }) => {
             // 一個類型底下只有一個帳戶、而且名字跟類型一樣（「銀行帳戶」類型底下就一個
             // 叫「銀行帳戶」的帳戶，這是最常見的情況）時不列子項目——同一個名字、同一個
-            // 金額寫兩次只是把卡片變高。這時整個類型列就代表那一個帳戶，點它直接進那個
+            // 金額寫兩次只是多一列。這時整個類型列就代表那一個帳戶，點它直接進那個
             // 帳戶的明細。
             const soloAccount = typeAccounts.length === 1 && typeAccounts[0].name === type.name ? typeAccounts[0] : null;
             const row = (
@@ -221,8 +246,10 @@ export function AssetsView() {
                 />
               </div>
             );
+            // Fragment 是透明的，所以類型列跟它底下的帳戶列都是 ListCard 的直接子節點
+            // ——分隔線（divide-y 走 `> * + *`）才會每一列都畫到。
             return (
-              <div key={type.id} className="overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
+              <Fragment key={type.id}>
                 {/* 有列出子帳戶時，類型這一列本身不能點：類型的名稱／圖示／顏色一律在
                     「設定 › 帳戶類型」改，這一頁只負責看數字，能點的是底下那幾個帳戶。 */}
                 {soloAccount ? (
@@ -232,27 +259,26 @@ export function AssetsView() {
                 ) : (
                   <>
                     {row}
-                    <div className="flex flex-col divide-y divide-[#F2EEFA] border-t border-[#ECE4FA] bg-[#F9F7FE]">
-                      {typeAccounts.map((a) => (
-                        <ListRow
-                          key={a.id}
-                          href={`/tools/expenses/assets/${a.id}`}
-                          name={a.name}
-                          right={
-                            <span className={`tabular-nums font-semibold ${kind === "liability" ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>
-                              {kind === "liability" ? "－" : ""}
-                              {formatCurrency(balanceOf(a))}
-                            </span>
-                          }
-                        />
-                      ))}
-                    </div>
+                    {typeAccounts.map((a) => (
+                      <ListRow
+                        key={a.id}
+                        nested
+                        href={`/tools/expenses/assets/${a.id}`}
+                        name={a.name}
+                        right={
+                          <span className={`tabular-nums font-semibold ${kind === "liability" ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>
+                            {kind === "liability" ? "－" : ""}
+                            {formatCurrency(balanceOf(a))}
+                          </span>
+                        }
+                      />
+                    ))}
                   </>
                 )}
-              </div>
+              </Fragment>
             );
           })}
-        </div>
+        </ListCard>
       </div>
     );
   }
@@ -365,8 +391,10 @@ export function AssetsView() {
             </div>
           </div>
           <div className="flex flex-col gap-5">
-            <SectionSkeleton count={assetSkeletonCount} />
-            <SectionSkeleton count={liabilitySkeletonCount} />
+            {/* 兩段的小標右邊都沒有連結，所以 action={false}；每一列都帶進度條
+                （類型列一定有，子帳戶列沒有但那是少數情況），所以 progress。 */}
+            <SectionSkeleton count={assetSkeletonCount} progress action={false} />
+            <SectionSkeleton count={liabilitySkeletonCount} progress action={false} />
             {/* 轉帳明細的小標右邊沒有連結，所以 action={false}——留一條假的灰條在那裡，
                 資料回來那個位置會空掉。 */}
             <GroupedSectionSkeleton shape={transferSkeletonShape} action={false} />

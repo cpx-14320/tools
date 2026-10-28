@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { SectionedListSkeleton } from "@/components/expenses/skeleton";
 import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
+import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { text } from "@/components/expenses/theme";
@@ -17,6 +18,7 @@ import { categoryColorClass } from "@/lib/expenses/categories";
 
 export function AccountTypesView() {
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
+  const showToast = useToast();
   const skeletonReady = useSkeletonReady();
   // 交易、轉帳、分類都不用了——金額的部分整塊搬去資產總表（見下面 section 的說明）。
   // 帳戶還是要抓一份，但不是為了顯示筆數，而是為了知道「這個類型底下還有沒有帳戶」：
@@ -66,6 +68,7 @@ export function AccountTypesView() {
       return;
     }
     if (data.accountTypes) setAccountTypes(data.accountTypes);
+    showToast(TOAST.saved);
     setModal(null);
   }
 
@@ -88,6 +91,9 @@ export function AccountTypesView() {
       }
     }
     setAccountTypes(latest);
+    // 被擋下的（底下還有帳戶在用）不算刪掉了，只報真的刪掉的那幾筆。
+    const deleted = ids.length - blockedCount;
+    if (deleted > 0) showToast(deleted === 1 ? TOAST.deleted : `已刪除 ${deleted} 筆`);
     return { blockedCount, totalInUse };
   }
 
@@ -119,6 +125,7 @@ export function AccountTypesView() {
       if (data.accountTypes) latest = data.accountTypes;
     }
     setAccountTypes(latest);
+    showToast(items.length === 1 ? TOAST.created : `已新增 ${items.length} 筆`);
     setBatchOpen(false);
   }
 

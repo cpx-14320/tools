@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { activeSolid } from "./theme";
 
 /** 日期選擇器共用的那一套月曆零件——單日選擇（DatePickerModal）跟區間選擇
  *  （DateRangePickerModal）本來各自複製了一份一模一樣的常數、日期算式、年份格、
@@ -69,7 +70,7 @@ export function YearGrid({ year, onSelect }: { year: number; onSelect: (year: nu
             type="button"
             onClick={() => onSelect(y)}
             className={`rounded-xl py-2.5 text-sm font-medium transition-colors ${
-              y === year ? "bg-[#6F5FD6] text-white" : "text-[#4A3B7C] hover:bg-[#EFEAFC]"
+              y === year ? activeSolid : "text-[#4A3B7C] hover:bg-[#EFEAFC]"
             }`}
           >
             {y}
@@ -111,7 +112,7 @@ export function MonthGrid({
               type="button"
               onClick={() => onSelectMonth(m)}
               className={`rounded-xl py-2.5 text-sm font-medium transition-colors ${
-                isSelected ? "bg-[#6F5FD6] text-white" : isCurrent ? "bg-[#EFEAFC] text-[#6F5FD6]" : "text-[#4A3B7C] hover:bg-[#EFEAFC]"
+                isSelected ? activeSolid : isCurrent ? "bg-[#EFEAFC] text-[#6F5FD6]" : "text-[#4A3B7C] hover:bg-[#EFEAFC]"
               }`}
             >
               {label}
@@ -123,8 +124,9 @@ export function MonthGrid({
   );
 }
 
-/** 月曆標題列：‹ 2026年 10月 ›。年份一定可以點開年份格；月份只有在「可以單獨切月份」
- *  的情境（單日選擇器）才給 onSelectMonth，區間選擇器不給就只是純文字。 */
+/** 月曆標題列：‹ 2026年 10月 ›。年份一定可以點開年份格；月份給了 onSelectMonth 就也能
+ *  點開月份格——單日選擇器跟區間選擇器都給，兩邊都靠這一列直接跳到任意年月，不用靠
+ *  ‹ › 一格一格翻（區間選擇器因此省掉了上面那條起訖摘要列）。不給就只是純文字。 */
 export function CalendarHeader({
   year,
   month,
@@ -191,9 +193,10 @@ export function CalendarGrid({ year, month, renderDay }: { year: number; month: 
   );
 }
 
-/** 共用的「一天」圓鈕樣式——選中紫底白字、今天淡紫底紫字、其他則是一般字色。 */
+/** 共用的「一天」圓鈕樣式——選中紫底白字（跟報表分頁、篩選膠囊同一個 activeSolid）、
+ *  今天淡紫底紫字、其他則是一般字色。 */
 export function dayButtonClass({ selected, today }: { selected: boolean; today: boolean }): string {
   return `mx-auto grid size-9 place-items-center rounded-full text-sm font-medium transition-colors ${
-    selected ? "bg-[#6F5FD6] text-white" : today ? "bg-[#EFEAFC] text-[#6F5FD6]" : "text-[#4A3B7C] hover:bg-[#EFEAFC]"
+    selected ? activeSolid : today ? "bg-[#EFEAFC] text-[#6F5FD6]" : "text-[#4A3B7C] hover:bg-[#EFEAFC]"
   }`;
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { GroupedCardsSkeleton } from "@/components/expenses/skeleton";
 import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
+import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
 import { ListRow } from "@/components/expenses/list-row";
 import { BudgetModal } from "@/components/expenses/budget-modal";
@@ -31,6 +32,7 @@ type EditTarget = { category: CategoryDTO; rule?: BudgetRuleDTO };
  *  花到哪」請看首頁的本月預算支出跟報表頁。 */
 export function BudgetsView() {
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
+  const showToast = useToast();
   const skeletonReady = useSkeletonReady();
   const [rules, setRules] = useState<BudgetRuleDTO[]>([]);
   const [ready, setReady] = useState(false);
@@ -76,6 +78,9 @@ export function BudgetsView() {
       if (after.rules) latest = after.rules;
     }
     if (latest) setRules(latest);
+    // 預算是 upsert（同一個分類＋同一個生效月份只會有一筆），所以一律講「儲存成功」
+    // ——使用者分不出這次到底是新增還是改掉既有那一筆，說錯比不說更糟。
+    showToast(TOAST.saved);
     setEditing(null);
   }
 
@@ -84,6 +89,7 @@ export function BudgetsView() {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.rules) setRules(data.rules);
+    showToast(TOAST.deleted);
   }
 
   const expenseCategories = topLevelCategories(categories, "支出");

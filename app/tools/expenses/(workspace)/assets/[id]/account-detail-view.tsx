@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/expenses/page-header";
+import { CardSkeleton, DateGroupsSkeleton, KpiCardSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
+import { useSkeletonReady, useSkeletonShape } from "@/components/expenses/skeleton-count";
 import { IconButton } from "@/components/expenses/icon-button";
 import { BackLink } from "@/components/expenses/back-link";
 import { Card, CardBody } from "@/components/expenses/card";
@@ -12,12 +14,15 @@ import { TransactionRowLabel } from "@/components/expenses/transaction-row-label
 import { ICON_PATHS } from "@/components/expenses/icon-paths";
 import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { text } from "@/components/expenses/theme";
+import { TOAST, useToast } from "@/components/expenses/toast";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { ComparePicker } from "@/components/expenses/compare-picker";
 import { AccountModal, type AccountModalDraft } from "@/components/expenses/account-modal";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { TransferModal, type TransferModalDraft } from "@/components/expenses/transfer-modal";
+import { SelectField } from "@/components/expenses/select-field";
+import { AccountPickerModal } from "@/components/expenses/account-picker-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { ReconcileModal } from "@/components/expenses/reconcile-modal";
 import { BreakdownToggle, TransactionBreakdown } from "@/components/expenses/transaction-breakdown";
@@ -35,6 +40,8 @@ type TxModalState = { mode: "create" } | { mode: "edit"; transaction: Transactio
 export function AccountDetailView({ accountId }: { accountId: string }) {
   const router = useRouter();
   const { filter, compare } = useDateFilter();
+  const showToast = useToast();
+  const skeletonReady = useSkeletonReady();
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
@@ -43,6 +50,8 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
   const [ready, setReady] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [reconcileOpen, setReconcileOpen] = useState(false);
+  // 換帳戶：點上面那顆下拉欄位開帳戶選擇彈窗，選了直接換到那個帳戶的明細頁。
+  const [switchOpen, setSwitchOpen] = useState(false);
   // 掛載時算一次固定住——在 render 當中讀時鐘是不純的。
   const [todayISO] = useState(() => {
     const d = new Date();
@@ -99,6 +108,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.accounts) setAccounts(data.accounts);
+    showToast(TOAST.saved);
     setEditOpen(false);
   }
 
@@ -110,11 +120,13 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
       setDeleteConfirm({ inUseCount: data.inUseCount ?? 0 });
       return;
     }
+    showToast(TOAST.deleted);
     router.push("/tools/expenses/assets");
   }
 
   async function handleForceDeleteAccount() {
     await fetch(`/api/expenses/accounts?id=${accountId}&force=1`, { method: "DELETE" }).catch(() => {});
+    showToast(TOAST.deleted);
     router.push("/tools/expenses/assets");
   }
 
@@ -130,6 +142,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transactions) setTransactions(data.transactions);
+    showToast(txModal.mode === "edit" ? TOAST.saved : TOAST.created);
     setTxModal(null);
   }
 
@@ -143,6 +156,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transactions) setTransactions(data.transactions);
+    showToast(TOAST.created);
     setReconcileOpen(false);
   }
 
@@ -154,6 +168,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transactions) setTransactions(data.transactions);
+    showToast(TOAST.deleted);
     setTxModal(null);
   }
 
@@ -167,6 +182,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transfers) setTransfers(data.transfers);
+    showToast(TOAST.saved);
     setTransferModal(null);
   }
 
@@ -185,41 +201,18 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transfers) setTransfers(data.transfers);
+    showToast(TOAST.deleted);
     setTransferModal(null);
   }
 
-  if (!ready) {
-    return (
-      <div className="flex flex-col gap-4">
-        <BackLink href="/tools/expenses/assets" label="返回資產總表" />
-        <p className={text.faint}>載入中…</p>
-      </div>
-    );
-  }
-
-  if (!account) {
-    return (
-      <div className="flex flex-col gap-4">
-        <BackLink href="/tools/expenses/assets" label="返回資產總表" />
-        <p className={text.faint}>找不到這個帳戶，可能已經被刪除</p>
-      </div>
-    );
-  }
-
-  const type = accountTypeById(accountTypes, account.accountTypeId);
-  const accountTx = transactions.filter((t) => t.accountId === account.id);
+  // ── 明細的分組推導刻意放在早期 return 之前 ──────────────────────────────────
+  // 骨架要照「上次明細有幾組、每組幾列」來畫，記形狀的 useSkeletonShape 是 hook，不能
+  // 擺在 return 後面。帳戶還沒載到（accounts 還是空的）時這一段一律算在空陣列上，算完
+  // 的結果不會被用到，成本也只是幾個空陣列。
   const range = dateFilterRange(filter);
-  const hasPriorData = (r: ReturnType<typeof dateFilterRange>) => transactionsInDateRange(accountTx, r).length > 0;
-
-  // 「跟誰比」由使用者選的比較基準決定，徽章後綴也跟著換（vs 上期／vs 去年同期…）。
-  const baseline = compareDateFilter(filter, compare);
-  const deltaSuffix = compareLabel(filter, compare);
+  const accountTx = account ? transactions.filter((t) => t.accountId === account.id) : [];
   const { totalIncome, totalExpense, balance, expenseTx, incomeTx } = totalsForRange(accountTx, categories, range);
-  const incomeDelta = rangeDelta((r) => totalsForRange(accountTx, categories, r).totalIncome, filter, hasPriorData, baseline);
-  const expenseDelta = rangeDelta((r) => totalsForRange(accountTx, categories, r).totalExpense, filter, hasPriorData, baseline);
-  const balanceDelta = rangeDelta((r) => totalsForRange(accountTx, categories, r).balance, filter, hasPriorData, baseline);
-
-  const accountTransfers = transfersForAccount(transfers, account.id).filter((t) => inDateRange(t.date, range));
+  const accountTransfers = account ? transfersForAccount(transfers, account.id).filter((t) => inDateRange(t.date, range)) : [];
 
   // 「明細」要把一般交易跟轉帳混在同一個依日期分組的列表裡——轉帳不是支出也不是收入，
   // 不算進上面的 KPI 統計，但使用者翻帳戶明細時仍然要看得到錢是什麼時候被轉走/轉進來的。
@@ -234,6 +227,79 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
     list.push(e);
     groups.set(e.date, list);
   }
+  const detailSkeletonShape = useSkeletonShape(
+    "cpx-tools:expenses-skeleton:account-detail",
+    [3, 2],
+    ready && account ? [...groups.values()].map((items) => items.length) : undefined,
+  );
+
+  // 骨架等掛載後才畫：明細的組數只有瀏覽器讀得到（localStorage），伺服器端畫出來的
+  // 一定是預設值，不擋的話會先閃一次錯的形狀再換成記住的（見 useSkeletonReady）。
+  if (!skeletonReady) return null;
+
+  if (!ready) {
+    // 骨架照著載入完成後的版面排：標題＋鉛筆、換帳戶欄位、餘額卡（含對帳鈕）、
+    // 日期膠囊、比較基準、三張 KPI、明細卡。這一頁本來只寫一行「載入中…」，資料回來
+    // 整頁一次長出來，畫面會從一行字暴衝成滿滿一頁。
+    // 這裡沒有返回鍵——標題右邊的返回鍵已經移除了，骨架留著的話載入完成那一刻會多消失
+    // 一顆東西。要回總表走底部導覽列的「資產」。
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex items-start justify-between gap-3">
+          <SkeletonBar width={120} height={20} />
+          <div className="size-8 shrink-0 animate-pulse rounded-full bg-[#EDE6FB]" />
+        </div>
+        <div className="h-[42px] animate-pulse rounded-2xl bg-[#EDE6FB]" />
+        <CardSkeleton className="py-3.5">
+          <div className="flex items-center justify-between">
+            <div>
+              <SkeletonBar width={56} height={12} />
+              <SkeletonBar width={148} height={24} className="mt-2" />
+            </div>
+            <div className="size-11 shrink-0 animate-pulse rounded-2xl bg-[#EDE6FB]" />
+          </div>
+          <div className="mt-3 h-[34px] animate-pulse rounded-xl bg-[#EDE6FB]" />
+        </CardSkeleton>
+        <div className="flex items-center justify-between gap-2">
+          <div className="h-[34px] w-[116px] animate-pulse rounded-full bg-[#EDE6FB]" />
+          <div className="size-[32px] animate-pulse rounded-full bg-[#EDE6FB]" />
+        </div>
+        <div className="-mt-1 mb-2 flex justify-end">
+          <div className="h-9 w-[96px] animate-pulse rounded-full bg-[#EDE6FB]" />
+        </div>
+        <KpiCardSkeleton />
+        <div className="grid grid-cols-2 gap-3">
+          <KpiCardSkeleton />
+          <KpiCardSkeleton />
+        </div>
+        <CardSkeleton>
+          <SkeletonBar width={48} height={14} />
+          <div className="mt-3">
+            <DateGroupsSkeleton shape={detailSkeletonShape} />
+          </div>
+        </CardSkeleton>
+      </div>
+    );
+  }
+
+  if (!account) {
+    return (
+      <div className="flex flex-col gap-4">
+        <BackLink href="/tools/expenses/assets" label="返回資產總表" />
+        <p className={text.faint}>找不到這個帳戶，可能已經被刪除</p>
+      </div>
+    );
+  }
+
+  const type = accountTypeById(accountTypes, account.accountTypeId);
+  const hasPriorData = (r: ReturnType<typeof dateFilterRange>) => transactionsInDateRange(accountTx, r).length > 0;
+
+  // 「跟誰比」由使用者選的比較基準決定，徽章後綴也跟著換（vs 上期／vs 去年同期…）。
+  const baseline = compareDateFilter(filter, compare);
+  const deltaSuffix = compareLabel(filter, compare);
+  const incomeDelta = rangeDelta((r) => totalsForRange(accountTx, categories, r).totalIncome, filter, hasPriorData, baseline);
+  const expenseDelta = rangeDelta((r) => totalsForRange(accountTx, categories, r).totalExpense, filter, hasPriorData, baseline);
+  const balanceDelta = rangeDelta((r) => totalsForRange(accountTx, categories, r).balance, filter, hasPriorData, baseline);
 
   const kind = accountTypeById(accountTypes, account.accountTypeId)?.kind ?? "asset";
   const currentBalance = accountBalance(account, accountTypes, transactions, categories, transfers);
@@ -245,16 +311,38 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
     <div className="flex flex-col gap-4">
       {/* 標題底下不再重複「圖示＋類型名稱」：類型的圖示就掛在下面那張餘額卡的右上角，
           而且多數帳戶跟它的類型同名（新增帳戶會自動帶類型名），等於把同一個詞寫兩次。 */}
+      {/* 標題右邊只剩鉛筆：返回鍵拿掉了。要換看別的帳戶改用下面那顆下拉欄位（不用先退回
+          總表再點進來），要回總表底部導覽列的「資產」就是同一個去處。
+          鉛筆走 Font Awesome，不用 emoji ✏️——emoji 在不同系統長得不一樣，也吃不到品牌紫。
+          規格比照搭乘車那顆（見 icon-button.tsx）。 */}
       <PageHeader
         title={account.name}
         actions={
-          <div className="flex items-center gap-2">
-            {/* 鉛筆走 Font Awesome，不用 emoji ✏️——emoji 在不同系統長得不一樣，
-                也吃不到品牌紫。規格比照搭乘車那顆（見 icon-button.tsx）。 */}
-            <IconButton icon="pen" tone="white" aria-label="編輯帳戶資料" onClick={() => setEditOpen(true)} size={32} iconSize={14} />
-            <BackLink href="/tools/expenses/assets" label="返回資產總表" />
-          </div>
+          <IconButton icon="pen" tone="white" aria-label="編輯帳戶資料" onClick={() => setEditOpen(true)} size={32} iconSize={14} />
         }
+      />
+
+      {/* 換帳戶的下拉欄位，擺在餘額卡上面：這一頁所有數字都是「這個帳戶的」，先講清楚
+          現在看的是哪一個，再往下看數字。長相跟彈窗裡的帳戶欄位一致（SelectField），
+          點了開的也是同一個 AccountPickerModal——那份清單本來就列了每個帳戶的餘額，
+          等於順手看得到別的戶頭現在有多少。 */}
+      <SelectField value={account.name} placeholder="選擇帳戶" aria-label="切換帳戶" onClick={() => setSwitchOpen(true)} />
+
+      <AccountPickerModal
+        open={switchOpen}
+        title="切換帳戶"
+        accounts={accounts}
+        accountTypes={accountTypes}
+        transactions={transactions}
+        categories={categories}
+        transfers={transfers}
+        value={accountId}
+        allowUnset={false}
+        onClose={() => setSwitchOpen(false)}
+        onSelect={(id) => {
+          // 選到的就是現在這一頁時不用換頁，免得多一次沒必要的導覽。
+          if (id && id !== accountId) router.push(`/tools/expenses/assets/${id}`);
+        }}
       />
 
       <AccountModal

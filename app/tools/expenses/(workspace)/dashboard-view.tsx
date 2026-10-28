@@ -13,6 +13,7 @@ import { useSkeletonCount, useSkeletonShape, useSkeletonReady } from "@/componen
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { text } from "@/components/expenses/theme";
+import { TOAST, useToast } from "@/components/expenses/toast";
 import { dateFilterRange, defaultDateFilter, groupByDate, limitDateGroups, referenceYearMonth, shiftDays } from "@/lib/expenses/date-filter";
 import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
 import { categoryColorClass, categoryFillClass, categoryPath, displayCategoryOf, topLevelCategories, type CategoryDTO } from "@/lib/expenses/categories";
@@ -66,6 +67,7 @@ export function DashboardView() {
   // 翻到 2025/03 或切成「全部」之後回首頁，首頁該還是停在本月。而且永遠是「月」模式
   // （見 MonthFilterPicker），不會出現「全部期間」。
   const [filter, setFilter] = useState(defaultDateFilter);
+  const showToast = useToast();
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const skeletonReady = useSkeletonReady();
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
@@ -137,6 +139,7 @@ export function DashboardView() {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transactions) setTransactions(data.transactions);
+    showToast(TOAST.created);
     setAddOpen(false);
   }
 

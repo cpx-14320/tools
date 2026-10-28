@@ -6,7 +6,6 @@ import {
   defaultDateFilter,
   type CompareSetting,
   type DateFilter,
-  type DateFilterMode,
 } from "@/lib/expenses/date-filter";
 
 const COMPARE_STORAGE_KEY = "cpx-tools:expenses-compare";
@@ -14,7 +13,6 @@ const COMPARE_STORAGE_KEY = "cpx-tools:expenses-compare";
 const DateFilterContext = createContext<{
   filter: DateFilter;
   setFilter: (f: DateFilter) => void;
-  setMode: (mode: DateFilterMode) => void;
   /** 「跟哪一段比」——跟 filter 分開存，切換看的月份時不會把比較基準也重設掉。 */
   compare: CompareSetting;
   setCompare: (c: CompareSetting) => void;
@@ -78,11 +76,7 @@ export function DateFilterProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  function setMode(mode: DateFilterMode) {
-    setFilter({ ...filter, mode });
-  }
-
-  return <DateFilterContext.Provider value={{ filter, setFilter, setMode, compare, setCompare }}>{children}</DateFilterContext.Provider>;
+  return <DateFilterContext.Provider value={{ filter, setFilter, compare, setCompare }}>{children}</DateFilterContext.Provider>;
 }
 
 export function useDateFilter() {

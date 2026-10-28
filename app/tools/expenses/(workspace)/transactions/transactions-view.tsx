@@ -14,6 +14,7 @@ import { LineIconButton } from "@/components/expenses/line-icon-button";
 import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
 import { text } from "@/components/expenses/theme";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
+import { TOAST, useToast } from "@/components/expenses/toast";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
@@ -57,6 +58,7 @@ export function TransactionsView() {
   // 預算卡片是以月為單位的，點進來時會帶 &month=YYYY-MM，把共用的日期篩選器切到同一個月，
   // 不然首頁顯示的是 10 月預算、進來卻還停在篩選器上次留著的區間，兩邊數字對不起來。
   const requestedMonth = searchParams.get("month") ?? "";
+  const showToast = useToast();
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const skeletonReady = useSkeletonReady();
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
@@ -189,6 +191,7 @@ export function TransactionsView() {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transactions) setTransactions(data.transactions);
+    showToast(TOAST.saved);
     setModal(null);
   }
 
@@ -201,6 +204,7 @@ export function TransactionsView() {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transactions) setTransactions(data.transactions);
+    showToast(TOAST.created);
     setAddOpen(false);
   }
 
@@ -212,6 +216,7 @@ export function TransactionsView() {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transactions) setTransactions(data.transactions);
+    showToast(TOAST.deleted);
     setModal(null);
   }
 
@@ -226,6 +231,8 @@ export function TransactionsView() {
       if (data.transactions) latest = data.transactions;
     }
     setTransactions(latest);
+    // 多選刪除講清楚刪了幾筆——按下去之前選的是一整批，只說「刪除成功」看不出有沒有漏。
+    showToast(`已刪除 ${selection.selectedIds.size} 筆`);
     setDeleteConfirm(null);
     selection.exit();
   }
@@ -361,9 +368,12 @@ export function TransactionsView() {
       {/* 支出／收入切換跟多選排同一列。篩選本來也在這一列，改成圖示之後搬去日期那一排
           （見上面的 DateFilterPicker actions）。 */}
       <div className="mb-4 flex items-center gap-2">
+        {/* 選中色跟報表頁那組主分頁同一個（實心紫白字，見 theme.ts 的 activeSolid）
+            ——兩頁的「支出／收入」是同一件事，不該一邊白底紫字、一邊實心紫。 */}
         <SegmentedControl
           value={kind}
           onChange={setKind}
+          activeTone="solid"
           options={[
             { value: "支出", label: "支出" },
             { value: "收入", label: "收入" },

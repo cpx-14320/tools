@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ComponentPropsWithoutRef, ReactNode } from "react";
 import Link from "next/link";
-import { gradient } from "./theme";
+import { activeSolid, gradient } from "./theme";
 
 type Variant = "primary" | "secondary" | "ghost" | "dashed";
 
@@ -95,6 +95,7 @@ export function SegmentedControl<T extends string>({
   className = "",
   fullWidth = false,
   size = "sm",
+  activeTone = "white",
 }: {
   options: SegmentOption<T>[];
   value: T;
@@ -102,12 +103,17 @@ export function SegmentedControl<T extends string>({
   className?: string;
   /** 容器改用 flex＋每個選項 flex-1，選項會平均等分寬度，不是跟著文字內容走。 */
   fullWidth?: boolean;
-  /** "lg" 用比預設寬、高一點的 padding——報表頁的支出/收入/淨額切換要比同頁的日/週/月/年
-   *  明顯大一階。"xs" 反過來，左右再收窄一點，給「要跟旁邊的東西擠在同一列」的情況用
-   *  （日期篩選的日/月/年/全部/自訂＋期間膠囊）。 */
-  size?: "xs" | "sm" | "lg";
+  /** "xs" 比預設左右再收窄一點，給「要跟旁邊的東西擠在同一列」的情況用。原本還有一階
+   *  "lg"（報表頁那組主分頁），但那組已經改回預設尺寸跟消費紀錄頁對齊，沒人用了就拿掉
+   *  ——留著一個沒有呼叫端的尺寸，下次有人要調大小時會先猜錯該改哪裡。 */
+  size?: "xs" | "sm";
+  /** 選中那一格的長相。"white"＝白底紫字加陰影（預設，給擠在一列裡的小切換用，實心紫
+   *  在那種尺寸下太搶眼）；"solid"＝實心紫底白字（報表頁那排主分頁，它是整頁的主要
+   *  切換，要一眼看出現在在哪一頁）。兩種都走共用的 activeSolid／同一組色票。 */
+  activeTone?: "white" | "solid";
 }) {
-  const sizeClass = size === "lg" ? "px-4 py-2.5 text-sm" : size === "xs" ? "px-2.5 py-1.5 text-xs" : "px-3.5 py-1.5 text-xs";
+  const sizeClass = size === "xs" ? "px-2.5 py-1.5 text-xs" : "px-3.5 py-1.5 text-xs";
+  const activeClass = activeTone === "solid" ? activeSolid : "bg-white text-[#6F5FD6] shadow-[0_2px_8px_-2px_rgba(111,95,214,0.4)]";
   return (
     <div className={`${fullWidth ? "flex" : "inline-flex"} items-center gap-0.5 rounded-full bg-[#F3EFFC] p-1 ${className}`}>
       {options.map((o) => (
@@ -116,7 +122,7 @@ export function SegmentedControl<T extends string>({
           type="button"
           onClick={() => onChange(o.value)}
           className={`${fullWidth ? "flex-1" : ""} rounded-full font-medium transition-colors ${sizeClass} ${
-            value === o.value ? "bg-white text-[#6F5FD6] shadow-[0_2px_8px_-2px_rgba(111,95,214,0.4)]" : "text-[#9C94C4] hover:text-[#6F5FD6]"
+            value === o.value ? activeClass : "text-[#9C94C4] hover:text-[#6F5FD6]"
           }`}
         >
           {o.label}
@@ -148,7 +154,7 @@ export function PillButton({
       type="button"
       onClick={onClick}
       className={`inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-3.5 text-xs font-medium transition-colors ${
-        active ? "bg-[#6F5FD6] text-white" : "bg-[#F3EFFC] text-[#9C94C4] hover:text-[#6F5FD6]"
+        active ? activeSolid : "bg-[#F3EFFC] text-[#9C94C4] hover:text-[#6F5FD6]"
       } ${className}`}
       {...rest}
     >

@@ -38,6 +38,7 @@ export function ListRow({
   right,
   leading,
   chevron = false,
+  nested = false,
   href,
   onClick,
 }: {
@@ -51,10 +52,19 @@ export function ListRow({
   leading?: ReactNode;
   /** 右端的「›」，表示點了會進到另一個畫面或彈窗。 */
   chevron?: boolean;
+  /** 上一層底下的子項目（資產總表「帳戶類型」底下的那幾個帳戶）：淡紫底＋往右縮排。
+   *  子項目本來是裝在自己一張卡裡才看得出層級，整段併成一張卡之後靠這兩個記號區分。
+   *  68px ＝ px-4 的 16 ＋ IconAvatar size="sm" 的 40 ＋ gap-3 的 12，剛好讓子項目的
+   *  名稱對齊上一層的名稱，而不是對齊上一層的圖示。 */
+  nested?: boolean;
   href?: string;
   onClick?: () => void;
 }) {
-  const className = "flex w-full items-center gap-3 px-4 py-3.5 text-left";
+  // 縮排用一組完整的 padding 而不是在 px-4 後面再疊一個 pl-*：同時出現兩個 padding-left
+  // 的 class 時，哪一個贏要看產出的 CSS 順序，不是寫在前面或後面。
+  const className = `flex w-full items-center gap-3 py-3.5 text-left ${
+    nested ? "bg-[#F9F7FE] pl-[68px] pr-4" : "px-4"
+  }`;
   const content = (
     <>
       {leading}

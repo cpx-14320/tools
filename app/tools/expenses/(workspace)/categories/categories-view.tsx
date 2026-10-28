@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { GroupedCardsSkeleton } from "@/components/expenses/skeleton";
 import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
+import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { SegmentedControl, Badge } from "@/components/expenses/button";
@@ -27,6 +28,7 @@ export function CategoriesView() {
   // 帳戶類型分資產／負債兩組、取得類型圖示。
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
+  const showToast = useToast();
   const skeletonReady = useSkeletonReady();
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [ready, setReady] = useState(false);
@@ -87,6 +89,7 @@ export function CategoriesView() {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.categories) setCategories(data.categories);
+    showToast(TOAST.saved);
     setModal(null);
   }
 
@@ -109,6 +112,10 @@ export function CategoriesView() {
       }
     }
     setCategories(latest);
+    // 被 409 擋下的那幾筆不算刪掉了，所以用「送出的筆數 － 被擋下的」當真正刪掉的數量；
+    // 一筆都沒刪成功時不報，不然使用者會以為刪掉了。
+    const deleted = ids.length - blocked.length;
+    if (deleted > 0) showToast(deleted === 1 ? TOAST.deleted : `已刪除 ${deleted} 筆`);
     return { blocked, totalInUse };
   }
 
@@ -175,6 +182,7 @@ export function CategoriesView() {
       }
     }
     setCategories(latest);
+    showToast(items.length === 1 ? TOAST.created : `已新增 ${items.length} 筆`);
     setBatchTarget(null);
   }
 

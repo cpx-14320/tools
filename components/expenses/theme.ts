@@ -49,6 +49,11 @@ export const text = {
  *  不然整排都是暗的，看起來像全部不能點。 */
 export const unselectedOption = "opacity-40 hover:opacity-70";
 
+/** 「選中／生效中」反白成實心紫底白字。報表頁的支出／收入／淨額／資產分頁、消費紀錄的
+ *  篩選膠囊都是同一種狀態，共用這一組 class——以前兩邊各寫一次、色碼還差一階
+ *  （#6F5FD6 vs #6F5ED4），同一個 App 裡出現兩種幾乎一樣的紫。要改選中色改這裡一處。 */
+export const activeSolid = "bg-[#6F5ED4] text-white";
+
 /** 間距規範——卡片/區塊/欄位之間統一用這幾階，不要每個頁面自己湊 gap-3／gap-4／gap-5。
  *  card：同一張卡片內，標題跟內容、內容跟內容之間的間距。section：頁面裡一個區塊
  *  （一張卡片／一個列表）跟下一個區塊之間的間距。field：表單裡欄位跟欄位之間。

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { DateFilterProvider } from "@/components/expenses/date-filter-context";
 import { ExpensesMobileShell } from "@/components/expenses/expenses-mobile-shell";
+import { ToastProvider } from "@/components/expenses/toast";
 
 /** 記帳本工具的外殼。只有手機版版面——記帳本整套畫面（底部導覽列、浮動新增按鈕、
  *  底部彈出的彈窗）都是照手機操作設計的，原本那個切到電腦版的按鈕只會把同一批元件
@@ -11,7 +12,9 @@ import { ExpensesMobileShell } from "@/components/expenses/expenses-mobile-shell
 export function ExpensesShell({ children }: { children: ReactNode }) {
   return (
     <DateFilterProvider>
-      <ExpensesMobileShell>{children}</ExpensesMobileShell>
+      <ToastProvider>
+        <ExpensesMobileShell>{children}</ExpensesMobileShell>
+      </ToastProvider>
     </DateFilterProvider>
   );
 }

@@ -75,12 +75,14 @@ export function KpiCardSkeleton() {
 }
 
 /** 「小標題在卡片外面、清單在卡片裡面」那種區塊的骨架（首頁的每一區、資產頁的帳戶區）。 */
-export function SectionSkeleton({ count, progress = false }: { count: number; progress?: boolean }) {
+export function SectionSkeleton({ count, progress = false, action = true }: { count: number; progress?: boolean; action?: boolean }) {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between px-1">
         <SkeletonBar width={96} height={14} />
-        <SkeletonBar width={48} height={12} />
+        {/* 小標右邊沒有「查看全部」那種連結的區塊傳 action={false}——留一條假的灰條
+            在那裡，資料回來時那個位置會空掉，看起來像東西載失敗了。 */}
+        {action && <SkeletonBar width={48} height={12} />}
       </div>
       <ListCardSkeleton count={count} progress={progress} />
     </div>

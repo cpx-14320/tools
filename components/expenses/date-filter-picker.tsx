@@ -6,21 +6,14 @@ import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { DatePickerModal } from "@/components/expenses/date-picker-modal";
 import { DateRangePickerModal } from "@/components/expenses/date-range-picker-modal";
 import { Modal } from "@/components/expenses/modal";
-import { weekRangeOf, type DateFilter, type DateFilterMode } from "@/lib/expenses/date-filter";
-
-/** 彈窗裡那排可以選的期間單位。順序是從短到長，最後才是「全部」——翻帳本最常切的是
- *  天／週／月，擺在手指最容易按到的上面幾列。
- *
- *  只有單位名稱、沒有說明小字：「天」「週」「月」「年」本來就不需要解釋，六列各掛一行
- *  灰字只是把彈窗拉長一倍，真正要按的那一列反而要捲才看得到。 */
-const MODE_OPTIONS: { value: DateFilterMode; label: string }[] = [
-  { value: "day", label: "天" },
-  { value: "week", label: "週" },
-  { value: "month", label: "月" },
-  { value: "year", label: "年" },
-  { value: "custom", label: "自訂" },
-  { value: "all", label: "全部" },
-];
+import {
+  DATE_FILTER_PRESETS,
+  applyDateFilterPreset,
+  dateFilterPresetOf,
+  weekRangeOf,
+  type DateFilter,
+  type DateFilterPreset,
+} from "@/lib/expenses/date-filter";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
@@ -63,6 +56,12 @@ function periodLabel(f: DateFilter): string {
       return `${f.year}/${pad2(f.month)}`;
     case "year":
       return `${f.year}`;
+    // 滾動視窗寫成「近 3 個月」而不是算出來的那段日期：使用者挑的就是這個說法，膠囊上
+    // 直接把它寫回去才對得起來（真正的起訖在下面的數字裡，不需要在膠囊上重複一次）。
+    case "recent3":
+      return "近 3 個月";
+    case "recent6":
+      return "近 6 個月";
     case "custom":
       // 自訂是兩個完整日期，寫成四位數年份會長到膠囊裝不下，年份只留後兩位
       // （`10/01/26 - 10/31/26`）——起訖都在同一列，看得出是一段區間就夠了。
@@ -141,11 +140,25 @@ function PeriodNav({
  *  `actions` 是同一列最右邊可以外掛的按鈕（消費紀錄頁的篩選圖示）——那是「這份清單要
  *  看什麼」的開關，跟期間是一組的，擺同一列才不用再多一排。 */
 export function DateFilterPicker({ className = "", actions }: { className?: string; actions?: ReactNode }) {
-  const { filter, setFilter, setMode } = useDateFilter();
+  const { filter, setFilter } = useDateFilter();
   const [modeOpen, setModeOpen] = useState(false);
   const [dayPickerOpen, setDayPickerOpen] = useState(false);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const [rangePickerOpen, setRangePickerOpen] = useState(false);
+  // 「今天」掛載時算一次固定住——render 當中讀時鐘是不純的，而且伺服器端跟瀏覽器端
+  // 算出不同的日期時 hydration 會對不起來。
+  const [today] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  });
+  const activePreset = dateFilterPresetOf(filter, today);
+
+  function choosePreset(preset: DateFilterPreset) {
+    setFilter(applyDateFilterPreset(filter, preset, today));
+    setModeOpen(false);
+    // 自訂範圍本來就是「我要自己挑起訖」，選完單位還要再點一次膠囊才跳出選擇器是多一步。
+    if (preset === "custom") setRangePickerOpen(true);
+  }
 
   // 天跟週共用同一個基準日，差別只在一次移幾天（見 date-filter.ts 的 weekRangeOf）。
   const stepDays = filter.mode === "week" ? 7 : 1;
@@ -171,7 +184,10 @@ export function DateFilterPicker({ className = "", actions }: { className?: stri
           onNext: () => setFilter({ ...filter, year: filter.year + 1 }),
         };
       case "all":
-        // 箭頭留著位子但按不動：這個模式本來就沒有上下一期。
+      case "recent3":
+      case "recent6":
+        // 箭頭留著位子但按不動。「全部」本來就沒有上下一期；「近 3／6 個月」是從今天
+        // 往回算的滾動視窗，翻走之後就不是「近」了，膠囊上那四個字會變成謊話。
         return { onPrev: () => {}, onNext: () => {}, disabled: true };
       case "custom":
         // 箭頭留著位子但按不動（跟「全部」一樣）：自訂區間的長度是使用者自己挑的，
@@ -195,18 +211,19 @@ export function DateFilterPicker({ className = "", actions }: { className?: stri
         </div>
       </div>
 
+      {/* 列的是「本月」「上月」「近 3 個月」這種一句話講完的預設，不是「先挑單位、再用
+          箭頭翻一格」兩個步驟（見 date-filter.ts 的 DATE_FILTER_PRESETS）。用 ‹ › 翻到
+          任意月份／年份之後不對應任何預設，那時候一列都不標「使用中」——畫面上看的既不是
+          本月也不是上月，標任何一列都是錯的。 */}
       <Modal open={modeOpen} onClose={() => setModeOpen(false)} title="期間">
         <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA]">
-          {MODE_OPTIONS.map((opt) => {
-            const active = filter.mode === opt.value;
+          {DATE_FILTER_PRESETS.map((opt) => {
+            const active = activePreset === opt.key;
             return (
               <button
-                key={opt.value}
+                key={opt.key}
                 type="button"
-                onClick={() => {
-                  setMode(opt.value);
-                  setModeOpen(false);
-                }}
+                onClick={() => choosePreset(opt.key)}
                 className={`px-4 py-3 text-left ${active ? "bg-[#F9F7FE]" : ""}`}
               >
                 <div className="flex items-center justify-between">

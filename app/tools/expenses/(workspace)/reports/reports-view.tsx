@@ -363,15 +363,23 @@ export function ReportsView() {
     // 趨勢。前兩排是固定的控制項，直接畫出它們的形狀，資料回來時只有數字長出來。
     return (
       <div className="flex flex-col gap-4">
-        <PageHeader title="報表" flush />
-        {/* 兩排控制項：期間膠囊＋日曆圖示、然後才是四個分頁（size="lg"）。順序跟真畫面
-            一致，不然資料回來那一刻兩排會對調；高度也要跟真的一樣，不然底下整塊會往下
-            跳一截。期間那排現在是膠囊靠左、圖示靠右兩個區塊（見 date-filter-picker.tsx）。 */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="h-[34px] w-[116px] animate-pulse rounded-full bg-[#EDE6FB]" />
-          <div className="size-[32px] animate-pulse rounded-full bg-[#EDE6FB]" />
+        {/* 標題列右邊掛日期膠囊＋日曆圖示，下一列是「vs 上期」，再往下才是四個分頁
+            。順序跟真畫面一致，不然資料回來那一刻幾排會對調；寬高也要跟真的一樣
+            （分頁現在是跟著文字走的內容寬度，不是撐滿整列），不然底下整塊會跳一下。 */}
+        <PageHeader
+          title="報表"
+          flush
+          actions={
+            <div className="flex items-center gap-2">
+              <div className="h-[34px] w-[116px] animate-pulse rounded-full bg-[#EDE6FB]" />
+              <div className="size-[32px] animate-pulse rounded-full bg-[#EDE6FB]" />
+            </div>
+          }
+        />
+        <div className="flex justify-end">
+          <div className="h-9 w-[96px] animate-pulse rounded-full bg-[#EDE6FB]" />
         </div>
-        <div className="h-[44px] animate-pulse rounded-full bg-[#EDE6FB]" />
+        <div className="h-9 w-[224px] animate-pulse rounded-full bg-[#EDE6FB]" />
         {kind === "資產" ? (
           // 淨資產一張、資產／負債兩張並排——間距是 gap-3 包在一起的，跟外層的 gap-4
           // 不一樣，分開放會多撐出 4px。
@@ -398,17 +406,19 @@ export function ReportsView() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* 「跟誰比」放在標題右邊，四個分頁共用同一個設定——本來只有資產分頁裡面有
-          一顆自己的基準日選擇器，切到別的分頁就不見了，而且跟首頁那顆各記各的。 */}
-      <PageHeader title="報表" flush actions={<ComparePicker />} />
+      {/* 期間跟「報表」標題同一列、靠右：它是整頁的前提（這一頁所有數字都是算這一段裡
+          的），放在最上面跟標題平起，往下才是「這一段要看哪一面」的四個分頁。日期膠囊
+          跟日曆圖示是同一個右側區塊（見 date-filter-picker.tsx）。
+          資產分頁看的是「某一天當時有多少」而不是「一段期間內發生多少」，所以它對這段
+          期間的解讀是「最後一天當時有多少」——切到 2026-09 就看九月底的淨資產，這樣才
+          看得出每個月的成長或衰退。 */}
+      <PageHeader title="報表" flush actions={<DateFilterPicker />} />
 
-      {/* 期間排在四個分頁上面：它是整頁的前提（這一頁所有數字都是算這一段裡的），分頁
-          只是決定「這一段要看哪一面」。擺在分頁下面會讀成「這個分頁的期間」，但它四個
-          分頁是共用的。版面跟消費紀錄頁同一個元件：膠囊靠左、圖示靠右兩個區塊。
-          資產看的是「某一天當時有多少」而不是「一段期間內發生多少」，所以這一頁對資產的
-          解讀是「這段期間的最後一天當時有多少」——切到 2026-09 就看九月底的淨資產，
-          這樣才看得出每個月的成長或衰退。 */}
-      <DateFilterPicker />
+      {/* 「跟誰比」自己一列、靠右——四個分頁共用同一個設定（本來只有資產分頁裡面有一顆
+          自己的基準日選擇器，切到別的分頁就不見了）。跟上面的日期對齊同一個右邊界。 */}
+      <div className="flex justify-end">
+        <ComparePicker />
+      </div>
 
       <SegmentedControl
         value={kind}
@@ -417,8 +427,10 @@ export function ReportsView() {
           setExpanded(false);
           setSelectedTrendStart(null);
         }}
-        fullWidth
-        size="lg"
+        // 尺寸跟消費紀錄頁的支出／收入那組一樣（預設的 size="sm"、寬度跟著文字走，不是
+        // 撐滿整列）——兩頁的主分頁是同一種東西，之前這裡刻意大一階反而像兩套元件。
+        // 選中色維持實心紫白字（activeSolid），消費紀錄那組也跟著改成同一個。
+        activeTone="solid"
         options={[
           { value: "支出", label: "支出" },
           { value: "收入", label: "收入" },
@@ -635,7 +647,9 @@ export function ReportsView() {
                           />
                         </button>
                         {isExpanded && (
-                          <div className="mt-2 flex flex-col gap-1.5 border-l-2 border-[#ECE4FA] pl-3 ml-[18px]">
+                          // 18 + 2（豎線）+ 32 ＝ 52px，剛好等於主分類那一列「圖示 40 ＋
+                          // gap-3 的 12」，子分類的名稱才跟主分類的名稱對齊，而不是對齊圖示。
+                          <div className="ml-[18px] mt-2 flex flex-col gap-2 border-l-2 border-[#ECE4FA] pl-8">
                             {subRows.map((sub) => (
                               <div key={sub.id || "self"} className="flex items-center justify-between gap-2 text-xs">
                                 <span className={`min-w-0 truncate ${sub.id ? "text-[#4A3B7C]" : text.muted}`}>{sub.name}</span>

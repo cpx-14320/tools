@@ -1,7 +1,10 @@
 // 日期區間篩選（天／週／月／年／全部／自訂）。純邏輯、不碰資料庫，伺服器端（API route）跟
 // client component 都能直接 import。原本待在 mock-data.ts 裡，搬過來後內容不變。
 
-export type DateFilterMode = "year" | "month" | "week" | "day" | "all" | "custom";
+// recent3／recent6 是「從基準日往回算三／六個月」的滾動視窗，不是某個曆月或曆年。它們
+// 跟其他模式一樣用 year/month/day 當基準日（套預設時就是「今天」），所以 dateFilterRange
+// 照樣是純函式、不用在裡面讀時鐘。
+export type DateFilterMode = "year" | "month" | "week" | "day" | "recent3" | "recent6" | "all" | "custom";
 
 export interface DateFilter {
   mode: DateFilterMode;
@@ -70,6 +73,12 @@ export function dateFilterRange(f: DateFilter): DateRange | null {
       const d = `${f.year}-${pad2(f.month)}-${pad2(f.day)}`;
       return { start: d, end: d };
     }
+    case "recent3":
+    case "recent6": {
+      // 基準日是區間的「結束」那一端，往回推三／六個月當起點（含頭含尾）。
+      const end = `${f.year}-${pad2(f.month)}-${pad2(f.day)}`;
+      return { start: shiftMonths(end, f.mode === "recent3" ? -3 : -6), end };
+    }
     case "custom":
       return f.customStart <= f.customEnd
         ? { start: f.customStart, end: f.customEnd }
@@ -101,6 +110,13 @@ export function previousDateFilter(f: DateFilter): DateFilter | null {
       const d = new Date(f.year, f.month - 1, f.day - (f.mode === "week" ? 7 : 1));
       return { ...f, year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() };
     }
+    case "recent3":
+    case "recent6": {
+      // 「上一期」＝再往前整整一個同樣長度的視窗（近三個月的上一期是前面那三個月）。
+      const moved = shiftMonths(`${f.year}-${pad2(f.month)}-${pad2(f.day)}`, f.mode === "recent3" ? -3 : -6);
+      const [y, m, d] = moved.split("-").map(Number);
+      return { ...f, year: y, month: m, day: d };
+    }
     default:
       return null;
   }
@@ -111,6 +127,8 @@ export function previousPeriodSuffix(mode: DateFilterMode): string {
   if (mode === "year") return "vs 去年";
   if (mode === "week") return "vs 上週";
   if (mode === "day") return "vs 前一天";
+  if (mode === "recent3") return "vs 前 3 個月";
+  if (mode === "recent6") return "vs 前 6 個月";
   return "vs 上期";
 }
 
@@ -215,6 +233,105 @@ export function groupByDate<T extends { date: string }>(items: T[]): [string, T[
   const map = new Map<string, T[]>();
   for (const item of items) map.set(item.date, [...(map.get(item.date) ?? []), item]);
   return [...map];
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 期間預設
+// 選期間時真正想說的是「本月」「上月」「近 3 個月」這種一句話講完的事，不是「先挑單位
+// 月、再用箭頭往前翻一格」兩個步驟。所以彈窗列的是這一排預設，底下仍然對應到上面那幾個
+// mode（本月→month、上週→week＋基準日往前七天…），翻頁的 ‹ › 跟「跟誰比」的邏輯完全
+// 不用改。
+// ────────────────────────────────────────────────────────────────────────────
+
+export type DateFilterPreset =
+  | "today"
+  | "yesterday"
+  | "thisWeek"
+  | "lastWeek"
+  | "thisMonth"
+  | "lastMonth"
+  | "recent3"
+  | "recent6"
+  | "thisYear"
+  | "lastYear"
+  | "all"
+  | "custom";
+
+/** 彈窗裡那一排預設，順序從短到長，最後才是「全部」跟「自訂範圍」。 */
+export const DATE_FILTER_PRESETS: { key: DateFilterPreset; label: string }[] = [
+  { key: "today", label: "今日" },
+  { key: "yesterday", label: "昨日" },
+  { key: "thisWeek", label: "本週" },
+  { key: "lastWeek", label: "上週" },
+  { key: "thisMonth", label: "本月" },
+  { key: "lastMonth", label: "上月" },
+  { key: "recent3", label: "近 3 個月" },
+  { key: "recent6", label: "近 6 個月" },
+  { key: "thisYear", label: "今年" },
+  { key: "lastYear", label: "去年" },
+  { key: "all", label: "全部" },
+  { key: "custom", label: "自訂範圍" },
+];
+
+/** 把一個預設套到現有的篩選器上。
+ *
+ *  `today` 由呼叫端傳進來（元件掛載時用 useState 固定住一次）——這個函式不自己讀時鐘，
+ *  不然同一個 render 在伺服器端跟瀏覽器端會算出不同的結果，hydration 會對不起來。
+ *  自訂範圍只負責切到 custom 模式，起訖日期維持原本的值交給區間選擇器去改。 */
+export function applyDateFilterPreset(f: DateFilter, preset: DateFilterPreset, today: string): DateFilter {
+  const at = (iso: string) => {
+    const [year, month, day] = iso.split("-").map(Number);
+    return { year, month, day };
+  };
+  const thisYear = Number(today.slice(0, 4));
+  switch (preset) {
+    case "today":
+      return { ...f, mode: "day", ...at(today) };
+    case "yesterday":
+      return { ...f, mode: "day", ...at(shiftDays(today, -1)) };
+    case "thisWeek":
+      return { ...f, mode: "week", ...at(today) };
+    case "lastWeek":
+      return { ...f, mode: "week", ...at(shiftDays(today, -7)) };
+    case "thisMonth":
+      return { ...f, mode: "month", ...at(today) };
+    case "lastMonth": {
+      // 從「這個月 1 號」往前推一個月，不是從今天——今天是 31 號的話直接推月份會溢位
+      // （見 shiftMonths 的說明）。月模式只看 year/month，基準日就留著原本的。
+      const prev = at(shiftMonths(`${today.slice(0, 7)}-01`, -1));
+      return { ...f, mode: "month", year: prev.year, month: prev.month };
+    }
+    case "recent3":
+      return { ...f, mode: "recent3", ...at(today) };
+    case "recent6":
+      return { ...f, mode: "recent6", ...at(today) };
+    case "thisYear":
+      return { ...f, mode: "year", year: thisYear };
+    case "lastYear":
+      return { ...f, mode: "year", year: thisYear - 1 };
+    case "all":
+      return { ...f, mode: "all" };
+    case "custom":
+      return { ...f, mode: "custom" };
+  }
+}
+
+/** 目前的篩選器對應到哪一個預設（彈窗要標「使用中」）——用 ‹ › 翻到任意一個月／一年之後
+ *  就不對應任何預設了，回傳 null，那時候彈窗裡一列都不標，這是誠實的：畫面上看的既不是
+ *  本月也不是上月。比對的是算出來的區間而不是欄位，週這種「同一個模式、不同基準日」才
+ *  分得出本週跟上週。 */
+export function dateFilterPresetOf(f: DateFilter, today: string): DateFilterPreset | null {
+  if (f.mode === "custom") return "custom";
+  for (const { key } of DATE_FILTER_PRESETS) {
+    if (key === "custom") continue;
+    const candidate = applyDateFilterPreset(f, key, today);
+    if (candidate.mode !== f.mode) continue;
+    const a = dateFilterRange(candidate);
+    const b = dateFilterRange(f);
+    if (a === null && b === null) return key;
+    if (a && b && a.start === b.start && a.end === b.end) return key;
+  }
+  return null;
 }
 
 /** 依日期分組的清單，跨組往下數到第 limit 筆為止（數滿了的那一組只留前面幾筆，後面的

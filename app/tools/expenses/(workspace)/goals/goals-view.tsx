@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { SkeletonBar, StackedCardsSkeleton } from "@/components/expenses/skeleton";
 import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
+import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
 import { Badge } from "@/components/expenses/button";
 import { IconButton } from "@/components/expenses/icon-button";
@@ -21,6 +22,7 @@ type ModalState = { mode: "create" } | { mode: "edit"; goal: SavingsGoalDTO };
 
 export function GoalsView() {
   const [goals, setGoals] = useState<SavingsGoalDTO[]>([]);
+  const showToast = useToast();
   const skeletonReady = useSkeletonReady();
   const [ready, setReady] = useState(false);
   // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
@@ -74,6 +76,7 @@ export function GoalsView() {
         .catch(() => ({}));
       if (data.goals) setGoals(data.goals);
     }
+    showToast(modal.mode === "edit" ? TOAST.saved : TOAST.created);
     setModal(null);
   }
 
@@ -86,6 +89,7 @@ export function GoalsView() {
       if (data.goals) latest = data.goals;
     }
     setGoals(latest);
+    showToast(ids.length === 1 ? TOAST.deleted : `已刪除 ${ids.length} 筆`);
   }
 
   function requestDelete() {
@@ -111,6 +115,8 @@ export function GoalsView() {
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.goals) setGoals(data.goals);
+    // 存入不是「新增一筆目標」，講的是這次存了多少進去。
+    showToast(`已存入 ${formatCurrency(amount)}`);
     setContributeId(null);
   }
 
