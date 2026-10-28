@@ -33,7 +33,7 @@ import { inDateRange } from "@/lib/expenses/date-filter";
 import { accountBalance, transactionBalancesByAccount, type AccountDTO } from "@/lib/expenses/accounts";
 import { accountTypeById, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { transfersForAccount, type TransferDTO } from "@/lib/expenses/transfers";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDateWithWeekday } from "@/lib/format";
 
 type TxModalState = { mode: "create" } | { mode: "edit"; transaction: TransactionDTO };
 
@@ -227,6 +227,17 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
     list.push(e);
     groups.set(e.date, list);
   }
+  /** 某一天對這個帳戶的淨變動——正負號跟底下每一列顯示的一致：收入／轉入是進來的錢，
+   *  支出／轉出是出去的錢。這裡刻意不套資產/負債的正負號規則（accounts.ts 的 signedDelta
+   *  會把負債帳戶的支出算成「欠款增加」），因為列表上那幾列顯示的就是「錢進來還是出去」，
+   *  標頭的小計要跟底下加得起來才有意義。 */
+  function dayNet(items: DetailEntry[]): number {
+    return items.reduce((sum, e) => {
+      if (e.kind === "transfer") return sum + (e.transfer.toAccountId === account?.id ? e.transfer.amount : -e.transfer.amount);
+      return sum + (categoryById(categories, e.tx.categoryId)?.kind === "收入" ? e.tx.amount : -e.tx.amount);
+    }, 0);
+  }
+
   const detailSkeletonShape = useSkeletonShape(
     "cpx-tools:expenses-skeleton:account-detail",
     [3, 2],
@@ -469,7 +480,18 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
             <div className="mt-3 flex flex-col gap-4">
               {[...groups.entries()].map(([date, items]) => (
                 <div key={date}>
-                  <p className={`mb-1.5 font-medium ${text.muted}`}>{date}</p>
+                  {/* 日期標頭比照首頁「最近消費」跟消費紀錄頁：日期帶星期幾、右邊掛當天
+                      小計。這一頁的明細混了支出、收入跟轉帳，所以小計是「這一天這個帳戶
+                      淨進出多少」，正負號跟底下每一列一致（見 dayNet）。 */}
+                  <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
+                    <p className={`font-medium ${text.muted}`}>{formatDateWithWeekday(date)}</p>
+                    {/* 跟左邊的日期同一個字級字色——當天小計是標頭資訊，不跟下面每一列的
+                        金額搶眼睛。 */}
+                    <p className={`font-medium tabular-nums ${text.muted}`}>
+                      {dayNet(items) >= 0 ? "＋" : "－"}
+                      {formatCurrency(Math.abs(dayNet(items)))}
+                    </p>
+                  </div>
                   <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA]">
                     {items.map((e) => {
                       if (e.kind === "tx") {

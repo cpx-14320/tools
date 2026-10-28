@@ -83,8 +83,16 @@ export function Modal({
             </div>
 
             {/* 標題、stickyBottom 跟 footer 固定不動，只有這一段內容自己捲動——不然表單一長，
-                連「取消／儲存」都會被捲出畫面外。 */}
-            <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-5">{children}</div>
+                連「取消／儲存」都會被捲出畫面外。
+
+                `[&>*]:shrink-0` 不能拿掉：這一段是 flex column，而 flex 子項目預設
+                `flex-shrink: 1`。螢幕矮、內容又長的時候（手機開「日期範圍」那 12 列），
+                瀏覽器會先把子項目的「盒子」壓到塞得下，裡面的內容卻不會跟著縮——結果
+                盒子的高度等於可視高度，捲動區算出來的 scrollHeight 就跟 clientHeight
+                一樣，overflow-y-auto 判定「沒有東西溢出、不用捲」，可是超出去的那幾列
+                早就被外層的 overflow-hidden 切掉了。畫面上就是：最後幾個選項看不到，
+                而且怎麼滑都滑不出來。禁止子項目被壓縮，內容才會真的溢出、捲軸才會生效。 */}
+            <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-5 [&>*]:shrink-0">{children}</div>
 
             {stickyBottom && <div className="shrink-0 border-t border-[#ECE4FA] px-5 py-3">{stickyBottom}</div>}
 
