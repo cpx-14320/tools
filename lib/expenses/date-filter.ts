@@ -151,8 +151,10 @@ export interface CompareSetting {
   year: number;
 }
 
+/** 預設不比較。換日期範圍只是換「看哪一段」，不該順便冒出一排 ▲／▼ 的漲跌徽章——
+ *  要跟別期比是另一個決定，使用者自己按標題旁邊那顆「不比較 ▾」挑了才開始比。 */
 export function defaultCompareSetting(): CompareSetting {
-  return { mode: "previous", year: new Date().getFullYear() - 1 };
+  return { mode: "none", year: new Date().getFullYear() - 1 };
 }
 
 function shiftFilterToYear(f: DateFilter, year: number): DateFilter | null {

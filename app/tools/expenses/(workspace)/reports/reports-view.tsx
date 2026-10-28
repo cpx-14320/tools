@@ -31,7 +31,7 @@ import {
   type TrendGranularity,
   type TrendPoint,
 } from "@/lib/expenses/transactions";
-import { compareDateFilter, dateFilterRange, previousPeriodSuffix } from "@/lib/expenses/date-filter";
+import { compareDateFilter, compareLabel, dateFilterRange } from "@/lib/expenses/date-filter";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { DonutCardSkeleton, KpiCardSkeleton, SummaryCardSkeleton, TrendCardSkeleton } from "@/components/expenses/skeleton";
 import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
@@ -203,11 +203,17 @@ export function ReportsView() {
   );
 
   const range = dateFilterRange(filter);
-  const deltaSuffix = previousPeriodSuffix(filter.mode);
+  // 徽章後綴要照使用者選的比較基準講，不是照期間單位講：選了「去年同期」卻寫「vs 上期」
+  // 的話，數字其實是跟去年比、字卻說是跟上一期比，兩邊對不起來。帳戶明細頁本來就是用
+  // compareLabel，這裡之前漏掉了。
+  const deltaSuffix = compareLabel(filter, compare);
   const hasPriorData = (r: ReturnType<typeof dateFilterRange>) => transactionsInDateRange(transactions, r).length > 0;
 
   const { totalIncome, totalExpense, balance, expenseTx, incomeTx } = totalsForRange(transactions, categories, range);
   const summaryTotal = kind === "支出" ? totalExpense : kind === "收入" ? totalIncome : balance;
+  // 第四個參數一定要傳：不傳的話 rangeDelta 會沿用舊行為「一律比上一期」，等於使用者
+  // 選的比較基準完全沒作用——選「不比較」照樣冒出漲跌徽章、選「去年同期」算出來的卻是
+  // 跟上個月比的數字。資產分頁本來就是走 compareDateFilter，收支這三個分頁之前漏掉了。
   const summaryDelta = rangeDelta(
     (r) => {
       const t = totalsForRange(transactions, categories, r);
@@ -215,6 +221,7 @@ export function ReportsView() {
     },
     filter,
     hasPriorData,
+    compareDateFilter(filter, compare),
   );
 
   // categoryBreakdown（支出）回傳的每一列帶完整 CategoryDTO，incomeBreakdown（收入）

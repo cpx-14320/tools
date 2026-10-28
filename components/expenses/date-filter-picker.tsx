@@ -215,7 +215,9 @@ export function DateFilterPicker({ className = "", actions }: { className?: stri
           箭頭翻一格」兩個步驟（見 date-filter.ts 的 DATE_FILTER_PRESETS）。用 ‹ › 翻到
           任意月份／年份之後不對應任何預設，那時候一列都不標「使用中」——畫面上看的既不是
           本月也不是上月，標任何一列都是錯的。 */}
-      <Modal open={modeOpen} onClose={() => setModeOpen(false)} title="期間">
+      <Modal open={modeOpen} onClose={() => setModeOpen(false)} title="日期範圍">
+        {/* 每一列的高度跟內距都一樣（45px、上下各 12px，量過）；頭尾兩列的底色會被外框的
+            16px 圓角修掉一角，那是圓角卡片本來就該有的樣子，不是間距不一致。 */}
         <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA]">
           {DATE_FILTER_PRESETS.map((opt) => {
             const active = activePreset === opt.key;

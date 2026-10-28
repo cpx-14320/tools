@@ -42,6 +42,8 @@ export function ComparePicker({ className = "" }: { className?: string }) {
       <Modal open={open} onClose={() => setOpen(false)} title="比較基準">
         <p className={`${text.muted} leading-relaxed`}>收入／支出／結餘旁邊的漲跌百分比，是拿現在看的這段期間跟下面選的這一段相比。</p>
 
+        {/* 每一列的高度跟內距都一樣（45px、上下各 12px，量過）；頭尾兩列的底色會被外框的
+            16px 圓角修掉一角，那是圓角卡片本來就該有的樣子，不是間距不一致。 */}
         <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA]">
           {OPTIONS.map((opt) => {
             const active = compare.mode === opt.value;
