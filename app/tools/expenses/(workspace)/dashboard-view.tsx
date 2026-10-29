@@ -211,9 +211,16 @@ export function DashboardView() {
 
   // 主視覺上只有日期（左上角）。首頁是「這個月的現況」，不是拿來做期間比較的地方——
   // 「跟誰比」那組設定收斂到報表頁，四個分頁共用一顆就夠了。
+  //
+  // 載入中也畫成骨架：這顆膠囊本來是唯一一個「資料還沒回來就先長出來」的東西，底下整片
+  // 是灰條、左上角卻已經是完整的日期，看起來像那一塊壞掉。尺寸照真的膠囊抓（34×116）。
   const heroOverlay = (
     <div className="absolute inset-x-5 top-5 flex items-start">
-      <MonthFilterPicker filter={filter} onChange={setFilter} />
+      {ready ? (
+        <MonthFilterPicker filter={filter} onChange={setFilter} />
+      ) : (
+        <div className="h-[34px] w-[116px] animate-pulse rounded-full bg-white/70" />
+      )}
     </div>
   );
 

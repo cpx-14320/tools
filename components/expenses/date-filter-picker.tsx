@@ -10,6 +10,7 @@ import {
   DATE_FILTER_PRESETS,
   applyDateFilterPreset,
   dateFilterPresetOf,
+  dateFilterRange,
   weekRangeOf,
   type DateFilter,
   type DateFilterPreset,
@@ -56,12 +57,15 @@ function periodLabel(f: DateFilter): string {
       return `${f.year}/${pad2(f.month)}`;
     case "year":
       return `${f.year}`;
-    // 滾動視窗寫成「近 3 個月」而不是算出來的那段日期：使用者挑的就是這個說法，膠囊上
-    // 直接把它寫回去才對得起來（真正的起訖在下面的數字裡，不需要在膠囊上重複一次）。
+    // 滾動視窗寫出實際的起訖日期，不是「近 3 個月」四個字：挑的時候講「近 3 個月」很直覺，
+    // 但挑完之後要知道的是「所以到底是哪一段」——尤其它的起點是從今天往回算的，不講出來
+    // 的話跟「本月」「今年」那種邊界明確的選項擺在一起會分不出差在哪。彈窗裡那一列仍然
+    // 標著「使用中」，看得出是從哪個預設來的。
     case "recent3":
-      return "近 3 個月";
-    case "recent6":
-      return "近 6 個月";
+    case "recent6": {
+      const r = dateFilterRange(f);
+      return r ? `${monthDayYear(r.start)} - ${monthDayYear(r.end)}` : "";
+    }
     case "custom":
       // 自訂是兩個完整日期，寫成四位數年份會長到膠囊裝不下，年份只留後兩位
       // （`10/01/26 - 10/31/26`）——起訖都在同一列，看得出是一段區間就夠了。

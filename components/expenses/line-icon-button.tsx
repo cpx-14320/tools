@@ -64,10 +64,12 @@ export function LineIconButton({
   return (
     <button
       type="button"
-      // disabled 的那一組：線條淡到跟邊框同一階，而且不要再有 hover 的底色/變紫——
-      // 不壓掉的話按不動的鈕摸上去照樣會亮，看起來像沒反應的 bug。
-      className={`grid size-8 shrink-0 place-items-center rounded-full transition-colors hover:bg-[#F3EFFC] hover:text-[#6F5FD6] disabled:text-[#C7BFE6] disabled:hover:bg-transparent disabled:hover:text-[#C7BFE6] ${
-        active ? "bg-[#F3EFFC] text-[#6F5FD6]" : "text-[#9C94C4]"
+      // 平常就有淡紫底（bg-[#F3EFFC]，跟多選工具列、pill 選單同一個底色）：這顆鈕原本
+      // 只有線條、沒有底，擺在日期膠囊旁邊看起來像漂在那裡、不像一顆可以按的東西。
+      // disabled 的那一組：線條淡到跟邊框同一階，而且不要再有 hover 的變紫——不壓掉的話
+      // 按不動的鈕摸上去照樣會亮，看起來像沒反應的 bug。
+      className={`grid size-8 shrink-0 place-items-center rounded-full bg-[#F3EFFC] transition-colors hover:text-[#6F5FD6] disabled:text-[#C7BFE6] disabled:hover:text-[#C7BFE6] ${
+        active ? "text-[#6F5FD6]" : "text-[#9C94C4]"
       } ${className}`}
       {...rest}
     >

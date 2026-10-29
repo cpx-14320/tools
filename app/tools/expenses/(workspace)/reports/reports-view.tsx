@@ -39,8 +39,10 @@ import { formatCurrency } from "@/lib/format";
 
 type ReportKind = "支出" | "收入" | "淨額" | "資產";
 
-// 帳戶類型沒有自己的圖表配色，資產配置圖借用分類佔比圖同一組色票循環上色。
-const ASSET_TYPE_COLORS = Object.values(categoryColorHex);
+/** 淨額那一頁「收入／支出」兩塊的顏色——借分類色票的 a（淡紫）跟 c（粉），跟首頁
+ *  「薪水」「利息」那兩個預設分類是同一個色號，整個 App 的收支配色才是同一套。 */
+const NET_INCOME_COLOR = categoryColorHex.a;
+const NET_EXPENSE_COLOR = categoryColorHex.c;
 
 const GRANULARITY_OPTIONS: { value: TrendGranularity; label: string }[] = [
   { value: "day", label: "日" },
@@ -161,13 +163,19 @@ export function ReportsView() {
   const assetTypeTotals = sumByAccountType(assetAccounts, accountTypes, assetTx, categories, assetTransfers);
   const assetTypeSum = [...assetTypeTotals.values()].reduce((sum, v) => sum + v, 0) || 1;
   const assetTypeBreakdown = [...assetTypeTotals.entries()]
-    .map(([typeId, amount], i) => ({
+    .map(([typeId, amount]) => {
+      const type = accountTypeById(accountTypes, typeId);
+      return {
       id: typeId,
-      name: accountTypeById(accountTypes, typeId)?.name ?? "（未知類型）",
+      name: type?.name ?? "（未知類型）",
       amount,
       pct: (amount / assetTypeSum) * 100,
-      colorHex: ASSET_TYPE_COLORS[i % ASSET_TYPE_COLORS.length],
-    }))
+      // 用這個帳戶類型自己設定的顏色（設定 › 帳戶類型那一頁選的），不是照順序循環配色：
+      // 循環配色的話同一個類型在資產頁是紫色、在這張圖卻是黃色，而且新增／刪掉一個類型
+      // 會讓剩下每一個的顏色整排位移。找不到類型（被刪掉了）才退回灰色。
+      colorHex: type ? categoryColorHex[type.color] : OTHER_COLOR,
+      };
+    })
     .sort((a, b) => b.amount - a.amount);
   const assetTypeDonutData: DonutSlice[] = assetTypeBreakdown.map((r) => ({ id: r.id, label: r.name, amount: r.amount, colorHex: r.colorHex }));
   const assetTypeColor = new Map(assetTypeBreakdown.map((r) => [r.id, r.colorHex]));
@@ -257,8 +265,12 @@ export function ReportsView() {
   // 「這段期間的錢從哪裡來、又去了哪裡」：收入跟支出兩片，中間的缺口就是結餘。版面
   // 跟支出／收入分頁的圓餅完全一樣，四個分頁看起來才是同一種東西。
   const netDonutData: DonutSlice[] = [
-    { id: "income", label: "收入", amount: totalIncome, colorHex: KPI_POSITIVE },
-    { id: "expense", label: "支出", amount: totalExpense, colorHex: KPI_NEGATIVE },
+    // 收支兩塊用分類色票的紫跟粉（NET_INCOME_COLOR／NET_EXPENSE_COLOR），不是 KPI 的
+    // 綠／紅：綠紅在這個 App 裡講的是「變好／變壞」（漲跌徽章、結餘正負），但圓餅這兩塊
+    // 只是「這段期間進來多少、出去多少」的組成，沒有好壞可言，借用綠紅會讓人以為支出
+    // 那塊本身是個警訊。底下的「結餘」那一行才是真的有好壞，所以仍然維持綠／紅。
+    { id: "income", label: "收入", amount: totalIncome, colorHex: NET_INCOME_COLOR },
+    { id: "expense", label: "支出", amount: totalExpense, colorHex: NET_EXPENSE_COLOR },
   ].filter((d) => d.amount > 0);
   const netDonutTotal = totalIncome + totalExpense;
 

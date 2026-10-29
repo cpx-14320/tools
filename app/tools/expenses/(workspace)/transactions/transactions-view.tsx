@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FaIcon } from "@/components/expenses/fa-icon";
-import { DateGroupsSkeleton, SummaryCardSkeleton } from "@/components/expenses/skeleton";
+import { DateGroupsSkeleton, SkeletonBar, SummaryCardSkeleton } from "@/components/expenses/skeleton";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
@@ -14,6 +14,7 @@ import { LineIconButton } from "@/components/expenses/line-icon-button";
 import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
 import { text } from "@/components/expenses/theme";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
+import { PageHeader } from "@/components/expenses/page-header";
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
@@ -237,20 +238,59 @@ export function TransactionsView() {
     selection.exit();
   }
 
+  // 骨架等掛載後才畫：形狀只有瀏覽器讀得到，伺服器端畫出來的一定是預設值，不擋的話
+  // 會先閃一次錯的形狀再換成記住的（見 useSkeletonReady）。
+  if (!skeletonReady) return null;
+
+  if (!ready) {
+    // 整頁都畫骨架，不是只畫清單：標題列、日期膠囊、兩顆圖示、支出／收入、選取、搜尋列
+    // 本來都是「資料還沒回來就先長出來」的，結果載入時上半頁是完整的控制項、下半頁才是
+    // 灰條，看起來像壞掉一半。尺寸照真的元件抓，資料回來才不會整塊跳。
+    return (
+      <div>
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+          <SkeletonBar width={44} height={20} />
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="h-[34px] w-[116px] animate-pulse rounded-full bg-[#EDE6FB]" />
+            <div className="size-8 animate-pulse rounded-full bg-[#EDE6FB]" />
+            <div className="size-8 animate-pulse rounded-full bg-[#EDE6FB]" />
+          </div>
+        </div>
+        <div className="mb-4 flex items-center gap-2">
+          {/* 支出／收入那組膠囊：容器 p-1 ＋ 兩格 px-3.5 py-1.5 text-xs ≈ 36px 高。 */}
+          <div className="h-9 w-[124px] animate-pulse rounded-full bg-[#EDE6FB]" />
+          <div className="flex min-w-0 flex-1 items-center justify-end">
+            <div className="h-9 w-[60px] animate-pulse rounded-full bg-[#EDE6FB]" />
+          </div>
+        </div>
+        <div className="mb-4 h-[42px] animate-pulse rounded-full bg-[#EDE6FB]" />
+        <div className="flex flex-col gap-4">
+          {skeletonShape.length > 0 && <SummaryCardSkeleton />}
+          <DateGroupsSkeleton shape={skeletonShape} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
-      {/* 篩選掛在日期篩選器同一列最右邊：期間跟篩選條件都是「這份清單要看什麼」，擺在
-          一起就不用為了一顆按鈕再多一排。有設條件時圖示變實心紫底（跟分類的名稱一起
-          顯示在彈窗裡），一眼看得出清單是被篩過的。 */}
-      <DateFilterPicker
-        className="mb-4"
+      {/* 標題在左、日期膠囊跟圖示在右，同一列——跟報表頁同一個 PageHeader（那邊是
+          「報表」＋日期），兩頁的開頭才是同一種版型。篩選圖示掛在日期那一組的最右邊：
+          期間跟篩選條件都是「這份清單要看什麼」，擺一起就不用為了一顆按鈕再多一排。
+          有設條件時圖示轉紫（跟分類的名稱一起顯示在彈窗裡），一眼看得出清單是被篩過的。 */}
+      <PageHeader
+        title="明細"
         actions={
-          <LineIconButton
-            icon="filter"
-            active={filterCount > 0}
-            onClick={() => setFilterOpen(true)}
-            aria-label={filterCount > 0 ? `篩選（${filterCount} 個條件）` : "篩選"}
-            title="篩選"
+          <DateFilterPicker
+            actions={
+              <LineIconButton
+                icon="filter"
+                active={filterCount > 0}
+                onClick={() => setFilterOpen(true)}
+                aria-label={filterCount > 0 ? `篩選（${filterCount} 個條件）` : "篩選"}
+                title="篩選"
+              />
+            }
           />
         }
       />
@@ -340,7 +380,7 @@ export function TransactionsView() {
         </div>
 
         <div>
-          <p className={`mb-2 ${text.label}`}>金額區間（兩邊都可以只填一邊）</p>
+          <p className={`mb-2 ${text.label}`}>金額範圍</p>
           <div className="flex items-center gap-2">
             <input
               type="number"
@@ -348,7 +388,7 @@ export function TransactionsView() {
               min={0}
               value={minAmount}
               onChange={(e) => setMinAmount(e.target.value)}
-              placeholder="最低"
+              placeholder="最小值"
               className={`${fieldInputClass} min-w-0 flex-1`}
             />
             <span className="shrink-0 text-[#C7BFE6]">～</span>
@@ -358,7 +398,7 @@ export function TransactionsView() {
               min={0}
               value={maxAmount}
               onChange={(e) => setMaxAmount(e.target.value)}
-              placeholder="最高"
+              placeholder="最大值"
               className={`${fieldInputClass} min-w-0 flex-1`}
             />
           </div>
@@ -394,7 +434,7 @@ export function TransactionsView() {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={`搜尋備註、分類⋯不限${filter.mode === "all" ? "" : "期間"}`}
+          placeholder="搜尋備註、分類名稱⋯"
           className="w-full bg-transparent text-sm text-[#4A3B7C] outline-none placeholder:text-[#B3ABD4]"
         />
       </label>
@@ -418,93 +458,93 @@ export function TransactionsView() {
         onConfirm={handleBulkDelete}
       />
 
-      {!skeletonReady ? null : !ready ? (
-        // 骨架照著載入完成後的版面排：一張期間合計卡，底下是依日期分組的清單。
-        // 合計卡只有「這段期間真的有紀錄」時才會出現（見下面 rows.length > 0 那段），所以
-        // 上次是空的（shape 是空陣列）就不要畫，不然骨架會比真的畫面多出一整張卡。
-        <div className="flex flex-col gap-4">
-          {skeletonShape.length > 0 && <SummaryCardSkeleton />}
-          <DateGroupsSkeleton shape={skeletonShape} />
-        </div>
-      ) : (
-        <>
-          {isSearching ? (
-            <p className={`mb-4 px-1 ${text.muted}`}>
-              「{query.trim()}」在所有時間的{kind}紀錄中共 {rows.length} 筆符合，不受上方日期篩選影響
-            </p>
-          ) : (
-            rows.length > 0 && (
-              <Card className="mb-4">
-                <CardBody className="py-3.5">
-                  <p className={text.muted}>這段期間共{kind === "支出" ? "花費" : "收入"}</p>
-                  <p className={`mt-0.5 ${text.statValue}`}>{formatCurrency(total)}</p>
-                </CardBody>
-              </Card>
-            )
-          )}
-
-          {rows.length === 0 ? (
-            <Card>
-              <CardBody className={`py-10 text-center ${text.muted}`}>
-                {isSearching ? "沒有符合的紀錄。" : `這段期間還沒有${kind}紀錄。`}
+        {isSearching ? (
+          <p className={`mb-4 px-1 ${text.muted}`}>
+            「{query.trim()}」在所有時間的{kind}紀錄中共 {rows.length} 筆符合，不受上方日期篩選影響
+          </p>
+        ) : (
+          rows.length > 0 && (
+            <Card className="mb-4">
+              <CardBody className="py-3.5">
+                <p className={text.muted}>這段期間共{kind === "支出" ? "花費" : "收入"}</p>
+                <p className={`mt-0.5 ${text.statValue}`}>{formatCurrency(total)}</p>
               </CardBody>
             </Card>
-          ) : (
-            <div className="flex flex-col gap-5">
-              {[...groups.entries()].map(([date, items]) => (
-                <div key={date}>
-                  {/* 日期右邊掛當天的小計——只有「這段期間總共花多少」的話，要知道某一天花了
-                      多少還得自己把那幾列加起來。金額的正負號跟下面每一列一致。 */}
-                  <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
-                    <p className={`font-medium ${text.muted}`}>{formatDateWithWeekday(date)}</p>
-                    {/* 跟左邊的日期同一個字級字色——當天小計是這一組的標頭資訊，不是要跟
-                        下面每一列的金額搶眼睛。 */}
-                    <p className={`font-medium tabular-nums ${text.muted}`}>
-                      {kind === "收入" ? "＋" : "－"}
-                      {formatCurrency(items.reduce((sum, t) => sum + t.amount, 0))}
-                    </p>
-                  </div>
-                  <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
-                    {items.map((t) => {
-                      const category = categoryById(categories, t.categoryId);
-                      const breakdown = t.breakdown ?? [];
-                      const expanded = expandedIds.has(t.id);
-                      return (
-                        <div key={t.id}>
-                          <div className="flex w-full items-center gap-3 px-4 py-3">
-                            {selection.selecting && <SelectionDot selected={selection.selectedIds.has(t.id)} />}
-                            <button
-                              type="button"
-                              onClick={() => (selection.selecting ? selection.toggle(t.id) : setModal(t))}
-                              className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                            >
-                              <TransactionRowLabel
-                                icon={category?.icon ?? ""}
-                                iconClassName={category ? categoryColorClass[category.color] : undefined}
-                                title={transactionDisplayName(t, categories)}
-                                subtitle={categoryPath(categories, t.categoryId)}
-                              />
-                              {/* 只有金額，不再掛「記完之後帳戶剩多少」那行小字：那是
-                                  帳戶的餘額，要看哪個戶頭剩多少去資產總表，列在每一筆
-                                  消費旁邊只是讓每一列都多一行雜訊。 */}
-                              <span className={`shrink-0 tabular-nums font-semibold text-[#4A3B7C] ${kind === "收入" ? "text-[#2FAE82]" : ""}`}>
-                                {kind === "收入" ? "＋" : "－"}
-                                {formatCurrency(t.amount)}
-                              </span>
-                            </button>
-                            {breakdown.length > 0 && <BreakdownToggle expanded={expanded} onClick={() => toggleExpanded(t.id)} />}
-                          </div>
-                          {expanded && breakdown.length > 0 && <TransactionBreakdown items={breakdown} />}
-                        </div>
-                      );
-                    })}
-                  </div>
+          )
+        )}
+
+        {rows.length === 0 ? (
+          <Card>
+            <CardBody className={`py-10 text-center ${text.muted}`}>
+              {isSearching ? "沒有符合的紀錄。" : `這段期間還沒有${kind}紀錄。`}
+            </CardBody>
+          </Card>
+        ) : (
+          <div className="flex flex-col gap-5">
+            {[...groups.entries()].map(([date, items]) => (
+              <div key={date}>
+                {/* 日期右邊掛當天的小計——只有「這段期間總共花多少」的話，要知道某一天花了
+                    多少還得自己把那幾列加起來。金額的正負號跟下面每一列一致。 */}
+                <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
+                  <p className={`font-medium ${text.muted}`}>{formatDateWithWeekday(date)}</p>
+                  {/* 跟左邊的日期同一個字級字色——當天小計是這一組的標頭資訊，不是要跟
+                      下面每一列的金額搶眼睛。 */}
+                  <p className={`font-medium tabular-nums ${text.muted}`}>
+                    {kind === "收入" ? "＋" : "－"}
+                    {formatCurrency(items.reduce((sum, t) => sum + t.amount, 0))}
+                  </p>
                 </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
+                <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
+                  {items.map((t) => {
+                    const category = categoryById(categories, t.categoryId);
+                    const breakdown = t.breakdown ?? [];
+                    const expanded = expandedIds.has(t.id);
+                    return (
+                      <div key={t.id}>
+                        {/* 選取模式時整一列就是一個勾選目標：圓點、圖示、名稱、金額全部
+                            包在同一顆按鈕裡（圓點只是指示器，見 SelectionDot）。本來圓點
+                            掛在按鈕外面，點它完全沒反應——而它看起來最像 checkbox，所以
+                            大家第一下都點那裡。role/aria-checked 也一起補上，不然螢幕
+                            報讀器讀不出這一列有沒有被選。 */}
+                        <div className="flex w-full items-center gap-3 px-4 py-3">
+                          <button
+                            type="button"
+                            role={selection.selecting ? "checkbox" : undefined}
+                            aria-checked={selection.selecting ? selection.selectedIds.has(t.id) : undefined}
+                            onClick={() => (selection.selecting ? selection.toggle(t.id) : setModal(t))}
+                            className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                          >
+                            {selection.selecting && <SelectionDot selected={selection.selectedIds.has(t.id)} />}
+                            <TransactionRowLabel
+                              icon={category?.icon ?? ""}
+                              iconClassName={category ? categoryColorClass[category.color] : undefined}
+                              title={transactionDisplayName(t, categories)}
+                              subtitle={categoryPath(categories, t.categoryId)}
+                            />
+                            {/* 只有金額，不再掛「記完之後帳戶剩多少」那行小字：那是
+                                帳戶的餘額，要看哪個戶頭剩多少去資產總表，列在每一筆
+                                消費旁邊只是讓每一列都多一行雜訊。 */}
+                            <span className={`shrink-0 tabular-nums font-semibold text-[#4A3B7C] ${kind === "收入" ? "text-[#2FAE82]" : ""}`}>
+                              {kind === "收入" ? "＋" : "－"}
+                              {formatCurrency(t.amount)}
+                            </span>
+                          </button>
+                          {/* 選取模式時不顯示展開箭頭：正在挑要刪哪幾筆的時候不會想
+                              展開看拆帳明細，而留著它等於在整列的勾選範圍右邊挖一個
+                              點不到的洞。 */}
+                          {!selection.selecting && breakdown.length > 0 && (
+                            <BreakdownToggle expanded={expanded} onClick={() => toggleExpanded(t.id)} />
+                          )}
+                        </div>
+                        {!selection.selecting && expanded && breakdown.length > 0 && <TransactionBreakdown items={breakdown} />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
     </div>
   );
 }

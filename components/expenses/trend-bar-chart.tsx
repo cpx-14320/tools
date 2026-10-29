@@ -1,4 +1,5 @@
 import type { TrendPoint } from "@/lib/expenses/transactions";
+import { categoryColorHex } from "@/lib/expenses/categories";
 
 const CHART_HEIGHT = 160;
 // 長條上方那行金額佔掉的高度，長條本身要扣掉這段才不會頂出容器外。
@@ -119,8 +120,15 @@ export function TrendBarChart({
   );
 }
 
+// 綠／紅只代表「變好／變壞」：淨額的增減、每一期上面那行數字會用到。
 const POSITIVE = "#2FAE82";
 const NEGATIVE = "#D1517E";
+
+/** 收入／支出那兩根長條本身的顏色——用分類色票的淡紫跟粉（跟報表頁淨額圓餅的兩塊、
+ *  首頁「薪水」「利息」同一個色號），不是上面的綠／紅。那兩根只是「這一期進來多少、
+ *  出去多少」的組成，沒有好壞可言；借用綠紅的話，支出那根看起來會像一個警訊。 */
+const INCOME_SERIES = categoryColorHex.a;
+const EXPENSE_SERIES = categoryColorHex.c;
 
 /** 淨額用的收入／支出對照長條——故意不跟 TrendBarChart 共用同一個元件：堆疊起來會把
  *  收入＋支出加在一起，數字本身就是誤導的（一個是進帳、一個是花費，不該疊成同一截）。
@@ -168,12 +176,12 @@ export function NetTrendChart({
               <div className="flex w-full items-end justify-center gap-0.5" style={{ height: BAR_AREA }}>
                 <div
                   className="w-1/2 rounded-t-sm"
-                  style={{ height: Math.max(2, Math.round((inc.total / maxTotal) * BAR_AREA)), background: POSITIVE }}
+                  style={{ height: Math.max(2, Math.round((inc.total / maxTotal) * BAR_AREA)), background: INCOME_SERIES }}
                   title={`收入 ${formatValue(inc.total)}`}
                 />
                 <div
                   className="w-1/2 rounded-t-sm"
-                  style={{ height: Math.max(2, Math.round((exp.total / maxTotal) * BAR_AREA)), background: NEGATIVE }}
+                  style={{ height: Math.max(2, Math.round((exp.total / maxTotal) * BAR_AREA)), background: EXPENSE_SERIES }}
                   title={`支出 ${formatValue(exp.total)}`}
                 />
               </div>
