@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { SkeletonBar, StackedCardsSkeleton } from "@/components/expenses/skeleton";
 import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
+import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
@@ -55,6 +56,9 @@ export function RecurringView() {
   const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:recurring", 4, ready ? rules.length : undefined);
   const [modal, setModal] = useState<ModalState | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
+  // 待確認預設只顯示前幾筆：一條週期規則積上半年就是二三十筆，整張攤開會把下面的規則
+  // 清單整個推到第二屏，變成「進來只看得到待確認」。
+  const [pendingExpanded, setPendingExpanded] = useState(false);
   // 跟消費分類頁一樣用支出／收入分頁切換——固定收支兩種都會有（房租 vs 薪水），
   // 混在同一份清單裡要自己用金額顏色分辨，分頁之後一次只看一種。
   const [kind, setKind] = useState<CategoryKind>("支出");
@@ -192,6 +196,9 @@ export function RecurringView() {
   const visibleRules = rules.filter((r) => (categoryById(categories, r.categoryId)?.kind ?? "支出") === kind);
   // 待確認也跟著分頁篩，判斷方式跟上面一致（查無分類一律當支出）。
   const visiblePending = pending.filter((p) => (categoryById(categories, p.categoryId)?.kind ?? "支出") === kind);
+  // 收合只影響「列出幾筆」，不影響上面的筆數跟「全部確認／全部略過」——那兩顆處理的
+  // 一律是這個分頁底下全部的待確認，不是畫面上看得到的那幾筆。
+  const shownPending = pendingExpanded ? visiblePending : visiblePending.slice(0, PREVIEW_COUNT);
   const selection = useSelection(visibleRules.map((r) => r.id));
 
   return (
@@ -291,7 +298,7 @@ export function RecurringView() {
             <p className={`mt-1 ${text.muted}`}>確認後才會寫進消費紀錄。金額跟實際不一樣的話，先略過再手動記一筆。</p>
 
             <div className="mt-3 flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA]">
-              {visiblePending.map((p) => {
+              {shownPending.map((p) => {
                 const category = categoryById(categories, p.categoryId);
                 const isIncome = category?.kind === "收入";
                 const key = `${p.ruleId}|${p.date}`;
@@ -329,6 +336,14 @@ export function RecurringView() {
                 );
               })}
             </div>
+
+            {visiblePending.length > PREVIEW_COUNT && (
+              <ExpandToggle
+                expanded={pendingExpanded}
+                total={visiblePending.length}
+                onToggle={() => setPendingExpanded((v) => !v)}
+              />
+            )}
           </CardBody>
         </Card>
       )}
