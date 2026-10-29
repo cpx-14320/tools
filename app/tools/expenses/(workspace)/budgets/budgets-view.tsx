@@ -10,7 +10,7 @@ import { BudgetModal } from "@/components/expenses/budget-modal";
 import { text } from "@/components/expenses/theme";
 import { budgetForMonth, isLegacyRule, rulesForCategory, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
 import { topLevelCategories, categoryColorClass, type CategoryDTO } from "@/lib/expenses/categories";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatYearMonth } from "@/lib/format";
 
 function currentYearMonth(): string {
   const now = new Date();
@@ -127,7 +127,7 @@ export function BudgetsView() {
                   // 設在未來的月份，那筆現在還沒生效。
                   right={
                     <span className={current && current > 0 ? "tabular-nums text-sm font-semibold text-[#4A3B7C]" : `text-sm ${text.faint}`}>
-                      {current === undefined ? "未編預算" : current > 0 ? formatCurrency(current) : "不編預算"}
+                      {current === undefined ? "未設定" : current > 0 ? formatCurrency(current) : "不編預算"}
                     </span>
                   }
                   onClick={() => setEditing({ category: c })}
@@ -149,7 +149,7 @@ export function BudgetsView() {
                             onClick={() => setEditing({ category: c, rule })}
                             className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
                           >
-                            <span className={text.body}>{legacy ? "改版前的設定" : `${rule.effectiveFrom} 起`}</span>
+                            <span className={text.body}>{legacy ? "改版前的設定" : `${formatYearMonth(rule.effectiveFrom)} 起`}</span>
                             <span className="shrink-0 tabular-nums text-sm font-medium text-[#4A3B7C]">
                               {rule.amount > 0 ? formatCurrency(rule.amount) : "不編預算"}
                             </span>

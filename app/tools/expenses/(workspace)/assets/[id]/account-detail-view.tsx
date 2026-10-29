@@ -424,7 +424,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
             onClick={() => setReconcileOpen(true)}
             className="mt-3 w-full rounded-xl border border-[#ECE4FA] py-2 text-xs font-medium text-[#6F5FD6]"
           >
-            對帳：輸入實際{kind === "liability" ? "欠款" : "餘額"}，差額自動補一筆
+            核對{kind === "liability" ? "欠款" : "餘額"}
           </button>
         </CardBody>
       </Card>
@@ -447,7 +447,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
       </div>
 
       <KpiCard
-        label="這段期間收入"
+        label="收入"
         value={formatCurrency(totalIncome)}
         valueColor="#4A3B7C"
         delta={incomeDelta && <DeltaBadge delta={incomeDelta.delta} pct={incomeDelta.pct} goodWhenUp suffix={deltaSuffix} className="shrink-0" />}
@@ -456,14 +456,14 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
           這種長標題會跟徽章擠在同一行被壓到斷行。 */}
       <div className="grid grid-cols-2 gap-3">
         <KpiCard
-          label="這段期間支出"
+          label="支出"
           stackHeader
           value={formatCurrency(totalExpense)}
           valueColor="#4A3B7C"
           delta={expenseDelta && <DeltaBadge delta={expenseDelta.delta} pct={expenseDelta.pct} goodWhenUp={false} suffix={deltaSuffix} className="shrink-0" />}
         />
         <KpiCard
-          label="這段期間結餘"
+          label="結餘"
           stackHeader
           value={`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`}
           valueColor={balance >= 0 ? "#4A3B7C" : KPI_NEGATIVE}

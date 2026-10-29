@@ -11,10 +11,22 @@ import { text } from "./theme";
 export const fieldInputClass =
   "w-full rounded-2xl border border-[#ECE4FA] bg-white px-4 py-2.5 text-sm text-[#4A3B7C] outline-none placeholder:text-[#B3ABD4] focus:border-[#6F5FD6]";
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+/** 表單欄位的標籤＋內容。
+ *
+ *  必填的欄位傳 `required`，標籤後面補一顆紅色星號。中文表單的慣例是「標必填」而不是
+ *  「標選填」——以前是反過來的（「帳戶（可不填）」「備註（可不填）」），結果每個可選
+ *  欄位都拖著三個字的尾巴，真正非填不可的那幾欄反而沒有任何記號。 */
+export function Field({ label, children, required = false }: { label: string; children: ReactNode; required?: boolean }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className={text.label}>{label}</span>
+      <span className={text.label}>
+        {label}
+        {required && (
+          <span aria-hidden className="ml-0.5 text-[#D1517E]">
+            *
+          </span>
+        )}
+      </span>
       {children}
     </label>
   );
@@ -119,6 +131,7 @@ export function ModalFooter({
   onConfirm,
   confirmLabel = "儲存",
   confirmDisabled = false,
+  disabledHint,
   onDelete,
   deleteLabel = "刪除",
 }: {
@@ -128,6 +141,9 @@ export function ModalFooter({
   onConfirm: () => void | Promise<unknown>;
   confirmLabel?: string;
   confirmDisabled?: boolean;
+  /** 儲存鍵為什麼不能按——只在 confirmDisabled 而且沒有刪除鍵時顯示，佔的就是刪除鍵
+   *  那個位置（新增用的彈窗本來就空在那裡）。灰掉的按鈕不講原因，使用者只會反覆點它。 */
+  disabledHint?: ReactNode;
   /** 有給才顯示左下角的刪除；新增用的彈窗不給，位置用空元素佔著維持左右分佈。 */
   onDelete?: () => void;
   deleteLabel?: string;
@@ -153,6 +169,8 @@ export function ModalFooter({
         <Button variant="ghost" className="text-[#D1517E] hover:text-[#D1517E]" onClick={onDelete}>
           {deleteLabel}
         </Button>
+      ) : confirmDisabled && disabledHint ? (
+        <p className={`min-w-0 flex-1 pr-2 ${text.muted}`}>{disabledHint}</p>
       ) : (
         <span />
       )}

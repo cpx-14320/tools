@@ -435,7 +435,7 @@ export function DashboardView() {
                   right={
                     <span className="text-sm">
                       <span className="tabular-nums font-semibold text-[#4A3B7C]">{expense.mask(formatCurrency(row.spent))}</span>
-                      <span className={`ml-1.5 ${text.muted}`}>未編預算</span>
+                      <span className={`ml-1.5 ${text.muted}`}>未設定</span>
                     </span>
                   }
                 />

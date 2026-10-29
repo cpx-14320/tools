@@ -104,6 +104,17 @@ export function TransactionModal({
   // 有子分類的大分類只是個殼，一定要挑到底下的項目才算選好（見 needsSubcategory）。
   const canSave =
     categoryId && !needsSubcategory(categories, categoryId) && Number.isFinite(amountNum) && amountNum > 0 && date && breakdownValid;
+  // 儲存鍵灰掉時講清楚還缺什麼。順序照使用者填表的順序，一次只講最前面那一項——一口氣
+  // 列三件事反而要花更久才讀懂現在該做哪一步。
+  const missingHint = !categoryId
+    ? "先選一個分類"
+    : needsSubcategory(categories, categoryId)
+      ? "這個分類還要再選一個項目"
+      : !breakdownValid
+        ? "明細的名稱跟金額都要填"
+        : !(Number.isFinite(amountNum) && amountNum > 0)
+          ? "輸入金額後就可以儲存"
+          : undefined;
 
   const selectedAccount = accounts.find((a) => a.id === accountId);
 
@@ -206,6 +217,7 @@ export function TransactionModal({
             })
           }
           confirmDisabled={!canSave}
+          disabledHint={missingHint}
           onDelete={onDelete}
         />
       }
@@ -260,12 +272,12 @@ export function TransactionModal({
       </Field>
       {/* 帳戶跟備註直接攤開，不再收在「＋ 更多」裡：帳戶幾乎每一筆都要選，多一次展開
           等於每記一筆就多按一下。只有明細維持收合——那是薪資那種少數情況才用的東西。 */}
-          <Field label="帳戶（可不填）">
+          <Field label="帳戶">
             {/* 只有名稱、不放類型圖示：這一欄顯示的是「哪一個帳戶」，圖示是帳戶類型的，
                 同一種類型底下好幾個帳戶會掛同一張圖，分辨不出任何東西。 */}
             <SelectField value={selectedAccount?.name} placeholder="不指定帳戶" onClick={() => setAccountPickerOpen(true)} />
           </Field>
-          <Field label="備註（可不填）">
+          <Field label="備註">
             <input value={note} onChange={(e) => setNote(e.target.value)} className={fieldInputClass} />
           </Field>
 

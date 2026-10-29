@@ -77,7 +77,7 @@ export function GoalModal({
         />
       }
     >
-      <Field label="名稱">
+      <Field label="名稱" required>
         <input value={name} onChange={(e) => setName(e.target.value)} className={fieldInputClass} />
       </Field>
       <GoalIconPicker value={icon} onChange={setIcon} />
@@ -86,7 +86,7 @@ export function GoalModal({
       <AmountField label="目標金額" value={targetAmountNum} active={target === "target"} onFocus={() => setTarget("target")} placeholder="" />
       {!isEdit && (
         <AmountField
-          label="目前已經存了多少（可不填，預設 0）"
+          label="目前已經存了多少"
           value={currentAmountNum}
           active={target === "current"}
           onFocus={() => setTarget("current")}

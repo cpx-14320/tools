@@ -21,10 +21,18 @@ export function weekdayLabel(iso: string): string {
   return WEEKDAY_LABELS[new Date(y, m - 1, d).getDay()];
 }
 
-/** 清單的日期小標：`2026-10-27 週一`。純數字的日期看不出是平日還是週末，而「這筆是不是
- *  週末花的」是翻帳本時最常想知道的一件事。 */
+/** 清單的日期小標：`2026/10/27 週一`。純數字的日期看不出是平日還是週末，而「這筆是不是
+ *  週末花的」是翻帳本時最常想知道的一件事。
+ *
+ *  走 formatDate（斜線）而不是直接印 ISO：橫線是資料庫格式，畫面上一律用斜線。以前這裡
+ *  直接回傳原字串，所以同一頁的日期欄位寫 `2026/10/30`、清單標頭卻寫 `2026-10-28`。 */
 export function formatDateWithWeekday(iso: string): string {
-  return `${iso} ${weekdayLabel(iso)}`;
+  return `${formatDate(iso)} ${weekdayLabel(iso)}`;
+}
+
+/** 年月（`YYYY-MM`）顯示成 `2026/02`。跟 formatDate 同一個規則，只是少了日。 */
+export function formatYearMonth(yearMonth: string): string {
+  return yearMonth.replaceAll("-", "/");
 }
 
 /** 日期區間顯示成 `2026/10/01 ~ 2026/10/31`。只有一邊的時候就只寫那一邊，

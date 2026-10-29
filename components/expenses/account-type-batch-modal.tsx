@@ -126,7 +126,7 @@ export function AccountTypeBatchModal({
                 />
               </Field>
             )}
-            <Field label="名稱">
+            <Field label="名稱" required>
               <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} className={fieldInputClass} />
             </Field>
             {isDuplicateDraft(items, i, accountTypes) && (

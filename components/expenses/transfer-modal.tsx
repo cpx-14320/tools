@@ -111,10 +111,10 @@ export function TransferModal({
       {/* 轉出／轉入並排成一列：這兩欄是一組「從哪裡到哪裡」，上下排開反而要掃兩次才
           看得出方向；而且各佔一整列會把彈窗拉長到要捲動。 */}
       <div className="grid grid-cols-2 gap-3">
-        <Field label="從（轉出帳戶）">
+        <Field label="從（轉出帳戶）" required>
           <SelectField value={accountLabel(fromAccountId, accounts)} placeholder="選擇帳戶" onClick={() => setPickingFrom(true)} />
         </Field>
-        <Field label="到（轉入帳戶）">
+        <Field label="到（轉入帳戶）" required>
           <SelectField value={accountLabel(toAccountId, accounts)} placeholder="選擇帳戶" onClick={() => setPickingTo(true)} />
         </Field>
       </div>
@@ -122,7 +122,7 @@ export function TransferModal({
       <Field label="日期">
         <DateField value={date} onChange={setDate} />
       </Field>
-      <Field label="備註（可不填）">
+      <Field label="備註">
         <input value={note} onChange={(e) => setNote(e.target.value)} className={fieldInputClass} />
       </Field>
 

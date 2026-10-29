@@ -100,7 +100,7 @@ export function CategoryModal({
           />
         </Field>
       )}
-      <Field label="名稱">
+      <Field label="名稱" required>
         <input value={name} onChange={(e) => setName(e.target.value)} className={fieldInputClass} />
       </Field>
       {isDuplicate && <p className="text-xs text-[#D1517E]">已經有同樣名稱的分類了，換一個名稱吧。</p>}
@@ -113,7 +113,7 @@ export function CategoryModal({
               只設在頂層分類——子分類是它底下的細項，錢從哪個帳戶出通常一樣（見
               categories.ts 的 defaultAccountForCategory）。還沒建任何帳戶就不顯示。 */}
           {accounts.length > 0 && (
-            <Field label="預設帳戶（可不填）">
+            <Field label="預設帳戶">
               {/* 跟新增消費紀錄挑帳戶用同一個 AccountPickerModal，不用原生 <select>：
                   原生選單在手機上是作業系統自己的滾輪，樣式跟整個記帳本格格不入，而且
                   只剩一行純文字，看不到帳戶的類型圖示、也分不出資產還負債。 */}

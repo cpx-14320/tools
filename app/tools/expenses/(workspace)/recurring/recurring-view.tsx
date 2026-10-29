@@ -6,7 +6,7 @@ import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skelet
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
-import { Button, Badge, SegmentedControl } from "@/components/expenses/button";
+import { Badge, SegmentedControl } from "@/components/expenses/button";
 import { IconButton } from "@/components/expenses/icon-button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
@@ -22,12 +22,10 @@ import {
   occurrenceStatuses,
   ruleEndDate,
   isRuleFinished,
-  describeFrequency,
-  describeCycle,
-  nextOccurrenceDate,
+  frequencyUnitLabel,
   type RecurringRuleDTO,
 } from "@/lib/expenses/recurring-rules";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -192,6 +190,8 @@ export function RecurringView() {
   const today = todayISO();
   // 分類被刪掉的孤兒規則當成支出，跟 totalsForRange 對查無分類的處理方式一致。
   const visibleRules = rules.filter((r) => (categoryById(categories, r.categoryId)?.kind ?? "支出") === kind);
+  // 待確認也跟著分頁篩，判斷方式跟上面一致（查無分類一律當支出）。
+  const visiblePending = pending.filter((p) => (categoryById(categories, p.categoryId)?.kind ?? "支出") === kind);
   const selection = useSelection(visibleRules.map((r) => r.id));
 
   return (
@@ -257,26 +257,41 @@ export function RecurringView() {
         />
       )}
 
-      {/* 待確認：到期但還沒入帳的那幾期。排在清單最上面、而且不分支出／收入分頁——
-          它是「現在要你處理的事」，被分頁藏起來等於沒有提醒到。全部處理完就整張消失。 */}
-      {ready && pending.length > 0 && !selection.selecting && (
+      {/* 待確認：到期但還沒入帳的那幾期。排在清單最上面，而且跟著支出／收入分頁一起篩
+          ——本來是刻意不分頁的（「現在要你處理的事」不該被藏起來），但那造成切到收入時
+          上面列著電話費、下面的清單卻空了，看起來像資料不見了。現在整頁講的是同一種
+          收支，兩邊才對得起來；另一邊有待確認的話，切過去就看得到。 */}
+      {ready && visiblePending.length > 0 && !selection.selecting && (
         <Card className="mb-4">
           <CardBody>
             <div className="flex items-center justify-between gap-2">
-              <p className={text.sectionHeading}>待確認 {pending.length} 筆</p>
-              <Button
-                variant="secondary"
-                className="shrink-0"
-                disabled={busy.size > 0}
-                onClick={() => resolvePending("confirm", pending.map(({ ruleId, date }) => ({ ruleId, date })))}
-              >
-                全部確認
-              </Button>
+              <p className={text.sectionHeading}>待確認 {visiblePending.length} 筆</p>
+              {/* 兩顆都用小膠囊，不用 Button：這是「順手處理一下」的批次動作，跟底下每
+                  一列的「略過／確認」是同一組操作，尺寸要一致。略過在左邊、確認在右邊，
+                  順序也跟每一列一樣。 */}
+              <span className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  disabled={busy.size > 0}
+                  onClick={() => resolvePending("skip", visiblePending.map(({ ruleId, date }) => ({ ruleId, date })))}
+                  className="rounded-full px-3 py-1 text-xs font-medium text-[#9C94C4] disabled:opacity-50"
+                >
+                  全部略過
+                </button>
+                <button
+                  type="button"
+                  disabled={busy.size > 0}
+                  onClick={() => resolvePending("confirm", visiblePending.map(({ ruleId, date }) => ({ ruleId, date })))}
+                  className="rounded-full bg-[#F3EFFC] px-3 py-1 text-xs font-medium text-[#6F5FD6] disabled:opacity-50"
+                >
+                  全部確認
+                </button>
+              </span>
             </div>
             <p className={`mt-1 ${text.muted}`}>確認後才會寫進消費紀錄。金額跟實際不一樣的話，先略過再手動記一筆。</p>
 
             <div className="mt-3 flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA]">
-              {pending.map((p) => {
+              {visiblePending.map((p) => {
                 const category = categoryById(categories, p.categoryId);
                 const isIncome = category?.kind === "收入";
                 const key = `${p.ruleId}|${p.date}`;
@@ -286,7 +301,7 @@ export function RecurringView() {
                     <IconAvatar icon={category?.icon ?? ""} size="sm" className={category ? categoryColorClass[category.color] : undefined} />
                     <div className="min-w-0 flex-1">
                       <p className={`truncate ${text.body}`}>{p.note || category?.name || "（已刪除分類）"}</p>
-                      <p className={text.muted}>{p.date}</p>
+                      <p className={text.muted}>{formatDate(p.date)}</p>
                     </div>
                     <span className={`shrink-0 tabular-nums text-sm font-semibold ${isIncome ? "text-[#2FAE82]" : "text-[#4A3B7C]"}`}>
                       {isIncome ? "＋" : "－"}
@@ -346,7 +361,6 @@ export function RecurringView() {
             );
             const statuses = occurrenceStatuses(rule, confirmedByDate, today);
             const confirmedCount = statuses.filter((s) => s.confirmed).length;
-            const nextDate = rule.active ? nextOccurrenceDate(rule, confirmedCount) : null;
             const endDate = ruleEndDate(rule);
             const finished = isRuleFinished(rule, today);
             const isIncome = category?.kind === "收入";
@@ -376,9 +390,6 @@ export function RecurringView() {
                         {!rule.active && <Badge>已暫停</Badge>}
                         {rule.active && finished && <Badge tone="positive">已完成</Badge>}
                       </div>
-                      <p className={`mt-0.5 truncate ${text.muted}`}>
-                        {describeFrequency(rule)}・{describeCycle(rule)}・{rule.startDate} ～ {endDate ?? "無限期"}
-                      </p>
                       {rule.note && <p className={`mt-0.5 truncate ${text.muted}`}>{rule.note}</p>}
                     </div>
 
@@ -412,8 +423,13 @@ export function RecurringView() {
                       {formatCurrency(rule.amount)}
                       <span className="ml-1 text-sm font-normal text-[#9C94C4]">／期</span>
                     </p>
+                    {/* 期數後面補上頻率單位（期（月）／期（2 週）），原本那行獨立的
+                        「每月・循環 24 期・起～訖」就不用了——同樣的資訊攤成一整行、
+                        而且太長還會被截斷，最重要的結束日正好被切掉。 */}
                     <p className={text.muted}>
-                      {rule.cycleCount ? `已入帳 ${confirmedCount} / ${rule.cycleCount} 期` : `已入帳 ${confirmedCount} 期`}
+                      {rule.cycleCount
+                        ? `已入帳 ${confirmedCount} / ${rule.cycleCount} 期（${frequencyUnitLabel(rule)}）`
+                        : `已入帳 ${confirmedCount} 期（${frequencyUnitLabel(rule)}）`}
                     </p>
                   </div>
                   {rule.cycleCount ? (
@@ -423,7 +439,12 @@ export function RecurringView() {
                   ) : null}
 
                   {linkedGoal && <p className={`mt-2 ${text.muted}`}>🎯 同時存入「{linkedGoal.name}」</p>}
-                  {nextDate && <p className={`mt-1 ${text.muted}`}>下次預計入帳：{nextDate}</p>}
+                  {/* 這一塊從「下次預計入帳」換成整條規則的起訖區間：下次入帳日是算得出來
+                      的細節，真正會想確認的是「這筆扣到什麼時候為止」。靠右對齊，跟上面
+                      那行期數同一個右邊界。 */}
+                  <p className={`mt-1 text-right ${text.muted}`}>
+                    {formatDate(rule.startDate)} ～ {endDate ? formatDate(endDate) : "無限期"}
+                  </p>
 
                 </CardBody>
               </Card>

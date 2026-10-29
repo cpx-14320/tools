@@ -8,7 +8,7 @@ import { text } from "./theme";
 import { reconcileAdjustment } from "@/lib/expenses/accounts";
 import type { AccountKind } from "@/lib/expenses/account-types";
 import { categoryPath, type CategoryDTO } from "@/lib/expenses/categories";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 
 /** 對帳：輸入帳戶的實際餘額（對一下銀行 App／錢包裡真正有多少），差額自動補成一筆
  *  調整交易，之後系統算出來的餘額就跟實際一致了。
@@ -63,6 +63,13 @@ export function ReconcileModal({
         />
       }
     >
+      {/* 這段說明原本寫在外面那顆按鈕的標籤上（「對帳：輸入實際餘額，差額自動補一筆」）
+          ——按鈕該講「按下去會發生什麼」，不是講機制。按鈕收短成「核對餘額」，機制挪到
+          這裡，使用者真的打開彈窗要動手時才看到。 */}
+      <p className={`${text.muted} leading-relaxed`}>
+        對一下銀行 App／錢包裡真正有多少，差額會自動補成一筆調整紀錄，不用回頭翻整份紀錄找是哪裡少記。
+      </p>
+
       <div className="rounded-2xl bg-[#F9F7FE] p-4">
         <div className="flex items-center justify-between text-sm">
           <span className={text.muted}>系統算出來的餘額</span>
@@ -96,7 +103,7 @@ export function ReconcileModal({
       )}
 
       <Field label="日期">
-        <p className={text.body}>{date}</p>
+        <p className={text.body}>{formatDate(date)}</p>
       </Field>
     </Modal>
   );

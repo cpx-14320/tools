@@ -395,10 +395,10 @@ export function ReportsView() {
             </div>
           }
         />
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between gap-2">
+          <div className="h-9 w-[224px] animate-pulse rounded-full bg-[#EDE6FB]" />
           <div className="h-9 w-[96px] animate-pulse rounded-full bg-[#EDE6FB]" />
         </div>
-        <div className="h-9 w-[224px] animate-pulse rounded-full bg-[#EDE6FB]" />
         {kind === "資產" ? (
           // 淨資產一張、資產／負債兩張並排——間距是 gap-3 包在一起的，跟外層的 gap-4
           // 不一樣，分開放會多撐出 4px。
@@ -433,30 +433,31 @@ export function ReportsView() {
           看得出每個月的成長或衰退。 */}
       <PageHeader title="報表" flush actions={<DateFilterPicker />} />
 
-      {/* 「跟誰比」自己一列、靠右——四個分頁共用同一個設定（本來只有資產分頁裡面有一顆
-          自己的基準日選擇器，切到別的分頁就不見了）。跟上面的日期對齊同一個右邊界。 */}
-      <div className="flex justify-end">
+      {/* 分頁靠左、「跟誰比」靠右，同一列——跟上面「報表＋日期」那一列同一個分法，
+          兩列的右邊界也對齊。「跟誰比」四個分頁共用一個設定（本來只有資產分頁裡面有
+          一顆自己的基準日選擇器，切到別的分頁就不見了）。 */}
+      <div className="flex items-center justify-between gap-2">
+        <SegmentedControl
+          value={kind}
+          onChange={(v) => {
+            setKind(v);
+            setExpanded(false);
+            setSelectedTrendStart(null);
+          }}
+          // self-start：這一組是 inline-flex（寬度跟著文字走，跟消費紀錄頁的支出／收入
+          // 同一種），但 flex 容器預設 align-items: stretch 會把它拉成滿版，看起來像還
+          // 留著 fullWidth。
+          className="self-start"
+          activeTone="solid"
+          options={[
+            { value: "支出", label: "支出" },
+            { value: "收入", label: "收入" },
+            { value: "淨額", label: "淨額" },
+            { value: "資產", label: "資產" },
+          ]}
+        />
         <ComparePicker />
       </div>
-
-      <SegmentedControl
-        value={kind}
-        onChange={(v) => {
-          setKind(v);
-          setExpanded(false);
-          setSelectedTrendStart(null);
-        }}
-        // 尺寸跟消費紀錄頁的支出／收入那組一樣（預設的 size="sm"、寬度跟著文字走，不是
-        // 撐滿整列）——兩頁的主分頁是同一種東西，之前這裡刻意大一階反而像兩套元件。
-        // 選中色維持實心紫白字（activeSolid），消費紀錄那組也跟著改成同一個。
-        activeTone="solid"
-        options={[
-          { value: "支出", label: "支出" },
-          { value: "收入", label: "收入" },
-          { value: "淨額", label: "淨額" },
-          { value: "資產", label: "資產" },
-        ]}
-      />
 
       {kind === "資產" ? (
         <>
@@ -564,7 +565,7 @@ export function ReportsView() {
 
       <Card>
         <CardBody>
-          <p className={text.muted}>{kind === "淨額" ? "這段期間結餘" : `這段期間${kind}`}</p>
+          <p className={text.muted}>{kind === "淨額" ? "結餘" : kind}</p>
           <div className="mt-1 flex flex-col gap-1.5">
             <p className="text-2xl font-bold tabular-nums text-[#4A3B7C]">
               {summaryTotal < 0 ? "－" : ""}

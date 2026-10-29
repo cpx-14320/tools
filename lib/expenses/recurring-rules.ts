@@ -131,6 +131,13 @@ export function describeFrequency(rule: Pick<RecurringRuleDTO, "frequencyUnit" |
   return rule.interval > 1 ? `每 ${rule.interval} ${unit}` : `每${unit}`;
 }
 
+/** 「月」「2 月」「週」——接在「期」後面當單位用（`已入帳 2 / 24 期（月）`）。
+ *  把頻率併進期數那一行之後，卡片上就不用再單獨寫一行「每月・循環 24 期」。 */
+export function frequencyUnitLabel(rule: Pick<RecurringRuleDTO, "frequencyUnit" | "interval">): string {
+  const unit = UNIT_LABEL[rule.frequencyUnit];
+  return rule.interval > 1 ? `${rule.interval} ${unit}` : unit;
+}
+
 /** 「循環 24 期」或「無限期循環」。 */
 export function describeCycle(rule: Pick<RecurringRuleDTO, "cycleCount">): string {
   return rule.cycleCount ? `循環 ${rule.cycleCount} 期` : "無限期循環";

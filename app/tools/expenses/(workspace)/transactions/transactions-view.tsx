@@ -76,6 +76,7 @@ export function TransactionsView() {
   const [filterOpen, setFilterOpen] = useState(false);
   // 金額區間篩選（字串是因為使用者可能只填一邊）——翻舊帳時「我記得那筆大概一兩萬」
   // 比關鍵字好用，備註常常根本沒打。
+  const [unassignedOnly, setUnassignedOnly] = useState(false);
   const [minAmount, setMinAmount] = useState("");
   const [maxAmount, setMaxAmount] = useState("");
   // 哪幾筆的明細是展開的——預設全部收起來，只有有明細的那幾筆才看得到展開箭頭。
@@ -141,12 +142,18 @@ export function TransactionsView() {
   const hasMin = minAmount.trim() !== "" && Number.isFinite(minNum);
   const hasMax = maxAmount.trim() !== "" && Number.isFinite(maxNum);
   const inAmountFilter = (t: TransactionDTO) => (!hasMin || t.amount >= minNum) && (!hasMax || t.amount <= maxNum);
-  const filterCount = (categoryFilter ? 1 : 0) + (hasMin || hasMax ? 1 : 0);
+  // 「只看未指定帳戶的」——刪掉帳戶之後那些紀錄會變成不指定帳戶（見刪除帳戶的確認文案），
+  // 散在清單裡沒有任何辦法一次撈出來重新歸帳。帳戶被刪掉但 accountId 還留著的孤兒紀錄
+  // 也算進來，它們一樣掛不到任何帳戶上。
+  const accountIds = new Set(accounts.map((a) => a.id));
+  const inAccountFilter = (t: TransactionDTO) => !unassignedOnly || !t.accountId || !accountIds.has(t.accountId);
+  const filterCount = (categoryFilter ? 1 : 0) + (hasMin || hasMax ? 1 : 0) + (unassignedOnly ? 1 : 0);
 
   const rows = (isSearching ? transactions.filter(inKind) : totals[kind === "支出" ? "expenseTx" : "incomeTx"])
     .filter((t) => matchesQuery(t, categories, query))
     .filter(inCategoryFilter)
     .filter(inAmountFilter)
+    .filter(inAccountFilter)
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 
   const total = rows.reduce((sum, t) => sum + t.amount, 0);
@@ -345,6 +352,7 @@ export function TransactionsView() {
               setCategoryFilter("");
               setMinAmount("");
               setMaxAmount("");
+              setUnassignedOnly(false);
             } : undefined}
             deleteLabel="清除條件"
           />
@@ -377,6 +385,21 @@ export function TransactionsView() {
               );
             })}
           </div>
+        </div>
+
+        <div>
+          {/* 刪掉帳戶之後，掛在上面的紀錄會變成「不指定帳戶」。沒有這個開關的話，那些
+              紀錄就散在清單裡撈不出來，也沒辦法一次改掛到別的帳戶。 */}
+          <p className={`mb-2 ${text.label}`}>帳戶</p>
+          <button
+            type="button"
+            onClick={() => setUnassignedOnly((v) => !v)}
+            className={`w-full rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${
+              unassignedOnly ? "border-[#6F5FD6] bg-[#F3EFFC] font-medium text-[#6F5FD6]" : "border-[#ECE4FA] bg-white text-[#4A3B7C]"
+            }`}
+          >
+            只看未指定帳戶的紀錄
+          </button>
         </div>
 
         <div>
@@ -466,7 +489,7 @@ export function TransactionsView() {
           rows.length > 0 && (
             <Card className="mb-4">
               <CardBody className="py-3.5">
-                <p className={text.muted}>這段期間共{kind === "支出" ? "花費" : "收入"}</p>
+                <p className={text.muted}>共{kind === "支出" ? "花費" : "收入"}</p>
                 <p className={`mt-0.5 ${text.statValue}`}>{formatCurrency(total)}</p>
               </CardBody>
             </Card>

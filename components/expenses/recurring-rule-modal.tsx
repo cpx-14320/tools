@@ -184,12 +184,12 @@ export function RecurringRuleModal({
       <Field label="開始日期">
         <DateField value={startDate} onChange={setStartDate} />
       </Field>
-      <Field label="備註（可不填）">
+      <Field label="備註">
         <input value={note} onChange={(e) => setNote(e.target.value)} className={fieldInputClass} />
       </Field>
 
       {kind === "收入" && goals.length > 0 && (
-        <Field label="同時存入目標（可不填）——「週期存錢」就是在這裡選一個目標">
+        <Field label="同時存入目標——「週期存錢」就是在這裡選一個目標">
           <div className="flex flex-wrap gap-2">
             <button
               type="button"

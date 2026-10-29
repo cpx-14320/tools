@@ -415,8 +415,14 @@ export function AssetsView() {
               一樣（日期小標＋當天小計、底下一張卡列那天幾筆、超過五筆收起來），兩個
               地方都是「依日期排的流水明細」，不要有兩套長相。 */}
           <div>
-            <div className="mb-2 px-1">
+            {/* 「查看更多」先放著不接去處：這一區只看得到近一個月，再舊的轉帳目前只能
+                進個別帳戶的明細慢慢翻。去處還沒決定（見下面的討論），所以先 disabled，
+                不要給一顆點了沒反應的連結。 */}
+            <div className="mb-2 flex items-center justify-between px-1">
               <p className={text.sectionHeading}>轉帳明細</p>
+              <button type="button" disabled className="text-xs font-medium text-[#C7BFE6]">
+                查看更多
+              </button>
             </div>
             {transferGroups.length === 0 ? (
               <EmptyListCard>還沒有任何轉帳紀錄，點右上角的圖示新增</EmptyListCard>

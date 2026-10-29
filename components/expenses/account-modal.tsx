@@ -163,7 +163,7 @@ export function AccountModal({
 
       {/* 選了類型就自動帶上同名（見 chooseType），一般情況不用動它；同一個類型底下有
           好幾個帳戶時才需要改成「台新」「國泰」這種分得出來的名字。 */}
-      <Field label="名稱">
+      <Field label="名稱" required>
         <input
           value={name}
           onChange={(e) => {

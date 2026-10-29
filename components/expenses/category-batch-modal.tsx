@@ -142,7 +142,7 @@ export function CategoryBatchModal({
                 />
               </Field>
             )}
-            <Field label="名稱">
+            <Field label="名稱" required>
               <input value={item.name} onChange={(e) => updateItem(i, { name: e.target.value })} className={fieldInputClass} />
             </Field>
             {isDuplicateDraft(items, i, categories, parentId) && <p className="text-xs text-[#D1517E]">已經有同樣名稱的分類了，換一個名稱吧。</p>}
