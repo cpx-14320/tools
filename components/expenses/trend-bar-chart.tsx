@@ -233,6 +233,10 @@ function netWorthDelta(current: number, previous: number | undefined): { text: s
 
 export interface AssetTrendPoint {
   label: string;
+  /** 這一期的起訖（`YYYY-MM-DD`）——點開長條時要顯示這一期涵蓋哪幾天，而且 start 同時
+   *  當作「選中的是哪一根」的 key，跟收支那兩張圖一致。 */
+  start: string;
+  end: string;
   /** 這一期結束那天當時的淨資產，可能是負的（負債大於資產）。 */
   value: number;
 }
@@ -243,7 +247,18 @@ export interface AssetTrendPoint {
  *
  *  做法是把零線放在「正負兩邊各自需要多少空間」的比例位置上：全部都是正的時候零線就在
  *  最底下，長得跟收支那張圖一模一樣；出現負值才會把零線往上抬，負的長條從零線往下長。 */
-export function AssetTrendChart({ points, formatValue }: { points: AssetTrendPoint[]; formatValue: (n: number) => string }) {
+export function AssetTrendChart({
+  points,
+  formatValue,
+  selected,
+  onSelect,
+}: {
+  points: AssetTrendPoint[];
+  formatValue: (n: number) => string;
+  /** 目前展開細項的那一期（用 start 當 key）；不傳就整張圖不可點。 */
+  selected?: string | null;
+  onSelect?: (start: string) => void;
+}) {
   const maxValue = Math.max(0, ...points.map((p) => p.value));
   const minValue = Math.min(0, ...points.map((p) => p.value));
   const span = maxValue - minValue || 1;
@@ -256,8 +271,17 @@ export function AssetTrendChart({ points, formatValue }: { points: AssetTrendPoi
         {points.map((p) => {
           const negative = p.value < 0;
           const height = Math.max(2, Math.round((Math.abs(p.value) / span) * BAR_AREA));
+          const isSelected = selected === p.start;
           return (
-            <div key={p.label} className="flex flex-1 flex-col" style={{ height: CHART_HEIGHT }} title={`${p.label}：${formatValue(p.value)}`}>
+            <button
+              key={p.start}
+              type="button"
+              disabled={!onSelect}
+              onClick={() => onSelect?.(p.start)}
+              className={`flex flex-1 flex-col rounded-lg transition-colors ${isSelected ? "bg-[#F3EFFC]" : ""}`}
+              style={{ height: CHART_HEIGHT }}
+              title={`${p.label}：${formatValue(p.value)}`}
+            >
               {/* 上半部（零線以上）：金額標示貼著長條頂端，長條本身從零線往上長。 */}
               <div className="flex w-full flex-col justify-end" style={{ height: VALUE_LABEL_HEIGHT + positiveArea }}>
                 {!negative && (
@@ -280,7 +304,7 @@ export function AssetTrendChart({ points, formatValue }: { points: AssetTrendPoi
                   </>
                 )}
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

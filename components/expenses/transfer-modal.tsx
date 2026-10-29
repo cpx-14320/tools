@@ -90,6 +90,9 @@ export function TransferModal({
       open={open}
       onClose={onClose}
       title={initial ? "編輯轉帳" : "新增轉帳"}
+      // 滿版：轉出／轉入／日期／備註四欄加上底下固定的小鍵盤，80% 高度時備註欄會被
+      // 鍵盤壓掉一半。跟新增帳戶、新增交易一致。
+      fullHeight
       stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} label="轉帳金額" />}
       footer={
         <ModalFooter

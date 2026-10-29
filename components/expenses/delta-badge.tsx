@@ -15,7 +15,10 @@ export function DeltaBadge({
   suffix?: string;
   className?: string;
 }) {
-  const isUp = delta >= 0;
+  // 沒有差距就整個不畫。delta 是 0 時畫出來的是「▲ NT$ 0」——箭頭講的是「漲了」，
+  // 金額卻是 0，而且負債從 0 到 0 還會因為 goodWhenUp=false 被標成紅色，看起來像出事了。
+  if (delta === 0) return null;
+  const isUp = delta > 0;
   const isGood = isUp === goodWhenUp;
   return (
     <p className={`text-xs font-medium tabular-nums ${isGood ? "text-[#2FAE82]" : "text-[#D1517E]"} ${className}`}>

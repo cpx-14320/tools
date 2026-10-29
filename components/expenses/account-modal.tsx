@@ -118,6 +118,9 @@ export function AccountModal({
       open={open}
       onClose={onClose}
       title={initial ? "編輯帳戶" : "新增帳戶"}
+      // 滿版：類型格子本身就有 260px 的捲動高度，再加名稱欄跟底下固定的小鍵盤，卡在
+      // 80% 高度時格子只剩兩排，要選個類型得在兩層捲動之間來回。跟新增交易一致。
+      fullHeight
       stickyBottom={
         <AmountKeypad
           expr={openingBalanceExpr}

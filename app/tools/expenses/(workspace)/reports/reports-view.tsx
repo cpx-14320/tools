@@ -13,7 +13,7 @@ import { ComparePicker } from "@/components/expenses/compare-picker";
 import { text } from "@/components/expenses/theme";
 import { DonutChart, type DonutSlice } from "@/components/expenses/donut-chart";
 import { TrendBarChart, NetTrendChart, AssetTrendChart, type TrendSeries } from "@/components/expenses/trend-bar-chart";
-import { KpiCard, DeltaText, KPI_NEGATIVE, KPI_POSITIVE } from "@/components/expenses/kpi-card";
+import { KpiCard, KPI_NEGATIVE, KPI_POSITIVE } from "@/components/expenses/kpi-card";
 import { accountBalance, accountsByKind, balanceDelta, netWorth, netWorthAt, sumByAccountType, totalByKind, type AccountDTO } from "@/lib/expenses/accounts";
 import { accountTypeById, accountTypeColorClass, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
@@ -35,11 +35,11 @@ import { compareDateFilter, compareLabel, dateFilterRange } from "@/lib/expenses
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { DonutCardSkeleton, KpiCardSkeleton, SummaryCardSkeleton, TrendCardSkeleton } from "@/components/expenses/skeleton";
 import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 
-type ReportKind = "支出" | "收入" | "淨額" | "資產";
+type ReportKind = "支出" | "收入" | "結餘" | "資產";
 
-/** 淨額那一頁「收入／支出」兩塊的顏色——借分類色票的 a（淡紫）跟 c（粉），跟首頁
+/** 結餘那一頁「收入／支出」兩塊的顏色——借分類色票的 a（淡紫）跟 c（粉），跟首頁
  *  「薪水」「利息」那兩個預設分類是同一個色號，整個 App 的收支配色才是同一套。 */
 const NET_INCOME_COLOR = categoryColorHex.a;
 const NET_EXPENSE_COLOR = categoryColorHex.c;
@@ -204,6 +204,8 @@ export function ReportsView() {
       kind === "資產"
         ? trendPeriods(granularity, periods).map((p) => ({
             label: p.label,
+            start: p.start,
+            end: p.end,
             value: netWorthAt(accounts, accountTypes, transactions, categories, transfers, p.end),
           }))
         : [],
@@ -261,7 +263,7 @@ export function ReportsView() {
   ];
   const visibleRows = expanded ? breakdown : breakdown.slice(0, TOP_N);
 
-  // 淨額沒有「分類佔比」可以畫——它是收入減支出的差，不是一堆分類加起來。能畫的是
+  // 結餘沒有「分類佔比」可以畫——它是收入減支出的差，不是一堆分類加起來。能畫的是
   // 「這段期間的錢從哪裡來、又去了哪裡」：收入跟支出兩片，中間的缺口就是結餘。版面
   // 跟支出／收入分頁的圓餅完全一樣，四個分頁看起來才是同一種東西。
   const netDonutData: DonutSlice[] = [
@@ -279,18 +281,18 @@ export function ReportsView() {
     [transactions, categories, kind, granularity, periods],
   );
   const incomeTrendPoints = useMemo(
-    () => (kind === "淨額" ? trendByPeriod(transactions, categories, "收入", granularity, periods) : []),
+    () => (kind === "結餘" ? trendByPeriod(transactions, categories, "收入", granularity, periods) : []),
     [transactions, categories, kind, granularity, periods],
   );
   const expenseTrendPoints = useMemo(
-    () => (kind === "淨額" ? trendByPeriod(transactions, categories, "支出", granularity, periods) : []),
+    () => (kind === "結餘" ? trendByPeriod(transactions, categories, "支出", granularity, periods) : []),
     [transactions, categories, kind, granularity, periods],
   );
 
   // 趨勢圖的分類顏色／順序固定用「這段期間加總後最大的前幾名」決定，不是每一期各自排序
   // ——不然同一個分類在不同期的長條裡顏色跟位置會亂跳，趨勢圖就失去「對照」的意義。
   const trendSeries: TrendSeries[] = useMemo(() => {
-    if (kind === "淨額") return [];
+    if (kind === "結餘") return [];
     const totalsByCategory = new Map<string, number>();
     for (const p of trendPoints) {
       for (const b of p.byCategory) totalsByCategory.set(b.categoryId, (totalsByCategory.get(b.categoryId) ?? 0) + b.amount);
@@ -309,7 +311,7 @@ export function ReportsView() {
   // trendPoints 的 byCategory 只有真正的分類 id；上面算出「其他」桶之後，沒進前幾名的
   // 分類金額要重新併進 __other__ 這個鍵，長條圖才看得到那一截。
   const trendPointsWithOther = useMemo(() => {
-    if (kind === "淨額") return [];
+    if (kind === "結餘") return [];
     const topIds = new Set(trendSeries.filter((s) => s.id !== "__other__").map((s) => s.id));
     return trendPoints.map((p) => {
       let otherAmount = 0;
@@ -342,11 +344,42 @@ export function ReportsView() {
       .sort((a, b) => b.amount - a.amount);
   }
 
-  function periodRangeLabel(point: TrendPoint): string {
-    return point.start === point.end ? point.start : `${point.start} ～ ${point.end}`;
+  // 只要有 start/end 就能用——資產趨勢的點不是 TrendPoint（它沒有 byCategory），但
+  // 日期列要長一樣。
+  function periodRangeLabel(point: { start: string; end: string }): string {
+    return point.start === point.end ? formatDate(point.start) : `${formatDate(point.start)} ～ ${formatDate(point.end)}`;
   }
 
-  const selectedPoint = kind !== "淨額" ? (trendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
+  const selectedPoint = kind !== "結餘" && kind !== "資產" ? (trendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
+
+  // 資產趨勢點開長條：那一期最後一天當時，淨資產是由哪幾種資產類型組成的。餘額函式本來
+  // 就是「傳進去哪些交易／轉帳就算哪些」，篩掉那天之後的再算一次就是當時的配置
+  // （見 lib/expenses/accounts.ts 的 sumByAccountType）。
+  const selectedAssetPoint = kind === "資產" ? (assetTrendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
+  const selectedAssetRows = (() => {
+    if (!selectedAssetPoint) return [];
+    const until = selectedAssetPoint.end;
+    const totals = sumByAccountType(
+      accountsByKind(accounts, accountTypes, "asset"),
+      accountTypes,
+      transactions.filter((t) => t.date <= until),
+      categories,
+      transfers.filter((t) => t.date <= until),
+    );
+    return [...totals.entries()]
+      .map(([typeId, amount]) => {
+        const type = accountTypeById(accountTypes, typeId);
+        return {
+          id: typeId,
+          name: type?.name ?? "（未知類型）",
+          icon: type?.icon ?? "",
+          colorClass: type ? categoryColorClass[type.color] : undefined,
+          amount,
+        };
+      })
+      .filter((r) => r.amount !== 0)
+      .sort((a, b) => b.amount - a.amount);
+  })();
 
   // 載入中畫骨架，「明細」那張卡的形狀用上次記住的實際數量（見 skeleton-count.ts）。
   //
@@ -359,19 +392,19 @@ export function ReportsView() {
     ? undefined
     : kind === "資產"
       ? [assetTypeBreakdown.length, assetAccountRows.length]
-      : kind === "淨額"
-        ? // 淨額的明細卡在沒有收支資料時整張不出現，所以第二個數字當成「這張卡在不在」。
+      : kind === "結餘"
+        ? // 結餘的明細卡在沒有收支資料時整張不出現，所以第二個數字當成「這張卡在不在」。
           [netDonutData.length, netDonutData.length > 0 ? 1 : 0]
         : [Math.min(donutData.length, TOP_N), Math.min(breakdown.length, TOP_N)];
   const detailShape = useSkeletonShape(
     detailShapeKey,
-    kind === "資產" ? [3, 3] : kind === "淨額" ? [2, 1] : [TOP_N, TOP_N],
+    kind === "資產" ? [3, 3] : kind === "結餘" ? [2, 1] : [TOP_N, TOP_N],
     actualDetailShape,
   );
   const [legendSkeletonRows = 0, listSkeletonRows = 0] = detailShape;
 
-  const selectedIncomePoint = kind === "淨額" ? (incomeTrendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
-  const selectedExpensePoint = kind === "淨額" ? (expenseTrendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
+  const selectedIncomePoint = kind === "結餘" ? (incomeTrendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
+  const selectedExpensePoint = kind === "結餘" ? (expenseTrendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
 
   // 骨架等掛載後才畫：列數只有瀏覽器讀得到，伺服器端畫出來的一定是預設值，
   // 不擋的話會先閃一次錯的列數再換成記住的（見 useSkeletonReady）。
@@ -412,7 +445,7 @@ export function ReportsView() {
         ) : (
           <SummaryCardSkeleton delta />
         )}
-        {kind === "淨額" ? (
+        {kind === "結餘" ? (
           // 沒有收支資料時整張明細卡不出現，骨架也不畫（見 actualDetailShape 的說明）。
           listSkeletonRows > 0 && <DonutCardSkeleton legendRows={legendSkeletonRows} variant="line" />
         ) : (
@@ -452,7 +485,7 @@ export function ReportsView() {
           options={[
             { value: "支出", label: "支出" },
             { value: "收入", label: "收入" },
-            { value: "淨額", label: "淨額" },
+            { value: "結餘", label: "結餘" },
             { value: "資產", label: "資產" },
           ]}
         />
@@ -461,25 +494,37 @@ export function ReportsView() {
 
       {kind === "資產" ? (
         <>
+          {/* 漲跌改用跟支出／收入／結餘同一顆 DeltaBadge（▼ NT$ 133,215（－67.0%）
+              vs 2025 年同期），不是只有百分比的 DeltaText：同一頁四個分頁換來換去，
+              比較資訊的寫法卻兩套，而且只寫百分比看不出差了多少錢、也看不出在跟誰比。
+              兩欄並排的窄卡用 stackHeader，不然長徽章會把標題擠到斷行（同帳戶明細頁）。 */}
           <div className="flex flex-col gap-3">
             <KpiCard
               label="淨資產"
               value={`${net >= 0 ? "" : "－"}${formatCurrency(Math.abs(net))}`}
               valueColor={net < 0 ? KPI_NEGATIVE : "#4A3B7C"}
-              delta={netDelta && <DeltaText delta={netDelta.delta} pct={netDelta.pct} goodWhenUp />}
+              delta={netDelta && <DeltaBadge delta={netDelta.delta} pct={netDelta.pct} goodWhenUp suffix={deltaSuffix} className="shrink-0" />}
             />
             <div className="grid grid-cols-2 gap-3">
               <KpiCard
                 label="資產"
+                stackHeader
                 value={formatCurrency(totalAssets)}
                 valueColor="#4A3B7C"
-                delta={assetsDelta && <DeltaText delta={assetsDelta.delta} pct={assetsDelta.pct} goodWhenUp />}
+                delta={
+                  assetsDelta && <DeltaBadge delta={assetsDelta.delta} pct={assetsDelta.pct} goodWhenUp suffix={deltaSuffix} className="shrink-0" />
+                }
               />
               <KpiCard
                 label="負債"
+                stackHeader
                 value={formatCurrency(totalLiabilities)}
                 valueColor="#4A3B7C"
-                delta={liabilitiesDelta && <DeltaText delta={liabilitiesDelta.delta} pct={liabilitiesDelta.pct} goodWhenUp={false} />}
+                delta={
+                  liabilitiesDelta && (
+                    <DeltaBadge delta={liabilitiesDelta.delta} pct={liabilitiesDelta.pct} goodWhenUp={false} suffix={deltaSuffix} className="shrink-0" />
+                  )
+                }
               />
             </div>
           </div>
@@ -555,8 +600,44 @@ export function ReportsView() {
               {/* 每一根是「那一期最後一天當時的淨資產」，不是那一期的收支加總——這張圖
                   回答的是「我的錢有沒有變多」，不是「這個月花了多少」。 */}
               <div className="mt-5">
-                <AssetTrendChart points={assetTrendPoints} formatValue={formatCurrency} />
+                <AssetTrendChart
+                  points={assetTrendPoints}
+                  formatValue={formatCurrency}
+                  selected={selectedTrendStart}
+                  onSelect={(start) => setSelectedTrendStart((cur) => (cur === start ? null : start))}
+                />
               </div>
+
+              {/* 點長條展開：這一期涵蓋哪幾天、那一天當時的淨資產是由哪幾種資產類型
+                  組成的。版面跟支出／收入那張完全一樣（日期一列、底下一份圖示＋名稱＋
+                  金額的清單），四個分頁點下去看到的才是同一種東西。 */}
+              {selectedAssetPoint && (
+                <div className="mt-4 rounded-2xl border border-[#ECE4FA] bg-[#F9F7FE] p-4">
+                  <div className="flex items-center justify-between">
+                    <p className={text.body}>{periodRangeLabel(selectedAssetPoint)}</p>
+                    <p
+                      className="text-sm font-semibold tabular-nums"
+                      style={{ color: selectedAssetPoint.value < 0 ? KPI_NEGATIVE : "#4A3B7C" }}
+                    >
+                      {selectedAssetPoint.value < 0 ? "－" : ""}
+                      {formatCurrency(Math.abs(selectedAssetPoint.value))}
+                    </p>
+                  </div>
+                  {selectedAssetRows.length === 0 ? (
+                    <p className={`mt-3 ${text.muted}`}>那時候還沒有任何資產帳戶。</p>
+                  ) : (
+                    <div className="mt-3 flex flex-col divide-y divide-[#ECE4FA]">
+                      {selectedAssetRows.map((r) => (
+                        <div key={r.id} className="flex items-center gap-3 py-2">
+                          <IconAvatar icon={r.icon} size="sm" className={r.colorClass} />
+                          <span className={`min-w-0 flex-1 truncate ${text.body}`}>{r.name}</span>
+                          <span className="shrink-0 tabular-nums text-sm font-medium text-[#4A3B7C]">{formatCurrency(r.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </CardBody>
           </Card>
         </>
@@ -565,7 +646,7 @@ export function ReportsView() {
 
       <Card>
         <CardBody>
-          <p className={text.muted}>{kind === "淨額" ? "結餘" : kind}</p>
+          <p className={text.muted}>{kind}</p>
           <div className="mt-1 flex flex-col gap-1.5">
             <p className="text-2xl font-bold tabular-nums text-[#4A3B7C]">
               {summaryTotal < 0 ? "－" : ""}
@@ -576,10 +657,12 @@ export function ReportsView() {
         </CardBody>
       </Card>
 
-      {kind === "淨額" && netDonutData.length > 0 && (
+      {kind === "結餘" && netDonutData.length > 0 && (
         <Card>
           <CardBody>
-            <p className={text.sectionHeading}>明細</p>
+            {/* 標題跟支出／收入那兩頁一致——同樣是一張圓餅加一份組成清單，沒道理在這一頁
+                改叫「明細」。 */}
+            <p className={text.sectionHeading}>分類佔比</p>
             <div className="mt-4 flex items-center gap-5">
               <DonutChart data={netDonutData} size={120} />
               <div className="flex flex-1 flex-col gap-2">
@@ -606,7 +689,7 @@ export function ReportsView() {
         </Card>
       )}
 
-      {kind !== "淨額" && (
+      {kind !== "結餘" && (
         <Card>
           <CardBody>
             <p className={text.sectionHeading}>分類佔比</p>
@@ -714,7 +797,7 @@ export function ReportsView() {
             ))}
           </div>
           <div className="mt-5">
-            {kind === "淨額" ? (
+            {kind === "結餘" ? (
               <NetTrendChart
                 incomePoints={incomeTrendPoints}
                 expensePoints={expenseTrendPoints}
@@ -758,15 +841,9 @@ export function ReportsView() {
 
               {(selectedIncomePoint || selectedExpensePoint) && (
                 <>
-                  <div className="flex items-center justify-between">
-                    <p className={text.body}>{periodRangeLabel(selectedIncomePoint ?? selectedExpensePoint!)}</p>
-                    <p
-                      className="text-sm font-semibold tabular-nums"
-                      style={{ color: (selectedIncomePoint?.total ?? 0) - (selectedExpensePoint?.total ?? 0) < 0 ? "#D1517E" : "#2FAE82" }}
-                    >
-                      淨額 {formatCurrency((selectedIncomePoint?.total ?? 0) - (selectedExpensePoint?.total ?? 0))}
-                    </p>
-                  </div>
+                  {/* 只留日期：右邊原本再寫一次「結餘 NT$ ◯◯」，但長條上方本來就標著
+                      那一期的結餘，底下又分「收入」「支出」兩段列出來，同一個數字講三次。 */}
+                  <p className={text.body}>{periodRangeLabel(selectedIncomePoint ?? selectedExpensePoint!)}</p>
                   {selectedIncomePoint && selectedIncomePoint.byCategory.length > 0 && (
                     <div className="mt-3">
                       <p className={`mb-1.5 ${text.label}`}>收入 {formatCurrency(selectedIncomePoint.total)}</p>
