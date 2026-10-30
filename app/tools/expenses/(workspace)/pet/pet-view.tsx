@@ -30,6 +30,9 @@ interface PetState {
   justEarned: { key: string; coins: number; label: string }[];
 }
 
+/** 食物背包／商店的食物清單——骨架跟真畫面都用同一份，格數才不會對不上。 */
+const FOOD_ITEMS = PET_ITEMS.filter((i) => i.kind === "食物");
+
 export function PetView() {
   const [pet, setPet] = useState<PetState | null>(null);
   const skeletonReady = useSkeletonReady();
@@ -163,9 +166,11 @@ export function PetView() {
         </CardSkeleton>
 
         <CardSkeleton className="mb-4">
+          {/* 格數直接數 PET_ITEMS 裡的食物有幾種，不要寫死 3：之後多加一種食物時，
+              骨架會自己跟上，不會變成「載入時三格、載完四格」。 */}
           <div className="flex items-center justify-between gap-2">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="flex flex-1 flex-col items-center gap-1 py-1">
+            {FOOD_ITEMS.map((item) => (
+              <div key={item.id} className="flex flex-1 flex-col items-center gap-1 py-1">
                 <div className="size-10 animate-pulse rounded-xl bg-[#EDE6FB]" />
                 <SkeletonBar width={56} height={11} />
               </div>
@@ -257,7 +262,7 @@ export function PetView() {
           在商店買的食物進的是這裡，不是點了商店格子就直接吃掉；兩個動作分開。 */}
       <Card className="mb-4">
         <CardBody className="flex items-center justify-between gap-2">
-          {PET_ITEMS.filter((i) => i.kind === "食物").map((item) => {
+          {FOOD_ITEMS.map((item) => {
             const count = pet?.foodCounts?.[item.id] ?? 0;
             return (
               <button

@@ -1,7 +1,27 @@
+import type { ReactNode } from "react";
 import type { TrendPoint } from "@/lib/expenses/transactions";
 import { categoryColorHex } from "@/lib/expenses/categories";
 
 const CHART_HEIGHT = 160;
+/** 每一期（一根長條＋底下的標籤）至少佔多寬。
+ *
+ *  近 12／24 期時六分之一的寬度只剩十幾 px，底下的「▲225%」「2026/08」會被截成
+ *  「▲2…」，等於那一行白寫了。給每一欄一個下限、整張圖改成可以左右捲，期數再多也
+ *  讀得完整——48px 是 text-[10px] 裝得下「▲225%」的寬度（五個字元 + 箭頭）。 */
+const MIN_COLUMN_WIDTH = 48;
+
+/** 圖表的捲動外殼：期數多到塞不下就左右捲，塞得下時 `min-w-full` 讓它照常撐滿整列
+ *  （不會因為改成 inline 排版就縮成內容寬度）。長條那排跟底下的標籤排在同一個捲動容器
+ *  裡，兩排才會一起移動、永遠對齊。 */
+function ChartScroller({ children }: { children: ReactNode }) {
+  return (
+    <div className="-mx-1 overflow-x-auto px-1">
+      <div className="min-w-full" style={{ width: "max-content" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
 // 長條上方那行金額佔掉的高度，長條本身要扣掉這段才不會頂出容器外。
 const VALUE_LABEL_HEIGHT = 16;
 const BAR_AREA = CHART_HEIGHT - VALUE_LABEL_HEIGHT;
@@ -56,6 +76,7 @@ export function TrendBarChart({
 
   return (
     <div>
+      <ChartScroller>
       <div className="flex items-end gap-2" style={{ height: CHART_HEIGHT }}>
         {points.map((p) => {
           const isSelected = selected === p.start;
@@ -66,7 +87,7 @@ export function TrendBarChart({
               disabled={!onSelect}
               onClick={() => onSelect?.(p.start)}
               className={`flex flex-1 flex-col items-center justify-end rounded-lg transition-colors ${isSelected ? "bg-[#F3EFFC]" : ""}`}
-              style={{ height: CHART_HEIGHT }}
+              style={{ height: CHART_HEIGHT, minWidth: MIN_COLUMN_WIDTH }}
               title={`${p.label}：${formatValue(p.total)}`}
             >
               <span className="mb-0.5 w-full truncate text-center text-[10px] font-medium tabular-nums text-[#4A3B7C]">
@@ -97,7 +118,7 @@ export function TrendBarChart({
         {points.map((p, i) => {
           const delta = periodDelta(p.total, points[i - 1]?.total);
           return (
-            <div key={p.start} className="flex-1 overflow-hidden text-center">
+            <div key={p.start} className="flex-1 overflow-hidden text-center" style={{ minWidth: MIN_COLUMN_WIDTH }}>
               <span className="block truncate text-[10px] text-[#9C94C4]">{p.label}</span>
               {delta && (
                 <span className="block truncate text-[10px] font-medium tabular-nums" style={{ color: delta.up ? "#D1517E" : "#2FAE82" }}>
@@ -108,6 +129,7 @@ export function TrendBarChart({
           );
         })}
       </div>
+      </ChartScroller>
       <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5">
         {series.map((s) => (
           <span key={s.id} className="flex items-center gap-1.5 text-[11px] text-[#4A3B7C]">
@@ -151,6 +173,7 @@ export function NetTrendChart({
 
   return (
     <div>
+      <ChartScroller>
       <div className="flex items-end gap-2" style={{ height: CHART_HEIGHT }}>
         {incomePoints.map((inc, i) => {
           const exp = expensePoints[i];
@@ -163,7 +186,7 @@ export function NetTrendChart({
               disabled={!onSelect}
               onClick={() => onSelect?.(inc.start)}
               className={`flex flex-1 flex-col items-center justify-end rounded-lg transition-colors ${isSelected ? "bg-[#F3EFFC]" : ""}`}
-              style={{ height: CHART_HEIGHT }}
+              style={{ height: CHART_HEIGHT, minWidth: MIN_COLUMN_WIDTH }}
             >
               {/* 兩根並排的欄位太窄，塞不下兩個數字，所以上面只標這一期的淨額
                   （收入－支出），那也正是這張圖真正想表達的東西。 */}
@@ -196,7 +219,7 @@ export function NetTrendChart({
           const prev = i > 0 ? incomePoints[i - 1].total - expensePoints[i - 1].total : undefined;
           const delta = periodDelta(net, prev);
           return (
-            <div key={inc.start} className="flex-1 overflow-hidden text-center">
+            <div key={inc.start} className="flex-1 overflow-hidden text-center" style={{ minWidth: MIN_COLUMN_WIDTH }}>
               <span className="block truncate text-[10px] text-[#9C94C4]">{inc.label}</span>
               {delta && (
                 <span className="block truncate text-[10px] font-medium tabular-nums" style={{ color: delta.up ? POSITIVE : NEGATIVE }}>
@@ -207,6 +230,7 @@ export function NetTrendChart({
           );
         })}
       </div>
+      </ChartScroller>
       <div className="mt-3 flex gap-3">
         <span className="flex items-center gap-1.5 text-[11px] text-[#4A3B7C]">
           <span className="size-2 rounded-full" style={{ background: POSITIVE }} />
@@ -267,6 +291,7 @@ export function AssetTrendChart({
 
   return (
     <div>
+      <ChartScroller>
       <div className="flex gap-2" style={{ height: CHART_HEIGHT }}>
         {points.map((p) => {
           const negative = p.value < 0;
@@ -279,7 +304,7 @@ export function AssetTrendChart({
               disabled={!onSelect}
               onClick={() => onSelect?.(p.start)}
               className={`flex flex-1 flex-col rounded-lg transition-colors ${isSelected ? "bg-[#F3EFFC]" : ""}`}
-              style={{ height: CHART_HEIGHT }}
+              style={{ height: CHART_HEIGHT, minWidth: MIN_COLUMN_WIDTH }}
               title={`${p.label}：${formatValue(p.value)}`}
             >
               {/* 上半部（零線以上）：金額標示貼著長條頂端，長條本身從零線往上長。 */}
@@ -313,7 +338,7 @@ export function AssetTrendChart({
           // 淨資產變多是好事（▲ 綠），跟支出趨勢的紅綠相反。
           const delta = netWorthDelta(p.value, points[i - 1]?.value);
           return (
-            <div key={p.label} className="flex-1 overflow-hidden text-center">
+            <div key={p.label} className="flex-1 overflow-hidden text-center" style={{ minWidth: MIN_COLUMN_WIDTH }}>
               <span className="block truncate text-[10px] text-[#9C94C4]">{p.label}</span>
               {delta && (
                 <span className="block truncate text-[10px] font-medium tabular-nums" style={{ color: delta.up ? POSITIVE : NEGATIVE }}>
@@ -324,6 +349,7 @@ export function AssetTrendChart({
           );
         })}
       </div>
+      </ChartScroller>
     </div>
   );
 }

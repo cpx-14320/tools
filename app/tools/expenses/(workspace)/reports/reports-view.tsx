@@ -448,7 +448,10 @@ export function ReportsView() {
             </div>
           </div>
         ) : (
-          <SummaryCardSkeleton delta />
+          // 不傳 delta：比較基準預設是「不比較」（見 defaultCompareSetting），所以載入
+          // 完成後那張卡本來就沒有漲跌徽章。骨架先畫一條、資料回來又不見，等於憑空閃
+          // 一下還讓卡片縮一截。要比較是使用者自己去按的，那時候已經載完了。
+          <SummaryCardSkeleton />
         )}
         {kind === "結餘" ? (
           // 沒有收支資料時整張明細卡不出現，骨架也不畫（見 actualDetailShape 的說明）。

@@ -13,7 +13,8 @@ import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle
 import { LineIconButton } from "@/components/expenses/line-icon-button";
 import { ICON_PATHS } from "@/components/expenses/icon-paths";
 import { Card, CardBody } from "@/components/expenses/card";
-import { DateField } from "@/components/expenses/date-field";
+import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
+import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { text } from "@/components/expenses/theme";
 import { TOAST, useToast } from "@/components/expenses/toast";
@@ -22,24 +23,13 @@ import { TransferModal, type TransferModalDraft } from "@/components/expenses/tr
 import { accountBalance, netWorth, totalByKind, type AccountDTO } from "@/lib/expenses/accounts";
 import { accountTypesByKind, accountTypeColorClass, type AccountKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { categoryFillClass, type CategoryDTO } from "@/lib/expenses/categories";
-import { groupByDate, limitDateGroups, shiftMonths } from "@/lib/expenses/date-filter";
+import { dateFilterRange, groupByDate, limitDateGroups, shiftMonths } from "@/lib/expenses/date-filter";
 import { type TransactionDTO } from "@/lib/expenses/transactions";
 import { type TransferDTO } from "@/lib/expenses/transfers";
-import { formatCurrency, formatDateWithWeekday } from "@/lib/format";
-
-function currentYearMonth(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
-
-/** 那個月的最後一天（`2026-10` → `2026-10-31`）。餘額是「到某一天為止」算出來的，
- *  看某個月就是看那個月月底當時的數字。 */
-function monthEnd(yearMonth: string): string {
-  const [y, m] = yearMonth.split("-").map(Number);
-  return `${yearMonth}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
-}
+import { formatCurrency, formatDate, formatDateWithWeekday } from "@/lib/format";
 
 export function AssetsView() {
+  const { filter } = useDateFilter();
   const showToast = useToast();
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const skeletonReady = useSkeletonReady();
@@ -57,7 +47,11 @@ export function AssetsView() {
   const [transfersExpanded, setTransfersExpanded] = useState(false);
   // 看的是「哪一個月月底當時」的數字——從設定頁的帳戶類型搬過來的（那一頁現在只管
   // 類型的名稱／圖示／顏色，金額一律在這一頁看，見該檔案開頭的說明）。
-  const [yearMonth, setYearMonth] = useState(currentYearMonth());
+  // 「今天」掛載時算一次固定住——render 當中讀時鐘是不純的。
+  const [todayISO] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
   useEffect(() => {
     let cancelled = false;
     Promise.all([
@@ -163,9 +157,11 @@ export function AssetsView() {
     ready ? sectionRowCount("liability") : undefined,
   );
 
-  // 選到的那個月月底當時的數字：餘額函式本來就是「傳進去哪些交易／轉帳就算哪些」，把
-  // 那天之後的篩掉再算一次就是當時的狀況（見 lib/expenses/accounts.ts）。
-  const asOf = monthEnd(yearMonth);
+  // 這一整頁（淨資產、各類型佔比、每個帳戶的餘額）講的都是「某一天當時」的數字，基準日
+  // 就是選到的這段期間的最後一天——跟報表「資產」分頁同一套解讀（選 2026-09 就看九月底
+  // 的淨資產）。選「全部」沒有結束日，那就是今天。餘額函式本來就是「傳進去哪些交易／
+  // 轉帳就算哪些」，把那天之後的篩掉再算一次就是當時的狀況（見 lib/expenses/accounts.ts）。
+  const asOf = dateFilterRange(filter)?.end ?? todayISO;
   const txUntil = transactions.filter((t) => t.date <= asOf);
   const transfersUntil = transfers.filter((t) => t.date <= asOf);
 
@@ -293,12 +289,16 @@ export function AssetsView() {
       <PageHeader
         title="資產總表"
         actions={
-          <LineIconButton
-            icon="transfer"
-            aria-label="新增轉帳"
-            title={accounts.length < 2 ? "至少要有兩個帳戶才能轉帳" : "新增轉帳"}
-            disabled={accounts.length < 2}
-            onClick={() => setTransferOpen(true)}
+          <DateFilterPicker
+            actions={
+              <LineIconButton
+                icon="transfer"
+                aria-label="新增轉帳"
+                title={accounts.length < 2 ? "至少要有兩個帳戶才能轉帳" : "新增轉帳"}
+                disabled={accounts.length < 2}
+                onClick={() => setTransferOpen(true)}
+              />
+            }
           />
         }
       />
@@ -340,20 +340,11 @@ export function AssetsView() {
         onDelete={handleDeleteTransfer}
       />
 
-      {/* 月份在最上面：這一整頁（淨資產、各類型佔比、每個帳戶的餘額）講的都是「那個月
-          月底當時」的數字，不是只有某一塊會跟著換。 */}
-      <div className="mb-4">
-        <label className="flex flex-col gap-1.5">
-          <span className={text.label}>月份</span>
-          <DateField value={yearMonth} onChange={setYearMonth} granularity="month" />
-        </label>
-      </div>
-
       {ready && accounts.length > 0 && (
         <div className="mb-5 flex flex-col gap-3">
           <Card>
             <CardBody>
-              <p className={text.muted}>{yearMonth} 淨資產</p>
+              <p className={text.muted}>{formatDate(asOf)} 淨資產</p>
               <div className="mt-0.5 flex items-end justify-between">
                 <p className="text-2xl font-bold tabular-nums text-[#4A3B7C]">
                   {net < 0 ? "－" : ""}
