@@ -61,6 +61,11 @@ const PERIOD_OPTIONS_BY_GRANULARITY: Record<TrendGranularity, number[]> = {
 const GRANULARITY_UNIT: Record<TrendGranularity, string> = { day: "天", week: "週", month: "月", year: "年" };
 
 const OTHER_COLOR = "#B3ABD4";
+
+/** 點開長條後那塊細項清單的外觀，照「分類佔比」那張卡的做法：上面一條分隔線把標頭
+ *  （日期＋金額）跟細項隔開，細項之間只靠 gap 分，不再每一列之間畫一條線——那幾列本來
+ *  就是同一份清單，列列都有線會比上面的標頭分隔線還搶眼，整塊看起來像表格。 */
+const DETAIL_LIST = "mt-4 flex flex-col gap-3 border-t border-[#F2EEFA] pt-4";
 const TOP_N = PREVIEW_COUNT;
 
 export function ReportsView() {
@@ -613,10 +618,10 @@ export function ReportsView() {
                   金額的清單），四個分頁點下去看到的才是同一種東西。 */}
               {selectedAssetPoint && (
                 <div className="mt-4 rounded-2xl border border-[#ECE4FA] bg-[#F9F7FE] p-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <p className={text.body}>{periodRangeLabel(selectedAssetPoint)}</p>
                     <p
-                      className="text-sm font-semibold tabular-nums"
+                      className="shrink-0 text-sm font-semibold tabular-nums"
                       style={{ color: selectedAssetPoint.value < 0 ? KPI_NEGATIVE : "#4A3B7C" }}
                     >
                       {selectedAssetPoint.value < 0 ? "－" : ""}
@@ -624,11 +629,11 @@ export function ReportsView() {
                     </p>
                   </div>
                   {selectedAssetRows.length === 0 ? (
-                    <p className={`mt-3 ${text.muted}`}>那時候還沒有任何資產帳戶。</p>
+                    <p className={`${DETAIL_LIST} ${text.muted}`}>那時候還沒有任何資產帳戶。</p>
                   ) : (
-                    <div className="mt-3 flex flex-col divide-y divide-[#ECE4FA]">
+                    <div className={DETAIL_LIST}>
                       {selectedAssetRows.map((r) => (
-                        <div key={r.id} className="flex items-center gap-3 py-2">
+                        <div key={r.id} className="flex items-center gap-3">
                           <IconAvatar icon={r.icon} size="sm" className={r.colorClass} />
                           <span className={`min-w-0 flex-1 truncate ${text.body}`}>{r.name}</span>
                           <span className="shrink-0 tabular-nums text-sm font-medium text-[#4A3B7C]">{formatCurrency(r.amount)}</span>
@@ -823,13 +828,13 @@ export function ReportsView() {
             <div className="mt-4 rounded-2xl border border-[#ECE4FA] bg-[#F9F7FE] p-4">
               {selectedPoint && (
                 <>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <p className={text.body}>{periodRangeLabel(selectedPoint)}</p>
-                    <p className="text-sm font-semibold tabular-nums text-[#4A3B7C]">{formatCurrency(selectedPoint.total)}</p>
+                    <p className="shrink-0 text-sm font-semibold tabular-nums text-[#4A3B7C]">{formatCurrency(selectedPoint.total)}</p>
                   </div>
-                  <div className="mt-3 flex flex-col divide-y divide-[#ECE4FA]">
+                  <div className={DETAIL_LIST}>
                     {categoryRows(selectedPoint).map((r) => (
-                      <div key={r.id} className="flex items-center gap-3 py-2">
+                      <div key={r.id} className="flex items-center gap-3">
                         <IconAvatar icon={r.icon} size="sm" className={r.colorClass} />
                         <span className={`min-w-0 flex-1 truncate ${text.body}`}>{r.name}</span>
                         <span className="shrink-0 tabular-nums text-sm font-medium text-[#4A3B7C]">{formatCurrency(r.amount)}</span>
@@ -845,11 +850,11 @@ export function ReportsView() {
                       那一期的結餘，底下又分「收入」「支出」兩段列出來，同一個數字講三次。 */}
                   <p className={text.body}>{periodRangeLabel(selectedIncomePoint ?? selectedExpensePoint!)}</p>
                   {selectedIncomePoint && selectedIncomePoint.byCategory.length > 0 && (
-                    <div className="mt-3">
-                      <p className={`mb-1.5 ${text.label}`}>收入 {formatCurrency(selectedIncomePoint.total)}</p>
-                      <div className="flex flex-col divide-y divide-[#ECE4FA]">
+                    <div className={DETAIL_LIST}>
+                      <p className={text.label}>收入 {formatCurrency(selectedIncomePoint.total)}</p>
+                      <div className="flex flex-col gap-3">
                         {categoryRows(selectedIncomePoint).map((r) => (
-                          <div key={r.id} className="flex items-center gap-3 py-2">
+                          <div key={r.id} className="flex items-center gap-3">
                             <IconAvatar icon={r.icon} size="sm" className={r.colorClass} />
                             <span className={`min-w-0 flex-1 truncate ${text.body}`}>{r.name}</span>
                             <span className="shrink-0 tabular-nums text-sm font-medium text-[#2FAE82]">{formatCurrency(r.amount)}</span>
@@ -859,11 +864,11 @@ export function ReportsView() {
                     </div>
                   )}
                   {selectedExpensePoint && selectedExpensePoint.byCategory.length > 0 && (
-                    <div className="mt-3">
-                      <p className={`mb-1.5 ${text.label}`}>支出 {formatCurrency(selectedExpensePoint.total)}</p>
-                      <div className="flex flex-col divide-y divide-[#ECE4FA]">
+                    <div className={DETAIL_LIST}>
+                      <p className={text.label}>支出 {formatCurrency(selectedExpensePoint.total)}</p>
+                      <div className="flex flex-col gap-3">
                         {categoryRows(selectedExpensePoint).map((r) => (
-                          <div key={r.id} className="flex items-center gap-3 py-2">
+                          <div key={r.id} className="flex items-center gap-3">
                             <IconAvatar icon={r.icon} size="sm" className={r.colorClass} />
                             <span className={`min-w-0 flex-1 truncate ${text.body}`}>{r.name}</span>
                             <span className="shrink-0 tabular-nums text-sm font-medium text-[#D1517E]">{formatCurrency(r.amount)}</span>
