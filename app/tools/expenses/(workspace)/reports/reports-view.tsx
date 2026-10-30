@@ -648,7 +648,7 @@ export function ReportsView() {
         <CardBody>
           <p className={text.muted}>{kind}</p>
           <div className="mt-1 flex flex-col gap-1.5">
-            <p className="text-2xl font-bold tabular-nums text-[#4A3B7C]">
+            <p className={text.statValue}>
               {summaryTotal < 0 ? "－" : ""}
               {formatCurrency(Math.abs(summaryTotal))}
             </p>

@@ -11,7 +11,7 @@ import { ICON_PATHS } from "./icon-paths";
  *  列點進去，所以歸在首頁底下——進去之後底部還是亮著首頁，才知道自己是從哪一區進來的。
  *  收支分類、預算、存錢目標、固定收支同理，都歸在設定底下。 */
 const tabs = [
-  { href: "/tools/expenses", label: "首頁", icon: ICON_PATHS.navHome, owns: ["/tools/expenses/transactions"] },
+  { href: "/tools/expenses", label: "明細", icon: ICON_PATHS.navHome, owns: ["/tools/expenses/transactions"] },
   { href: "/tools/expenses/reports", label: "報表", icon: ICON_PATHS.navReports, owns: [] },
   { href: "/tools/expenses/assets", label: "資產", icon: ICON_PATHS.navAssets, owns: [] },
   { href: "/tools/expenses/pet", label: "養成", icon: ICON_PATHS.navPet, owns: [] },

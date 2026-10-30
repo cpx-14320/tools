@@ -201,14 +201,20 @@ export function CardSkeleton({ children, className = "" }: { children: ReactNode
   );
 }
 
-/** 「這段期間支出 NT$ 7,700」那種大數字摘要卡（報表頁最上面、消費紀錄頁的期間合計）。 */
+/** 「支出 NT$ 7,700」那種大數字摘要卡（報表頁最上面、消費紀錄頁的期間合計）。
+ *
+ *  排法照著真的那張卡：小標一行，底下 `mt-1 flex flex-col gap-1.5` 裝著金額跟漲跌幅，
+ *  兩者是**上下**兩行。以前骨架是 `justify-between` 把漲跌幅排在金額右邊，所以載入時
+ *  NT$ 右邊會多出一塊、資料回來又不見，那一塊憑空閃一下。
+ *  高度也對齊真的元素（小標 16、金額 28＝text-lg 的行高、漲跌幅 16），資料回來整張卡
+ *  才不會抽高。 */
 export function SummaryCardSkeleton({ delta = false }: { delta?: boolean }) {
   return (
     <CardSkeleton>
-      <SkeletonBar width={72} height={12} />
-      <div className="mt-2 flex items-end justify-between gap-2">
-        <SkeletonBar width={148} height={24} />
-        {delta && <SkeletonBar width={96} height={12} />}
+      <SkeletonBar width={72} height={16} />
+      <div className="mt-1 flex flex-col gap-1.5">
+        <SkeletonBar width={148} height={28} />
+        {delta && <SkeletonBar width={200} height={16} />}
       </div>
     </CardSkeleton>
   );

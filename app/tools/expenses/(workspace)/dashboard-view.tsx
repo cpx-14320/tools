@@ -219,7 +219,20 @@ export function DashboardView() {
       {ready ? (
         <MonthFilterPicker filter={filter} onChange={setFilter} />
       ) : (
-        <div className="h-[34px] w-[116px] animate-pulse rounded-full bg-white/70" />
+        // 骨架直接沿用真膠囊的外框跟兩顆箭頭，只有中間的日期換成灰條——整顆畫成一塊
+        // 灰色圓角的話，寬高跟真的差一截，資料回來那一刻這顆會抽一下。
+        // 123×34 ＝ pl-1(4) + 24 + gap(4) + 53 + gap(4) + 24 + pr-2(8) + 框線 2。
+        <div className="flex justify-center">
+          <div className="flex shrink-0 items-center gap-1 rounded-full border border-[#ECE4FA] bg-white py-1 pl-1 pr-2">
+            <span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-full text-[#DDD6F3]">
+              ‹
+            </span>
+            <span className="h-5 w-[53px] animate-pulse rounded bg-[#EDE6FB]" />
+            <span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-full text-[#DDD6F3]">
+              ›
+            </span>
+          </div>
+        </div>
       )}
     </div>
   );
