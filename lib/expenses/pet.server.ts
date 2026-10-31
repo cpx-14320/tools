@@ -4,7 +4,7 @@ import { budgetForMonth, withLegacyCategoryBudgets } from "./budgets";
 import { listBudgetRules } from "./budgets.server";
 import { listCategories } from "./categories.server";
 import { topLevelCategoryId } from "./categories";
-import { DEFAULT_BACKGROUND_ID, DEFAULT_OUTFIT_ID, PET_ITEMS, pendingRewards, petItemById, type PetReward } from "./pet";
+import { DEFAULT_BACKGROUND_ID, DEFAULT_OUTFIT_ID, ENTRY_COINS, PET_ITEMS, pendingRewards, petItemById, type PetReward } from "./pet";
 
 interface PetDoc {
   _id: ObjectId;
@@ -24,6 +24,13 @@ interface PetDoc {
   foodCounts?: Record<string, number>;
   /** 已經發過的獎勵 key——結算每次進記帳本都會跑，靠這個確保同一筆獎勵只發一次。 */
   claimedKeys: string[];
+  /** 已經發過「每記一筆」獎勵的交易筆數。
+   *
+   *  這一項不走 claimedKeys：那是一筆一個 key，記了幾千筆之後這個陣列會大到離譜，而且
+   *  每次結算都要比對整份。改成只記「發到第幾筆為止」，每次結算拿現在的總筆數減掉它就是
+   *  這次要補發的量。舊文件沒有這個欄位，第一次結算時直接對齊當下的筆數——不回頭補發
+   *  歷史紀錄，不然改版當天會一次灌進幾萬顆星星。 */
+  rewardedEntryCount?: number;
   createdAt: Date;
 }
 
@@ -120,17 +127,31 @@ export async function settlePetRewards(userId: ObjectId, today: string): Promise
   const pet = await ensurePet(userId);
 
   const db = await getDb();
-  const dates = await db.collection("expenses.transactions").distinct("date", { userId });
+  const col = await collection();
+  const granted: PetReward[] = [];
+
+  // ── 每記一筆 ──────────────────────────────────────────────────────────────
+  // 用計數器而不是一筆一個 key（理由見 PetDoc.rewardedEntryCount）。條件更新：只有在
+  // rewardedEntryCount 還停在我們讀到的那個值時才寫進去，兩個請求同時進來不會各發一次。
+  const entryCount = await db.collection("expenses.transactions").countDocuments({ userId });
+  const rewardedSoFar = pet.rewardedEntryCount ?? entryCount;
+  const newEntries = Math.max(0, entryCount - rewardedSoFar);
+  if (newEntries > 0 || pet.rewardedEntryCount === undefined) {
+    const res = await col.updateOne(
+      { _id: pet._id, rewardedEntryCount: pet.rewardedEntryCount ?? { $exists: false } },
+      { $inc: { coins: newEntries * ENTRY_COINS }, $set: { rewardedEntryCount: entryCount } },
+    );
+    if (res.modifiedCount === 1 && newEntries > 0) {
+      granted.push({ key: `entry:${today}:${entryCount}`, coins: newEntries * ENTRY_COINS, label: `記了 ${newEntries} 筆` });
+    }
+  }
+
+  // ── 簽到／預算 ────────────────────────────────────────────────────────────
   const rewards = pendingRewards({
-    datesWithEntries: new Set(dates as string[]),
     today,
     budgetKeptMonth: await budgetKeptMonth(userId, today),
     claimedKeys: new Set(pet.claimedKeys),
   });
-  if (rewards.length === 0) return toDTO(pet);
-
-  const col = await collection();
-  const granted: PetReward[] = [];
   for (const reward of rewards) {
     const res = await col.updateOne(
       { _id: pet._id, claimedKeys: { $ne: reward.key } },

@@ -1,7 +1,6 @@
 "use client";
 
 import { Card, CardBody } from "./card";
-import { ChoiceChip } from "./button";
 import { text } from "./theme";
 import { formatCurrency } from "@/lib/format";
 
@@ -39,25 +38,23 @@ function DeltaCell({ current, previous, goodWhenUp }: { current: number | null; 
  *  刻意只有數字、沒有圖：上面的趨勢圖已經負責「看走勢」，這張表負責的是另一件事——
  *  「2025 年 3 月到底是多少、跟今年差多少」。那種問題看長條圖是答不出來的。
  *
- *  差額是跟「左邊那一欄」比，不是固定跟第一欄比：欄位照年份由舊到新排，所以每一格
- *  講的都是「比前一年多／少多少」，挑三年以上時每一欄都有意義。
+ *  差額一律是跟第一欄（基準年）比，不是跟左邊那一欄：挑三年以上時，「每一欄比它左邊
+ *  多少」要在腦袋裡連續做兩次減法才知道跟基準差多少，而且基準年自己沒有差額可看。
+ *  固定基準之後每一欄講的都是同一件事。基準年是哪一年由 YearPickerModal 決定。
  *
  *  年份一多就左右捲（月份那一欄 sticky 釘在左邊，捲到第四個年份還知道自己在看幾月）。 */
 export function YearCompareTable({
   title,
   goodWhenUp,
   columns,
-  availableYears,
-  selectedYears,
-  onToggleYear,
+  onPickYears,
 }: {
   title: string;
   /** 數字變大算好事還是壞事——支出變多是壞事（紅），收入／結餘／淨資產變多是好事（綠）。 */
   goodWhenUp: boolean;
+  /** 第一欄是基準年，後面才是比較年（差額都是跟第一欄比）。 */
   columns: YearColumn[];
-  availableYears: number[];
-  selectedYears: number[];
-  onToggleYear: (year: number) => void;
+  onPickYears: () => void;
 }) {
   const cellClass = "whitespace-nowrap px-3 py-2 text-right align-top text-xs tabular-nums text-[#4A3B7C]";
   const totals = columns.map((c) => (c.values.some((v) => v !== null) ? c.values.reduce((sum: number, v) => sum + (v ?? 0), 0) : null));
@@ -66,24 +63,18 @@ export function YearCompareTable({
     <Card>
       <CardBody>
         {/* 看哪個指標由頁面最上面那排分頁決定，這裡不再重複一組——同一頁兩組做同一件事
-            的切換，只會讓人猜它們是不是各管各的。 */}
-        <p className={text.sectionHeading}>{title}</p>
-
-        {/* 年份可以複選——兩年對比最常用，但「今年 vs 前兩年」這種看長期變化的需求
-            一樣成立，沒道理限制成只能挑兩個。 */}
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {availableYears.map((y) => {
-            const active = selectedYears.includes(y);
-            return (
-              <ChoiceChip key={y} active={active} onClick={() => onToggleYear(y)}>
-                {y}
-              </ChoiceChip>
-            );
-          })}
+            的切換，只會讓人猜它們是不是各管各的。
+            年份收進彈窗裡挑：攤在這裡的話，資料累積幾年之後這一排就會折成兩三排，
+            把表格整個推下去（見 YearPickerModal）。 */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className={text.sectionHeading}>{title}</p>
+          <button type="button" onClick={onPickYears} className="text-xs font-medium text-[#6F5FD6]">
+            選擇年份
+          </button>
         </div>
 
         {columns.length === 0 ? (
-          <p className={`mt-4 ${text.muted}`}>挑一個以上的年份來比較。</p>
+          <p className={`mt-4 ${text.muted}`}>還沒有可以比較的年份。</p>
         ) : (
           <div className="-mx-4 mt-4 overflow-x-auto px-4">
             <table className="w-full min-w-max border-collapse">
@@ -92,9 +83,11 @@ export function YearCompareTable({
                   {/* sticky：年份多到要捲時，月份這一欄要釘住，不然捲到右邊就不知道
                       自己在看第幾個月。bg 要補上，不然捲過去的數字會透出來疊在上面。 */}
                   <th className="sticky left-0 z-10 bg-white px-1 py-2 text-left text-xs font-medium text-[#9C94C4]">月份</th>
-                  {columns.map((c) => (
+                  {columns.map((c, col) => (
                     <th key={c.year} className="whitespace-nowrap px-3 py-2 text-right text-xs font-semibold tabular-nums text-[#4A3B7C]">
                       {c.year}
+                      {/* 標一下哪一欄是基準——不然三欄以上時看不出那些 ▲▼ 在跟誰比。 */}
+                      {col === 0 && <span className="ml-1 font-normal text-[#9C94C4]">基準</span>}
                     </th>
                   ))}
                 </tr>
@@ -113,7 +106,7 @@ export function YearCompareTable({
                           ) : (
                             <>
                               {formatCurrency(v)}
-                              <DeltaCell current={v} previous={col > 0 ? columns[col - 1].values[i] : null} goodWhenUp={goodWhenUp} />
+                              <DeltaCell current={v} previous={col > 0 ? columns[0].values[i] : null} goodWhenUp={goodWhenUp} />
                             </>
                           )}
                         </td>
@@ -134,7 +127,7 @@ export function YearCompareTable({
                               拿它的合計去比去年整年一定是「少很多」，那不是真的變少。 */}
                           <DeltaCell
                             current={columns[col].values.every((v) => v !== null) ? t : null}
-                            previous={col > 0 && columns[col - 1].values.every((v) => v !== null) ? totals[col - 1] : null}
+                            previous={col > 0 && columns[0].values.every((v) => v !== null) ? totals[0] : null}
                             goodWhenUp={goodWhenUp}
                           />
                         </>

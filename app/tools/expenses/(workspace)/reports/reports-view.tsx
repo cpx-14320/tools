@@ -44,6 +44,7 @@ import {
   YearCompareTableSkeleton,
 } from "@/components/expenses/skeleton";
 import { YearCompareTable, type YearColumn } from "@/components/expenses/year-compare-table";
+import { YearPickerModal } from "@/components/expenses/year-picker-modal";
 import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { formatCurrency, formatDate } from "@/lib/format";
 
@@ -93,11 +94,11 @@ export function ReportsView() {
   const [periods, setPeriods] = useState(6);
   // 趨勢圖目前展開細項的那一期（用 TrendPoint.start 當 key）；null＝沒有展開任何一根。
   const [selectedTrendStart, setSelectedTrendStart] = useState<string | null>(null);
-  // 年度對照表要比哪幾年。預設今年跟去年——最常問的是「今年比去年多花多少」。
-  const [compareYears, setCompareYears] = useState<number[]>(() => {
-    const y = new Date().getFullYear();
-    return [y - 1, y];
-  });
+  // 年度對照表：基準年＋比較年。預設拿去年當基準、比今年——最常問的是「今年比去年
+  // 多花多少」。表格上每一欄的增減都是跟基準年比的（見 YearCompareTable）。
+  const [baseYear, setBaseYear] = useState(() => new Date().getFullYear() - 1);
+  const [compareYears, setCompareYears] = useState<number[]>(() => [new Date().getFullYear()]);
+  const [yearPickerOpen, setYearPickerOpen] = useState(false);
   // 明細裡目前展開看子分類的那個大分類；null＝全部收合。
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   // 「今天」掛載時算一次固定住——render 當中讀時鐘是不純的。
@@ -243,8 +244,7 @@ export function ReportsView() {
     return Array.from({ length: thisYear - from + 1 }, (_, i) => from + i).reverse();
   })();
 
-  const yearColumns: YearColumn[] = [...compareYears]
-    .sort((a, b) => a - b)
+  const yearColumns: YearColumn[] = [baseYear, ...[...compareYears].sort((a, b) => a - b)]
     .map((year) => {
       if (kind === "資產") {
         return {
@@ -269,9 +269,6 @@ export function ReportsView() {
   // 支出變多是壞事（紅），收入／結餘／淨資產變多是好事（綠）。
   const yearTableGoodWhenUp = kind !== "支出";
 
-  function toggleCompareYear(year: number) {
-    setCompareYears((cur) => (cur.includes(year) ? cur.filter((y) => y !== year) : [...cur, year]));
-  }
 
   const range = dateFilterRange(filter);
   // 徽章後綴要照使用者選的比較基準講，不是照期間單位講：選了「去年同期」卻寫「vs 上期」
@@ -516,13 +513,28 @@ export function ReportsView() {
           <DonutCardSkeleton legendRows={legendSkeletonRows} listRows={listSkeletonRows} />
         )}
         <TrendCardSkeleton />
-        <YearCompareTableSkeleton withDelta={compareYears.length > 1} />
+        <YearCompareTableSkeleton withDelta={compareYears.length > 0} />
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
+      {/* key 跟著目前的選擇走＝每次打開都是最新狀態，不會留著上次改到一半的值。 */}
+      <YearPickerModal
+        key={yearPickerOpen ? `${baseYear}-${compareYears.join(",")}` : "year-picker-closed"}
+        open={yearPickerOpen}
+        availableYears={availableYears}
+        baseYear={baseYear}
+        compareYears={compareYears}
+        onClose={() => setYearPickerOpen(false)}
+        onSave={({ baseYear: b, compareYears: c }) => {
+          setBaseYear(b);
+          setCompareYears(c);
+          setYearPickerOpen(false);
+        }}
+      />
+
       {/* 期間跟「報表」標題同一列、靠右：它是整頁的前提（這一頁所有數字都是算這一段裡
           的），放在最上面跟標題平起，往下才是「這一段要看哪一面」的四個分頁。日期膠囊
           跟日曆圖示是同一個右側區塊（見 date-filter-picker.tsx）。
@@ -652,8 +664,7 @@ export function ReportsView() {
               <div className="mt-3 flex gap-1.5">
                 {PERIOD_OPTIONS_BY_GRANULARITY[granularity].map((n) => (
                   <ChoiceChip key={n} active={periods === n} onClick={() => changePeriods(n)}>
-                    近 {n}
-                    {GRANULARITY_UNIT[granularity]}
+                    近{n}{GRANULARITY_UNIT[granularity]}
                   </ChoiceChip>
                 ))}
               </div>
@@ -703,14 +714,7 @@ export function ReportsView() {
 
           {/* 年度對照：趨勢圖看走勢，這張表看精確值。擺在趨勢下面是閱讀順序——先看
               這段期間多少、再看組成、再看走勢，最後才是跨年逐月比對。 */}
-          <YearCompareTable
-            title="淨資產年度對照"
-            goodWhenUp
-            columns={yearColumns}
-            availableYears={availableYears}
-            selectedYears={compareYears}
-            onToggleYear={toggleCompareYear}
-          />
+          <YearCompareTable title="淨資產年度對照" goodWhenUp columns={yearColumns} onPickYears={() => setYearPickerOpen(true)} />
         </>
       ) : (
         <>
@@ -857,8 +861,7 @@ export function ReportsView() {
           <div className="mt-3 flex gap-1.5">
             {PERIOD_OPTIONS_BY_GRANULARITY[granularity].map((n) => (
               <ChoiceChip key={n} active={periods === n} onClick={() => changePeriods(n)}>
-                近 {n}
-                {GRANULARITY_UNIT[granularity]}
+                近{n}{GRANULARITY_UNIT[granularity]}
               </ChoiceChip>
             ))}
           </div>
@@ -951,9 +954,7 @@ export function ReportsView() {
         title={`${kind}年度對照`}
         goodWhenUp={yearTableGoodWhenUp}
         columns={yearColumns}
-        availableYears={availableYears}
-        selectedYears={compareYears}
-        onToggleYear={toggleCompareYear}
+        onPickYears={() => setYearPickerOpen(true)}
       />
         </>
       )}

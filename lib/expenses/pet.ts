@@ -38,13 +38,14 @@ export interface PetItem {
 
 /** 商店品項。食物是消耗品（買了直接餵、換經驗值），服裝是一次性購買、可以重複換穿。 */
 export const PET_ITEMS: PetItem[] = [
-  // 由便宜到貴排。價格大致是經驗值的八成，同經驗值的給同價格（蛋糕跟串燒都是 80xp／60
+  // 由便宜到貴排。價格＝經驗值，一比一：買的時候花掉多少星星幣，餵下去就換回多少
+  // 經驗值，不用在腦袋裡算匯率。（同經驗值的自然就同價格，蛋糕跟串燒都是 80
   // 星星幣），不要出現「同樣經驗值但比較貴」這種永遠不該選的選項。
-  { id: "food-noodle", name: "拉麵", kind: "食物", price: 25, xp: 30, desc: "吃飽一點，心情也好", image: petItemImage("food-noodle") },
-  { id: "food-sushi", name: "壽司", kind: "食物", price: 40, xp: 50, desc: "小小奢侈一下", image: petItemImage("food-sushi") },
-  { id: "food-cake", name: "蛋糕", kind: "食物", price: 60, xp: 80, desc: "慶祝一下這個月守住預算", image: petItemImage("food-cake") },
-  { id: "food-skewer", name: "串燒", kind: "食物", price: 60, xp: 80, desc: "下班後的宵夜場", image: petItemImage("food-skewer") },
-  { id: "food-yuzu", name: "柚子酒", kind: "食物", price: 80, xp: 100, desc: "給自己的大獎勵", image: petItemImage("food-yuzu") },
+  { id: "food-noodle", name: "拉麵", kind: "食物", price: 30, xp: 30, desc: "吃飽一點，心情也好", image: petItemImage("food-noodle") },
+  { id: "food-sushi", name: "壽司", kind: "食物", price: 50, xp: 50, desc: "小小奢侈一下", image: petItemImage("food-sushi") },
+  { id: "food-cake", name: "蛋糕", kind: "食物", price: 80, xp: 80, desc: "慶祝一下這個月守住預算", image: petItemImage("food-cake") },
+  { id: "food-skewer", name: "串燒", kind: "食物", price: 80, xp: 80, desc: "下班後的宵夜場", image: petItemImage("food-skewer") },
+  { id: "food-yuzu", name: "柚子酒", kind: "食物", price: 100, xp: 100, desc: "給自己的大獎勵", image: petItemImage("food-yuzu") },
   { id: "outfit-default", name: "原色套裝", kind: "服裝", price: 0, hueRotate: 0, desc: "一開始就有的衣服", image: petItemImage("outfit-default") },
   { id: "outfit-mint", name: "薄荷綠", kind: "服裝", price: 80, hueRotate: 120, desc: "清爽的配色", image: petItemImage("outfit-mint") },
   { id: "outfit-ocean", name: "海洋藍", kind: "服裝", price: 120, hueRotate: 200, desc: "沉穩的深藍", image: petItemImage("outfit-ocean") },
@@ -163,16 +164,26 @@ export interface PetReward {
   label: string;
 }
 
-/** 連續記帳的里程碑：到第 N 天給一次，不是每天都給。 */
-const STREAK_MILESTONES: { days: number; coins: number }[] = [
-  { days: 3, coins: 10 },
-  { days: 7, coins: 25 },
-  { days: 14, coins: 50 },
-  { days: 30, coins: 100 },
-];
-
-export const DAILY_LOG_COINS = 5;
+/** 簽到的基本單位：第一天 +100，第二天再多 +200，第三天再多 +300…… */
+export const SIGNIN_STEP_COINS = 100;
+/** 連續簽到最多累加到第幾天——第八天之後一律照第七天的金額給，不會無限長大。 */
+export const SIGNIN_STREAK_CAP = 7;
+/** 每記一筆帳給多少。 */
+export const ENTRY_COINS = 100;
 export const BUDGET_KEPT_COINS = 50;
+
+/** 連續簽到第 n 天當天拿多少：1→100、2→300、3→600……7→2800，第八天之後維持 2800。
+ *
+ *  是「累加」不是「等差」：第二天拿的是 100＋200，不是只有 200。連到第七天那天一次
+ *  拿 2800，跟第一天的 100 差 28 倍——斷掉要重頭爬的成本夠高，才有「不想斷」的動力，
+ *  這也是整個簽到機制唯一真正有效的地方。
+ *
+ *  第八天之後不再往上加：再累下去會變成只要連著開 App 就能無限賺，星星幣跟記帳習慣
+ *  就脫鉤了。 */
+export function signinCoins(streakDay: number): number {
+  const n = Math.min(Math.max(streakDay, 1), SIGNIN_STREAK_CAP);
+  return (SIGNIN_STEP_COINS * n * (n + 1)) / 2;
+}
 
 /** 連續天數最多往回數到這裡為止——避免資料很長時白跑一大圈，一年份的連續紀錄已經
  *  遠超過所有里程碑了。 */
@@ -180,59 +191,53 @@ const MAX_STREAK_LOOKBACK = 400;
 
 const toISO = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-/** 從「有記帳的日期清單」算出到 today 為止連續記了幾天（含今天；今天沒記就是 0），
- *  以及這一段連續紀錄是從哪一天開始的——開始日拿來當里程碑獎勵的 key，所以「中斷之後
- *  重新連起來」會被當成新的一段、可以再拿一次獎勵，而不是一輩子只能領一次。 */
-export function loggingStreak(datesWithEntries: Set<string>, today: string): { days: number; startDate: string } {
-  if (!datesWithEntries.has(today)) return { days: 0, startDate: today };
-  let days = 0;
-  let startDate = today;
+/** 簽到紀錄的 key——已領過的簽到就是靠這些 key 認出來的，連續天數也是從它們往回數，
+ *  不用另外存一份「最後簽到日」欄位（兩份資料一定會有對不上的那天）。 */
+export const signinKey = (date: string) => `signin:${date}`;
+
+/** 今天是連續簽到的第幾天（含今天）。往回數已經領過簽到獎勵的日子，一斷就停。
+ *
+ *  今天還沒領的情況下回傳 1 ＝ 新的一段從今天開始；今天已經領過的話回傳的就是今天那一
+ *  段的長度（畫面上顯示「已連續 N 天」用）。 */
+export function signinStreakDay(claimedKeys: Set<string>, today: string): number {
+  let days = claimedKeys.has(signinKey(today)) ? 0 : 1;
   const cursor = new Date(`${today}T00:00:00`);
-  while (days < MAX_STREAK_LOOKBACK) {
-    const iso = toISO(cursor);
-    if (!datesWithEntries.has(iso)) break;
-    days += 1;
-    startDate = iso;
+  if (claimedKeys.has(signinKey(today))) cursor.setDate(cursor.getDate() + 1); // 從今天開始往回數
+  for (let i = 0; i < MAX_STREAK_LOOKBACK; i++) {
     cursor.setDate(cursor.getDate() - 1);
+    if (!claimedKeys.has(signinKey(toISO(cursor)))) break;
+    days += 1;
   }
-  return { days, startDate };
+  return Math.max(days, 1);
 }
 
 /**
  * 算出「這次結算應該發哪些還沒發過的獎勵」。
  *
- * 三種來源：
- *  - 當天有記帳（每天一次）
- *  - 連續記帳里程碑（3/7/14/30 天各一次）
+ * 兩種來源（第三種「每記一筆」不走這裡——它要數的是筆數不是日期，用計數器處理，
+ * 見 pet.server.ts 的 settlePetRewards）：
+ *  - 每日簽到：每天打開記帳本就算簽到，連續天數愈長那天拿得愈多（見 signinCoins）
  *  - 上個月每個有編預算的分類都沒超支（每個月一次）
  *
  * budgetKeptMonth 傳 null 代表「上個月沒有編任何預算」或「有超支」，就不發這筆。
  */
 export function pendingRewards({
-  datesWithEntries,
   today,
   budgetKeptMonth,
   claimedKeys,
 }: {
-  datesWithEntries: Set<string>;
   today: string;
   budgetKeptMonth: string | null;
   claimedKeys: Set<string>;
 }): PetReward[] {
   const rewards: PetReward[] = [];
 
-  if (datesWithEntries.has(today)) {
-    rewards.push({ key: `daily:${today}`, coins: DAILY_LOG_COINS, label: "今天有記帳" });
-  }
-
-  // key 綁「這一段連續紀錄的起始日」而不是今天，不然只要連續超過 3 天，之後每天都會
-  // 再發一次 3 天里程碑的獎勵。
-  const streak = loggingStreak(datesWithEntries, today);
-  for (const m of STREAK_MILESTONES) {
-    if (streak.days >= m.days) {
-      rewards.push({ key: `streak:${m.days}:${streak.startDate}`, coins: m.coins, label: `連續記帳 ${m.days} 天` });
-    }
-  }
+  const streakDay = signinStreakDay(claimedKeys, today);
+  rewards.push({
+    key: signinKey(today),
+    coins: signinCoins(streakDay),
+    label: streakDay > 1 ? `連續簽到第 ${streakDay} 天` : "今日簽到",
+  });
 
   if (budgetKeptMonth) {
     rewards.push({ key: `budget:${budgetKeptMonth}`, coins: BUDGET_KEPT_COINS, label: `${budgetKeptMonth} 沒有超支` });

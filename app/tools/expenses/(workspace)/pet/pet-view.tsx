@@ -11,7 +11,18 @@ import { PetSprite, petStage, PET_EATING_MS, type PetMood } from "@/components/e
 import { PetShopModal } from "@/components/expenses/pet-shop";
 import { IconImg } from "@/components/expenses/icon-img";
 import { text } from "@/components/expenses/theme";
-import { DAILY_LOG_COINS, BUDGET_KEPT_COINS, PET_ITEMS, levelFromXp, petBackground, petItemById, wealthTier } from "@/lib/expenses/pet";
+import {
+  BUDGET_KEPT_COINS,
+  ENTRY_COINS,
+  PET_ITEMS,
+  SIGNIN_STEP_COINS,
+  SIGNIN_STREAK_CAP,
+  levelFromXp,
+  petBackground,
+  petItemById,
+  signinCoins,
+  wealthTier,
+} from "@/lib/expenses/pet";
 import { netWorth, type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type CategoryDTO } from "@/lib/expenses/categories";
@@ -209,12 +220,26 @@ export function PetView() {
             <p className={`${text.muted} leading-relaxed`}>好好記帳就能賺星星幣，拿去餵角色、換衣服。</p>
             <p className={text.sectionHeading}>怎麼賺星星幣</p>
             <ListCard>
-              <ListRow name="當天有記帳" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ {DAILY_LOG_COINS}</span>} />
-              <ListRow name="連續記帳 3／7／14／30 天" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ 10～100</span>} />
+              <ListRow name="每日簽到（打開記帳本就算）" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ {signinCoins(1)}</span>} />
+              <ListRow
+                name={`連續簽到第 2～${SIGNIN_STREAK_CAP} 天`}
+                right={
+                  <span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">
+                    ⭐ {signinCoins(2)}～{signinCoins(SIGNIN_STREAK_CAP)}
+                  </span>
+                }
+              />
+              <ListRow name="每記一筆帳" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ {ENTRY_COINS}</span>} />
               <ListRow name="上個月每個分類都沒超支" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ {BUDGET_KEPT_COINS}</span>} />
             </ListCard>
             <p className={`${text.faint} leading-relaxed`}>
+              連續簽到是累加的：第一天 {signinCoins(1)}、第二天再多 {SIGNIN_STEP_COINS * 2}、第三天再多 {SIGNIN_STEP_COINS * 3}
+              ……連到第 {SIGNIN_STREAK_CAP} 天那天一次拿 {signinCoins(SIGNIN_STREAK_CAP)}；斷掉就從頭算，第 {SIGNIN_STREAK_CAP + 1}{" "}
+              天之後維持在 {signinCoins(SIGNIN_STREAK_CAP)} 不再往上加。
+            </p>
+            <p className={`${text.faint} leading-relaxed`}>
               星星幣只看記帳習慣，不看你有多少錢——淨資產只拿來算上面那個理財段位，才不會因為一筆大額支出就讓角色跟著「變窮」。
+              食物的價格跟經驗值是一比一，花掉多少就換回多少。
             </p>
           </>
         }

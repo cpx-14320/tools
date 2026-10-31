@@ -2,7 +2,14 @@
 
 import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
-import { CardSkeleton, GroupedSectionSkeleton, KpiCardSkeleton, SectionSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
+import {
+  CardSkeleton,
+  DateFilterPickerSkeleton,
+  GroupedSectionSkeleton,
+  KpiCardSkeleton,
+  SectionSkeleton,
+  SkeletonBar,
+} from "@/components/expenses/skeleton";
 import { useSkeletonCount, useSkeletonReady, useSkeletonShape } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton, FloatingSecondaryButton } from "@/components/expenses/floating-add-button";
@@ -288,19 +295,25 @@ export function AssetsView() {
           文字鈕換成線條 SVG 圖示，跟日期膠囊、眼睛那顆同一組視覺（見 line-icon-button.tsx）。 */}
       <PageHeader
         title="資產總表"
-        actions={<DateFilterPicker />}
+        actions={ready ? <DateFilterPicker /> : <DateFilterPickerSkeleton />}
       />
 
       {/* 轉帳疊在「新增帳戶」正上方：兩個都是這一頁的新增動作，擺在同一個角落才找得到
           （本來掛在標題列的圖示那一排，跟日曆、期間混在一起，看起來像一個檢視設定）。
-          帳戶不到兩個時轉不了，按鈕留著但按不動。 */}
-      <FloatingSecondaryButton
-        icon={<LineIcon name="transfer" />}
-        label={accounts.length < 2 ? "至少要有兩個帳戶才能轉帳" : "新增轉帳"}
-        disabled={accounts.length < 2}
-        onClick={() => setTransferOpen(true)}
-      />
-      <FloatingAddButton onClick={() => setCreateOpen(true)} label="新增帳戶" />
+          帳戶不到兩個時轉不了，按鈕留著但按不動。
+          兩顆都等資料回來才出現，跟首頁一樣——它們是 fixed、不佔版面，所以不需要骨架，
+          但資料還沒回來就先浮在一片灰條上面會很突兀。 */}
+      {ready && (
+        <>
+          <FloatingSecondaryButton
+            icon={<LineIcon name="transfer" />}
+            label={accounts.length < 2 ? "至少要有兩個帳戶才能轉帳" : "新增轉帳"}
+            disabled={accounts.length < 2}
+            onClick={() => setTransferOpen(true)}
+          />
+          <FloatingAddButton onClick={() => setCreateOpen(true)} label="新增帳戶" />
+        </>
+      )}
 
       <AccountModal
         open={createOpen}
@@ -369,9 +382,17 @@ export function AssetsView() {
         // 骨架照著載入完成後的版面排：淨資產大卡、資產/負債兩張小卡，再來是兩段帳戶清單。
         <div>
           <div className="mb-5 flex flex-col gap-3">
+            {/* 淨資產卡：小標、金額＋百分比、底下那條進度條。進度條以前沒畫，資料回來
+                整張卡會多長 16px 出來。 */}
             <CardSkeleton>
-              <SkeletonBar width={48} height={12} />
-              <SkeletonBar width={148} height={24} className="mt-2" />
+              <SkeletonBar width={96} height={16} />
+              <div className="mt-0.5 flex h-7 items-end justify-between gap-2">
+                <SkeletonBar width={148} height={24} />
+                <SkeletonBar width={32} height={16} />
+              </div>
+              <div className="mt-2">
+                <SkeletonBar width="100%" height={8} />
+              </div>
             </CardSkeleton>
             <div className="grid grid-cols-2 gap-3">
               <KpiCardSkeleton />
@@ -382,10 +403,12 @@ export function AssetsView() {
             {/* 兩段的小標右邊都沒有連結，所以 action={false}；每一列都帶進度條
                 （類型列一定有，子帳戶列沒有但那是少數情況），所以 progress。 */}
             <SectionSkeleton count={assetSkeletonCount} progress action={false} />
-            <SectionSkeleton count={liabilitySkeletonCount} progress action={false} />
+            {/* 上次就沒有負債帳戶的話整段不畫——section() 在沒有任何類型時回傳 null，
+                畫一張「還沒有任何資料」的空卡反而比真畫面多出一塊。轉帳明細同理。 */}
+            {liabilitySkeletonCount > 0 && <SectionSkeleton count={liabilitySkeletonCount} progress action={false} />}
             {/* 轉帳明細的小標右邊沒有連結，所以 action={false}——留一條假的灰條在那裡，
                 資料回來那個位置會空掉。 */}
-            <GroupedSectionSkeleton shape={transferSkeletonShape} action={false} />
+            {transferSkeletonShape.length > 0 && <GroupedSectionSkeleton shape={transferSkeletonShape} action={false} />}
           </div>
         </div>
       ) : accounts.length === 0 ? (

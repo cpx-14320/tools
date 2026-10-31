@@ -17,7 +17,6 @@ import { text } from "@/components/expenses/theme";
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
-import { ComparePicker } from "@/components/expenses/compare-picker";
 import { AccountModal, type AccountModalDraft } from "@/components/expenses/account-modal";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { TransferModal, type TransferModalDraft } from "@/components/expenses/transfer-modal";
@@ -268,9 +267,6 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
           </div>
           <div className="mt-3 h-[34px] animate-pulse rounded-xl bg-[#EDE6FB]" />
         </CardSkeleton>
-        <div className="-mt-1 mb-2 flex justify-end">
-          <div className="h-9 w-[96px] animate-pulse rounded-full bg-[#EDE6FB]" />
-        </div>
         <KpiCardSkeleton />
         <div className="grid grid-cols-2 gap-3">
           <KpiCardSkeleton />
@@ -436,11 +432,6 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
         onSave={handleReconcile}
       />
 
-      {/* 「跟誰比」自己一列、靠右，跟報表頁同一個排法。期間本身已經搬到標題列了。 */}
-      <div className="-mt-1 mb-2 flex justify-end">
-        <ComparePicker />
-      </div>
-
       <KpiCard
         label="收入"
         value={formatCurrency(totalIncome)}
@@ -532,17 +523,14 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
                       const otherAccount = accounts.find((a) => a.id === (isOutgoing ? transfer.toAccountId : transfer.fromAccountId));
                       const transferBalanceAfter = accountBalances.get(`transfer:${transfer.id}`);
                       return (
-                        // 轉帳列跟支出／收入列刻意長得不一樣：它不是支出也不是收入，不算進
-                        // 上面那三張 KPI 卡，但混在同一條依日期排的流水裡，光看金額顏色分不
-                        // 出來。所以同時給三個記號——左邊一道品牌紫的豎條、整列淡紫底、
-                        // 標題前面一顆「轉帳」膠囊。只靠顏色的話色弱的人分不出來，只靠膠囊
-                        // 的話快速往下捲會看漏；一道通欄的色帶才是掃一眼就看得到的那個。
-                        // pl 刻意是 9px（12 − 3）：豎條佔掉 3px，文字才跟上面的交易列對齊。
+                        // 轉帳列跟支出／收入列的區隔只靠標題前面那個「轉帳」標籤跟金額的
+                        // 顏色——左邊的豎條跟整列的淡紫底拿掉了，它們在一條依日期排的流水
+                        // 裡太重，每隔幾列就橫插一條色帶，反而是色帶在搶視線而不是內容。
                         <button
                           key={transfer.id}
                           type="button"
                           onClick={() => setTransferModal(transfer)}
-                          className="flex w-full items-center gap-3 border-l-[3px] border-[#6F5FD6] bg-[#FAF8FE] py-3 pl-[9px] pr-3 text-left"
+                          className="flex w-full items-center gap-3 px-3 py-3 text-left"
                         >
                           {/* 標題放備註、副標放「轉到／來自 哪個帳戶」——跟上面的交易列
                               一致（標題是這筆是什麼、副標是它歸在哪裡）。沒寫備註的話
@@ -551,9 +539,10 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
                             icon={ICON_PATHS.accountTransfer}
                             title={
                               <span className="flex items-center gap-1.5">
-                                <span className="shrink-0 rounded-full bg-[#EFEAFC] px-1.5 py-px text-[10px] font-semibold text-[#6F5FD6]">
-                                  轉帳
-                                </span>
+                                {/* 純文字標籤，沒有底色也沒有圓角——字級字重跟旁邊的標題
+                                    一樣（text-sm font-medium，見 TransactionRowLabel），
+                                    只有顏色不同。膠囊那種實心小方塊在一列裡太像一顆按鈕。 */}
+                                <span className="shrink-0 text-[#6F5FD6]">轉帳</span>
                                 {transfer.note && <span className="min-w-0 truncate">{transfer.note}</span>}
                               </span>
                             }

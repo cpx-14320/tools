@@ -89,14 +89,30 @@ export function DatePillSkeleton() {
   );
 }
 
-/** 日期膠囊旁邊那幾顆 32px 圓形圖示鈕的骨架（日曆、篩選、鉛筆…）。 */
+/** 日期膠囊旁邊那幾顆 32px 圓形圖示鈕的骨架（日曆、篩選、鉛筆…）。
+ *
+ *  跟日期膠囊同一套做法：外框（那顆淡紫圓底）是真的，只有裡面的圖示換成灰塊。整顆塗成
+ *  灰色的話，日期是白底帶框、旁邊卻是一坨實心灰，同一列兩種調性。 */
 export function IconButtonSkeleton({ count = 1 }: { count?: number }) {
   return (
     <>
       {Array.from({ length: count }, (_, i) => (
-        <div key={i} className="size-8 shrink-0 animate-pulse rounded-full bg-[#EDE6FB]" />
+        <div key={i} className="grid size-8 shrink-0 place-items-center rounded-full bg-[#F3EFFC]">
+          <span className={`size-4 animate-pulse rounded ${SKELETON_BG}`} />
+        </div>
       ))}
     </>
+  );
+}
+
+/** 期間膠囊＋旁邊幾顆圖示鈕——掛在 PageHeader 的 actions 上，資料還沒回來時用這個
+ *  頂著（見 DateFilterPicker）。 */
+export function DateFilterPickerSkeleton({ icons = 1 }: { icons?: number }) {
+  return (
+    <div className="flex items-center gap-2">
+      <DatePillSkeleton />
+      <IconButtonSkeleton count={icons} />
+    </div>
   );
 }
 
@@ -106,9 +122,8 @@ export function PageHeaderSkeleton({ titleWidth = 44, icons = 1 }: { titleWidth?
   return (
     <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
       <SkeletonBar width={titleWidth} height={20} />
-      <div className="flex shrink-0 items-center gap-2">
-        <DatePillSkeleton />
-        <IconButtonSkeleton count={icons} />
+      <div className="shrink-0">
+        <DateFilterPickerSkeleton icons={icons} />
       </div>
     </div>
   );
