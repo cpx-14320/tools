@@ -253,7 +253,9 @@ export function CategoriesView() {
       <PageHeader title="收支分類" help="支出與收入的分類都在這裡；分類底下可以再開子分類，方便細看同一種消費裡哪種類型花最多" />
 
       {/* 新增搬到右下角的浮動按鈕（跟首頁新增交易、帳戶類型頁同一招），標題列空出來。 */}
-      <FloatingAddButton onClick={() => setBatchTarget({})} label="新增分類" />
+      {/* 等資料回來才出現：它是 fixed、不佔版面，所以不需要骨架，但資料還沒回來就先浮在
+          一片灰條上面很突兀（跟首頁、資產總表同一個處理）。 */}
+      {ready && <FloatingAddButton onClick={() => setBatchTarget({})} label="新增分類" />}
 
       <CategoryModal
         key={modal ? modal.id : "edit-closed"}

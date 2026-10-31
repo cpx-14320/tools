@@ -206,7 +206,9 @@ export function RecurringView() {
       <PageHeader title="固定收支" help="每月電話費、房租這種會重複出現的收支。到期不會自動入帳，會列在上面的「待確認」等你按確認——金額每個月不一樣時才有機會先改或略過" />
 
       {/* 新增搬到右下角的浮動按鈕，跟首頁新增交易、消費分類頁同一招。 */}
-      <FloatingAddButton onClick={() => setModal({ mode: "create" })} label="新增固定收支" />
+      {/* 等資料回來才出現：它是 fixed、不佔版面，所以不需要骨架，但資料還沒回來就先浮在
+          一片灰條上面很突兀（跟首頁、資產總表同一個處理）。 */}
+      {ready && <FloatingAddButton onClick={() => setModal({ mode: "create" })} label="新增固定收支" />}
 
       <div className="mb-4 flex items-center justify-between gap-2">
         <SegmentedControl
