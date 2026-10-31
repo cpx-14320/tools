@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/expenses/page-header";
 import { Card, CardBody } from "@/components/expenses/card";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
-import { SegmentedControl } from "@/components/expenses/button";
+import { ChoiceChip, SegmentedControl } from "@/components/expenses/button";
 import { DeltaBadge } from "@/components/expenses/delta-badge";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
@@ -651,15 +651,10 @@ export function ReportsView() {
               </div>
               <div className="mt-3 flex gap-1.5">
                 {PERIOD_OPTIONS_BY_GRANULARITY[granularity].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => changePeriods(n)}
-                    className={`rounded-full px-3 py-1 text-xs font-medium ${periods === n ? "bg-[#6F5FD6] text-white" : "bg-[#F3EFFC] text-[#9C94C4]"}`}
-                  >
+                  <ChoiceChip key={n} active={periods === n} onClick={() => changePeriods(n)}>
                     近 {n}
                     {GRANULARITY_UNIT[granularity]}
-                  </button>
+                  </ChoiceChip>
                 ))}
               </div>
               {/* 每一根是「那一期最後一天當時的淨資產」，不是那一期的收支加總——這張圖
@@ -861,15 +856,10 @@ export function ReportsView() {
           </div>
           <div className="mt-3 flex gap-1.5">
             {PERIOD_OPTIONS_BY_GRANULARITY[granularity].map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => changePeriods(n)}
-                className={`rounded-full px-3 py-1 text-xs font-medium ${periods === n ? "bg-[#6F5FD6] text-white" : "bg-[#F3EFFC] text-[#9C94C4]"}`}
-              >
+              <ChoiceChip key={n} active={periods === n} onClick={() => changePeriods(n)}>
                 近 {n}
                 {GRANULARITY_UNIT[granularity]}
-              </button>
+              </ChoiceChip>
             ))}
           </div>
           <div className="mt-5">

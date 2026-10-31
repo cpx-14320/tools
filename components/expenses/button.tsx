@@ -132,6 +132,33 @@ export function SegmentedControl<T extends string>({
   );
 }
 
+/** 「一排裡挑一個」的小膠囊——報表的近 3／6／12／24 月、年度對照的年份都是同一種。
+ *
+ *  本來三個地方各自手刻一次同樣的 class，而且其中兩處的選中色還停在舊的 #6F5FD6，
+ *  跟其他「選中」狀態（分頁、篩選膠囊、月曆選到的那天）用的 activeSolid #6F5ED4 差一階
+ *  ——同一頁兩種紫，看得出來但說不上哪裡怪。收斂成這一顆之後只有一個色。 */
+export function ChoiceChip({
+  children,
+  active,
+  onClick,
+}: {
+  children: ReactNode;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-3 py-1 text-xs font-medium tabular-nums transition-colors ${
+        active ? activeSolid : "bg-[#F3EFFC] text-[#9C94C4] hover:text-[#6F5FD6]"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 /** 跟 SegmentedControl（size="sm"）等高（36px）的獨立膠囊按鈕——要跟分頁切換並排在
  *  同一列時用（消費紀錄的「篩選」、比較基準、分類頁的「選取」…）。SegmentedControl 是
  *  「一定會有一個選中」的互斥切換，這個則是單獨一顆可開可關的按鈕，兩者外觀一致、

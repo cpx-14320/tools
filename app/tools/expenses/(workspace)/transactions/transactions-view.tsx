@@ -9,6 +9,7 @@ import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skelet
 import { useSearchParams } from "next/navigation";
 import { SegmentedControl } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
+import { ListCard } from "@/components/expenses/list-row";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { LineIconButton } from "@/components/expenses/line-icon-button";
 import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
@@ -510,7 +511,7 @@ export function TransactionsView() {
                     {formatCurrency(items.reduce((sum, t) => sum + t.amount, 0))}
                   </p>
                 </div>
-                <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
+                <ListCard>
                   {items.map((t) => {
                     const category = categoryById(categories, t.categoryId);
                     const breakdown = t.breakdown ?? [];
@@ -556,7 +557,7 @@ export function TransactionsView() {
                       </div>
                     );
                   })}
-                </div>
+                </ListCard>
               </div>
             ))}
           </div>

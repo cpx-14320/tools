@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardBody } from "./card";
+import { ChoiceChip } from "./button";
 import { text } from "./theme";
 import { formatCurrency } from "@/lib/format";
 
@@ -74,16 +75,9 @@ export function YearCompareTable({
           {availableYears.map((y) => {
             const active = selectedYears.includes(y);
             return (
-              <button
-                key={y}
-                type="button"
-                onClick={() => onToggleYear(y)}
-                className={`rounded-full px-3 py-1 text-xs font-medium tabular-nums transition-colors ${
-                  active ? "bg-[#6F5ED4] text-white" : "bg-[#F3EFFC] text-[#9C94C4]"
-                }`}
-              >
+              <ChoiceChip key={y} active={active} onClick={() => onToggleYear(y)}>
                 {y}
-              </button>
+              </ChoiceChip>
             );
           })}
         </div>

@@ -8,6 +8,7 @@ import { IconImg } from "@/components/expenses/icon-img";
 import { ICON_PATHS } from "@/components/expenses/icon-paths";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { Badge } from "@/components/expenses/button";
+import { ListCard } from "@/components/expenses/list-row";
 import { PageHeader } from "@/components/expenses/page-header";
 import { text } from "@/components/expenses/theme";
 import { TOOLS_REGISTRY } from "@/lib/tools-registry";
@@ -101,7 +102,7 @@ export function MoreView() {
         {GROUPS.map((group) => (
           <div key={group.heading}>
             <p className={`mb-2 px-1 ${text.label}`}>{group.heading}</p>
-            <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
+            <ListCard>
               {group.items.map((item) => (
                 <Link key={item.href} href={item.href} className="flex items-center gap-3 px-4 py-3.5 active:bg-[#F3EFFC]">
                   {/* 不帶底色方塊，跟搭乘車設定頁「其他小工具」那排一樣，圖直接放在白底上
@@ -119,7 +120,7 @@ export function MoreView() {
                   </span>
                 </Link>
               ))}
-            </div>
+            </ListCard>
           </div>
         ))}
 
@@ -128,7 +129,7 @@ export function MoreView() {
         {otherTools.length > 0 && (
           <div>
             <p className={`mb-2 px-1 ${text.label}`}>其他小工具</p>
-            <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
+            <ListCard>
               {otherTools.map((tool) => (
                 <Link key={tool.toolId} href={tool.href} className="flex items-center gap-3 px-4 py-3.5 active:bg-[#F3EFFC]">
                   {tool.iconImage ? (
@@ -142,7 +143,7 @@ export function MoreView() {
                   </span>
                 </Link>
               ))}
-            </div>
+            </ListCard>
           </div>
         )}
 
@@ -161,7 +162,7 @@ export function MoreView() {
             才會真的送出（見 ConfirmModal 的 requireText）。 */}
         <div>
           <p className={`mb-2 px-1 ${text.label}`}>清除資料</p>
-          <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white">
+          <ListCard>
             <button type="button" onClick={() => setResetScope("records")} className="px-4 py-3.5 text-left active:bg-[#FDEEF0]">
               <span className="block text-sm font-medium text-[#D1517E]">清除所有消費紀錄</span>
               <span className={`block ${text.muted}`}>只刪交易與轉帳，分類、帳戶、目標都保留</span>
@@ -170,7 +171,7 @@ export function MoreView() {
               <span className="block text-sm font-medium text-[#D1517E]">清除全部資料</span>
               <span className={`block ${text.muted}`}>連自己加的分類、帳戶、類型、目標、固定收支、預算一起清空（預設的不會刪）</span>
             </button>
-          </div>
+          </ListCard>
         </div>
       </div>
 
