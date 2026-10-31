@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardBody } from "./card";
+import { SegmentedControl } from "./button";
 import { text } from "./theme";
 import { formatCurrency } from "@/lib/format";
 
@@ -11,34 +12,75 @@ export interface YearColumn {
   values: (number | null)[];
 }
 
-const MONTH_LABELS = Array.from({ length: 12 }, (_, i) => `${i + 1}月`);
+export type YearCompareKind = "支出" | "收入" | "結餘";
 
-/** 年度對照表——同一個指標、好幾個年份並排，一格一個數字。
+const MONTH_LABELS = Array.from({ length: 12 }, (_, i) => `${i + 1}月`);
+const KIND_OPTIONS: { value: YearCompareKind; label: string }[] = [
+  { value: "支出", label: "支出" },
+  { value: "收入", label: "收入" },
+  { value: "結餘", label: "結餘" },
+];
+
+const UP_GOOD = "#2FAE82";
+const UP_BAD = "#D1517E";
+
+/** 同一列、跟左邊那一欄（前一個年份）的差額。 */
+function DeltaCell({ current, previous, goodWhenUp }: { current: number | null; previous: number | null; goodWhenUp: boolean }) {
+  // 任一邊沒資料就不比：拿「還沒到的月份」當 0 去比，會算出一個看起來很嚇人的跌幅。
+  if (current === null || previous === null) return null;
+  const diff = current - previous;
+  if (diff === 0) return null;
+  const isUp = diff > 0;
+  return (
+    <span className="mt-0.5 block text-[10px] font-medium tabular-nums" style={{ color: isUp === goodWhenUp ? UP_GOOD : UP_BAD }}>
+      {isUp ? "▲" : "▼"} {formatCurrency(Math.abs(diff))}
+    </span>
+  );
+}
+
+/** 年度對照表——同一個指標、好幾個年份並排，一格一個數字，數字底下再掛一行「比左邊那
+ *  一年多／少多少」。
  *
  *  刻意只有數字、沒有圖：上面的趨勢圖已經負責「看走勢」，這張表負責的是另一件事——
- *  「2025 年 3 月到底是多少、跟今年差多少」。那種問題看長條圖是答不出來的，得有精確
- *  數值並排才比得了。
+ *  「2025 年 3 月到底是多少、跟今年差多少」。那種問題看長條圖是答不出來的。
+ *
+ *  差額是跟「左邊那一欄」比，不是固定跟第一欄比：欄位照年份由舊到新排，所以每一格
+ *  講的都是「比前一年多／少多少」，挑三年以上時每一欄都有意義。
  *
  *  年份一多就左右捲（月份那一欄 sticky 釘在左邊，捲到第四個年份還知道自己在看幾月）。 */
 export function YearCompareTable({
   title,
+  kind,
+  onKindChange,
+  goodWhenUp,
   columns,
   availableYears,
   selectedYears,
   onToggleYear,
 }: {
   title: string;
+  /** 給了才顯示支出／收入／結餘切換。資產分頁沒有這組（淨資產就是它唯一的指標）。 */
+  kind?: YearCompareKind;
+  onKindChange?: (kind: YearCompareKind) => void;
+  /** 數字變大算好事還是壞事——支出變多是壞事（紅），收入／結餘／淨資產變多是好事（綠）。 */
+  goodWhenUp: boolean;
   columns: YearColumn[];
   availableYears: number[];
   selectedYears: number[];
   onToggleYear: (year: number) => void;
 }) {
-  const cellClass = "whitespace-nowrap px-3 py-2 text-right text-xs tabular-nums text-[#4A3B7C]";
+  const cellClass = "whitespace-nowrap px-3 py-2 text-right align-top text-xs tabular-nums text-[#4A3B7C]";
+  const totals = columns.map((c) => (c.values.some((v) => v !== null) ? c.values.reduce((sum: number, v) => sum + (v ?? 0), 0) : null));
 
   return (
     <Card>
       <CardBody>
-        <p className={text.sectionHeading}>{title}</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className={text.sectionHeading}>{title}</p>
+          {/* 這組切換跟上面的主分頁各走各的：看支出趨勢時常常會想順手確認「那收入呢」，
+              為了這個把整頁切過去、再捲回來這張表，比直接在這裡切麻煩得多。 */}
+          {kind && onKindChange && <SegmentedControl value={kind} onChange={onKindChange} activeTone="solid" options={KIND_OPTIONS} />}
+        </div>
 
         {/* 年份可以複選——兩年對比最常用，但「今年 vs 前兩年」這種看長期變化的需求
             一樣成立，沒道理限制成只能挑兩個。 */}
@@ -80,23 +122,43 @@ export function YearCompareTable({
               <tbody>
                 {MONTH_LABELS.map((label, i) => (
                   <tr key={label} className="border-b border-[#F2EEFA]">
-                    <th className="sticky left-0 z-10 bg-white px-1 py-2 text-left text-xs font-normal text-[#9C94C4]">{label}</th>
-                    {columns.map((c) => {
+                    <th className="sticky left-0 z-10 bg-white px-1 py-2 text-left align-top text-xs font-normal text-[#9C94C4]">{label}</th>
+                    {columns.map((c, col) => {
                       const v = c.values[i];
                       return (
                         <td key={c.year} className={cellClass}>
                           {/* 還沒到的月份留空白，不要填 0 —— 0 會被讀成「那個月沒花錢」。 */}
-                          {v === null ? <span className="text-[#DDD6F3]">—</span> : formatCurrency(v)}
+                          {v === null ? (
+                            <span className="text-[#DDD6F3]">—</span>
+                          ) : (
+                            <>
+                              {formatCurrency(v)}
+                              <DeltaCell current={v} previous={col > 0 ? columns[col - 1].values[i] : null} goodWhenUp={goodWhenUp} />
+                            </>
+                          )}
                         </td>
                       );
                     })}
                   </tr>
                 ))}
                 <tr>
-                  <th className="sticky left-0 z-10 bg-white px-1 py-2 text-left text-xs font-medium text-[#4A3B7C]">合計</th>
-                  {columns.map((c) => (
-                    <td key={c.year} className={`${cellClass} font-semibold`}>
-                      {formatCurrency(c.values.reduce((sum: number, v) => sum + (v ?? 0), 0))}
+                  <th className="sticky left-0 z-10 bg-white px-1 py-2 text-left align-top text-xs font-medium text-[#4A3B7C]">合計</th>
+                  {totals.map((t, col) => (
+                    <td key={columns[col].year} className={`${cellClass} font-semibold`}>
+                      {t === null ? (
+                        <span className="text-[#DDD6F3]">—</span>
+                      ) : (
+                        <>
+                          {formatCurrency(t)}
+                          {/* 合計的差額只在兩邊都已經過完整年時才有意義——今年才過到十月，
+                              拿它的合計去比去年整年一定是「少很多」，那不是真的變少。 */}
+                          <DeltaCell
+                            current={columns[col].values.every((v) => v !== null) ? t : null}
+                            previous={col > 0 && columns[col - 1].values.every((v) => v !== null) ? totals[col - 1] : null}
+                            goodWhenUp={goodWhenUp}
+                          />
+                        </>
+                      )}
                     </td>
                   ))}
                 </tr>

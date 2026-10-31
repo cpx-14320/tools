@@ -35,7 +35,7 @@ import {
 import { compareDateFilter, compareLabel, dateFilterRange } from "@/lib/expenses/date-filter";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { DonutCardSkeleton, KpiCardSkeleton, SummaryCardSkeleton, TrendCardSkeleton } from "@/components/expenses/skeleton";
-import { YearCompareTable, type YearColumn } from "@/components/expenses/year-compare-table";
+import { YearCompareTable, type YearColumn, type YearCompareKind } from "@/components/expenses/year-compare-table";
 import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { formatCurrency, formatDate } from "@/lib/format";
 
@@ -90,6 +90,10 @@ export function ReportsView() {
     const y = new Date().getFullYear();
     return [y - 1, y];
   });
+  // 表格看哪個指標，跟上面的主分頁各走各的：看支出趨勢時常常會想順手確認「那收入呢」，
+  // 為了這個把整頁切過去再捲回來，比直接在表格上切麻煩得多。資產分頁不吃這個狀態
+  // （淨資產就是它唯一的指標）。
+  const [yearTableKind, setYearTableKind] = useState<YearCompareKind>("支出");
   // 明細裡目前展開看子分類的那個大分類；null＝全部收合。
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   // 「今天」掛載時算一次固定住——render 當中讀時鐘是不純的。
@@ -252,11 +256,14 @@ export function ReportsView() {
       }
       const income = monthlyTotals(transactions, categories, "收入", year, todayISO);
       const expense = monthlyTotals(transactions, categories, "支出", year, todayISO);
-      if (kind === "結餘") {
+      if (yearTableKind === "結餘") {
         return { year, values: income.map((v, i) => (v === null ? null : v - (expense[i] ?? 0))) };
       }
-      return { year, values: kind === "收入" ? income : expense };
+      return { year, values: yearTableKind === "收入" ? income : expense };
     });
+
+  // 支出變多是壞事（紅），收入／結餘／淨資產變多是好事（綠）。
+  const yearTableGoodWhenUp = kind === "資產" || yearTableKind !== "支出";
 
   function toggleCompareYear(year: number) {
     setCompareYears((cur) => (cur.includes(year) ? cur.filter((y) => y !== year) : [...cur, year]));
@@ -529,6 +536,9 @@ export function ReportsView() {
             setKind(v);
             setExpanded(false);
             setSelectedTrendStart(null);
+            // 切到支出／收入／結餘時，底下的對照表順手跟過去——多數情況使用者就是想看
+            // 同一個指標的跨年比較。切完之後要在表格上單獨改回來隨時可以。
+            if (v !== "資產") setYearTableKind(v);
           }}
           // self-start：這一組是 inline-flex（寬度跟著文字走，跟消費紀錄頁的支出／收入
           // 同一種），但 flex 容器預設 align-items: stretch 會把它拉成滿版，看起來像還
@@ -697,7 +707,8 @@ export function ReportsView() {
           {/* 年度對照：趨勢圖看走勢，這張表看精確值。擺在趨勢下面是閱讀順序——先看
               這段期間多少、再看組成、再看走勢，最後才是跨年逐月比對。 */}
           <YearCompareTable
-            title={`${kind}年度對照`}
+            title="淨資產年度對照"
+            goodWhenUp
             columns={yearColumns}
             availableYears={availableYears}
             selectedYears={compareYears}
@@ -945,7 +956,10 @@ export function ReportsView() {
       {/* 年度對照：趨勢圖看走勢，這張表看精確值。擺在趨勢下面是閱讀順序——先看
           這段期間多少、再看組成、再看走勢，最後才是跨年逐月比對。 */}
       <YearCompareTable
-        title={`${kind}年度對照`}
+        title="年度對照"
+        kind={yearTableKind}
+        onKindChange={setYearTableKind}
+        goodWhenUp={yearTableGoodWhenUp}
         columns={yearColumns}
         availableYears={availableYears}
         selectedYears={compareYears}
