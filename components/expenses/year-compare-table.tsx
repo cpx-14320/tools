@@ -1,7 +1,6 @@
 "use client";
 
 import { Card, CardBody } from "./card";
-import { SegmentedControl } from "./button";
 import { text } from "./theme";
 import { formatCurrency } from "@/lib/format";
 
@@ -12,14 +11,7 @@ export interface YearColumn {
   values: (number | null)[];
 }
 
-export type YearCompareKind = "支出" | "收入" | "結餘";
-
 const MONTH_LABELS = Array.from({ length: 12 }, (_, i) => `${i + 1}月`);
-const KIND_OPTIONS: { value: YearCompareKind; label: string }[] = [
-  { value: "支出", label: "支出" },
-  { value: "收入", label: "收入" },
-  { value: "結餘", label: "結餘" },
-];
 
 const UP_GOOD = "#2FAE82";
 const UP_BAD = "#D1517E";
@@ -41,6 +33,8 @@ function DeltaCell({ current, previous, goodWhenUp }: { current: number | null; 
 /** 年度對照表——同一個指標、好幾個年份並排，一格一個數字，數字底下再掛一行「比左邊那
  *  一年多／少多少」。
  *
+ *  看哪個指標（支出／收入／結餘／淨資產）由頁面最上面那排分頁決定，表格自己不帶切換。
+ *
  *  刻意只有數字、沒有圖：上面的趨勢圖已經負責「看走勢」，這張表負責的是另一件事——
  *  「2025 年 3 月到底是多少、跟今年差多少」。那種問題看長條圖是答不出來的。
  *
@@ -50,8 +44,6 @@ function DeltaCell({ current, previous, goodWhenUp }: { current: number | null; 
  *  年份一多就左右捲（月份那一欄 sticky 釘在左邊，捲到第四個年份還知道自己在看幾月）。 */
 export function YearCompareTable({
   title,
-  kind,
-  onKindChange,
   goodWhenUp,
   columns,
   availableYears,
@@ -59,9 +51,6 @@ export function YearCompareTable({
   onToggleYear,
 }: {
   title: string;
-  /** 給了才顯示支出／收入／結餘切換。資產分頁沒有這組（淨資產就是它唯一的指標）。 */
-  kind?: YearCompareKind;
-  onKindChange?: (kind: YearCompareKind) => void;
   /** 數字變大算好事還是壞事——支出變多是壞事（紅），收入／結餘／淨資產變多是好事（綠）。 */
   goodWhenUp: boolean;
   columns: YearColumn[];
@@ -75,12 +64,9 @@ export function YearCompareTable({
   return (
     <Card>
       <CardBody>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className={text.sectionHeading}>{title}</p>
-          {/* 這組切換跟上面的主分頁各走各的：看支出趨勢時常常會想順手確認「那收入呢」，
-              為了這個把整頁切過去、再捲回來這張表，比直接在這裡切麻煩得多。 */}
-          {kind && onKindChange && <SegmentedControl value={kind} onChange={onKindChange} activeTone="solid" options={KIND_OPTIONS} />}
-        </div>
+        {/* 看哪個指標由頁面最上面那排分頁決定，這裡不再重複一組——同一頁兩組做同一件事
+            的切換，只會讓人猜它們是不是各管各的。 */}
+        <p className={text.sectionHeading}>{title}</p>
 
         {/* 年份可以複選——兩年對比最常用，但「今年 vs 前兩年」這種看長期變化的需求
             一樣成立，沒道理限制成只能挑兩個。 */}
