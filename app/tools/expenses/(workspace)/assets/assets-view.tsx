@@ -5,12 +5,12 @@ import Link from "next/link";
 import { CardSkeleton, GroupedSectionSkeleton, KpiCardSkeleton, SectionSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
 import { useSkeletonCount, useSkeletonReady, useSkeletonShape } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
-import { FloatingAddButton } from "@/components/expenses/floating-add-button";
+import { FloatingAddButton, FloatingSecondaryButton } from "@/components/expenses/floating-add-button";
 import { EmptyListCard, ListCard, ListRow } from "@/components/expenses/list-row";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
-import { LineIconButton } from "@/components/expenses/line-icon-button";
+import { LineIcon } from "@/components/expenses/line-icon-button";
 import { ICON_PATHS } from "@/components/expenses/icon-paths";
 import { Card, CardBody } from "@/components/expenses/card";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
@@ -288,21 +288,18 @@ export function AssetsView() {
           文字鈕換成線條 SVG 圖示，跟日期膠囊、眼睛那顆同一組視覺（見 line-icon-button.tsx）。 */}
       <PageHeader
         title="資產總表"
-        actions={
-          <DateFilterPicker
-            actions={
-              <LineIconButton
-                icon="transfer"
-                aria-label="新增轉帳"
-                title={accounts.length < 2 ? "至少要有兩個帳戶才能轉帳" : "新增轉帳"}
-                disabled={accounts.length < 2}
-                onClick={() => setTransferOpen(true)}
-              />
-            }
-          />
-        }
+        actions={<DateFilterPicker />}
       />
 
+      {/* 轉帳疊在「新增帳戶」正上方：兩個都是這一頁的新增動作，擺在同一個角落才找得到
+          （本來掛在標題列的圖示那一排，跟日曆、期間混在一起，看起來像一個檢視設定）。
+          帳戶不到兩個時轉不了，按鈕留著但按不動。 */}
+      <FloatingSecondaryButton
+        icon={<LineIcon name="transfer" />}
+        label={accounts.length < 2 ? "至少要有兩個帳戶才能轉帳" : "新增轉帳"}
+        disabled={accounts.length < 2}
+        onClick={() => setTransferOpen(true)}
+      />
       <FloatingAddButton onClick={() => setCreateOpen(true)} label="新增帳戶" />
 
       <AccountModal
@@ -346,7 +343,7 @@ export function AssetsView() {
             <CardBody>
               <p className={text.muted}>{formatDate(asOf)} 淨資產</p>
               <div className="mt-0.5 flex items-end justify-between">
-                <p className="text-2xl font-bold tabular-nums text-[#4A3B7C]">
+                <p className={text.statValue}>
                   {net < 0 ? "－" : ""}
                   {formatCurrency(Math.abs(net))}
                 </p>

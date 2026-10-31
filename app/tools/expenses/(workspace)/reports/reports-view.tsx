@@ -23,6 +23,7 @@ import {
   rangeDelta,
   categoryBreakdown,
   incomeBreakdown,
+  monthlyTotals,
   trendByPeriod,
   trendPeriods,
   subcategoryBreakdown,
@@ -34,6 +35,7 @@ import {
 import { compareDateFilter, compareLabel, dateFilterRange } from "@/lib/expenses/date-filter";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { DonutCardSkeleton, KpiCardSkeleton, SummaryCardSkeleton, TrendCardSkeleton } from "@/components/expenses/skeleton";
+import { YearCompareTable, type YearColumn } from "@/components/expenses/year-compare-table";
 import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { formatCurrency, formatDate } from "@/lib/format";
 
@@ -83,6 +85,11 @@ export function ReportsView() {
   const [periods, setPeriods] = useState(6);
   // 趨勢圖目前展開細項的那一期（用 TrendPoint.start 當 key）；null＝沒有展開任何一根。
   const [selectedTrendStart, setSelectedTrendStart] = useState<string | null>(null);
+  // 年度對照表要比哪幾年。預設今年跟去年——最常問的是「今年比去年多花多少」。
+  const [compareYears, setCompareYears] = useState<number[]>(() => {
+    const y = new Date().getFullYear();
+    return [y - 1, y];
+  });
   // 明細裡目前展開看子分類的那個大分類；null＝全部收合。
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   // 「今天」掛載時算一次固定住——render 當中讀時鐘是不純的。
@@ -216,6 +223,44 @@ export function ReportsView() {
         : [],
     [kind, granularity, periods, accounts, accountTypes, transactions, categories, transfers],
   );
+
+  // ── 年度對照表 ──────────────────────────────────────────────────────────────
+  // 跟著目前的分頁走：在支出分頁就比支出、收入分頁比收入，不用再選一次指標。
+  // 結餘＝同一個月的收入減支出；資產是「存量」不是「流量」，所以比的是每個月月底當時
+  // 的淨資產（跟這一頁資產分頁的解讀一致），不是那個月的增減。
+  const availableYears = (() => {
+    const thisYear = Number(todayISO.slice(0, 4));
+    const earliest = transactions.reduce((min, t) => (t.date < min ? t.date : min), todayISO).slice(0, 4);
+    const from = Math.min(Number(earliest), thisYear - 1);
+    return Array.from({ length: thisYear - from + 1 }, (_, i) => from + i).reverse();
+  })();
+
+  const yearColumns: YearColumn[] = [...compareYears]
+    .sort((a, b) => a - b)
+    .map((year) => {
+      if (kind === "資產") {
+        return {
+          year,
+          values: Array.from({ length: 12 }, (_, i) => {
+            const mm = String(i + 1).padStart(2, "0");
+            if (`${year}-${mm}-01` > todayISO) return null;
+            const lastDay = new Date(year, i + 1, 0).getDate();
+            const end = `${year}-${mm}-${String(lastDay).padStart(2, "0")}`;
+            return netWorthAt(accounts, accountTypes, transactions, categories, transfers, end > todayISO ? todayISO : end);
+          }),
+        };
+      }
+      const income = monthlyTotals(transactions, categories, "收入", year, todayISO);
+      const expense = monthlyTotals(transactions, categories, "支出", year, todayISO);
+      if (kind === "結餘") {
+        return { year, values: income.map((v, i) => (v === null ? null : v - (expense[i] ?? 0))) };
+      }
+      return { year, values: kind === "收入" ? income : expense };
+    });
+
+  function toggleCompareYear(year: number) {
+    setCompareYears((cur) => (cur.includes(year) ? cur.filter((y) => y !== year) : [...cur, year]));
+  }
 
   const range = dateFilterRange(filter);
   // 徽章後綴要照使用者選的比較基準講，不是照期間單位講：選了「去年同期」卻寫「vs 上期」
@@ -648,6 +693,16 @@ export function ReportsView() {
               )}
             </CardBody>
           </Card>
+
+          {/* 年度對照：趨勢圖看走勢，這張表看精確值。擺在趨勢下面是閱讀順序——先看
+              這段期間多少、再看組成、再看走勢，最後才是跨年逐月比對。 */}
+          <YearCompareTable
+            title={`${kind}年度對照`}
+            columns={yearColumns}
+            availableYears={availableYears}
+            selectedYears={compareYears}
+            onToggleYear={toggleCompareYear}
+          />
         </>
       ) : (
         <>
@@ -886,6 +941,16 @@ export function ReportsView() {
           )}
         </CardBody>
       </Card>
+
+      {/* 年度對照：趨勢圖看走勢，這張表看精確值。擺在趨勢下面是閱讀順序——先看
+          這段期間多少、再看組成、再看走勢，最後才是跨年逐月比對。 */}
+      <YearCompareTable
+        title={`${kind}年度對照`}
+        columns={yearColumns}
+        availableYears={availableYears}
+        selectedYears={compareYears}
+        onToggleYear={toggleCompareYear}
+      />
         </>
       )}
     </div>

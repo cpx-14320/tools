@@ -107,6 +107,30 @@ export function rangeDelta(
   return { delta: current - previous, pct: previous === 0 ? null : ((current - previous) / previous) * 100 };
 }
 
+/** 某一年十二個月的合計（index 0 ＝ 1 月）——年度對照表用。
+ *
+ *  還沒開始的月份回傳 null，不是 0：「那個月花了 0 元」跟「那個月還沒到」是兩回事，
+ *  表格上前者寫 0、後者留空白。已經開始但還沒過完的當月回傳到今天為止的累計。 */
+export function monthlyTotals(
+  transactions: TransactionDTO[],
+  categories: CategoryDTO[],
+  kind: CategoryKind,
+  year: number,
+  todayISO: string,
+): (number | null)[] {
+  return Array.from({ length: 12 }, (_, i) => {
+    const month = i + 1;
+    const mm = String(month).padStart(2, "0");
+    const start = `${year}-${mm}-01`;
+    if (start > todayISO) return null;
+    const lastDay = new Date(year, month, 0).getDate();
+    const end = `${year}-${mm}-${String(lastDay).padStart(2, "0")}`;
+    return transactionsInDateRange(transactions, { start, end })
+      .filter((t) => categoryById(categories, t.categoryId)?.kind === kind)
+      .reduce((sum, t) => sum + t.amount, 0);
+  });
+}
+
 /** 消費分類佔比：子分類的金額算到它的大分類底下，這裡只回傳支出類大分類層級的彙總
  *  （例如「網購」底下的 3C家電／服飾美妝／日用雜貨全部合併顯示成一筆「網購」）。 */
 export function categoryBreakdown(expenseTx: TransactionDTO[], categories: CategoryDTO[]) {

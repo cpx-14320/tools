@@ -9,7 +9,7 @@ import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { CategoryBatchModal, type CategoryBatchItem } from "./category-batch-modal";
 import { text } from "./theme";
 import { categoryPath, needsSubcategory, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
-import type { RecurrenceFrequencyUnit } from "@/lib/expenses/recurring-rules";
+import { occurrencesUpTo, type RecurrenceFrequencyUnit } from "@/lib/expenses/recurring-rules";
 import type { SavingsGoalDTO } from "@/lib/expenses/goals";
 
 function todayISO(): string {
@@ -42,6 +42,7 @@ export function RecurringRuleModal({
   goals,
   defaultKind,
   initial,
+  confirmedDates,
   onClose,
   onSave,
   onDelete,
@@ -56,6 +57,13 @@ export function RecurringRuleModal({
   onClose: () => void;
   onSave: (draft: RecurringRuleModalDraft) => void;
   onDelete?: () => void;
+  /** 這條規則已經入帳過的那幾期是哪幾天（編輯既有規則時才需要傳）。
+   *
+   *  待確認是拿「排程算出來的日期」去比對「已入帳的日期」，所以改了頻率／間隔／開始日
+   *  之後，原本已入帳的那幾筆有可能就對不上新的排程了——交易本身會留著（它們是獨立
+   *  快照，刻意不受規則變動影響），但「已入帳 N / M 期」的 N 會突然變小，而且那幾筆
+   *  從這一頁完全看不出來。所以改之前先講清楚會有幾筆對不上。 */
+  confirmedDates?: string[];
   /** 分類格子裡「＋新增」當場建好新分類後，把最新的分類清單回報給呼叫端更新自己的
    *  categories 狀態。 */
   onCategoriesChange: (categories: CategoryDTO[]) => void;
@@ -72,9 +80,28 @@ export function RecurringRuleModal({
   const [linkedGoalId, setLinkedGoalId] = useState(initial?.linkedGoalId ?? "");
   const [categoryBatchOpen, setCategoryBatchOpen] = useState(false);
 
+
   const amountNum = evaluateExpr(amount);
   const intervalNum = Number(interval);
   const cycleCountNum = cycleCount.trim() ? Number(cycleCount) : undefined;
+
+  /** 照目前表單上的排程重算一次，已入帳的那幾天有幾天對不上。
+   *
+   *  只在「排程真的被改過」時才算：規則本來就有對不上的幾筆時，一打開彈窗就跳警告反而
+   *  像是這次編輯造成的。untilDate 用最後一筆已入帳的日期——比那還晚的期數不可能已經
+   *  入帳過，不用算進來。 */
+  const orphanCount = (() => {
+    if (!initial || !confirmedDates || confirmedDates.length === 0) return 0;
+    const scheduleChanged =
+      frequencyUnit !== initial.frequencyUnit || Math.floor(intervalNum) !== initial.interval || startDate !== initial.startDate;
+    if (!scheduleChanged) return 0;
+    if (!startDate || !Number.isFinite(intervalNum) || intervalNum < 1) return 0;
+    const latest = confirmedDates.reduce((a, b) => (a > b ? a : b));
+    const scheduled = new Set(
+      occurrencesUpTo({ startDate, frequencyUnit, interval: Math.floor(intervalNum), cycleCount: cycleCountNum }, latest).map((o) => o.date),
+    );
+    return confirmedDates.filter((d) => !scheduled.has(d)).length;
+  })();
   const canSave =
     categoryId &&
     // 跟新增交易同一條規則：有子分類的大分類要挑到底下的項目（見 needsSubcategory）。
@@ -184,6 +211,13 @@ export function RecurringRuleModal({
       <Field label="開始日期">
         <DateField value={startDate} onChange={setStartDate} />
       </Field>
+      {orphanCount > 0 && (
+        <p className="rounded-2xl bg-[#FDEEF0] px-4 py-3 text-xs leading-relaxed text-[#D1517E]">
+          改了排程之後，已經入帳的 {confirmedDates?.length} 筆裡有 {orphanCount} 筆會對不上新的期數。
+          那些紀錄會留著不會被刪，但「已入帳 ◯ / ◯ 期」的數字會跟著變小，對不上的那幾期也會重新出現在待確認裡。
+        </p>
+      )}
+
       <Field label="備註">
         <input value={note} onChange={(e) => setNote(e.target.value)} className={fieldInputClass} />
       </Field>

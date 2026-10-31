@@ -240,6 +240,9 @@ export function RecurringView() {
               }
             : undefined
         }
+        confirmedDates={
+          modal?.mode === "edit" ? transactions.filter((t) => t.sourceRuleId === modal.rule.id).map((t) => t.date) : undefined
+        }
         onClose={() => setModal(null)}
         onSave={handleSave}
         onDelete={modal?.mode === "edit" ? requestDelete : undefined}

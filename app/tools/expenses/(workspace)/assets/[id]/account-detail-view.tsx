@@ -329,7 +329,9 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
       <PageHeader
         title={account.name}
         actions={
-          <IconButton icon="pen" tone="white" aria-label="編輯帳戶資料" onClick={() => setEditOpen(true)} size={32} iconSize={14} />
+          <DateFilterPicker
+            actions={<IconButton icon="pen" tone="soft" aria-label="編輯帳戶資料" onClick={() => setEditOpen(true)} size={32} iconSize={14} />}
+          />
         }
       />
 
@@ -411,7 +413,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
           <div className="flex items-center justify-between">
             <div>
               <p className={text.muted}>目前{kind === "liability" ? "欠款" : "餘額"}</p>
-              <p className={`mt-0.5 text-2xl font-bold tabular-nums ${kind === "liability" ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>
+              <p className={`mt-0.5 text-lg font-bold tabular-nums ${kind === "liability" ? "text-[#D1517E]" : "text-[#4A3B7C]"}`}>
                 {formatCurrency(currentBalance)}
               </p>
             </div>
@@ -441,7 +443,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
         onSave={handleReconcile}
       />
 
-      <DateFilterPicker />
+      {/* 「跟誰比」自己一列、靠右，跟報表頁同一個排法。期間本身已經搬到標題列了。 */}
       <div className="-mt-1 mb-2 flex justify-end">
         <ComparePicker />
       </div>
