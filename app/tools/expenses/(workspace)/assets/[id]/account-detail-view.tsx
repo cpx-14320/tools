@@ -21,6 +21,7 @@ import { AccountModal, type AccountModalDraft } from "@/components/expenses/acco
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { TransferModal, type TransferModalDraft } from "@/components/expenses/transfer-modal";
 import { SelectField } from "@/components/expenses/select-field";
+import { Field } from "@/components/expenses/modal";
 import { AccountPickerModal } from "@/components/expenses/account-picker-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { ReconcileModal } from "@/components/expenses/reconcile-modal";
@@ -256,7 +257,10 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
     return (
       <div className="flex flex-col gap-4">
         <PageHeaderSkeleton titleWidth={120} />
-        <div className="h-[42px] animate-pulse rounded-2xl bg-[#EDE6FB]" />
+        <div>
+          <SkeletonBar width={56} height={16} />
+          <div className="mt-1.5 h-[42px] animate-pulse rounded-2xl bg-[#EDE6FB]" />
+        </div>
         <CardSkeleton className="py-3.5">
           <div className="flex items-center justify-between">
             <div>
@@ -328,7 +332,9 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
           現在看的是哪一個，再往下看數字。長相跟彈窗裡的帳戶欄位一致（SelectField），
           點了開的也是同一個 AccountPickerModal——那份清單本來就列了每個帳戶的餘額，
           等於順手看得到別的戶頭現在有多少。 */}
-      <SelectField value={account.name} placeholder="選擇帳戶" aria-label="切換帳戶" onClick={() => setSwitchOpen(true)} />
+      <Field label="切換資產">
+        <SelectField value={account.name} placeholder="選擇帳戶" aria-label="切換帳戶" onClick={() => setSwitchOpen(true)} />
+      </Field>
 
       <AccountPickerModal
         open={switchOpen}
