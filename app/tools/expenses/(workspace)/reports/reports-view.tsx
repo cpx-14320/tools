@@ -34,7 +34,15 @@ import {
 } from "@/lib/expenses/transactions";
 import { compareDateFilter, compareLabel, dateFilterRange } from "@/lib/expenses/date-filter";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
-import { DonutCardSkeleton, KpiCardSkeleton, SummaryCardSkeleton, TrendCardSkeleton } from "@/components/expenses/skeleton";
+import {
+  DatePillSkeleton,
+  DonutCardSkeleton,
+  IconButtonSkeleton,
+  KpiCardSkeleton,
+  SummaryCardSkeleton,
+  TrendCardSkeleton,
+  YearCompareTableSkeleton,
+} from "@/components/expenses/skeleton";
 import { YearCompareTable, type YearColumn } from "@/components/expenses/year-compare-table";
 import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -476,8 +484,8 @@ export function ReportsView() {
           flush
           actions={
             <div className="flex items-center gap-2">
-              <div className="h-[34px] w-[116px] animate-pulse rounded-full bg-[#EDE6FB]" />
-              <div className="size-[32px] animate-pulse rounded-full bg-[#EDE6FB]" />
+              <DatePillSkeleton />
+              <IconButtonSkeleton />
             </div>
           }
         />
@@ -508,6 +516,7 @@ export function ReportsView() {
           <DonutCardSkeleton legendRows={legendSkeletonRows} listRows={listSkeletonRows} />
         )}
         <TrendCardSkeleton />
+        <YearCompareTableSkeleton withDelta={compareYears.length > 1} />
       </div>
     );
   }

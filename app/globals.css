@@ -85,3 +85,15 @@ body {
     transform: translateY(-3px);
   }
 }
+
+/* 可以捲、但不畫捲軸。
+   報表的趨勢圖期數一多就左右捲，長條本來就會在右邊被切掉半根——那半根已經是「還有，
+   可以滑」最清楚的提示了，再疊一條捲軸只是多一條橫線壓在月份標籤上。
+   三個瀏覽器引擎各一套寫法，缺一個就會有一邊還是畫出來。 */
+.no-scrollbar {
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* 舊版 Edge／IE */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;                  /* Chrome／Safari */
+}

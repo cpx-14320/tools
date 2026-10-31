@@ -15,7 +15,7 @@ const MIN_COLUMN_WIDTH = 48;
  *  裡，兩排才會一起移動、永遠對齊。 */
 function ChartScroller({ children }: { children: ReactNode }) {
   return (
-    <div className="-mx-1 overflow-x-auto px-1">
+    <div className="no-scrollbar -mx-1 overflow-x-auto px-1">
       <div className="min-w-full" style={{ width: "max-content" }}>
         {children}
       </div>

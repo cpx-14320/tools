@@ -19,19 +19,28 @@ export function SkeletonBar({ width, height = 12, className = "" }: { width: num
   return <div className={`animate-pulse rounded-full ${SKELETON_BG} ${className}`} style={{ width, height }} />;
 }
 
-/** ListCard 裡的一列：左邊圖示、中間名稱、右邊金額。對齊 ListRow 的尺寸。 */
+/** ListCard 裡的一列：左邊圖示、中間名稱、右邊金額。
+ *
+ *  尺寸逐項對齊真的那一列，不是「差不多就好」——
+ *  圖示 size-10（IconAvatar size="sm"，不是 size-9）、名稱那一行 h-5（text-sm 的行高
+ *  20px）、進度條那一行 h-4（旁邊的百分比是 text-xs，行高 16px，決定這一行的高度的是
+ *  文字不是那條 8px 的 bar）。差幾 px 乘上五六列就是肉眼看得到的一跳。 */
 function RowSkeleton({ progress }: { progress: boolean }) {
   return (
     <div className="flex w-full items-center gap-3 px-4 py-3.5">
-      <div className={`size-9 shrink-0 animate-pulse rounded-xl ${SKELETON_BG}`} />
+      <div className={`size-10 shrink-0 animate-pulse rounded-xl ${SKELETON_BG}`} />
       <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex h-5 items-center justify-between gap-2">
           <SkeletonBar width="35%" />
           <SkeletonBar width="30%" />
         </div>
         {/* 有進度條的列（預算、帳戶類型）比一般列高一截，骨架也要跟著多這一條，
             不然切換到真資料時整張卡會抽高。 */}
-        {progress && <SkeletonBar width="100%" height={8} className="mt-2" />}
+        {progress && (
+          <div className="mt-1.5 flex h-4 items-center">
+            <SkeletonBar width="100%" height={8} />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -62,6 +71,49 @@ export function ListCardSkeleton({ count, progress = false }: { count: number; p
   );
 }
 
+/** 日期膠囊的骨架——沿用真膠囊的外框跟兩顆箭頭，只有中間的日期換成灰條。
+ *
+ *  整顆畫成一塊灰圓角的話寬度會差一截（116 vs 真的 123），資料回來那一刻會抽一下。
+ *  123×34 ＝ pl-1(4) + 箭頭 24 + gap(4) + 日期 53 + gap(4) + 箭頭 24 + pr-2(8) + 框線 2。 */
+export function DatePillSkeleton() {
+  return (
+    <div className="flex shrink-0 items-center gap-1 rounded-full border border-[#ECE4FA] bg-white py-1 pl-1 pr-2">
+      <span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-full text-[#DDD6F3]">
+        ‹
+      </span>
+      <span className="h-5 w-[53px] animate-pulse rounded bg-[#EDE6FB]" />
+      <span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-full text-[#DDD6F3]">
+        ›
+      </span>
+    </div>
+  );
+}
+
+/** 日期膠囊旁邊那幾顆 32px 圓形圖示鈕的骨架（日曆、篩選、鉛筆…）。 */
+export function IconButtonSkeleton({ count = 1 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} className="size-8 shrink-0 animate-pulse rounded-full bg-[#EDE6FB]" />
+      ))}
+    </>
+  );
+}
+
+/** 標題列的骨架：左邊標題、右邊日期膠囊＋幾顆圖示鈕。四頁的 PageHeader 長得一樣，
+ *  骨架也共用同一份，不要各頁再各自拼一次（拼錯一次就差幾 px，資料回來整頁會跳）。 */
+export function PageHeaderSkeleton({ titleWidth = 44, icons = 1 }: { titleWidth?: number; icons?: number }) {
+  return (
+    <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+      <SkeletonBar width={titleWidth} height={20} />
+      <div className="flex shrink-0 items-center gap-2">
+        <DatePillSkeleton />
+        <IconButtonSkeleton count={icons} />
+      </div>
+    </div>
+  );
+}
+
 /** KPI 卡片的骨架（小標一行、數字一行）。 */
 export function KpiCardSkeleton() {
   return (
@@ -75,16 +127,45 @@ export function KpiCardSkeleton() {
 }
 
 /** 「小標題在卡片外面、清單在卡片裡面」那種區塊的骨架（首頁的每一區、資產頁的帳戶區）。 */
-export function SectionSkeleton({ count, progress = false, action = true }: { count: number; progress?: boolean; action?: boolean }) {
+export function SectionSkeleton({
+  count,
+  progress = false,
+  action = true,
+  expandToggle = false,
+}: {
+  count: number;
+  progress?: boolean;
+  action?: boolean;
+  /** 清單下面有「顯示全部 (N)／收合」那顆連結時也要畫，不然骨架會少一截
+   *  （ExpandToggle ＝ mt-3 的 12px ＋ text-xs 的 16px 行高）。 */
+  expandToggle?: boolean;
+}) {
   return (
     <div>
-      <div className="mb-2 flex items-center justify-between px-1">
-        <SkeletonBar width={96} height={14} />
-        {/* 小標右邊沒有「查看全部」那種連結的區塊傳 action={false}——留一條假的灰條
-            在那裡，資料回來時那個位置會空掉，看起來像東西載失敗了。 */}
-        {action && <SkeletonBar width={48} height={12} />}
-      </div>
+      <SectionHeadingSkeleton action={action} />
       <ListCardSkeleton count={count} progress={progress} />
+      {expandToggle && <ExpandToggleSkeleton />}
+    </div>
+  );
+}
+
+/** 區塊小標那一列：左邊標題、右邊可選的「查看全部」。高度照真的來（text-sm ＝ 20px）。 */
+function SectionHeadingSkeleton({ action = true }: { action?: boolean }) {
+  return (
+    <div className="mb-2 flex h-5 items-center justify-between px-1">
+      <SkeletonBar width={96} height={14} />
+      {/* 小標右邊沒有「查看全部」那種連結的區塊傳 action={false}——留一條假的灰條
+          在那裡，資料回來時那個位置會空掉，看起來像東西載失敗了。 */}
+      {action && <SkeletonBar width={48} height={12} />}
+    </div>
+  );
+}
+
+/** 「顯示全部 (12)／收合」那顆連結的骨架——mt-3 ＋ 一行 text-xs。 */
+function ExpandToggleSkeleton() {
+  return (
+    <div className="mt-3 flex h-4 justify-center">
+      <SkeletonBar width={72} height={12} />
     </div>
   );
 }
@@ -93,15 +174,18 @@ export function SectionSkeleton({ count, progress = false, action = true }: { co
  *
  *  `shape` 是「每一組各有幾列」，來自 skeleton-count.ts 記住的上次形狀。只記總筆數的話
  *  沒辦法還原組數，畫成一張大卡就會少掉每一組之間的小標跟間距，資料回來時高度照樣跳。 */
-export function GroupedSectionSkeleton({ shape, action = true }: { shape: number[]; action?: boolean }) {
+export function GroupedSectionSkeleton({
+  shape,
+  action = true,
+  expandToggle = false,
+}: {
+  shape: number[];
+  action?: boolean;
+  expandToggle?: boolean;
+}) {
   return (
     <div>
-      <div className="mb-2 flex items-center justify-between px-1">
-        <SkeletonBar width={96} height={14} />
-        {/* 區塊標題右邊沒有「查看全部」那種連結的區塊（資產總表的轉帳明細）傳 action={false}
-            ——留一條假的灰條在那裡，資料回來時那個位置會空掉，看起來像東西載失敗了。 */}
-        {action && <SkeletonBar width={48} height={12} />}
-      </div>
+      <SectionHeadingSkeleton action={action} />
       {shape.length === 0 ? (
         <ListCardSkeleton count={0} />
       ) : (
@@ -122,6 +206,7 @@ export function GroupedSectionSkeleton({ shape, action = true }: { shape: number
           ))}
         </div>
       )}
+      {expandToggle && <ExpandToggleSkeleton />}
     </div>
   );
 }
@@ -215,6 +300,35 @@ export function SummaryCardSkeleton({ delta = false }: { delta?: boolean }) {
       <div className="mt-1 flex flex-col gap-1.5">
         <SkeletonBar width={148} height={28} />
         {delta && <SkeletonBar width={200} height={16} />}
+      </div>
+    </CardSkeleton>
+  );
+}
+
+/** 年度對照表那張卡——標題、年份膠囊兩排、12 個月 ＋ 合計共 13 列的表格。
+ *
+ *  `rows` 是每一格要不要留「比前一年多／少多少」那一行的位置：挑一個年份時沒有可比的
+ *  對象，整張表就矮一截。 */
+export function YearCompareTableSkeleton({ withDelta = true }: { withDelta?: boolean }) {
+  return (
+    <CardSkeleton>
+      <SkeletonBar width={96} height={20} />
+      {/* 年份膠囊：h-7（px-3 py-1 的 text-xs ＝ 28px），通常會排成兩排。 */}
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {Array.from({ length: 7 }, (_, i) => (
+          <div key={i} className={`h-7 w-12 animate-pulse rounded-full ${SKELETON_BG}`} />
+        ))}
+      </div>
+      <div className="mt-4">
+        {Array.from({ length: 13 }, (_, i) => (
+          <div key={i} className="flex items-center justify-between gap-3 border-b border-[#F2EEFA] py-2">
+            <SkeletonBar width={28} height={16} />
+            <div className="flex flex-col items-end gap-0.5">
+              <SkeletonBar width={72} height={16} />
+              {withDelta && i > 0 && <SkeletonBar width={56} height={12} />}
+            </div>
+          </div>
+        ))}
       </div>
     </CardSkeleton>
   );

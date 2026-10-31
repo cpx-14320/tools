@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FaIcon } from "@/components/expenses/fa-icon";
-import { DateGroupsSkeleton, SkeletonBar, SummaryCardSkeleton } from "@/components/expenses/skeleton";
+import { DateGroupsSkeleton, PageHeaderSkeleton, SummaryCardSkeleton } from "@/components/expenses/skeleton";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
@@ -255,14 +255,7 @@ export function TransactionsView() {
     // 灰條，看起來像壞掉一半。尺寸照真的元件抓，資料回來才不會整塊跳。
     return (
       <div>
-        <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-          <SkeletonBar width={44} height={20} />
-          <div className="flex shrink-0 items-center gap-2">
-            <div className="h-[34px] w-[116px] animate-pulse rounded-full bg-[#EDE6FB]" />
-            <div className="size-8 animate-pulse rounded-full bg-[#EDE6FB]" />
-            <div className="size-8 animate-pulse rounded-full bg-[#EDE6FB]" />
-          </div>
-        </div>
+        <PageHeaderSkeleton icons={2} />
         <div className="mb-4 flex items-center gap-2">
           {/* 支出／收入那組膠囊：容器 p-1 ＋ 兩格 px-3.5 py-1.5 text-xs ≈ 36px 高。 */}
           <div className="h-9 w-[124px] animate-pulse rounded-full bg-[#EDE6FB]" />

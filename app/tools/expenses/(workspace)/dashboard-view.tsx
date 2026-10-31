@@ -8,7 +8,7 @@ import { Card, CardBody } from "@/components/expenses/card";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { HiddenAmountsToggle, useHiddenAmounts } from "@/components/expenses/hidden-amounts";
-import { CardSkeleton, GroupedSectionSkeleton, SectionSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
+import { CardSkeleton, DatePillSkeleton, GroupedSectionSkeleton, SectionSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
 import { useSkeletonCount, useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
@@ -219,19 +219,8 @@ export function DashboardView() {
       {ready ? (
         <MonthFilterPicker filter={filter} onChange={setFilter} />
       ) : (
-        // 骨架直接沿用真膠囊的外框跟兩顆箭頭，只有中間的日期換成灰條——整顆畫成一塊
-        // 灰色圓角的話，寬高跟真的差一截，資料回來那一刻這顆會抽一下。
-        // 123×34 ＝ pl-1(4) + 24 + gap(4) + 53 + gap(4) + 24 + pr-2(8) + 框線 2。
         <div className="flex justify-center">
-          <div className="flex shrink-0 items-center gap-1 rounded-full border border-[#ECE4FA] bg-white py-1 pl-1 pr-2">
-            <span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-full text-[#DDD6F3]">
-              ‹
-            </span>
-            <span className="h-5 w-[53px] animate-pulse rounded bg-[#EDE6FB]" />
-            <span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-full text-[#DDD6F3]">
-              ›
-            </span>
-          </div>
+          <DatePillSkeleton />
         </div>
       )}
     </div>
@@ -264,9 +253,14 @@ export function DashboardView() {
               ))}
             </div>
           </CardSkeleton>
-          <SectionSkeleton count={incomeSkeletonCount} progress />
-          <SectionSkeleton count={budgetSkeletonCount} progress />
-          <GroupedSectionSkeleton shape={recentSkeletonShape} />
+          {/* expandToggle：這三塊清單超過 5 筆時下面都會長出「顯示全部」，骨架少畫那一
+              截的話資料回來會往下推。用上次記住的筆數判斷，跟列數同一個依據。 */}
+          <SectionSkeleton count={incomeSkeletonCount} progress expandToggle={incomeSkeletonCount >= SUMMARY_LIMIT} />
+          <SectionSkeleton count={budgetSkeletonCount} progress expandToggle={budgetSkeletonCount >= SUMMARY_LIMIT} />
+          <GroupedSectionSkeleton
+            shape={recentSkeletonShape}
+            expandToggle={recentSkeletonShape.reduce((sum, n) => sum + n, 0) >= PREVIEW_COUNT}
+          />
         </div>
       </HeroShell>
     );

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/expenses/page-header";
-import { CardSkeleton, DateGroupsSkeleton, KpiCardSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
+import { CardSkeleton, DateGroupsSkeleton, KpiCardSkeleton, PageHeaderSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
 import { useSkeletonReady, useSkeletonShape } from "@/components/expenses/skeleton-count";
 import { IconButton } from "@/components/expenses/icon-button";
 import { BackLink } from "@/components/expenses/back-link";
@@ -256,10 +256,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
     // 一顆東西。要回總表走底部導覽列的「資產」。
     return (
       <div className="flex flex-col gap-4">
-        <div className="flex items-start justify-between gap-3">
-          <SkeletonBar width={120} height={20} />
-          <div className="size-8 shrink-0 animate-pulse rounded-full bg-[#EDE6FB]" />
-        </div>
+        <PageHeaderSkeleton titleWidth={120} />
         <div className="h-[42px] animate-pulse rounded-2xl bg-[#EDE6FB]" />
         <CardSkeleton className="py-3.5">
           <div className="flex items-center justify-between">
@@ -271,10 +268,6 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
           </div>
           <div className="mt-3 h-[34px] animate-pulse rounded-xl bg-[#EDE6FB]" />
         </CardSkeleton>
-        <div className="flex items-center justify-between gap-2">
-          <div className="h-[34px] w-[116px] animate-pulse rounded-full bg-[#EDE6FB]" />
-          <div className="size-[32px] animate-pulse rounded-full bg-[#EDE6FB]" />
-        </div>
         <div className="-mt-1 mb-2 flex justify-end">
           <div className="h-9 w-[96px] animate-pulse rounded-full bg-[#EDE6FB]" />
         </div>
