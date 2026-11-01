@@ -16,16 +16,33 @@ const MONTH_LABELS = Array.from({ length: 12 }, (_, i) => `${i + 1}月`);
 const UP_GOOD = "#2FAE82";
 const UP_BAD = "#D1517E";
 
-/** 同一列、跟左邊那一欄（前一個年份）的差額。 */
-function DeltaCell({ current, previous, goodWhenUp }: { current: number | null; previous: number | null; goodWhenUp: boolean }) {
+/** 差額要寫成金額還是百分比。由 YearPickerModal 決定（見 YearDeltaMode）。 */
+export type YearDeltaMode = "amount" | "percent";
+
+/** 同一列、跟基準年那一欄的差額。 */
+function DeltaCell({
+  current,
+  previous,
+  goodWhenUp,
+  mode,
+}: {
+  current: number | null;
+  previous: number | null;
+  goodWhenUp: boolean;
+  mode: YearDeltaMode;
+}) {
   // 任一邊沒資料就不比：拿「還沒到的月份」當 0 去比，會算出一個看起來很嚇人的跌幅。
   if (current === null || previous === null) return null;
   const diff = current - previous;
   if (diff === 0) return null;
   const isUp = diff > 0;
+  // 基準是 0 的時候百分比沒有意義（除以 0），退回顯示金額而不是印出 ∞ 或空白——
+  // 那一格本來就有差額，只是沒辦法用比例表示。
+  const pct = previous === 0 ? null : (diff / Math.abs(previous)) * 100;
+  const label = mode === "percent" && pct !== null ? `${Math.abs(pct).toFixed(0)}%` : formatCurrency(Math.abs(diff));
   return (
     <span className="mt-0.5 block text-[10px] font-medium tabular-nums" style={{ color: isUp === goodWhenUp ? UP_GOOD : UP_BAD }}>
-      {isUp ? "▲" : "▼"} {formatCurrency(Math.abs(diff))}
+      {isUp ? "▲" : "▼"} {label}
     </span>
   );
 }
@@ -47,6 +64,7 @@ export function YearCompareTable({
   title,
   goodWhenUp,
   columns,
+  deltaMode,
   onPickYears,
 }: {
   title: string;
@@ -54,6 +72,8 @@ export function YearCompareTable({
   goodWhenUp: boolean;
   /** 第一欄是基準年，後面才是比較年（差額都是跟第一欄比）。 */
   columns: YearColumn[];
+  /** 差額寫成金額還是百分比。 */
+  deltaMode: YearDeltaMode;
   onPickYears: () => void;
 }) {
   const cellClass = "whitespace-nowrap px-3 py-2 text-right align-top text-xs tabular-nums text-[#4A3B7C]";
@@ -106,7 +126,7 @@ export function YearCompareTable({
                           ) : (
                             <>
                               {formatCurrency(v)}
-                              <DeltaCell current={v} previous={col > 0 ? columns[0].values[i] : null} goodWhenUp={goodWhenUp} />
+                              <DeltaCell current={v} previous={col > 0 ? columns[0].values[i] : null} goodWhenUp={goodWhenUp} mode={deltaMode} />
                             </>
                           )}
                         </td>
@@ -129,6 +149,7 @@ export function YearCompareTable({
                             current={columns[col].values.every((v) => v !== null) ? t : null}
                             previous={col > 0 && columns[0].values.every((v) => v !== null) ? totals[0] : null}
                             goodWhenUp={goodWhenUp}
+                            mode={deltaMode}
                           />
                         </>
                       )}

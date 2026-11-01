@@ -113,6 +113,24 @@ export function TransactionsView({
   const accountIds = new Set(accounts.map((a) => a.id));
   const inAccountFilter = (t: TransactionDTO) => !unassignedOnly || !t.accountId || !accountIds.has(t.accountId);
   const filterCount = (categoryFilter ? 1 : 0) + (hasMin || hasMax ? 1 : 0) + (unassignedOnly ? 1 : 0);
+  // 目前生效的條件，一個一個寫成人看得懂的短句。
+  //
+  // 為什麼需要：條件是在彈窗裡設的，關掉彈窗之後畫面上唯一的線索是日期旁邊那顆篩選
+  // 圖示變紫色——看到一份「怎麼只有三筆」的清單時，很難聯想到是自己上次留下來的條件
+  // 在作用，更不會記得當初設了什麼。把條件攤在清單正上方，順便給一顆「清除」。
+  const filterLabels = [
+    categoryFilter ? (categories.find((c) => c.id === categoryFilter)?.name ?? "某個分類") : null,
+    unassignedOnly ? "未指定帳戶" : null,
+    hasMin && hasMax ? `${formatCurrency(minNum)}–${formatCurrency(maxNum)}` : hasMin ? `${formatCurrency(minNum)} 以上` : hasMax ? `${formatCurrency(maxNum)} 以下` : null,
+  ].filter((l): l is string => l !== null);
+
+  /** 一次清掉所有條件——一個一個回彈窗關很煩，而且容易漏掉其中一個還在作用。 */
+  function clearFilters() {
+    setCategoryFilter("");
+    setUnassignedOnly(false);
+    setMinAmount("");
+    setMaxAmount("");
+  }
 
   const rows = (isSearching ? transactions.filter(inKind) : totals[kind === "支出" ? "expenseTx" : "incomeTx"])
     .filter((t) => matchesQuery(t, categories, query))
@@ -404,6 +422,21 @@ export function TransactionsView({
         onClose={() => setDeleteConfirm(null)}
         onConfirm={handleBulkDelete}
       />
+
+        {/* 搜尋中時不畫這一條：搜尋本身已經有自己的說明列（就在下面），兩條疊在一起
+            會把清單推下去，而且講的是同一件事的兩半。 */}
+        {!isSearching && filterLabels.length > 0 && (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl bg-[#F9F7FE] px-3.5 py-2.5">
+            <span className="shrink-0 text-xs font-semibold text-[#6F5FD6]">篩選中</span>
+            {/* 條件佔中間、可以換行；筆數跟「清除」釘在右邊——筆數接在條件後面的話會被
+                讀成條件的一部分（「未指定帳戶 0 筆」看起來像在篩 0 筆的東西）。 */}
+            <span className={`min-w-0 flex-1 ${text.muted}`}>{filterLabels.join("・")}</span>
+            <span className={`shrink-0 tabular-nums ${text.muted}`}>{rows.length} 筆</span>
+            <button type="button" onClick={clearFilters} className="shrink-0 text-xs font-medium text-[#6F5FD6]">
+              清除
+            </button>
+          </div>
+        )}
 
         {isSearching ? (
           <p className={`px-1 ${text.muted}`}>

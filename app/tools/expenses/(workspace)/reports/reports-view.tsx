@@ -34,7 +34,7 @@ import {
 } from "@/lib/expenses/transactions";
 import { compareDateFilter, compareLabel, dateFilterRange } from "@/lib/expenses/date-filter";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
-import { YearCompareTable, type YearColumn } from "@/components/expenses/year-compare-table";
+import { YearCompareTable, type YearColumn, type YearDeltaMode } from "@/components/expenses/year-compare-table";
 import { YearPickerModal } from "@/components/expenses/year-picker-modal";
 import { formatCurrency, formatDate } from "@/lib/format";
 
@@ -99,6 +99,9 @@ export function ReportsView({
   const [baseYear, setBaseYear] = useState(() => new Date().getFullYear() - 1);
   const [compareYears, setCompareYears] = useState<number[]>(() => [new Date().getFullYear()]);
   const [yearPickerOpen, setYearPickerOpen] = useState(false);
+  // 年度對照表的增減要寫成金額還是百分比。預設金額：「多花了 NT$ 1,200」可以直接拿來
+  // 做決定，百分比要先知道基數才讀得懂。在選擇年份的彈窗裡換。
+  const [yearDeltaMode, setYearDeltaMode] = useState<YearDeltaMode>("amount");
   // 明細裡目前展開看子分類的那個大分類；null＝全部收合。
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   // 「今天」掛載時算一次固定住——render 當中讀時鐘是不純的。
@@ -423,15 +426,17 @@ export function ReportsView({
     <div className="flex flex-col gap-4">
       {/* key 跟著目前的選擇走＝每次打開都是最新狀態，不會留著上次改到一半的值。 */}
       <YearPickerModal
-        key={yearPickerOpen ? `${baseYear}-${compareYears.join(",")}` : "year-picker-closed"}
+        key={yearPickerOpen ? `${baseYear}-${compareYears.join(",")}-${yearDeltaMode}` : "year-picker-closed"}
         open={yearPickerOpen}
         availableYears={availableYears}
         baseYear={baseYear}
         compareYears={compareYears}
+        deltaMode={yearDeltaMode}
         onClose={() => setYearPickerOpen(false)}
-        onSave={({ baseYear: b, compareYears: c }) => {
+        onSave={({ baseYear: b, compareYears: c, deltaMode: m }) => {
           setBaseYear(b);
           setCompareYears(c);
+          setYearDeltaMode(m);
           setYearPickerOpen(false);
         }}
       />
@@ -615,23 +620,30 @@ export function ReportsView({
 
           {/* 年度對照：趨勢圖看走勢，這張表看精確值。擺在趨勢下面是閱讀順序——先看
               這段期間多少、再看組成、再看走勢，最後才是跨年逐月比對。 */}
-          <YearCompareTable title="淨資產增減年度對照" goodWhenUp columns={yearColumns} onPickYears={() => setYearPickerOpen(true)} />
+          <YearCompareTable
+            title="淨資產增減年度對照"
+            goodWhenUp
+            columns={yearColumns}
+            deltaMode={yearDeltaMode}
+            onPickYears={() => setYearPickerOpen(true)}
+          />
         </>
       ) : (
         <>
 
-      <Card>
-        <CardBody>
-          <p className={text.muted}>{kind}</p>
-          <div className="mt-1 flex flex-col gap-1.5">
-            <p className={text.statValue}>
-              {summaryTotal < 0 ? "－" : ""}
-              {formatCurrency(Math.abs(summaryTotal))}
-            </p>
-            {summaryDelta && <DeltaBadge delta={summaryDelta.delta} pct={summaryDelta.pct} goodWhenUp={kind !== "支出"} suffix={deltaSuffix} />}
-          </div>
-        </CardBody>
-      </Card>
+      {/* 跟「資產」分頁的淨資產卡共用同一顆 KpiCard。本來這裡是手刻的一張卡（CardBody
+          預設 p-4、漲跌徽章排在金額「下面」），資產那頁用的是 KpiCard（p-3、徽章跟小標
+          同一行），兩邊高度差了一截——同一排分頁換來換去，最上面那張卡卻會忽高忽低。 */}
+      <KpiCard
+        label={kind}
+        value={`${summaryTotal < 0 ? "－" : ""}${formatCurrency(Math.abs(summaryTotal))}`}
+        valueColor={summaryTotal < 0 ? KPI_NEGATIVE : "#4A3B7C"}
+        delta={
+          summaryDelta && (
+            <DeltaBadge delta={summaryDelta.delta} pct={summaryDelta.pct} goodWhenUp={kind !== "支出"} suffix={deltaSuffix} className="shrink-0" />
+          )
+        }
+      />
 
       {kind === "結餘" && netDonutData.length > 0 && (
         <Card>
@@ -855,6 +867,7 @@ export function ReportsView({
         title={`${kind}年度對照`}
         goodWhenUp={yearTableGoodWhenUp}
         columns={yearColumns}
+        deltaMode={yearDeltaMode}
         onPickYears={() => setYearPickerOpen(true)}
       />
         </>

@@ -16,7 +16,7 @@ import { text } from "@/components/expenses/theme";
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { dateFilterRange, defaultDateFilter, groupByDate, limitDateGroups, referenceYearMonth, shiftDays } from "@/lib/expenses/date-filter";
 import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
-import { categoryColorClass, categoryFillClass, categoryPath, displayCategoryOf, topLevelCategories, type CategoryDTO } from "@/lib/expenses/categories";
+import { categoryById, categoryColorClass, categoryFillClass, categoryPath, displayCategoryOf, topLevelCategories, type CategoryDTO } from "@/lib/expenses/categories";
 import {
   totalsForRange,
   categoryBreakdown,
@@ -124,10 +124,20 @@ export function DashboardView({
 
   const range = dateFilterRange(filter);
 
-  const { totalIncome, totalExpense, expenseTx } = totalsForRange(transactions, categories, range);
-  // 「最近消費」只看近 7 天，而且是以「這段期間裡最新的一筆」為基準往回推——用今天當
-  // 基準的話，翻到過去的月份時這一區會整個空掉。依日期分組（新的在上面），跟消費紀錄
-  // 頁同一種版面。
+  const { totalIncome, totalExpense } = totalsForRange(transactions, categories, range);
+
+  // ── 最近消費 ────────────────────────────────────────────────────────────────
+  // 「近 7 天」是以「結束日之前最新的那一筆」為基準往回推，不是用今天往回推：翻到過去
+  // 的月份時，用今天當基準這一區會整個空掉。
+  //
+  // 但起點**刻意不設限、允許跨月界**（只卡結束日，不卡這個月的第一天）。本來是先把資料
+  // 切到選到的那個月再找最新的一筆，結果每個月的頭幾天只要還沒記帳，這一區就寫「還沒有
+  // 任何資料」——明明前幾天才剛花過錢。對一個叫「最近消費」的區塊來說那是錯的：它問的
+  // 是「我最近花了什麼」，不是「我這個月花了什麼」（後者是上面那張收支卡的事）。
+  // 現在 11/2 還沒記帳時會顯示 10/27–10/31 那幾天，月份照樣跟著上面的篩選器走。
+  const recentEnd = range?.end ?? todayISO;
+  const expenseTx = transactions.filter((t) => t.date <= recentEnd && categoryById(categories, t.categoryId)?.kind === "支出");
+  // 依日期分組（新的在上面），跟消費紀錄頁同一種版面。
   const sortedExpenses = [...expenseTx].sort((a, b) => (a.date < b.date ? 1 : -1));
   const recentCutoff = sortedExpenses.length > 0 ? shiftDays(sortedExpenses[0].date, -6) : "";
   const recentGroups = groupByDate(sortedExpenses.filter((t) => t.date >= recentCutoff));
