@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/expenses/page-header";
 import { CardSkeleton, DateGroupsSkeleton, PageHeaderSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
 import { useSkeletonReady, useSkeletonShape } from "@/components/expenses/skeleton-count";
-import { IconButton } from "@/components/expenses/icon-button";
+import { LineIconButton } from "@/components/expenses/line-icon-button";
 import { SegmentedControl } from "@/components/expenses/button";
 import { BackLink } from "@/components/expenses/back-link";
 import { Card, CardBody } from "@/components/expenses/card";
@@ -339,7 +339,7 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
         title={account.name}
         actions={
           <DateFilterPicker
-            actions={<IconButton icon="pen" tone="soft" aria-label="編輯帳戶資料" onClick={() => setEditOpen(true)} size={32} iconSize={14} />}
+            actions={<LineIconButton icon="pen" aria-label="編輯帳戶資料" onClick={() => setEditOpen(true)} />}
           />
         }
       />

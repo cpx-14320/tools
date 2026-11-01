@@ -6,7 +6,7 @@ import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skelet
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
 import { Badge } from "@/components/expenses/button";
-import { IconButton } from "@/components/expenses/icon-button";
+import { LineIconButton } from "@/components/expenses/line-icon-button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ProgressBar } from "@/components/expenses/progress-bar";
@@ -227,11 +227,8 @@ export function GoalsView() {
                     {/* 一顆鉛筆取代原本的「＋ 存入」文字鈕——點了開存入彈窗，改這次要存多少。
                         已達成的目標不用再存，就不顯示。 */}
                     {!selection.selecting && !achieved && (
-                      <IconButton
+                      <LineIconButton
                         icon="pen"
-                        tone="soft"
-                        size={32}
-                        iconSize={13}
                         className="self-start"
                         aria-label={`存入${goal.name}`}
                         onClick={() => setContributeId(goal.id)}

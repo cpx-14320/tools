@@ -8,7 +8,7 @@ import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { Badge, SegmentedControl } from "@/components/expenses/button";
-import { IconButton } from "@/components/expenses/icon-button";
+import { LineIconButton } from "@/components/expenses/line-icon-button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ProgressBar } from "@/components/expenses/progress-bar";
@@ -417,19 +417,16 @@ export function RecurringView() {
                         原本「暫停」是卡片最下面一顆文字鈕，跟上面的編輯入口離很遠。 */}
                     {!selection.selecting && (
                       <span className="flex shrink-0 items-center gap-1 self-start">
-                        <IconButton
+                        {/* 線條風格（LineIconButton），跟首頁的眼睛、日期旁邊的日曆同一組：
+                            Font Awesome 的實心圖縮到 13px 會又黑又重，在一張以文字為主的
+                            卡片右上角比卡片本身還搶眼。 */}
+                        <LineIconButton
                           icon="pen"
-                          tone="soft"
-                          size={32}
-                          iconSize={13}
                           aria-label={`編輯${category?.name ?? "固定收支"}`}
                           onClick={() => setModal({ mode: "edit", rule })}
                         />
-                        <IconButton
+                        <LineIconButton
                           icon={rule.active ? "pause" : "play"}
-                          tone="soft"
-                          size={32}
-                          iconSize={13}
                           aria-label={rule.active ? `暫停${category?.name ?? "固定收支"}` : `恢復${category?.name ?? "固定收支"}`}
                           onClick={() => handleToggleActive(rule)}
                         />
