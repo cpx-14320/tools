@@ -105,6 +105,16 @@ export function IconButtonSkeleton({ count = 1 }: { count?: number }) {
   );
 }
 
+/** 下拉欄位（SelectField）的骨架：白底細框是真的，只有裡面的文字換成灰條。
+ *  整塊塗成灰的話，旁邊的日期膠囊、圖示鈕都是「真外框＋灰內容」，只有這一塊是實心灰。 */
+export function SelectFieldSkeleton() {
+  return (
+    <div className="w-full rounded-2xl border border-[#ECE4FA] bg-white px-4 py-2.5">
+      <span className={`block h-5 w-24 animate-pulse rounded ${SKELETON_BG}`} />
+    </div>
+  );
+}
+
 /** 期間膠囊＋旁邊幾顆圖示鈕——掛在 PageHeader 的 actions 上，資料還沒回來時用這個
  *  頂著（見 DateFilterPicker）。 */
 export function DateFilterPickerSkeleton({ icons = 1 }: { icons?: number }) {
@@ -118,9 +128,18 @@ export function DateFilterPickerSkeleton({ icons = 1 }: { icons?: number }) {
 
 /** 標題列的骨架：左邊標題、右邊日期膠囊＋幾顆圖示鈕。四頁的 PageHeader 長得一樣，
  *  骨架也共用同一份，不要各頁再各自拼一次（拼錯一次就差幾 px，資料回來整頁會跳）。 */
-export function PageHeaderSkeleton({ titleWidth = 44, icons = 1 }: { titleWidth?: number; icons?: number }) {
+export function PageHeaderSkeleton({
+  titleWidth = 44,
+  icons = 1,
+  flush = false,
+}: {
+  titleWidth?: number;
+  icons?: number;
+  /** 外層已經用 gap 控間距時傳 true，自己就不要再掛 mb-3（跟 PageHeader 同一個 flush）。 */
+  flush?: boolean;
+}) {
   return (
-    <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+    <div className={`flex flex-wrap items-start justify-between gap-3 ${flush ? "" : "mb-3"}`}>
       <SkeletonBar width={titleWidth} height={20} />
       <div className="shrink-0">
         <DateFilterPickerSkeleton icons={icons} />
@@ -419,7 +438,7 @@ export function DonutCardSkeleton({
 }
 
 /** 趨勢卡：標題＋頻率切換、期間膠囊、一排長條。 */
-export function TrendCardSkeleton() {
+export function TrendCardSkeleton({ legendItems = 0 }: { legendItems?: number }) {
   return (
     <CardSkeleton>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -436,6 +455,27 @@ export function TrendCardSkeleton() {
           <div key={i} className={`flex-1 animate-pulse rounded-t-md ${SKELETON_BG}`} style={{ height: `${h}%` }} />
         ))}
       </div>
+      {/* 長條底下那一排「月份＋比前一期增減」。以前骨架只畫到長條為止，資料回來這兩行
+          才長出來，整張卡會往下抽 32px。 */}
+      <div className="mt-2 flex gap-2">
+        {Array.from({ length: 6 }, (_, i) => (
+          <div key={i} className="flex flex-1 flex-col items-center gap-0.5">
+            <SkeletonBar width={28} height={14} />
+            <SkeletonBar width={32} height={14} />
+          </div>
+        ))}
+      </div>
+      {/* 圖例：一個分類一顆點加一段文字，`legendRows` 是上次實際有幾項（見 skeleton-count）。 */}
+      {legendItems > 0 && (
+        <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5">
+          {Array.from({ length: legendItems }, (_, i) => (
+            <span key={i} className="flex h-4 items-center gap-1.5">
+              <span className={`size-2 shrink-0 animate-pulse rounded-full ${SKELETON_BG}`} />
+              <SkeletonBar width={44} height={12} />
+            </span>
+          ))}
+        </div>
+      )}
     </CardSkeleton>
   );
 }

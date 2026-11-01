@@ -105,8 +105,8 @@ export function BudgetsView() {
   );
 
   return (
-    <div>
-      <PageHeader title="預算設定" help="點分類設定「從哪個月起每月多少」，之後的月份會沿用；要調整時再設一筆新的，之前的月份不會被追溯蓋掉" />
+    <div className="flex flex-col gap-4">
+      <PageHeader flush title="預算設定" help="點分類設定「從哪個月起每月多少」，之後的月份會沿用；要調整時再設一筆新的，之前的月份不會被追溯蓋掉" />
 
       {!skeletonReady ? null : !ready ? (
         <GroupedCardsSkeleton shape={skeletonShape} />

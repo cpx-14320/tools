@@ -95,8 +95,8 @@ export function MoreView() {
   }
 
   return (
-    <div>
-      <PageHeader title="設定" />
+    <div className="flex flex-col gap-4">
+      <PageHeader flush title="設定" />
 
       <div className="flex flex-col gap-5">
         {GROUPS.map((group) => (

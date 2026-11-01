@@ -202,15 +202,15 @@ export function RecurringView() {
   const selection = useSelection(visibleRules.map((r) => r.id));
 
   return (
-    <div>
-      <PageHeader title="固定收支" help="每月電話費、房租這種會重複出現的收支。到期不會自動入帳，會列在上面的「待確認」等你按確認——金額每個月不一樣時才有機會先改或略過" />
+    <div className="flex flex-col gap-4">
+      <PageHeader flush title="固定收支" help="每月電話費、房租這種會重複出現的收支。到期不會自動入帳，會列在上面的「待確認」等你按確認——金額每個月不一樣時才有機會先改或略過" />
 
       {/* 新增搬到右下角的浮動按鈕，跟首頁新增交易、消費分類頁同一招。 */}
       {/* 等資料回來才出現：它是 fixed、不佔版面，所以不需要骨架，但資料還沒回來就先浮在
           一片灰條上面很突兀（跟首頁、資產總表同一個處理）。 */}
       {ready && <FloatingAddButton onClick={() => setModal({ mode: "create" })} label="新增固定收支" />}
 
-      <div className="mb-4 flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2">
         <SegmentedControl
           value={kind}
           onChange={setKind}
@@ -274,7 +274,7 @@ export function RecurringView() {
           上面列著電話費、下面的清單卻空了，看起來像資料不見了。現在整頁講的是同一種
           收支，兩邊才對得起來；另一邊有待確認的話，切過去就看得到。 */}
       {ready && visiblePending.length > 0 && !selection.selecting && (
-        <Card className="mb-4">
+        <Card>
           <CardBody>
             <div className="flex items-center justify-between gap-2">
               <p className={text.sectionHeading}>待確認 {visiblePending.length} 筆</p>
@@ -354,19 +354,32 @@ export function RecurringView() {
       )}
 
       {!skeletonReady ? null : !ready ? (
-        // 一筆固定收支一張獨立的卡：左圖右文（標題＋金額一排、週期說明一排），
-        // 底下還有一排循環進度。
+        // 一筆固定收支一張獨立的卡，照真的那張排：圖示 size-11（IconAvatar 預設）跟文字
+        // 垂直置中，右上角兩顆 32px 的圓鈕（編輯、暫停／恢復）；底下是金額那一排、
+        // 循環進度條、起訖日期各一行。
         <StackedCardsSkeleton count={skeletonCount}>
-          <div className="flex items-start gap-3">
-            <div className="size-9 shrink-0 animate-pulse rounded-xl bg-[#EDE6FB]" />
+          <div className="flex items-center gap-3">
+            <div className="size-11 shrink-0 animate-pulse rounded-2xl bg-[#EDE6FB]" />
             <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex h-5 items-center">
                 <SkeletonBar width={96} height={14} />
-                <SkeletonBar width={72} height={14} />
               </div>
-              <SkeletonBar width="80%" height={12} className="mt-1.5" />
-              <SkeletonBar width="55%" height={12} className="mt-1.5" />
+              <div className="mt-0.5 flex h-4 items-center">
+                <SkeletonBar width="55%" height={12} />
+              </div>
             </div>
+            <span className="flex shrink-0 items-center gap-1 self-start">
+              <div className="size-8 animate-pulse rounded-full bg-[#EDE6FB]" />
+              <div className="size-8 animate-pulse rounded-full bg-[#EDE6FB]" />
+            </span>
+          </div>
+          <div className="mt-2 flex h-7 items-end justify-between">
+            <SkeletonBar width={148} height={24} />
+            <SkeletonBar width={112} height={16} />
+          </div>
+          <SkeletonBar width="100%" height={8} className="mt-2" />
+          <div className="mt-1 flex justify-end">
+            <SkeletonBar width={148} height={16} />
           </div>
         </StackedCardsSkeleton>
       ) : visibleRules.length === 0 ? (

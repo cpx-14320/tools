@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/expenses/page-header";
-import { CardSkeleton, DateGroupsSkeleton, PageHeaderSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
+import { CardSkeleton, DateGroupsSkeleton, PageHeaderSkeleton, SelectFieldSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
 import { useSkeletonReady, useSkeletonShape } from "@/components/expenses/skeleton-count";
 import { LineIconButton } from "@/components/expenses/line-icon-button";
 import { SegmentedControl } from "@/components/expenses/button";
@@ -278,10 +278,12 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
     // 一顆東西。要回總表走底部導覽列的「資產」。
     return (
       <div className="flex flex-col gap-4">
-        <PageHeaderSkeleton titleWidth={120} />
+        <PageHeaderSkeleton titleWidth={120} icons={2} />
         <div>
           <SkeletonBar width={56} height={16} />
-          <div className="mt-1.5 h-[42px] animate-pulse rounded-2xl bg-[#EDE6FB]" />
+          <div className="mt-1.5">
+            <SelectFieldSkeleton />
+          </div>
         </div>
         <CardSkeleton className="py-3.5">
           <div className="flex items-center justify-between">

@@ -123,8 +123,9 @@ export function GoalsView() {
   const selection = useSelection(goals.map((g) => g.id));
 
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       <PageHeader
+        flush
         title="存錢目標"
         help="設定目標金額，追蹤存了多少、還差多少"
         actions={<SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />}
@@ -166,13 +167,20 @@ export function GoalsView() {
         // 一個目標一張獨立的卡（不是一張卡切成好幾列）：圖示＋名稱／期限一排，底下
         // 金額、進度條、百分比各一行。
         <StackedCardsSkeleton count={skeletonCount}>
-          <div className="flex items-start gap-3">
+          {/* 圖示跟文字是 items-center 垂直置中（跟真的那張卡一樣，不是 items-start）；
+              右邊是一顆 32px 的圓形鉛筆鈕，不是一塊圓角長條。名稱 h-5（text-sm 的行高）、
+              期限 h-4（text-xs）。 */}
+          <div className="flex items-center gap-3">
             <div className="size-11 shrink-0 animate-pulse rounded-2xl bg-[#EDE6FB]" />
             <div className="min-w-0 flex-1">
-              <SkeletonBar width={96} height={14} />
-              <SkeletonBar width={160} height={12} className="mt-1.5" />
+              <div className="flex h-5 items-center">
+                <SkeletonBar width={96} height={14} />
+              </div>
+              <div className="mt-0.5 flex h-4 items-center">
+                <SkeletonBar width={160} height={12} />
+              </div>
             </div>
-            <SkeletonBar width={64} height={30} className="rounded-full" />
+            <div className="size-8 shrink-0 animate-pulse self-start rounded-full bg-[#EDE6FB]" />
           </div>
           <div className="mt-4 flex items-end justify-between">
             <SkeletonBar width={148} height={20} />

@@ -255,32 +255,31 @@ export function TransactionsView() {
     // 本來都是「資料還沒回來就先長出來」的，結果載入時上半頁是完整的控制項、下半頁才是
     // 灰條，看起來像壞掉一半。尺寸照真的元件抓，資料回來才不會整塊跳。
     return (
-      <div>
-        <PageHeaderSkeleton icons={2} />
-        <div className="mb-4 flex items-center gap-2">
+      <div className="flex flex-col gap-4">
+        <PageHeaderSkeleton icons={2} flush />
+        <div className="flex items-center gap-2">
           {/* 支出／收入那組膠囊：容器 p-1 ＋ 兩格 px-3.5 py-1.5 text-xs ≈ 36px 高。 */}
           <div className="h-9 w-[124px] animate-pulse rounded-full bg-[#EDE6FB]" />
           <div className="flex min-w-0 flex-1 items-center justify-end">
             <div className="h-9 w-[60px] animate-pulse rounded-full bg-[#EDE6FB]" />
           </div>
         </div>
-        <div className="mb-4 h-[42px] animate-pulse rounded-full bg-[#EDE6FB]" />
-        <div className="flex flex-col gap-4">
-          {skeletonShape.length > 0 && <SummaryCardSkeleton />}
-          <DateGroupsSkeleton shape={skeletonShape} />
-        </div>
+        <div className="h-[42px] animate-pulse rounded-full bg-[#EDE6FB]" />
+        {skeletonShape.length > 0 && <SummaryCardSkeleton />}
+        <DateGroupsSkeleton shape={skeletonShape} />
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       {/* 標題在左、日期膠囊跟圖示在右，同一列——跟報表頁同一個 PageHeader（那邊是
           「報表」＋日期），兩頁的開頭才是同一種版型。篩選圖示掛在日期那一組的最右邊：
           期間跟篩選條件都是「這份清單要看什麼」，擺一起就不用為了一顆按鈕再多一排。
           有設條件時圖示轉紫（跟分類的名稱一起顯示在彈窗裡），一眼看得出清單是被篩過的。 */}
       <PageHeader
         title="明細"
+        flush
         actions={
           <DateFilterPicker
             actions={
@@ -424,7 +423,7 @@ export function TransactionsView() {
 
       {/* 支出／收入切換跟多選排同一列。篩選本來也在這一列，改成圖示之後搬去日期那一排
           （見上面的 DateFilterPicker actions）。 */}
-      <div className="mb-4 flex items-center gap-2">
+      <div className="flex items-center gap-2">
         {/* 選中色跟報表頁那組主分頁同一個（實心紫白字，見 theme.ts 的 activeSolid）
             ——兩頁的「支出／收入」是同一件事，不該一邊白底紫字、一邊實心紫。 */}
         <SegmentedControl
@@ -443,7 +442,7 @@ export function TransactionsView() {
 
       {/* 搜尋列貼著清單：它篩的是下面那份清單，擺在整頁最上面（日期篩選器之上）看起來
           像是跟期間同一組設定。 */}
-      <label className="mb-4 flex items-center gap-2 rounded-full border border-[#ECE4FA] bg-white px-4 py-2.5">
+      <label className="flex items-center gap-2 rounded-full border border-[#ECE4FA] bg-white px-4 py-2.5">
         {/* 跟搭乘車同一套 Font Awesome 實心圖（那邊的鉛筆是 fa-pen），emoji 在不同
             平台長得不一樣、線條粗細也跟整頁的圖示對不上。 */}
         <FaIcon icon="magnifying-glass" size={14} className="shrink-0 text-[#9C94C4]" />
@@ -476,12 +475,12 @@ export function TransactionsView() {
       />
 
         {isSearching ? (
-          <p className={`mb-4 px-1 ${text.muted}`}>
+          <p className={`px-1 ${text.muted}`}>
             「{query.trim()}」在所有時間的{kind}紀錄中共 {rows.length} 筆符合，不受上方日期篩選影響
           </p>
         ) : (
           rows.length > 0 && (
-            <Card className="mb-4">
+            <Card>
               <CardBody className="py-3.5">
                 <p className={text.muted}>共{kind === "支出" ? "花費" : "收入"}</p>
                 <p className={`mt-0.5 ${text.statValue}`}>{formatCurrency(total)}</p>

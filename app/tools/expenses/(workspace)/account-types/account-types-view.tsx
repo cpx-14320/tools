@@ -209,11 +209,12 @@ export function AccountTypesView() {
   }
 
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       {/* 標題列只留「選取」——新增搬到右下角的浮動按鈕（跟首頁新增交易同一招），
           按鈕一多擠一列在手機上會換行成兩排，很難看也很難點。常見類型現在是第一次進
           記帳本時就自動建好的（見 lib/expenses/presets.server.ts），不再需要套用按鈕。 */}
       <PageHeader
+        flush
         title="帳戶類型"
         // 這一頁現在是從「設定」進來的，標題列不再掛「返回資產總表」那顆箭頭——
         // 指回一個不是上一頁的地方只會讓人迷路，要回去按瀏覽器/系統的返回就好。

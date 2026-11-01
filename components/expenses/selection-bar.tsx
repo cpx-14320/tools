@@ -64,7 +64,7 @@ export function SelectionBar({
 }) {
   const allSelected = total > 0 && count === total;
   return (
-    <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl bg-[#F3EFFC] px-4 py-2.5">
+    <div className="flex items-center justify-between gap-2 rounded-2xl bg-[#F3EFFC] px-4 py-2.5">
       <button type="button" onClick={onToggleAll} className="text-xs font-medium text-[#6F5FD6]">
         {allSelected ? "取消全選" : "全選"}
       </button>

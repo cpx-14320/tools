@@ -249,8 +249,8 @@ export function CategoriesView() {
   }
 
   return (
-    <div>
-      <PageHeader title="收支分類" help="支出與收入的分類都在這裡；分類底下可以再開子分類，方便細看同一種消費裡哪種類型花最多" />
+    <div className="flex flex-col gap-4">
+      <PageHeader flush title="收支分類" help="支出與收入的分類都在這裡；分類底下可以再開子分類，方便細看同一種消費裡哪種類型花最多" />
 
       {/* 新增搬到右下角的浮動按鈕（跟首頁新增交易、帳戶類型頁同一招），標題列空出來。 */}
       {/* 等資料回來才出現：它是 fixed、不佔版面，所以不需要骨架，但資料還沒回來就先浮在
@@ -302,7 +302,7 @@ export function CategoriesView() {
         onClose={() => setDeleteConfirm(null)}
       />
 
-      <div className="mb-4 flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2">
         <SegmentedControl
           value={kind}
           onChange={setKind}

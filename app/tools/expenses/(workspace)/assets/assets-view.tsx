@@ -287,7 +287,7 @@ export function AssetsView() {
   }
 
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       {/* 新增帳戶在右下角的浮動按鈕（跟首頁新增交易同一招）。「帳戶類型」不放這裡：從
           設定頁 › 帳戶與資產 進去就好，同一個入口不用開兩個。
           「轉帳」回到頁首右邊：它動的是整頁所有帳戶之間的錢，不是只動「資產」那一段
@@ -295,6 +295,7 @@ export function AssetsView() {
           文字鈕換成線條 SVG 圖示，跟日期膠囊、眼睛那顆同一組視覺（見 line-icon-button.tsx）。 */}
       <PageHeader
         title="資產總表"
+        flush
         actions={ready ? <DateFilterPicker /> : <DateFilterPickerSkeleton />}
       />
 
@@ -351,7 +352,7 @@ export function AssetsView() {
       />
 
       {ready && accounts.length > 0 && (
-        <div className="mb-5 flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           <Card>
             <CardBody>
               <p className={text.muted}>{formatDate(asOf)} 淨資產</p>
@@ -381,7 +382,7 @@ export function AssetsView() {
       {!skeletonReady ? null : !ready ? (
         // 骨架照著載入完成後的版面排：淨資產大卡、資產/負債兩張小卡，再來是兩段帳戶清單。
         <div>
-          <div className="mb-5 flex flex-col gap-3">
+          <div className="flex flex-col gap-3">
             {/* 淨資產卡：小標、金額＋百分比、底下那條進度條。進度條以前沒畫，資料回來
                 整張卡會多長 16px 出來。 */}
             <CardSkeleton>
