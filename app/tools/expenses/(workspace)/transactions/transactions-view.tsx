@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FaIcon } from "@/components/expenses/fa-icon";
-import { DateGroupsSkeleton, PageHeaderSkeleton, SummaryCardSkeleton } from "@/components/expenses/skeleton";
+import { DateGroupsSkeleton, PageHeaderSkeleton, SkeletonBar, SummaryCardSkeleton } from "@/components/expenses/skeleton";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
@@ -264,7 +264,12 @@ export function TransactionsView() {
             <div className="h-9 w-[60px] animate-pulse rounded-full bg-[#EDE6FB]" />
           </div>
         </div>
-        <div className="h-[42px] animate-pulse rounded-full bg-[#EDE6FB]" />
+        {/* 搜尋欄：跟日期膠囊、圖示鈕同一套「真外框＋灰內容」——整條塗成灰的話，
+            這一頁上半部只有它是實心灰塊。 */}
+        <div className="flex h-[42px] items-center gap-2 rounded-full border border-[#ECE4FA] bg-white px-4">
+          <span className="size-3.5 shrink-0 animate-pulse rounded-full bg-[#EDE6FB]" />
+          <SkeletonBar width={120} height={14} />
+        </div>
         {skeletonShape.length > 0 && <SummaryCardSkeleton />}
         <DateGroupsSkeleton shape={skeletonShape} />
       </div>

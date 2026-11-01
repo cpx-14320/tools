@@ -118,4 +118,89 @@ export async function seedExpensesPresets(userId: ObjectId): Promise<void> {
   });
   if (accountTypeDocs.length > 0) await db.collection("expenses.accountTypes").insertMany(accountTypeDocs);
   if (accountDocs.length > 0) await db.collection("expenses.accounts").insertMany(accountDocs);
+
+  await seedDemoTransactions(db, userId, categoryDocs, accountDocs, now);
+}
+
+/** 新帳號的示範資料——近兩個月的幾筆收支，讓第一次打開的人看到的是一份「長得像在用」的
+ *  帳本，而不是四張寫著「還沒有任何資料」的空卡。
+ *
+ *  刻意**不**帶 isPreset：示範資料就是要被清掉的。使用者想認真記帳時，設定頁的
+ *  「清除所有消費紀錄」會把這些連同轉帳一起刪乾淨，而分類、帳戶、預算那些設定都留著
+ *  （見 app/api/expenses/reset/route.ts 的 RECORD_COLLECTIONS）。
+ *
+ *  金額刻意抓得零碎（185、1,250 這種），不要用 100、500 這種整數——整數看起來就是
+ *  假資料，零碎的數字才像真的在記帳，使用者也才看得出報表那些百分比是會動的。 */
+async function seedDemoTransactions(
+  db: Awaited<ReturnType<typeof getDb>>,
+  userId: ObjectId,
+  categoryDocs: Record<string, unknown>[],
+  accountDocs: Record<string, unknown>[],
+  now: Date,
+): Promise<void> {
+  /** 用名稱找剛建好的那筆分類／帳戶的 _id。找不到就跳過那一筆，不要讓示範資料擋住流程。 */
+  const idOf = (docs: Record<string, unknown>[], name: string) => docs.find((d) => d.name === name)?._id as ObjectId | undefined;
+  const cash = idOf(accountDocs, "現金錢包");
+  const bank = idOf(accountDocs, "銀行帳戶");
+
+  /** 今天往前第 n 天。示範資料跟著「現在」走，不是寫死日期——不然幾個月後新註冊的人
+   *  看到的會是一份一年前的帳本，報表上近六個月全是空的。 */
+  const dayBefore = (n: number) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - n);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
+  const seeds: { daysAgo: number; category: string; amount: number; note: string; account?: ObjectId }[] = [
+    { daysAgo: 0, category: "早餐", amount: 55, note: "豆漿蛋餅", account: cash },
+    { daysAgo: 0, category: "大眾交通", amount: 32, note: "捷運", account: cash },
+    { daysAgo: 1, category: "午餐", amount: 125, note: "便當", account: cash },
+    { daysAgo: 1, category: "零食", amount: 68, note: "手搖飲", account: cash },
+    { daysAgo: 2, category: "日用品", amount: 342, note: "衛生紙、洗髮精", account: bank },
+    { daysAgo: 3, category: "晚餐", amount: 268, note: "跟同事吃飯", account: cash },
+    { daysAgo: 5, category: "服務訂閱", amount: 390, note: "串流月費", account: bank },
+    { daysAgo: 8, category: "衣服", amount: 1280, note: "換季買的外套", account: bank },
+    { daysAgo: 12, category: "醫療", amount: 450, note: "看牙", account: bank },
+    { daysAgo: 15, category: "電話費", amount: 599, note: "", account: bank },
+    { daysAgo: 18, category: "娛樂", amount: 760, note: "看電影", account: cash },
+    { daysAgo: 22, category: "薪水", amount: 52000, note: "", account: bank },
+    { daysAgo: 25, category: "房租", amount: 15000, note: "", account: bank },
+    { daysAgo: 34, category: "午餐", amount: 110, note: "", account: cash },
+    { daysAgo: 40, category: "大眾交通", amount: 1280, note: "月票", account: bank },
+    { daysAgo: 45, category: "利息", amount: 213, note: "活存利息", account: bank },
+    { daysAgo: 52, category: "薪水", amount: 52000, note: "", account: bank },
+  ];
+
+  const txDocs = seeds.flatMap((seed) => {
+    const categoryId = idOf(categoryDocs, seed.category);
+    if (!categoryId) return [];
+    return [
+      {
+        _id: new ObjectId(),
+        userId,
+        categoryId,
+        accountId: seed.account,
+        amount: seed.amount,
+        date: dayBefore(seed.daysAgo),
+        note: seed.note || undefined,
+        createdAt: now,
+      },
+    ];
+  });
+  if (txDocs.length > 0) await db.collection("expenses.transactions").insertMany(txDocs);
+
+  // 一筆轉帳：從銀行領錢到錢包。沒有這一筆的話，資產總表的「轉帳明細」一開始是空的，
+  // 使用者不會知道那一區是做什麼的。
+  if (cash && bank) {
+    await db.collection("expenses.transfers").insertOne({
+      _id: new ObjectId(),
+      userId,
+      fromAccountId: bank,
+      toAccountId: cash,
+      amount: 3000,
+      date: dayBefore(6),
+      note: "領現金",
+      createdAt: now,
+    });
+  }
 }

@@ -362,13 +362,6 @@ export function PetView() {
         </CardBody>
       </Card>
 
-      {message && (
-        <button type="button" onClick={() => setMessage(null)} className="w-full rounded-2xl bg-[#F3EFFC] px-4 py-3 text-left text-xs text-[#4A3B7C]">
-          {message}
-          <span className={`ml-1 ${text.faint}`}>（點一下關閉）</span>
-        </button>
-      )}
-
       {/* 食物背包——固定顯示三種食物的持有數量，直接點了就吃（消耗一份、換成經驗值）。
           在商店買的食物進的是這裡，不是點了商店格子就直接吃掉；兩個動作分開。 */}
       <Card>

@@ -247,14 +247,25 @@ export function ReportsView() {
   const yearColumns: YearColumn[] = [baseYear, ...[...compareYears].sort((a, b) => a - b)]
     .map((year) => {
       if (kind === "資產") {
+        // 每一格是「那個月淨資產變動多少」＝月底淨資產 － 上個月月底淨資產，不是月底
+        // 當時的存量。存量那種算法在表格裡有兩個問題：數字一路遞增，看不出哪個月存得多；
+        // 而且底下的合計是把十二個月的存量加起來，那個數字完全沒有意義（同一筆錢被
+        // 數了十二次）。改成月變動之後，合計就是「這一年淨資產總共增減多少」。
+        const monthEndNetWorth = (y: number, monthIndex: number) => {
+          const mm = String(monthIndex + 1).padStart(2, "0");
+          const lastDay = new Date(y, monthIndex + 1, 0).getDate();
+          const end = `${y}-${mm}-${String(lastDay).padStart(2, "0")}`;
+          return netWorthAt(accounts, accountTypes, transactions, categories, transfers, end > todayISO ? todayISO : end);
+        };
         return {
           year,
           values: Array.from({ length: 12 }, (_, i) => {
             const mm = String(i + 1).padStart(2, "0");
             if (`${year}-${mm}-01` > todayISO) return null;
-            const lastDay = new Date(year, i + 1, 0).getDate();
-            const end = `${year}-${mm}-${String(lastDay).padStart(2, "0")}`;
-            return netWorthAt(accounts, accountTypes, transactions, categories, transfers, end > todayISO ? todayISO : end);
+            // 一月要跟「去年 12 月底」比，不是跟年初的 0 比——不然每年一月都會看起來
+            // 像是憑空多出一整筆身家。
+            const prev = i === 0 ? monthEndNetWorth(year - 1, 11) : monthEndNetWorth(year, i - 1);
+            return monthEndNetWorth(year, i) - prev;
           }),
         };
       }
@@ -714,7 +725,7 @@ export function ReportsView() {
 
           {/* 年度對照：趨勢圖看走勢，這張表看精確值。擺在趨勢下面是閱讀順序——先看
               這段期間多少、再看組成、再看走勢，最後才是跨年逐月比對。 */}
-          <YearCompareTable title="淨資產年度對照" goodWhenUp columns={yearColumns} onPickYears={() => setYearPickerOpen(true)} />
+          <YearCompareTable title="淨資產增減年度對照" goodWhenUp columns={yearColumns} onPickYears={() => setYearPickerOpen(true)} />
         </>
       ) : (
         <>
