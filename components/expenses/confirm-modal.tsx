@@ -21,6 +21,9 @@ export function ConfirmModal({
   /** 要使用者照著打一次這段文字才能按確認——清空整個記帳本這種沒有還原機制的操作用，
    *  避免手滑點兩下就把資料全砍了。 */
   requireText,
+  /** 確認之外的附加選項（清除資料時的「一併清除養成進度」）——不是另開一個彈窗問第二次，
+   *  使用者本來就在決定「要清掉什麼」，範圍的選擇就該在同一個畫面上。 */
+  option,
   onConfirm,
   onClose,
 }: {
@@ -33,6 +36,7 @@ export function ConfirmModal({
   danger?: boolean;
   onlyAcknowledge?: boolean;
   requireText?: string;
+  option?: { label: string; checked: boolean; onChange: (checked: boolean) => void };
   onConfirm?: () => void;
   onClose: () => void;
 }) {
@@ -73,6 +77,17 @@ export function ConfirmModal({
       }
     >
       <p className={`${text.body} leading-relaxed`}>{message}</p>
+      {option && (
+        <label className="flex items-start gap-2.5 rounded-2xl bg-[#F9F7FE] px-4 py-3">
+          <input
+            type="checkbox"
+            checked={option.checked}
+            onChange={(e) => option.onChange(e.target.checked)}
+            className="mt-0.5 size-4 shrink-0 accent-[#6F5ED4]"
+          />
+          <span className={text.body}>{option.label}</span>
+        </label>
+      )}
       {requireText && (
         <label className="flex flex-col gap-1.5">
           <span className={text.label}>

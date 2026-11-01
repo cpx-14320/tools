@@ -512,7 +512,7 @@ export function ReportsView() {
         ) : (
           <DonutCardSkeleton legendRows={legendSkeletonRows} listRows={listSkeletonRows} />
         )}
-        <TrendCardSkeleton legendItems={legendSkeletonRows} />
+        <TrendCardSkeleton />
         <YearCompareTableSkeleton withDelta={compareYears.length > 0} />
       </div>
     );

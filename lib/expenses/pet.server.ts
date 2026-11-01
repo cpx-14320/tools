@@ -4,7 +4,18 @@ import { budgetForMonth, withLegacyCategoryBudgets } from "./budgets";
 import { listBudgetRules } from "./budgets.server";
 import { listCategories } from "./categories.server";
 import { topLevelCategoryId } from "./categories";
-import { DEFAULT_BACKGROUND_ID, DEFAULT_OUTFIT_ID, ENTRY_COINS, PET_ITEMS, pendingRewards, petItemById, type PetReward } from "./pet";
+import {
+  DEFAULT_BACKGROUND_ID,
+  DEFAULT_OUTFIT_ID,
+  ENTRY_COINS,
+  PET_ITEMS,
+  SIGNIN_STREAK_CAP,
+  pendingRewards,
+  petItemById,
+  signinKey,
+  signinStreakDay,
+  type PetReward,
+} from "./pet";
 
 interface PetDoc {
   _id: ObjectId;
@@ -42,6 +53,12 @@ export interface PetStateDTO {
   backgroundId: string;
   ownedBackgroundIds: string[];
   foodCounts: Record<string, number>;
+  /** 今天是連續簽到的第幾天（含今天）。簽到是進頁面就自動結算的，所以畫面上這個數字
+   *  一定已經包含今天那一次。 */
+  signinStreak: number;
+  /** 最近 SIGNIN_STREAK_CAP 天裡，哪幾天簽到過（由舊到新，最後一個是今天）——簽到區塊
+   *  要畫一排格子標出「連到第幾天了」。 */
+  signinRecentDays: boolean[];
   /** 這一次結算剛發出去的獎勵，給畫面上跳提示用。 */
   justEarned: PetReward[];
 }
@@ -50,7 +67,20 @@ function collection() {
   return getDb().then((db) => db.collection<PetDoc>("expenses.pet"));
 }
 
-function toDTO(doc: PetDoc, justEarned: PetReward[] = []): PetStateDTO {
+/** 跟固定收支那邊同一套：一律用台北時區的今天，不是伺服器所在時區的今天。 */
+function todayInTaipei(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" });
+}
+
+function toDTO(doc: PetDoc, justEarned: PetReward[] = [], today = todayInTaipei()): PetStateDTO {
+  const claimed = new Set(doc.claimedKeys);
+  // 由舊到新：index 0 是 (CAP-1) 天前，最後一個是今天。簽到區塊要照這個順序排格子。
+  const recent = Array.from({ length: SIGNIN_STREAK_CAP }, (_, i) => {
+    const d = new Date(`${today}T00:00:00`);
+    d.setDate(d.getDate() - (SIGNIN_STREAK_CAP - 1 - i));
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return claimed.has(signinKey(iso));
+  });
   return {
     coins: doc.coins,
     xp: doc.xp,
@@ -59,6 +89,8 @@ function toDTO(doc: PetDoc, justEarned: PetReward[] = []): PetStateDTO {
     backgroundId: doc.backgroundId ?? DEFAULT_BACKGROUND_ID,
     ownedBackgroundIds: ownedList(doc, "背景"),
     foodCounts: doc.foodCounts ?? {},
+    signinStreak: claimed.has(signinKey(today)) ? signinStreakDay(claimed, today) : 0,
+    signinRecentDays: recent,
     justEarned,
   };
 }

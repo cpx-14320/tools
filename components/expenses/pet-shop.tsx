@@ -34,11 +34,14 @@ function wearableState(item: PetItem, pet: ShopPetState): { owned: boolean; equi
  *  格狀商品卡在下面（圖＋名稱＋價格，服裝已擁有/穿著中用勾勾徽章、食物用左上角的
  *  持有數量徽章）。
  *
+ *  **這裡只負責買**，不負責換裝：已經擁有的服裝／背景點了不做事，要換去背包
+ *  （PetBagModal）。拆開之後商店裡的每一格一定是花錢、背包裡的每一格一定是免費，
+ *  不用在點下去之前先想「這件我買過了嗎」。
+ *
  *  點格子不會立刻花錢：食物／還沒買過的服裝點了只是「選取」，真正扣款要在底下跳出來的
  *  確認列按「確認購買」才算數——食物買進來是進背包（foodCounts），不會順便餵下去，
- *  要吃哪一份、吃幾份是養成頁上那排固定的食物圖示（FoodInventoryRow）的事，兩個動作
- *  分開才不會「一點就整份星星幣飛走」。已經買過的服裝例外：點了直接換上，免費、
- *  隨時可以換回來，不需要再多一次確認。 */
+ *  要吃哪一份、吃幾份是養成頁上那排固定的食物圖示的事，兩個動作分開才不會「一點就
+ *  整份星星幣飛走」。 */
 export function PetShopModal({
   open,
   onClose,
@@ -55,7 +58,7 @@ export function PetShopModal({
   /** 最近一次動作的提示文字，彈窗開著的時候原本頁面底下的訊息看不到，這裡另外顯示一份。 */
   message?: string | null;
   /** 食物可以一次買好幾份，count 只對食物有意義（服裝／背景固定一份）。 */
-  onAct: (action: "buy" | "equip", itemId: string, count?: number) => void;
+  onAct: (action: "buy", itemId: string, count?: number) => void;
 }) {
   const [kind, setKind] = useState<PetItemKind>("食物");
   const [selected, setSelected] = useState<string | null>(null);
@@ -73,13 +76,10 @@ export function PetShopModal({
   const canAfford = selectedItem ? pet.coins >= totalPrice : false;
 
   function handleTileClick(item: PetItem) {
-    const wearable = wearableState(item, pet);
-    if (wearable?.equipped) return;
-    if (wearable?.owned) {
-      setSelected(null);
-      onAct("equip", item.id);
-      return;
-    }
+    // 已經買過的服裝／背景在商店裡只是標示「已擁有」，點了不做事——換裝是背包的工作
+    // （見 PetBagModal）。本來點了會直接換上，結果同一個格子有時候扣錢有時候換裝，
+    // 差別只在這件有沒有買過，猜錯就是星星幣飛走。
+    if (wearableState(item, pet)?.owned) return;
     setSelected(item.id);
     setQty(1);
   }

@@ -346,12 +346,10 @@ export function SummaryCardSkeleton({ delta = false }: { delta?: boolean }) {
 export function YearCompareTableSkeleton({ withDelta = true }: { withDelta?: boolean }) {
   return (
     <CardSkeleton>
-      <SkeletonBar width={96} height={20} />
-      {/* 年份膠囊：h-7（px-3 py-1 的 text-xs ＝ 28px），通常會排成兩排。 */}
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {Array.from({ length: 7 }, (_, i) => (
-          <div key={i} className={`h-7 w-12 animate-pulse rounded-full ${SKELETON_BG}`} />
-        ))}
+      {/* 標題左、「選擇年份」右——年份已經收進彈窗了，這裡不再有那一排膠囊。 */}
+      <div className="flex items-center justify-between gap-2">
+        <SkeletonBar width={96} height={20} />
+        <SkeletonBar width={56} height={16} />
       </div>
       <div className="mt-4">
         {Array.from({ length: 13 }, (_, i) => (
@@ -438,7 +436,7 @@ export function DonutCardSkeleton({
 }
 
 /** 趨勢卡：標題＋頻率切換、期間膠囊、一排長條。 */
-export function TrendCardSkeleton({ legendItems = 0 }: { legendItems?: number }) {
+export function TrendCardSkeleton() {
   return (
     <CardSkeleton>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -465,17 +463,6 @@ export function TrendCardSkeleton({ legendItems = 0 }: { legendItems?: number })
           </div>
         ))}
       </div>
-      {/* 圖例：一個分類一顆點加一段文字，`legendRows` 是上次實際有幾項（見 skeleton-count）。 */}
-      {legendItems > 0 && (
-        <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5">
-          {Array.from({ length: legendItems }, (_, i) => (
-            <span key={i} className="flex h-4 items-center gap-1.5">
-              <span className={`size-2 shrink-0 animate-pulse rounded-full ${SKELETON_BG}`} />
-              <SkeletonBar width={44} height={12} />
-            </span>
-          ))}
-        </div>
-      )}
     </CardSkeleton>
   );
 }

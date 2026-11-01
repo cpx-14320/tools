@@ -18,6 +18,12 @@ const ALL_COLLECTIONS = [
   "expenses.budgets",
 ];
 
+/** 養成進度（星星幣、經驗值、買過的服裝背景、已領的簽到紀錄）。
+ *
+ *  刻意不放進 ALL_COLLECTIONS：多數人清資料是想重新記帳，不是想放棄養了半年的角色，
+ *  預設留著。真的想整個重來的人在確認彈窗勾「一併清除養成進度」，才會連這個一起刪。 */
+const PET_COLLECTION = "expenses.pet";
+
 /** 系統預設建立的分類／帳戶類型／帳戶（isPreset: true）不會被「清除全部資料」刪掉——
  *  預設資料是每個人記帳的起點，清空重來的目的是清掉自己記的東西，不是把起點也拆了。
  *  這三個 collection 之外的（交易、轉帳、目標、固定收支、預算）沒有預設資料，整個清掉。
@@ -34,10 +40,12 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const scope = body?.scope === "all" ? "all" : body?.scope === "records" ? "records" : null;
   if (!scope) return NextResponse.json({ error: "scope 只能是 records 或 all" }, { status: 400 });
+  // 只有「清除全部資料」才談得上要不要連養成一起清——只清紀錄的那一個本來就不該動它。
+  const includePet = scope === "all" && body?.includePet === true;
 
   const userId = new ObjectId(user.id);
   const db = await getDb();
-  const targets = scope === "all" ? ALL_COLLECTIONS : RECORD_COLLECTIONS;
+  const targets = [...(scope === "all" ? ALL_COLLECTIONS : RECORD_COLLECTIONS), ...(includePet ? [PET_COLLECTION] : [])];
 
   const deleted: Record<string, number> = {};
   for (const name of targets) {

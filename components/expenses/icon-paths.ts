@@ -13,6 +13,10 @@ export const ICON_PATHS = {
   // 類型選擇器裡，所以不走使用者可選的圖示那一套，固定掛在這裡。
   accountTransfer: "/expenses/account-transfer.png",
 
+  // 養成頁疊在場地右上角的兩顆入口
+  petShop: "/expenses/pet-shop.png",
+  petBag: "/expenses/pet-bag.png",
+
   // 設定頁各項功能
   settingCategories: "/expenses/setting-category.png",
   settingBudgets: "/expenses/setting-budget.png",

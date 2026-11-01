@@ -62,6 +62,8 @@ export function MoreView() {
   // 的話，使用者要自己想到去固定收支頁才看得到。
   const [pendingCount, setPendingCount] = useState(0);
   const [resetScope, setResetScope] = useState<ResetScope | null>(null);
+  // 預設不勾：清資料多半是想重新記帳，不是想放棄養成進度。
+  const [resetPet, setResetPet] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
   useEffect(() => {
@@ -86,7 +88,7 @@ export function MoreView() {
     const data: { total?: number } = await fetch("/api/expenses/reset", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scope }),
+      body: JSON.stringify({ scope, includePet: scope === "all" && resetPet }),
     })
       .then((res) => res.json())
       .catch(() => ({}));
@@ -169,7 +171,9 @@ export function MoreView() {
             </button>
             <button type="button" onClick={() => setResetScope("all")} className="px-4 py-3.5 text-left active:bg-[#FDEEF0]">
               <span className="block text-sm font-medium text-[#D1517E]">清除全部資料</span>
-              <span className={`block ${text.muted}`}>連自己加的分類、帳戶、類型、目標、固定收支、預算一起清空（預設的不會刪）</span>
+              <span className={`block ${text.muted}`}>
+                連自己加的分類、帳戶、類型、目標、固定收支、預算一起清空（預設的不會刪）。養成進度預設保留，可以在確認時一併清除
+              </span>
             </button>
           </ListCard>
         </div>
@@ -180,13 +184,22 @@ export function MoreView() {
         title={resetScope === "all" ? "清除全部資料" : "清除所有消費紀錄"}
         message={
           resetScope === "all"
-            ? "會把記帳本底下的東西清空：交易、轉帳、你自己新增的分類／帳戶／帳戶類型、存錢目標、固定收支、預算。系統預設的分類跟「現金錢包」「銀行帳戶」會保留下來。刪掉就沒了，沒有還原機制，建議先去「匯出資料」備份一份。"
-            : "會刪掉所有交易與轉帳紀錄，分類、帳戶、帳戶類型、目標、固定收支、預算都會保留。刪掉就沒了，沒有還原機制，建議先去「匯出資料」備份一份。"
+            ? "會把記帳本底下的東西清空：交易、轉帳、你自己新增的分類／帳戶／帳戶類型、存錢目標、固定收支、預算。系統預設的分類跟「現金錢包」「銀行帳戶」會保留下來。養成進度（星星幣、等級、買過的服裝背景）預設不會動，要一起清的話勾下面那一項。刪掉就沒了，沒有還原機制，建議先去「匯出資料」備份一份。"
+            : "會刪掉所有交易與轉帳紀錄，分類、帳戶、帳戶類型、目標、固定收支、預算都會保留。養成進度也不會動。刪掉就沒了，沒有還原機制，建議先去「匯出資料」備份一份。"
+        }
+        option={
+          resetScope === "all"
+            ? { label: "一併清除養成進度（星星幣、等級、買過的服裝背景、簽到紀錄）", checked: resetPet, onChange: setResetPet }
+            : undefined
         }
         confirmLabel="確定清除"
         requireText={resetScope === "all" ? "清除全部" : "清除紀錄"}
         onConfirm={() => resetScope && handleReset(resetScope)}
-        onClose={() => setResetScope(null)}
+        onClose={() => {
+          setResetScope(null);
+          // 關掉就把勾選歸零——下次打開不該留著上次的選擇，那是會多刪東西的方向。
+          setResetPet(false);
+        }}
       />
 
       <ConfirmModal open={result !== null} title="清除完成" message={result ?? ""} onlyAcknowledge onClose={() => setResult(null)} />
