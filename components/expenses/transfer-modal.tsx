@@ -93,7 +93,7 @@ export function TransferModal({
       // 滿版：轉出／轉入／日期／備註四欄加上底下固定的小鍵盤，80% 高度時備註欄會被
       // 鍵盤壓掉一半。跟新增帳戶、新增交易一致。
       fullHeight
-      stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} label="轉帳金額" />}
+      stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} label="轉帳金額" required />}
       footer={
         <ModalFooter
           onClose={onClose}
@@ -122,7 +122,7 @@ export function TransferModal({
         </Field>
       </div>
 
-      <Field label="日期">
+      <Field label="日期" required>
         <DateField value={date} onChange={setDate} />
       </Field>
       <Field label="備註">

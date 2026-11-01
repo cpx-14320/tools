@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { SegmentedControl } from "./button";
-import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
+import { Modal, Field, RequiredMark, fieldInputClass, ModalFooter } from "./modal";
 import { OptionGrid } from "./option-grid";
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { AccountTypeBatchModal, type AccountTypeBatchItem } from "./account-type-batch-modal";
@@ -150,7 +150,10 @@ export function AccountModal({
       />
 
       <div>
-        <span className="mb-2 block text-xs font-medium text-[#9C94C4]">類型</span>
+        <span className="mb-2 block text-xs font-medium text-[#9C94C4]">
+          類型
+          <RequiredMark />
+        </span>
         {/* 跟新增消費紀錄的分類格子完全一樣：同一個 OptionGrid、同樣的捲動高度上限，
             而且同樣只有「＋新增」沒有刪除——類型要刪一律去「設定 › 帳戶類型」，跟分類
             只能在「設定 › 收支分類」刪是同一個規則。 */}

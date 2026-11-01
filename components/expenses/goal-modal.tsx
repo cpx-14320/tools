@@ -57,6 +57,8 @@ export function GoalModal({
           expr={target === "target" ? targetAmount : currentAmount}
           onExprChange={target === "target" ? setTargetAmount : setCurrentAmount}
           label={target === "target" ? "目標金額" : "目前已經存了多少"}
+          // 目標金額要大於 0 才存得了；「目前已經存了多少」留空就是 0，是合理答案。
+          required={target === "target"}
         />
       }
       footer={
@@ -80,7 +82,7 @@ export function GoalModal({
       <Field label="名稱" required>
         <input value={name} onChange={(e) => setName(e.target.value)} className={fieldInputClass} />
       </Field>
-      <GoalIconPicker value={icon} onChange={setIcon} />
+      <GoalIconPicker value={icon} onChange={setIcon} required />
       {/* placeholder 留空：欄位本來就標著「目標金額」，再寫一次「點這裡用下方鍵盤輸入」
           只是把同一件事說兩遍。 */}
       <AmountField label="目標金額" value={targetAmountNum} active={target === "target"} onFocus={() => setTarget("target")} placeholder="" />

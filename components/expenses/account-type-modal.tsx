@@ -92,7 +92,7 @@ export function AccountTypeModal({
         <input value={name} onChange={(e) => setName(e.target.value)} className={fieldInputClass} />
       </Field>
       {isDuplicate && <p className="text-xs text-[#D1517E]">已經有同樣名稱的{effectiveKind === "asset" ? "資產" : "負債"}類型了，換一個名稱吧。</p>}
-      <AccountIconPicker value={icon} onChange={setIcon} />
+      <AccountIconPicker value={icon} onChange={setIcon} required />
       <CategoryColorPicker value={color} onChange={setColor} />
     </Modal>
   );

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { SegmentedControl } from "./button";
-import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
+import { Modal, Field, RequiredMark, fieldInputClass, ModalFooter } from "./modal";
 import { DateField } from "./date-field";
 import { CategoryGridPicker } from "./category-grid-picker";
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
@@ -142,7 +142,7 @@ export function RecurringRuleModal({
       onClose={onClose}
       title={initial ? "編輯固定收支" : "新增固定收支"}
       fullHeight
-      stickyBottom={<AmountKeypad expr={amount} onExprChange={setAmount} label="每次金額" />}
+      stickyBottom={<AmountKeypad expr={amount} onExprChange={setAmount} label="每次金額" required />}
       footer={
         <ModalFooter
           onClose={onClose}
@@ -178,7 +178,10 @@ export function RecurringRuleModal({
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-xs font-medium text-[#9C94C4]">分類</span>
+          <span className="text-xs font-medium text-[#9C94C4]">
+            分類
+            <RequiredMark />
+          </span>
           {categoryId && <span className="text-xs font-medium text-[#4A3B7C]">{categoryPath(categories, categoryId)}</span>}
         </div>
         <CategoryGridPicker
@@ -199,7 +202,7 @@ export function RecurringRuleModal({
           才看得出是一組；各佔一整列會把彈窗拉長到要捲動。標籤縮短成兩個字，不然兩欄
           各自會擠成兩行——詳細說明收到底下那行小字。 */}
       <div className="grid grid-cols-2 gap-3">
-        <Field label="間隔">
+        <Field label="間隔" required>
           <input type="number" min={1} value={interval} onChange={(e) => setInterval_(e.target.value)} className={fieldInputClass} />
         </Field>
         <Field label="循環次數">
@@ -208,7 +211,7 @@ export function RecurringRuleModal({
       </div>
       <p className={`-mt-1 ${text.faint}`}>間隔是「每隔幾個單位來一次」（每 2 週就填 2）。循環次數留空＝無限期循環，房租這種沒有結束日的就不用填。</p>
 
-      <Field label="開始日期">
+      <Field label="開始日期" required>
         <DateField value={startDate} onChange={setStartDate} />
       </Field>
       {orphanCount > 0 && (

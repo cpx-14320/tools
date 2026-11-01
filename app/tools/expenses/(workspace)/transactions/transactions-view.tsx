@@ -228,7 +228,7 @@ export function TransactionsView({
 
       {/* 這一頁本來只能編輯既有紀錄，要新增得先回首頁——但看著清單想到「啊還有一筆沒記」
           才是最常見的時機。跟首頁同一顆浮動鈕、同一個彈窗。 */}
-      <FloatingAddButton onClick={() => setAddOpen(true)} label="新增消費紀錄" />
+      <FloatingAddButton onClick={() => setAddOpen(true)} label="新增收支紀錄" />
 
       {/* key 跟著開關變動＝每次打開都是一個乾淨的彈窗，不會留著上一筆填過的內容。 */}
       <TransactionModal

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Modal, ModalFooter } from "./modal";
-import { ChoiceChip } from "./button";
+import { OptionChip } from "./button";
 import { text } from "./theme";
 
 /** 年度對照表要比哪幾年——基準年一個、比較年可以挑好幾個。
@@ -10,9 +10,19 @@ import { text } from "./theme";
  *  拆成「基準」跟「比較」兩組，而不是一排全部平等的年份：表格上每一欄的增減都是跟基準年
  *  比的，不講清楚誰是基準，三欄以上時那些 ▲▼ 就讀不出是在跟誰比。
  *
- *  版面照其他彈窗的慣例：一組一個小標題、底下一排膠囊（跟報表的「近 3／6 月」、年份膠囊
- *  同一顆 ChoiceChip），底部是共用的取消／儲存。改完按儲存才生效——邊挑邊套用的話，
- *  挑到一半表格會一直重畫。 */
+ *  版面照其他彈窗的慣例：一組一個小標題、底下一排膠囊，底部是共用的取消／儲存。改完按
+ *  儲存才生效——邊挑邊套用的話，挑到一半表格會一直重畫。
+ *
+ *  膠囊用的是 OptionChip（新增收支紀錄彈窗「項目」那一排同一顆），不是報表上「近 3／6 月」
+ *  那種 ChoiceChip：這裡是從一份年份清單裡挑，比較年還可能一年都沒挑，沒挑中的那幾顆
+ *  也要讀得清楚。
+ *
+ *  排法是固定六欄的 grid 而不是 flex-wrap：年份每一顆寬度一樣（都是四位數），用 grid
+ *  才會每一列剛好六個、第一顆貼齊左邊、第六顆貼齊右邊、中間等距。flex-wrap 是「排得下
+ *  就繼續排」，最後一列會短一截、左右也切不齊。 */
+/** 一列六個，欄寬相同所以首尾自然切齊彈窗的左右邊界，中間等距。 */
+const YEAR_GRID = "grid grid-cols-6 gap-2";
+
 export function YearPickerModal({
   open,
   availableYears,
@@ -53,24 +63,24 @@ export function YearPickerModal({
       <div>
         <p className={`mb-2 ${text.label}`}>基準年</p>
         <p className={`mb-2 ${text.muted}`}>表格上每一欄的增減都是跟這一年比。</p>
-        <div className="flex flex-wrap gap-1.5">
+        <div className={YEAR_GRID}>
           {availableYears.map((y) => (
-            <ChoiceChip key={y} active={y === base} onClick={() => chooseBase(y)}>
+            <OptionChip key={y} active={y === base} onClick={() => chooseBase(y)}>
               {y}
-            </ChoiceChip>
+            </OptionChip>
           ))}
         </div>
       </div>
 
       <div>
         <p className={`mb-2 ${text.label}`}>比較年（可複選）</p>
-        <div className="flex flex-wrap gap-1.5">
+        <div className={YEAR_GRID}>
           {availableYears
             .filter((y) => y !== base)
             .map((y) => (
-              <ChoiceChip key={y} active={compare.includes(y)} onClick={() => toggleCompare(y)}>
+              <OptionChip key={y} active={compare.includes(y)} onClick={() => toggleCompare(y)}>
                 {y}
-              </ChoiceChip>
+              </OptionChip>
             ))}
         </div>
         {compare.length === 0 && <p className={`mt-2 ${text.faint}`}>一年都沒挑的話，表格只會有基準年那一欄。</p>}

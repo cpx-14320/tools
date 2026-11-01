@@ -137,6 +137,45 @@ export function SegmentedControl<T extends string>({
  *  本來三個地方各自手刻一次同樣的 class，而且其中兩處的選中色還停在舊的 #6F5FD6，
  *  跟其他「選中」狀態（分頁、篩選膠囊、月曆選到的那天）用的 activeSolid #6F5ED4 差一階
  *  ——同一頁兩種紫，看得出來但說不上哪裡怪。收斂成這一顆之後只有一個色。 */
+/** 有外框的選項膠囊——新增收支紀錄彈窗裡「項目」那一排（子分類）、報表選擇年份彈窗
+ *  都用這一顆。
+ *
+ *  跟 ChoiceChip 的差別在用途不同，不是裝飾上的隨意選擇：ChoiceChip 是「切換檢視」
+ *  （報表的近 3／6／12 期），一排固定幾顆、永遠有一顆是選中的，所以沒選到的那幾顆
+ *  用淡底淡字往後退就好；這一顆是「從一份清單裡挑」，數量不固定、可能一顆都沒挑，
+ *  沒挑中的也要看得清楚讀得到，所以是白底＋外框、字也維持深色。
+ *
+ *  `dashed` 給「＋ 新增」那一顆用：虛線框看得出它不是另一個可以選的項目。 */
+export function OptionChip({
+  children,
+  active = false,
+  dashed = false,
+  onClick,
+}: {
+  children: ReactNode;
+  active?: boolean;
+  dashed?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      // justify-center ＋ 由外層決定寬度：放在 flex 裡時寬度跟著文字走（子分類那一排），
+      // 放在 grid 裡時會被欄寬撐滿（年份那兩排），同一顆兩種排法都對得齊。
+      className={`flex items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium tabular-nums transition-colors ${
+        dashed
+          ? "border-dashed border-[#C7BFE6] text-[#6F5FD6]"
+          : active
+            ? "border-[#6F5FD6] bg-[#6F5FD6] text-white"
+            : "border-[#ECE4FA] bg-white text-[#4A3B7C]"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function ChoiceChip({
   children,
   active,

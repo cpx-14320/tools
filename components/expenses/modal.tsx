@@ -16,16 +16,29 @@ export const fieldInputClass =
  *  必填的欄位傳 `required`，標籤後面補一顆紅色星號。中文表單的慣例是「標必填」而不是
  *  「標選填」——以前是反過來的（「帳戶（可不填）」「備註（可不填）」），結果每個可選
  *  欄位都拖著三個字的尾巴，真正非填不可的那幾欄反而沒有任何記號。 */
+/** 必填記號。判斷標準只有一個：**這一欄沒填會讓「儲存」按不下去**（也就是它出現在那個
+ *  彈窗的 canSave 條件裡）。
+ *
+ *  所以切換鈕（收支類型、資產／負債、頻率）一律不標——它們一開始就有值，沒有「沒填」
+ *  這個狀態，標了反而像是在要求使用者做什麼。有預設值、留空也能存的（備註、帳戶、
+ *  循環次數、顏色）同樣不標。
+ *
+ *  獨立出來是因為不是每個必填欄位都包在 Field 裡：分類格子、圖示挑選器、「項目」那一排
+ *  都是自己手刻的標籤，要用同一顆記號才不會兩種顏色兩種間距。 */
+export function RequiredMark() {
+  return (
+    <span aria-hidden className="ml-0.5 text-[#D1517E]">
+      *
+    </span>
+  );
+}
+
 export function Field({ label, children, required = false }: { label: string; children: ReactNode; required?: boolean }) {
   return (
     <label className="flex flex-col gap-1.5">
       <span className={text.label}>
         {label}
-        {required && (
-          <span aria-hidden className="ml-0.5 text-[#D1517E]">
-            *
-          </span>
-        )}
+        {required && <RequiredMark />}
       </span>
       {children}
     </label>

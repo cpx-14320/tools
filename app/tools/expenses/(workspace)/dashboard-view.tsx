@@ -6,6 +6,8 @@ import { MonthFilterPicker } from "@/components/expenses/date-filter-picker";
 import { EmptyListCard, ListCard, ListRow } from "@/components/expenses/list-row";
 import { Card, CardBody } from "@/components/expenses/card";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
+import { PageHeader } from "@/components/expenses/page-header";
+import { PetOsBubble } from "@/components/expenses/pet-os-bubble";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { HiddenAmountsToggle, useHiddenAmounts } from "@/components/expenses/hidden-amounts";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
@@ -28,6 +30,7 @@ import { type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
 import { monthDaysLeft, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
+import { petOsLines } from "@/lib/expenses/pet-os";
 import { formatCurrency, formatDateWithWeekday } from "@/lib/format";
 
 /** 首頁的主視覺＋底下那張蓋上來的白色內容面板，比照搭乘車首頁的版型
@@ -69,6 +72,7 @@ export function DashboardView({
   accountTypes,
   transfers,
   budgetRules,
+  osSeed,
 }: {
   initialCategories: CategoryDTO[];
   initialTransactions: TransactionDTO[];
@@ -76,6 +80,8 @@ export function DashboardView({
   accountTypes: AccountTypeDTO[];
   transfers: TransferDTO[];
   budgetRules: BudgetRuleDTO[];
+  /** 主視覺對話框抽句子用的亂數種子，由 page.tsx 在伺服器產生（見 pet-os.ts）。 */
+  osSeed: number;
 }) {
   // 首頁的期間自己拿著，不接共用的 DateFilterContext——其他頁（報表、消費紀錄、帳戶
   // 明細）仍然共用一個篩選器，但首頁刻意獨立：它問的是「我這個月花得怎麼樣」，去報表頁
@@ -164,9 +170,17 @@ export function DashboardView({
 
   // 主視覺上只有日期（左上角）。首頁是「這個月的現況」，不是拿來做期間比較的地方——
   // 「跟誰比」那組設定收斂到報表頁，四個分頁共用一顆就夠了。
+  // 角色的消費心理 OS：依近 7 日的收支狀況挑句子，每 5 秒淡出淡入換一句（見 pet-os.ts）。
+  // 句子本身不帶數字——數字底下的卡片已經寫得很清楚了，上面這一句是要講出使用者心裡
+  // 那句話。這一段不會因為上方的月份選擇而變：它看的永遠是「最近七天」，跟你正在翻
+  // 哪一個月無關。
+  const osLines = petOsLines(transactions, categories, budgetRules, todayISO, osSeed);
+
+  // 主視覺上只剩對話框：水平置中、尾巴朝下，正好落在角色頭頂上方。日期搬進底下的
+  // 白色面板了（見下面的 PageHeader），整片圖讓給角色。
   const heroOverlay = (
-    <div className="absolute inset-x-5 top-5 flex items-start">
-      <MonthFilterPicker filter={filter} onChange={setFilter} />
+    <div className="absolute inset-x-5 top-5">
+      <PetOsBubble lines={osLines} />
     </div>
   );
 
@@ -194,7 +208,7 @@ export function DashboardView({
       {/* 新增交易的入口搬到首頁，固定在卡片右下角（底部導覽列上方）——跟搭乘車同一招，
           fixed 子孫以外殼卡片容器（有 transform）為定位基準，不是整個瀏覽器視窗。用純
           「＋」而不是其他 emoji，跟選單圖示區分開，一眼就看得出是「新增」的動作。 */}
-      <FloatingAddButton onClick={() => setAddOpen(true)} label="新增交易" />
+      <FloatingAddButton onClick={() => setAddOpen(true)} label="新增收支紀錄" />
 
       {/* 結餘、收入、支出三個數字合併成一張卡，不是三張（原本是一張整寬的結餘＋一個
           兩欄輪播）：三者本來就是同一道算式的三個部分（收入－支出＝結餘），拆成三張卡
@@ -214,6 +228,18 @@ export function DashboardView({
 
           眼睛各一顆、就放在金額右邊，兩邊各自記各自的狀態。金額那一行用 min-h 卡住高度：
           遮起來時星號的字級比數字小，沒卡住的話按一下卡片會抽動一下。 */}
+      {/* 日期是「範圍控制項」——它宣告底下的數字是哪一段期間的，所以必須出現在它管的
+          東西前面。它管的是這張收支卡**跟**底下的預算卡（兩邊共用 budgetYearMonth），
+          所以不能塞進收支卡裡面：那樣看起來只管那一張，預算卡就不知道在講哪個月。
+
+          排法跟報表／資產／明細三頁的 PageHeader 一致（標題左、日期右），切換頁面時
+          日期永遠在同一個位置。首頁本來沒有標題，右對齊會讓這一列左半邊空一大片、
+          膠囊像個漂浮的按鈕，補上「本月收支」正好把標題也一起補齊。
+
+          這一列只放日期，不放那兩顆眼睛：眼睛遮的是各自那一欄的數字，跟期間不是同一
+          種東西，混在一起會讓人以為眼睛是全域開關。 */}
+      <PageHeader flush title="本月收支" actions={<MonthFilterPicker filter={filter} onChange={setFilter} />} />
+
       <Card>
         <CardBody className="grid grid-cols-2 gap-3 p-3">
           {[

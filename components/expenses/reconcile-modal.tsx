@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Modal, Field, ModalFooter } from "./modal";
+import { Modal, Field, RequiredMark, ModalFooter } from "./modal";
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { CategoryGridPicker } from "./category-grid-picker";
 import { text } from "./theme";
@@ -51,7 +51,7 @@ export function ReconcileModal({
       onClose={onClose}
       title={`${accountName} 對帳`}
       fullHeight
-      stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} label="實際餘額" />}
+      stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} label="實際餘額" required />}
       footer={
         <ModalFooter
           onClose={onClose}
@@ -95,7 +95,10 @@ export function ReconcileModal({
       {adjustment !== null && (
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <span className={text.label}>這筆調整算在哪一類</span>
+            <span className={text.label}>
+              這筆調整算在哪一類
+              <RequiredMark />
+            </span>
             {categoryId && <span className="text-xs font-medium text-[#4A3B7C]">{categoryPath(categories, categoryId)}</span>}
           </div>
           <CategoryGridPicker categories={categories} kind={adjustment.kind} value={categoryId} onChange={setCategoryId} />

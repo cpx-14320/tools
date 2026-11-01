@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { SegmentedControl } from "./button";
-import { Modal, Field, fieldInputClass, ModalFooter } from "./modal";
+import { Modal, Field, RequiredMark, fieldInputClass, ModalFooter } from "./modal";
 import { SelectField } from "./select-field";
 import { DateField } from "./date-field";
 import { AccountPickerModal } from "./account-picker-modal";
@@ -198,7 +198,9 @@ export function TransactionModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={initial ? "編輯消費紀錄" : "新增消費紀錄"}
+      // 「收支」不是「消費」：同一個彈窗也用來記收入（上面的支出／收入分頁），
+      // 寫成「消費紀錄」會讓人以為記收入要去別的地方。
+      title={initial ? "編輯收支紀錄" : "新增收支紀錄"}
       fullHeight
       // 小鍵盤固定在彈窗最下面不跟著捲動，使用者可以一邊捲上面的分類／日期／帳戶，
       // 一邊隨時按數字；按明細項目的金額時這個鍵盤會改成編那一項（見 keypadLabel）。
@@ -237,7 +239,10 @@ export function TransactionModal({
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-xs font-medium text-[#9C94C4]">分類</span>
+          <span className="text-xs font-medium text-[#9C94C4]">
+            分類
+            <RequiredMark />
+          </span>
           {categoryId && <span className="text-xs font-medium text-[#4A3B7C]">{categoryPath(categories, categoryId)}</span>}
         </div>
         {/* 只有這一塊自己捲動——分類一多，捲的是這個格子區塊，不是整個彈窗（彈窗本身的
@@ -254,7 +259,7 @@ export function TransactionModal({
 
       {/* 記帳絕大多數是記「今天」或「昨天剛花的」，這兩顆直接點比開日期選擇器快很多；
           要記更早的日期才需要開選擇器。選中的那顆會反白，看得出現在是哪一天。 */}
-      <Field label="日期">
+      <Field label="日期" required>
         <div className="flex items-center gap-2">
           <DateField value={date} onChange={setDate} className="min-w-0 flex-1" />
           {/* 直接用 SegmentedControl（跟收支類型同一個元件）：value 傳目前的日期，挑了

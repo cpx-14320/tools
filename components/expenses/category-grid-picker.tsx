@@ -1,5 +1,7 @@
 "use client";
 
+import { OptionChip } from "./button";
+import { RequiredMark } from "./modal";
 import { OptionGrid } from "./option-grid";
 import { text } from "./theme";
 import {
@@ -61,41 +63,32 @@ export function CategoryGridPicker({
         // 標一行「項目」：這排圓角選項跟上面的分類格子長得完全不一樣，不寫清楚的話
         // 會被當成另一組分類，不知道是在選剛剛那個分類底下的細項。
         <div className="mt-3 flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <span className={text.label}>項目</span>
-            {/* 還停在大分類上就提醒一句，不要讓人按了儲存（灰的）之後才在猜哪裡沒填。
-                一個子項目都還沒有的大分類本來就可以直接記在它身上，那時不用提醒。 */}
-            {subcategories.length > 0 && value === activeParentId && (
-              <span className="text-xs font-medium text-[#D1517E]">請選一個項目</span>
-            )}
-            {subcategories.length === 0 && <span className={text.faint}>可不填</span>}
-          </div>
+          {/* 有子項目可選＝一定要挑一個才存得了（見 needsSubcategory），所以標 *；
+              一個子項目都還沒有的大分類可以直接記在它身上，那時這一排只有「＋ 新增」，
+              不是必填，也就不標。
+              本來這裡還有「請選一個項目」跟「可不填」兩段字，現在一律由 * 的有無表達：
+              那兩段字只在特定狀態出現，等於同一件事有兩套講法，而且「請選一個項目」是
+              紅字，看起來像錯誤訊息（其實只是還沒選）。真的按不下儲存時，底部按鈕旁邊
+              的 disabledHint 會講得更清楚。 */}
+          <span className={text.label}>
+            項目
+            {subcategories.length > 0 && <RequiredMark />}
+          </span>
           <div className="flex flex-wrap gap-2">
+            {/* 只有文字、不放圖示：子分類目前全部共用同一張佔位圖，每一顆都掛一個
+                一模一樣的小圖等於只是把字擠窄，分辨不出任何東西。 */}
             {subcategories.map((sub) => (
-              <button
-                key={sub.id}
-                type="button"
-                onClick={() => onChange(sub.id)}
-                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                  sub.id === value ? "border-[#6F5FD6] bg-[#6F5FD6] text-white" : "border-[#ECE4FA] bg-white text-[#4A3B7C]"
-                }`}
-              >
-                {/* 只有文字、不放圖示：子分類目前全部共用同一張佔位圖，每一顆都掛一個
-                    一模一樣的小圖等於只是把字擠窄，分辨不出任何東西。 */}
+              <OptionChip key={sub.id} active={sub.id === value} onClick={() => onChange(sub.id)}>
                 {sub.name}
-              </button>
+              </OptionChip>
             ))}
             {/* 「這筆要記的項目這裡沒有」是記帳當下才會發現的事——沒有這顆就只能放棄這筆、
                 跑去設定頁的分類設定補一則、再回來從頭填一次。虛線框跟實心的子項目區分開，
                 看得出它是「新增」不是另一個可以選的項目。 */}
             {onAddSubClick && (
-              <button
-                type="button"
-                onClick={() => onAddSubClick(activeParentId)}
-                className="rounded-full border border-dashed border-[#C7BFE6] px-3 py-1.5 text-xs font-medium text-[#6F5FD6]"
-              >
+              <OptionChip dashed onClick={() => onAddSubClick(activeParentId)}>
                 ＋ 新增
-              </button>
+              </OptionChip>
             )}
           </div>
         </div>

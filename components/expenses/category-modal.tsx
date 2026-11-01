@@ -107,7 +107,7 @@ export function CategoryModal({
 
       {!isSubcategory && (
         <>
-          <CategoryIconPicker kind={kind} value={icon} onChange={setIcon} />
+          <CategoryIconPicker kind={kind} value={icon} onChange={setIcon} required={!isSubcategory} />
           <CategoryColorPicker value={color} onChange={setColor} />
           {/* 預設帳戶：記一筆選到這個分類時，帳戶欄自動帶上它，省掉每筆都要挑一次。
               只設在頂層分類——子分類是它底下的細項，錢從哪個帳戶出通常一樣（見

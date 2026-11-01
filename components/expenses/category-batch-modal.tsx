@@ -148,7 +148,7 @@ export function CategoryBatchModal({
             {isDuplicateDraft(items, i, categories, parentId) && <p className="text-xs text-[#D1517E]">已經有同樣名稱的分類了，換一個名稱吧。</p>}
             {!isSubcategory && (
               <>
-                <CategoryIconPicker kind={item.kind} value={item.icon} onChange={(icon) => updateItem(i, { icon })} />
+                <CategoryIconPicker kind={item.kind} value={item.icon} onChange={(icon) => updateItem(i, { icon })} required={!isSubcategory} />
                 <CategoryColorPicker value={item.color} onChange={(color) => updateItem(i, { color })} />
               </>
             )}

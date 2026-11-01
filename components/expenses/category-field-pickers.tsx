@@ -1,7 +1,7 @@
 "use client";
 
 import { InlineIcon } from "./icon-avatar";
-import { Field } from "./modal";
+import { Field, RequiredMark } from "./modal";
 import { text, unselectedOption } from "./theme";
 import { ACCOUNT_ICON_OPTIONS, EXPENSE_ICON_OPTIONS, INCOME_ICON_OPTIONS, ICON_OTHER, type IconOption } from "@/lib/expenses/presets";
 import { categoryFillClass, type CategoryColor, type CategoryKind } from "@/lib/expenses/categories";
@@ -18,10 +18,23 @@ import { categoryFillClass, type CategoryColor, type CategoryKind } from "@/lib/
  *
  *  記帳本所有會挑圖示的彈窗（新增/編輯分類、批次新增分類、帳戶類型、存錢目標）都是走
  *  這一個元件，所以樣式只要改這裡一處。 */
-function IconPicker({ options, value, onChange }: { options: IconOption[]; value: string; onChange: (icon: string) => void }) {
+function IconPicker({
+  options,
+  value,
+  onChange,
+  required = false,
+}: {
+  options: IconOption[];
+  value: string;
+  onChange: (icon: string) => void;
+  required?: boolean;
+}) {
   return (
     <div className="flex flex-col gap-2">
-      <span className={text.label}>圖示</span>
+      <span className={text.label}>
+        圖示
+        {required && <RequiredMark />}
+      </span>
       {/* 只排圖、不寫名稱——這裡挑的是「長什麼樣子」，不是在選一個已經定義好的分類，
           圖下面掛一行名稱反而會讓人以為選了圖就等於選了那個分類。名稱留在 aria-label
           給讀螢幕軟體用。 */}
@@ -49,19 +62,29 @@ function IconPicker({ options, value, onChange }: { options: IconOption[]; value
 }
 
 /** 分類用的圖示選擇器——支出跟收入各有自己的一組圖。 */
-export function CategoryIconPicker({ kind, value, onChange }: { kind: CategoryKind; value: string; onChange: (icon: string) => void }) {
-  return <IconPicker options={kind === "收入" ? INCOME_ICON_OPTIONS : EXPENSE_ICON_OPTIONS} value={value} onChange={onChange} />;
+export function CategoryIconPicker({
+  kind,
+  value,
+  onChange,
+  required = false,
+}: {
+  kind: CategoryKind;
+  value: string;
+  onChange: (icon: string) => void;
+  required?: boolean;
+}) {
+  return <IconPicker options={kind === "收入" ? INCOME_ICON_OPTIONS : EXPENSE_ICON_OPTIONS} value={value} onChange={onChange} required={required} />;
 }
 
 /** 帳戶類型用的圖示選擇器。 */
-export function AccountIconPicker({ value, onChange }: { value: string; onChange: (icon: string) => void }) {
-  return <IconPicker options={ACCOUNT_ICON_OPTIONS} value={value} onChange={onChange} />;
+export function AccountIconPicker({ value, onChange, required = false }: { value: string; onChange: (icon: string) => void; required?: boolean }) {
+  return <IconPicker options={ACCOUNT_ICON_OPTIONS} value={value} onChange={onChange} required={required} />;
 }
 
 /** 存錢目標用的圖示選擇器——目標沒有自己的一套圖，先共用支出分類那組（之後補了專屬的
  *  目標圖示，改這裡一行就好）。 */
-export function GoalIconPicker({ value, onChange }: { value: string; onChange: (icon: string) => void }) {
-  return <IconPicker options={EXPENSE_ICON_OPTIONS} value={value} onChange={onChange} />;
+export function GoalIconPicker({ value, onChange, required = false }: { value: string; onChange: (icon: string) => void; required?: boolean }) {
+  return <IconPicker options={EXPENSE_ICON_OPTIONS} value={value} onChange={onChange} required={required} />;
 }
 
 /** 分類顏色選擇器——六個色票圓點，選中的那顆外圈加色環。新增分類（批次）跟編輯分類

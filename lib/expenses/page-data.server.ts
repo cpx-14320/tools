@@ -18,12 +18,13 @@ import { settlePetRewards, todayInTaipei, type PetStateDTO } from "./pet.server"
  *  沒登入用 redirect 而不是 throw：throw 會在每一個未登入的請求留下一筆錯誤堆疊，
  *  redirect 丟的是 Next 自己認得的訊號，跟 layout 導到同一個地方。
  *
- *  工具權限不在這裡擋——layout 的 hasToolAccess 檢查沒過時會用 ToolAccessDenied 取代
- *  children，page 算出來的東西整個被丟掉，所以不會外流；而且讀的本來就是這個 userId
- *  自己的資料。 */
+ *  工具權限也在這裡擋：layout 雖然會把沒權限的人導回首頁，但 layout 跟 page 是平行
+ *  算繪的，光靠 layout 擋不住 page 去讀資料、去建預設分類。兩邊用同一份判斷、導到
+ *  同一個地方。 */
 export const expensesUserId = cache(async (): Promise<ObjectId> => {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  if (!hasToolAccess(user, "expenses")) redirect("/");
   const userId = new ObjectId(user.id);
   // 建預設資料是一個帳號一輩子一次的事，但它擋在每一頁讀資料的前面，所以要盡量不花
   // 時間。seedExpensesPresets 自己雖然會用 expenses.meta 的標記判斷「已經建過了」，
@@ -34,10 +35,7 @@ export const expensesUserId = cache(async (): Promise<ObjectId> => {
   // 這個快取只會「漏掉該做的事」而不會「做錯事」：重開 server 就重新問一次（多一趟
   // 來回，然後還是什麼都不做），而標記一旦寫下去就不會再變回去，所以不存在快取過期
   // 的問題。
-  // 沒有記帳本權限的人不建預設資料：layout 的 hasToolAccess 沒過時會用 ToolAccessDenied
-  // 取代 children，這一頁算出來的東西整個被丟掉——但 seed 是**寫入**，丟不掉。不擋的話
-  // 一個沒權限的人只要打開記帳本的網址，資料庫裡就會多出一整套他用不到的分類跟帳戶。
-  if (!seeded.has(user.id) && hasToolAccess(user, "expenses")) {
+  if (!seeded.has(user.id)) {
     // 盡力而為：這一支失敗不該擋住頁面渲染——所以只有真的成功才記下來，失敗的話
     // 下一次請求會再試一次。
     await seedExpensesPresets(userId)

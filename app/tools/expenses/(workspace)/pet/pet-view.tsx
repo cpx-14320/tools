@@ -40,8 +40,6 @@ interface PetState {
   foodCounts: Record<string, number>;
   /** 今天是連續簽到的第幾天（0 ＝ 今天還沒簽到）。 */
   signinStreak: number;
-  /** 最近七天哪幾天簽到過，由舊到新，最後一個是今天。 */
-  signinRecentDays: boolean[];
   justEarned: { key: string; coins: number; label: string }[];
 }
 
@@ -149,7 +147,6 @@ export function PetView({
   // 簽到是進頁面就自動結算的，所以 signinStreak > 0 就代表今天已經簽到了。
   const streak = pet?.signinStreak ?? 0;
   const signedInToday = streak > 0;
-  const recentDays = pet?.signinRecentDays ?? [];
   const outfit = petItemById(pet?.outfitId ?? "");
 
   return (
@@ -231,45 +228,6 @@ export function PetView({
         </CardBody>
       </Card>
 
-      {/* 簽到：進這一頁就自動簽到（見 settlePetRewards），所以這一塊是「結果」不是
-          「按鈕」——它要回答的是「我連幾天了、今天拿到多少、明天會拿多少」。 */}
-      <Card>
-        <CardBody>
-          <div className="flex items-center justify-between gap-2">
-            <p className={text.sectionHeading}>每日簽到</p>
-            <span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">
-              {signedInToday ? `今天 ＋${signinCoins(streak)}` : "今天還沒簽到"}
-            </span>
-          </div>
-          <p className={`mt-0.5 ${text.muted}`}>
-            {signedInToday
-              ? streak >= SIGNIN_STREAK_CAP
-                ? `已連續 ${streak} 天，每天都是 ${signinCoins(SIGNIN_STREAK_CAP)} 顆`
-                : `已連續 ${streak} 天，明天連上去是 ＋${signinCoins(streak + 1)}`
-              : "打開這一頁就會自動簽到"}
-          </p>
-          {/* 一天一格，由舊到新，最後一格是今天。簽到過的填滿、沒簽的留空——斷掉的那
-              幾天看得見，才知道連續是怎麼斷的。 */}
-          <div className="mt-3 flex gap-1.5">
-            {recentDays.map((done: boolean, i: number) => {
-              const isToday = i === recentDays.length - 1;
-              return (
-                <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                  <span
-                    className={`grid h-8 w-full place-items-center rounded-xl text-[11px] font-semibold tabular-nums ${
-                      done ? "bg-[#6F5ED4] text-white" : "bg-[#F3EFFC] text-[#C7BFE6]"
-                    }`}
-                  >
-                    {done ? "⭐" : ""}
-                  </span>
-                  <span className={`text-[10px] ${isToday ? "font-semibold text-[#6F5FD6]" : text.faint}`}>{isToday ? "今天" : `${recentDays.length - 1 - i} 天前`}</span>
-                </div>
-              );
-            })}
-          </div>
-        </CardBody>
-      </Card>
-
       {/* 食物背包——固定顯示三種食物的持有數量，直接點了就吃（消耗一份、換成經驗值）。
           在商店買的食物進的是這裡，不是點了商店格子就直接吃掉；兩個動作分開。 */}
       <Card>
@@ -294,6 +252,55 @@ export function PetView({
           })}
         </CardBody>
       </Card>
+
+      {/* 簽到：進這一頁就自動簽到（見 settlePetRewards），所以這一塊是「結果」不是
+          「按鈕」——它要回答的是「我連幾天了、今天拿到多少、明天會拿多少」。
+          擺在食物下面：上面兩塊（角色、食物）是「現在可以做什麼」，簽到是今天已經發生
+          的結果，不需要搶在互動前面。 */}
+      <Card>
+        <CardBody>
+          <div className="flex items-center justify-between gap-2">
+            <p className={text.sectionHeading}>每日簽到</p>
+            <span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">
+              {signedInToday ? `今天 ＋${signinCoins(streak)}` : "今天還沒簽到"}
+            </span>
+          </div>
+          <p className={`mt-0.5 ${text.muted}`}>
+            {signedInToday
+              ? streak >= SIGNIN_STREAK_CAP
+                ? `已連續 ${streak} 天，每天都是 ${signinCoins(SIGNIN_STREAK_CAP)} 顆`
+                : `已連續 ${streak} 天，明天連上去是 ＋${signinCoins(streak + 1)}`
+              : "打開這一頁就會自動簽到"}
+          </p>
+          {/* 格子畫的是「這一輪連續簽到的進度」，不是最近七天的日曆：第一天就在第一格，
+              斷掉就回到第一格，連滿 SIGNIN_STREAK_CAP 天之後一直停在最後一格。
+              本來是「N 天前／今天」的日曆排法，但那排在講的是哪一天有沒有簽到，跟上面
+              那句「已連續 N 天，明天連上去是 ＋X」問的不是同一件事——使用者要看的是
+              「我走到第幾格了、下一格有多少」，所以改成直接標第幾天。 */}
+          <div className="mt-3 flex gap-1.5">
+            {Array.from({ length: SIGNIN_STREAK_CAP }, (_, i) => {
+              const day = i + 1;
+              // streak 超過上限之後一律停在最後一格（第 8 天起獎勵也不再往上加）。
+              const current = Math.min(streak, SIGNIN_STREAK_CAP);
+              const done = day <= current;
+              const isCurrent = day === current;
+              return (
+                <div key={day} className="flex flex-1 flex-col items-center gap-1">
+                  <span
+                    className={`grid h-8 w-full place-items-center rounded-xl text-[11px] font-semibold tabular-nums ${
+                      done ? "bg-[#6F5ED4] text-white" : "bg-[#F3EFFC] text-[#C7BFE6]"
+                    }`}
+                  >
+                    {done ? "⭐" : ""}
+                  </span>
+                  <span className={`text-[10px] ${isCurrent ? "font-semibold text-[#6F5FD6]" : text.faint}`}>第 {day} 天</span>
+                </div>
+              );
+            })}
+          </div>
+        </CardBody>
+      </Card>
+
 
       <PetShopModal
         open={shopOpen}

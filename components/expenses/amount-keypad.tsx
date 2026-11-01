@@ -1,6 +1,6 @@
 "use client";
 
-import { Field } from "./modal";
+import { Field, RequiredMark } from "./modal";
 import { SelectField } from "./select-field";
 import { gradient } from "./theme";
 import { formatCurrency } from "@/lib/format";
@@ -74,6 +74,7 @@ export function AmountKeypad({
   onExprChange,
   label,
   prefix = "NT$",
+  required = false,
 }: {
   expr: string;
   onExprChange: (expr: string) => void;
@@ -84,6 +85,9 @@ export function AmountKeypad({
   /** 數字前面的單位。預設「NT$」因為絕大多數用途都是金額；輸入數量這種非金額的場合
    *  傳空字串，不然會變成「NT$ 3」份。 */
   prefix?: string;
+  /** 不填（留空＝0）就存不了的才標 *。期初餘額、每月預算這種「0 本身就是一個合理答案」
+   *  的不標——那些欄位沒有「沒填」的狀態。 */
+  required?: boolean;
 }) {
   function pressDigit(d: string) {
     const seg = lastSegment(expr);
@@ -115,7 +119,12 @@ export function AmountKeypad({
 
   return (
     <div>
-      {label && <p className="mb-1 truncate text-xs font-medium text-[#9C94C4]">{label}</p>}
+      {label && (
+        <p className="mb-1 truncate text-xs font-medium text-[#9C94C4]">
+          {label}
+          {required && <RequiredMark />}
+        </p>
+      )}
       {/* 刪除鍵跟金額同一列（靠右）——上面不再另外放一行「金額」小標，那行字旁邊就是
           這個大大的 NT$ 數字，再標一次是多餘的。 */}
       <div className="flex items-center justify-between gap-2">
@@ -168,6 +177,7 @@ export function AmountField({
   active,
   onFocus,
   placeholder = "點這裡用下方鍵盤輸入",
+  required = false,
 }: {
   label: string;
   value: number;
@@ -175,11 +185,13 @@ export function AmountField({
   active: boolean;
   onFocus: () => void;
   placeholder?: string;
+  /** 不填就存不了的話標 *（見 modal.tsx 的 RequiredMark）。 */
+  required?: boolean;
 }) {
   // 跟日期、帳戶那幾欄共用同一顆 SelectField，樣式才會完全一致（含 placeholder 的顏色、
   // 還有「placeholder 是空字串時不要塌成 0 高」這件事）。
   return (
-    <Field label={label}>
+    <Field label={label} required={required}>
       <SelectField value={value ? formatCurrency(value) : undefined} placeholder={placeholder} active={active} onClick={onFocus} className="tabular-nums" />
     </Field>
   );
