@@ -3,16 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/expenses/page-header";
-import { CardSkeleton, DateGroupsSkeleton, KpiCardSkeleton, PageHeaderSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
+import { CardSkeleton, DateGroupsSkeleton, PageHeaderSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
 import { useSkeletonReady, useSkeletonShape } from "@/components/expenses/skeleton-count";
 import { IconButton } from "@/components/expenses/icon-button";
+import { SegmentedControl } from "@/components/expenses/button";
 import { BackLink } from "@/components/expenses/back-link";
 import { Card, CardBody } from "@/components/expenses/card";
-import { DeltaBadge } from "@/components/expenses/delta-badge";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
 import { ICON_PATHS } from "@/components/expenses/icon-paths";
-import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { text } from "@/components/expenses/theme";
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
@@ -26,9 +25,9 @@ import { AccountPickerModal } from "@/components/expenses/account-picker-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { ReconcileModal } from "@/components/expenses/reconcile-modal";
 import { BreakdownToggle, TransactionBreakdown } from "@/components/expenses/transaction-breakdown";
-import { compareDateFilter, compareLabel, dateFilterRange } from "@/lib/expenses/date-filter";
+import { dateFilterRange } from "@/lib/expenses/date-filter";
 import { categoryById, categoryColorClass, categoryPath, type CategoryDTO } from "@/lib/expenses/categories";
-import { totalsForRange, rangeDelta, transactionsInDateRange, transactionDisplayName, type TransactionDTO } from "@/lib/expenses/transactions";
+import { totalsForRange, transactionDisplayName, type TransactionDTO } from "@/lib/expenses/transactions";
 import { inDateRange } from "@/lib/expenses/date-filter";
 import { accountBalance, transactionBalancesByAccount, type AccountDTO } from "@/lib/expenses/accounts";
 import { accountTypeById, type AccountTypeDTO } from "@/lib/expenses/account-types";
@@ -39,7 +38,7 @@ type TxModalState = { mode: "create" } | { mode: "edit"; transaction: Transactio
 
 export function AccountDetailView({ accountId }: { accountId: string }) {
   const router = useRouter();
-  const { filter, compare } = useDateFilter();
+  const { filter } = useDateFilter();
   const showToast = useToast();
   const skeletonReady = useSkeletonReady();
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
@@ -52,6 +51,9 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
   const [reconcileOpen, setReconcileOpen] = useState(false);
   // 換帳戶：點上面那顆下拉欄位開帳戶選擇彈窗，選了直接換到那個帳戶的明細頁。
   const [switchOpen, setSwitchOpen] = useState(false);
+  // 明細只看轉帳——這一頁本來就是「這個戶頭的錢怎麼進出」，要找某一筆轉帳時在混排的
+  // 流水裡用眼睛撈很慢。消費細項要看分類、佔比、趨勢一律去明細頁或報表頁，那邊做得完整。
+  const [transfersOnly, setTransfersOnly] = useState(false);
   // 掛載時算一次固定住——在 render 當中讀時鐘是不純的。
   const [todayISO] = useState(() => {
     const d = new Date();
@@ -211,32 +213,52 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
   // 的結果不會被用到，成本也只是幾個空陣列。
   const range = dateFilterRange(filter);
   const accountTx = account ? transactions.filter((t) => t.accountId === account.id) : [];
-  const { totalIncome, totalExpense, balance, expenseTx, incomeTx } = totalsForRange(accountTx, categories, range);
+  // 只拿這段期間的收入／支出交易來組明細，總額本身不用——「這段期間進出多少」改成
+  // 從明細逐筆加總（含轉帳），見 periodIn／periodOut。
+  const { expenseTx, incomeTx } = totalsForRange(accountTx, categories, range);
   const accountTransfers = account ? transfersForAccount(transfers, account.id).filter((t) => inDateRange(t.date, range)) : [];
 
   // 「明細」要把一般交易跟轉帳混在同一個依日期分組的列表裡——轉帳不是支出也不是收入，
-  // 不算進上面的 KPI 統計，但使用者翻帳戶明細時仍然要看得到錢是什麼時候被轉走/轉進來的。
+  // 但使用者翻帳戶明細時仍然要看得到錢是什麼時候被轉走/轉進來的。
   type DetailEntry = { date: string } & ({ kind: "tx"; tx: TransactionDTO } | { kind: "transfer"; transfer: TransferDTO });
   const entries: DetailEntry[] = [
     ...[...expenseTx, ...incomeTx].map((tx): DetailEntry => ({ kind: "tx", date: tx.date, tx })),
     ...accountTransfers.map((transfer): DetailEntry => ({ kind: "transfer", date: transfer.date, transfer })),
   ].sort((a, b) => (a.date < b.date ? 1 : -1));
+  const visibleEntries = transfersOnly ? entries.filter((e) => e.kind === "transfer") : entries;
   const groups = new Map<string, DetailEntry[]>();
-  for (const e of entries) {
+  for (const e of visibleEntries) {
     const list = groups.get(e.date) ?? [];
     list.push(e);
     groups.set(e.date, list);
   }
-  /** 某一天對這個帳戶的淨變動——正負號跟底下每一列顯示的一致：收入／轉入是進來的錢，
-   *  支出／轉出是出去的錢。這裡刻意不套資產/負債的正負號規則（accounts.ts 的 signedDelta
-   *  會把負債帳戶的支出算成「欠款增加」），因為列表上那幾列顯示的就是「錢進來還是出去」，
-   *  標頭的小計要跟底下加得起來才有意義。 */
-  function dayNet(items: DetailEntry[]): number {
-    return items.reduce((sum, e) => {
-      if (e.kind === "transfer") return sum + (e.transfer.toAccountId === account?.id ? e.transfer.amount : -e.transfer.amount);
-      return sum + (categoryById(categories, e.tx.categoryId)?.kind === "收入" ? e.tx.amount : -e.tx.amount);
-    }, 0);
+  /** 一筆明細對這個帳戶的增減——正號是進來的錢（收入、轉入），負號是出去的（支出、轉出）。
+   *
+   *  刻意不套資產/負債的正負號規則（accounts.ts 的 signedDelta 會把負債帳戶的支出算成
+   *  「欠款增加」）：列表上每一列顯示的就是「錢進來還是出去」，上面的小計要跟底下加得
+   *  起來才有意義。 */
+  function entryDelta(e: DetailEntry): number {
+    if (e.kind === "transfer") return e.transfer.toAccountId === account?.id ? e.transfer.amount : -e.transfer.amount;
+    return categoryById(categories, e.tx.categoryId)?.kind === "收入" ? e.tx.amount : -e.tx.amount;
   }
+
+  /** 某一天的淨變動。 */
+  function dayNet(items: DetailEntry[]): number {
+    return items.reduce((sum, e) => sum + entryDelta(e), 0);
+  }
+
+  // 這段期間這個帳戶「進了多少、出了多少」——含轉帳，所以跟底下的明細加得起來。
+  // 本來那三張 KPI 卡（收入／支出／結餘）只算交易、不含轉帳，數字跟明細對不上；而且
+  // 「這個帳戶這段期間收入多少」本身也不是會拿來做決定的數字，分類佔比、趨勢那些報表頁
+  // 做得完整得多。收斂成餘額卡裡的一行。
+  const periodIn = entries.reduce((sum, e) => {
+    const v = entryDelta(e);
+    return v > 0 ? sum + v : sum;
+  }, 0);
+  const periodOut = entries.reduce((sum, e) => {
+    const v = entryDelta(e);
+    return v < 0 ? sum - v : sum;
+  }, 0);
 
   const detailSkeletonShape = useSkeletonShape(
     "cpx-tools:expenses-skeleton:account-detail",
@@ -249,9 +271,9 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
   if (!skeletonReady) return null;
 
   if (!ready) {
-    // 骨架照著載入完成後的版面排：標題＋鉛筆、換帳戶欄位、餘額卡（含對帳鈕）、
-    // 日期膠囊、比較基準、三張 KPI、明細卡。這一頁本來只寫一行「載入中…」，資料回來
-    // 整頁一次長出來，畫面會從一行字暴衝成滿滿一頁。
+    // 骨架照著載入完成後的版面排：標題＋日期＋鉛筆、換帳戶欄位、餘額卡（含「這段期間
+    // 進出多少」那一行跟對帳鈕）、明細卡。這一頁本來只寫一行「載入中…」，資料回來整頁
+    // 一次長出來，畫面會從一行字暴衝成滿滿一頁。
     // 這裡沒有返回鍵——標題右邊的返回鍵已經移除了，骨架留著的話載入完成那一刻會多消失
     // 一顆東西。要回總表走底部導覽列的「資產」。
     return (
@@ -264,20 +286,23 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
         <CardSkeleton className="py-3.5">
           <div className="flex items-center justify-between">
             <div>
-              <SkeletonBar width={56} height={12} />
-              <SkeletonBar width={148} height={24} className="mt-2" />
+              <SkeletonBar width={56} height={16} />
+              <SkeletonBar width={148} height={28} className="mt-0.5" />
             </div>
             <div className="size-11 shrink-0 animate-pulse rounded-2xl bg-[#EDE6FB]" />
           </div>
+          {/* 「這段期間 進 ＋◯ 出 －◯」那一行。 */}
+          <div className="mt-2">
+            <SkeletonBar width={220} height={16} />
+          </div>
           <div className="mt-3 h-[34px] animate-pulse rounded-xl bg-[#EDE6FB]" />
         </CardSkeleton>
-        <KpiCardSkeleton />
-        <div className="grid grid-cols-2 gap-3">
-          <KpiCardSkeleton />
-          <KpiCardSkeleton />
-        </div>
         <CardSkeleton>
-          <SkeletonBar width={48} height={14} />
+          {/* 明細的標題列右邊有「全部／只看轉帳」那組切換（h-9 ＝ 36px）。 */}
+          <div className="flex items-center justify-between gap-2">
+            <SkeletonBar width={48} height={20} />
+            <div className="h-9 w-[124px] animate-pulse rounded-full bg-[#EDE6FB]" />
+          </div>
           <div className="mt-3">
             <DateGroupsSkeleton shape={detailSkeletonShape} />
           </div>
@@ -296,15 +321,6 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
   }
 
   const type = accountTypeById(accountTypes, account.accountTypeId);
-  const hasPriorData = (r: ReturnType<typeof dateFilterRange>) => transactionsInDateRange(accountTx, r).length > 0;
-
-  // 「跟誰比」由使用者選的比較基準決定，徽章後綴也跟著換（vs 上期／vs 去年同期…）。
-  const baseline = compareDateFilter(filter, compare);
-  const deltaSuffix = compareLabel(filter, compare);
-  const incomeDelta = rangeDelta((r) => totalsForRange(accountTx, categories, r).totalIncome, filter, hasPriorData, baseline);
-  const expenseDelta = rangeDelta((r) => totalsForRange(accountTx, categories, r).totalExpense, filter, hasPriorData, baseline);
-  const balanceDelta = rangeDelta((r) => totalsForRange(accountTx, categories, r).balance, filter, hasPriorData, baseline);
-
   const kind = accountTypeById(accountTypes, account.accountTypeId)?.kind ?? "asset";
   const currentBalance = accountBalance(account, accountTypes, transactions, categories, transfers);
   // 每一筆交易／轉帳「發生後」這個帳戶變成多少——跟上面的日期篩選器無關，一律用全部
@@ -416,6 +432,13 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
           </div>
           {/* 餘額是從交易即時加總出來的，漏記一筆就會跟實際差一輩子——對帳讓使用者輸入
               真正的餘額，差額補成一筆調整交易，不用回頭翻整份紀錄找是哪裡少記。 */}
+          {/* 這段期間進出多少——一行講完，取代原本三張 KPI 卡。說「進／出」而不是
+              「收入／支出」：轉帳也算在裡面，它既不是收入也不是支出，但確實是錢進出
+              這個戶頭。 */}
+          <p className={`mt-2 ${text.muted}`}>
+            這段期間 進 <span className="font-medium tabular-nums text-[#2FAE82]">＋{formatCurrency(periodIn)}</span> 出{" "}
+            <span className="font-medium tabular-nums text-[#D1517E]">－{formatCurrency(periodOut)}</span>
+          </p>
           <button
             type="button"
             onClick={() => setReconcileOpen(true)}
@@ -438,36 +461,26 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
         onSave={handleReconcile}
       />
 
-      <KpiCard
-        label="收入"
-        value={formatCurrency(totalIncome)}
-        valueColor="#4A3B7C"
-        delta={incomeDelta && <DeltaBadge delta={incomeDelta.delta} pct={incomeDelta.pct} goodWhenUp suffix={deltaSuffix} className="shrink-0" />}
-      />
-      {/* 兩欄並排的窄卡：小標跟漲跌幅改成上下兩行（stackHeader），不然「這段期間支出」
-          這種長標題會跟徽章擠在同一行被壓到斷行。 */}
-      <div className="grid grid-cols-2 gap-3">
-        <KpiCard
-          label="支出"
-          stackHeader
-          value={formatCurrency(totalExpense)}
-          valueColor="#4A3B7C"
-          delta={expenseDelta && <DeltaBadge delta={expenseDelta.delta} pct={expenseDelta.pct} goodWhenUp={false} suffix={deltaSuffix} className="shrink-0" />}
-        />
-        <KpiCard
-          label="結餘"
-          stackHeader
-          value={`${balance >= 0 ? "" : "－"}${formatCurrency(Math.abs(balance))}`}
-          valueColor={balance >= 0 ? "#4A3B7C" : KPI_NEGATIVE}
-          delta={balanceDelta && <DeltaBadge delta={balanceDelta.delta} pct={balanceDelta.pct} goodWhenUp suffix={deltaSuffix} className="shrink-0" />}
-        />
-      </div>
-
       <Card>
         <CardBody>
-          <p className={text.sectionHeading}>明細</p>
-          {entries.length === 0 ? (
-            <p className={`mt-3 ${text.muted}`}>這段期間這個帳戶還沒有掛任何交易或轉帳。</p>
+          {/* 這一頁的重點就是明細，所以篩選直接放在標題旁邊——轉帳混在支出收入裡不好找，
+              而且這一頁本來就是最常拿來核對轉帳的地方。 */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className={text.sectionHeading}>明細</p>
+            <SegmentedControl
+              value={transfersOnly ? "transfer" : "all"}
+              onChange={(v) => setTransfersOnly(v === "transfer")}
+              activeTone="solid"
+              options={[
+                { value: "all", label: "全部" },
+                { value: "transfer", label: "只看轉帳" },
+              ]}
+            />
+          </div>
+          {visibleEntries.length === 0 ? (
+            <p className={`mt-3 ${text.muted}`}>
+              {transfersOnly ? "這段期間這個帳戶沒有轉帳紀錄。" : "這段期間這個帳戶還沒有掛任何交易或轉帳。"}
+            </p>
           ) : (
             <div className="mt-3 flex flex-col gap-4">
               {[...groups.entries()].map(([date, items]) => (
