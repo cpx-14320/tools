@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
 import { Card, CardBody } from "@/components/expenses/card";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
@@ -34,18 +34,8 @@ import {
 } from "@/lib/expenses/transactions";
 import { compareDateFilter, compareLabel, dateFilterRange } from "@/lib/expenses/date-filter";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
-import {
-  DatePillSkeleton,
-  DonutCardSkeleton,
-  IconButtonSkeleton,
-  KpiCardSkeleton,
-  SummaryCardSkeleton,
-  TrendCardSkeleton,
-  YearCompareTableSkeleton,
-} from "@/components/expenses/skeleton";
 import { YearCompareTable, type YearColumn } from "@/components/expenses/year-compare-table";
 import { YearPickerModal } from "@/components/expenses/year-picker-modal";
-import { useSkeletonShape, useSkeletonVisible } from "@/components/expenses/skeleton-count";
 import { formatCurrency, formatDate } from "@/lib/format";
 
 type ReportKind = "支出" | "收入" | "結餘" | "資產";
@@ -79,15 +69,25 @@ const OTHER_COLOR = "#B3ABD4";
 const DETAIL_LIST = "mt-4 flex flex-col gap-3 border-t border-[#F2EEFA] pt-4";
 const TOP_N = PREVIEW_COUNT;
 
-export function ReportsView() {
+/** 報表頁。
+ *
+ *  五份資料都是 page.tsx 在伺服器上讀好傳進來的，所以沒有「載入中」這個狀態，也不需要
+ *  骨架。這一頁純粹是讀——所有數字都是從這五份算出來的，沒有任何會改到資料的動作，
+ *  所以五份都直接用 prop，不放進 state。 */
+export function ReportsView({
+  categories,
+  transactions,
+  accounts,
+  accountTypes,
+  transfers,
+}: {
+  categories: CategoryDTO[];
+  transactions: TransactionDTO[];
+  accounts: AccountDTO[];
+  accountTypes: AccountTypeDTO[];
+  transfers: TransferDTO[];
+}) {
   const { filter, compare } = useDateFilter();
-  const [categories, setCategories] = useState<CategoryDTO[]>([]);
-  const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
-  const [accounts, setAccounts] = useState<AccountDTO[]>([]);
-  const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
-  const [transfers, setTransfers] = useState<TransferDTO[]>([]);
-  const [ready, setReady] = useState(false);
-  const showSkeleton = useSkeletonVisible(!ready);
   const [kind, setKind] = useState<ReportKind>("支出");
   const [expanded, setExpanded] = useState(false);
   const [granularity, setGranularity] = useState<TrendGranularity>("month");
@@ -106,40 +106,6 @@ export function ReportsView() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      fetch("/api/expenses/categories").then((res) => res.json()),
-      fetch("/api/expenses/transactions").then((res) => res.json()),
-      fetch("/api/expenses/accounts").then((res) => res.json()),
-      fetch("/api/expenses/account-types").then((res) => res.json()),
-      fetch("/api/expenses/transfers").then((res) => res.json()),
-    ])
-      .then(
-        ([categoriesData, txData, accountsData, typesData, transfersData]: [
-          { categories?: CategoryDTO[] },
-          { transactions?: TransactionDTO[] },
-          { accounts?: AccountDTO[] },
-          { accountTypes?: AccountTypeDTO[] },
-          { transfers?: TransferDTO[] },
-        ]) => {
-          if (cancelled) return;
-          setCategories(categoriesData.categories ?? []);
-          setTransactions(txData.transactions ?? []);
-          setAccounts(accountsData.accounts ?? []);
-          setAccountTypes(typesData.accountTypes ?? []);
-          setTransfers(transfersData.transfers ?? []);
-          setReady(true);
-        },
-      )
-      .catch(() => {
-        if (!cancelled) setReady(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // 切換頻率時，循環次數選項也會跟著換（日常見是 7/14/30，月是 3/6/12/24），原本選的
   // 次數如果在新的選項裡找不到，改用那組的第二個常用值當預設，不留一個已經消失的數字。
@@ -450,83 +416,8 @@ export function ReportsView() {
       .sort((a, b) => b.amount - a.amount);
   })();
 
-  // 載入中畫骨架，「明細」那張卡的形狀用上次記住的實際數量（見 skeleton-count.ts）。
-  //
-  // 記的是 [圖例幾列, 底下清單幾列] 兩個數字，不是單一個列數：這兩段的數量本來就不一樣
-  // （圖例只列前 TOP_N 名、清單是每個分類／帳戶一列），資產分頁更是兩件不同的東西
-  // （有幾種資產類型 vs 有幾個資產帳戶）。而且四個分頁的內容差很多，各記各的——用同一把
-  // 鑰匙的話，看完支出（六列）切到收入（一列）就會先閃六列骨架。
-  const detailShapeKey = `cpx-tools:expenses-skeleton:reports:${kind}`;
-  const actualDetailShape = !ready
-    ? undefined
-    : kind === "資產"
-      ? [assetTypeBreakdown.length, assetAccountRows.length]
-      : kind === "結餘"
-        ? // 結餘的明細卡在沒有收支資料時整張不出現，所以第二個數字當成「這張卡在不在」。
-          [netDonutData.length, netDonutData.length > 0 ? 1 : 0]
-        : [Math.min(donutData.length, TOP_N), Math.min(breakdown.length, TOP_N)];
-  const detailShape = useSkeletonShape(
-    detailShapeKey,
-    kind === "資產" ? [3, 3] : kind === "結餘" ? [2, 1] : [TOP_N, TOP_N],
-    actualDetailShape,
-  );
-  const [legendSkeletonRows = 0, listSkeletonRows = 0] = detailShape;
-
   const selectedIncomePoint = kind === "結餘" ? (incomeTrendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
   const selectedExpensePoint = kind === "結餘" ? (expenseTrendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
-
-  // 骨架等掛載後才畫：列數只有瀏覽器讀得到，伺服器端畫出來的一定是預設值，
-  // 不擋的話會先閃一次錯的列數再換成記住的（見 useSkeletonVisible）。
-  if (!ready) {
-    if (!showSkeleton) return null;
-    // 骨架照著載入完成後的版面排：分頁切換、日期篩選器、期間總額、明細（圓餅＋清單）、
-    // 趨勢。前兩排是固定的控制項，直接畫出它們的形狀，資料回來時只有數字長出來。
-    return (
-      <div className="flex flex-col gap-4">
-        {/* 標題列右邊掛日期膠囊＋日曆圖示，下一列是「vs 上期」，再往下才是四個分頁
-            。順序跟真畫面一致，不然資料回來那一刻幾排會對調；寬高也要跟真的一樣
-            （分頁現在是跟著文字走的內容寬度，不是撐滿整列），不然底下整塊會跳一下。 */}
-        <PageHeader
-          title="報表"
-          flush
-          actions={
-            <div className="flex items-center gap-2">
-              <DatePillSkeleton />
-              <IconButtonSkeleton />
-            </div>
-          }
-        />
-        <div className="flex items-center justify-between gap-2">
-          <div className="h-9 w-[224px] animate-pulse rounded-full bg-[#EDE6FB]" />
-          <div className="h-9 w-[96px] animate-pulse rounded-full bg-[#EDE6FB]" />
-        </div>
-        {kind === "資產" ? (
-          // 淨資產一張、資產／負債兩張並排——間距是 gap-3 包在一起的，跟外層的 gap-4
-          // 不一樣，分開放會多撐出 4px。
-          <div className="flex flex-col gap-3">
-            <KpiCardSkeleton />
-            <div className="grid grid-cols-2 gap-3">
-              <KpiCardSkeleton />
-              <KpiCardSkeleton />
-            </div>
-          </div>
-        ) : (
-          // 不傳 delta：比較基準預設是「不比較」（見 defaultCompareSetting），所以載入
-          // 完成後那張卡本來就沒有漲跌徽章。骨架先畫一條、資料回來又不見，等於憑空閃
-          // 一下還讓卡片縮一截。要比較是使用者自己去按的，那時候已經載完了。
-          <SummaryCardSkeleton />
-        )}
-        {kind === "結餘" ? (
-          // 沒有收支資料時整張明細卡不出現，骨架也不畫（見 actualDetailShape 的說明）。
-          listSkeletonRows > 0 && <DonutCardSkeleton legendRows={legendSkeletonRows} variant="line" />
-        ) : (
-          <DonutCardSkeleton legendRows={legendSkeletonRows} listRows={listSkeletonRows} />
-        )}
-        <TrendCardSkeleton />
-        <YearCompareTableSkeleton withDelta={compareYears.length > 0} />
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col gap-4">

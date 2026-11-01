@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { GroupedCardsSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonShape, useSkeletonVisible } from "@/components/expenses/skeleton-count";
+import { useState } from "react";
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
@@ -22,16 +20,25 @@ import { topLevelCategories, subCategoriesOf, categoryColorClass, type CategoryD
  *  batchTarget／CategoryBatchModal，兩種彈窗各自管各自的狀態。 */
 type BatchTarget = { parentId?: string };
 
-export function CategoriesView() {
-  const [categories, setCategories] = useState<CategoryDTO[]>([]);
-  // 編輯分類時可以指定「預設帳戶」，所以這一頁要知道有哪些帳戶；帳戶選擇彈窗還要靠
-  // 帳戶類型分資產／負債兩組、取得類型圖示。
-  const [accounts, setAccounts] = useState<AccountDTO[]>([]);
-  const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
+/** 收支分類頁。資料都是 page.tsx 在伺服器上讀好傳進來的，所以沒有「載入中」這個狀態，
+ *  也不需要骨架：第一次畫出來就是有資料的畫面。 */
+export function CategoriesView({
+  initialCategories,
+  /** 每個分類有幾筆交易。只拿來顯示「N 筆」跟刪除前的提示，這一頁不會改交易，所以
+   *  不用放進 state。 */
+  counts,
+  /** 編輯分類時可以指定「預設帳戶」，所以這一頁要知道有哪些帳戶；帳戶選擇彈窗還要靠
+   *  帳戶類型分資產／負債兩組、取得類型圖示。兩份都是別的頁面在改的，這一頁只讀。 */
+  accounts,
+  accountTypes,
+}: {
+  initialCategories: CategoryDTO[];
+  counts: Record<string, number>;
+  accounts: AccountDTO[];
+  accountTypes: AccountTypeDTO[];
+}) {
+  const [categories, setCategories] = useState<CategoryDTO[]>(initialCategories);
   const showToast = useToast();
-  const [counts, setCounts] = useState<Record<string, number>>({});
-  const [ready, setReady] = useState(false);
-  const showSkeleton = useSkeletonVisible(!ready);
   const [modal, setModal] = useState<CategoryDTO | null>(null);
   const [batchTarget, setBatchTarget] = useState<BatchTarget | null>(null);
   const [kind, setKind] = useState<CategoryKind>("支出");
@@ -39,42 +46,6 @@ export function CategoriesView() {
   // 排序模式：每一列右邊長出 ↑↓。跟多選模式互斥——兩個都開的話一列右邊會擠進打勾、
   // 筆數跟兩顆箭頭，而且點一下到底是要選取還是要移動也說不清楚。
   const [sorting, setSorting] = useState(false);
-  // 載入中畫骨架。這一頁是「一個主分類一張卡、底下掛它的子項目」，所以記的是形狀
-  // （每張卡有幾個子項目）而不是單一列數；支出跟收入的分類數差很多，兩個分頁各記各的。
-  const skeletonShape = useSkeletonShape(
-    `cpx-tools:expenses-skeleton:categories:${kind}`,
-    [3, 2, 0, 0],
-    ready ? topLevelCategories(categories, kind).map((c) => subCategoriesOf(categories, c.id).length) : undefined,
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      fetch("/api/expenses/categories").then((res) => res.json()),
-      fetch("/api/expenses/transactions/counts").then((res) => res.json()),
-      fetch("/api/expenses/accounts").then((res) => res.json()),
-      fetch("/api/expenses/account-types").then((res) => res.json()),
-    ])
-      .then(([categoriesData, countsData, accountsData, accountTypesData]: [
-        { categories?: CategoryDTO[] },
-        { counts?: Record<string, number> },
-        { accounts?: AccountDTO[] },
-        { accountTypes?: AccountTypeDTO[] },
-      ]) => {
-        if (cancelled) return;
-        setCategories(categoriesData.categories ?? []);
-        setCounts(countsData.counts ?? {});
-        setAccounts(accountsData.accounts ?? []);
-        setAccountTypes(accountTypesData.accountTypes ?? []);
-        setReady(true);
-      })
-      .catch(() => {
-        if (!cancelled) setReady(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   async function handleSave(
     draft: Pick<CategoryModalDraft, "name"> &
@@ -255,7 +226,7 @@ export function CategoriesView() {
       {/* 新增搬到右下角的浮動按鈕（跟首頁新增交易、帳戶類型頁同一招），標題列空出來。 */}
       {/* 等資料回來才出現：它是 fixed、不佔版面，所以不需要骨架，但資料還沒回來就先浮在
           一片灰條上面很突兀（跟首頁、資產總表同一個處理）。 */}
-      {ready && <FloatingAddButton onClick={() => setBatchTarget({})} label="新增分類" />}
+      <FloatingAddButton onClick={() => setBatchTarget({})} label="新增分類" />
 
       <CategoryModal
         key={modal ? modal.id : "edit-closed"}
@@ -340,10 +311,7 @@ export function CategoriesView() {
         />
       )}
 
-      {!ready && showSkeleton ? (
-        // 多選／排序模式下每張卡最後那一列「＋ 新增子分類」不顯示，骨架也跟著不畫。
-        <GroupedCardsSkeleton shape={skeletonShape} footer={!selection.selecting && !sorting} />
-      ) : parents.length === 0 ? (
+      {parents.length === 0 ? (
         <p className={text.faint}>還沒有任何{kind}分類，點右下角的＋建立第一個</p>
       ) : (
         <div className="flex flex-col gap-3">

@@ -18,7 +18,8 @@ const OPTIONS: { value: CompareMode; label: string; hint: string }[] = [
 const YEAR_SPAN = 6;
 
 /** 收入／支出／結餘旁邊那個漲跌幅要「跟誰比」。點一下開彈窗選，選完記在共用的
- *  DateFilterProvider 裡（會存進 localStorage），總覽、消費紀錄、帳戶明細三頁一致。
+ *  DateFilterProvider 裡，總覽、消費紀錄、帳戶明細三頁一致。只在這次造訪期間共用，
+ *  重新整理就回到「不比較」——理由見 date-filter-context.tsx。
  *
  *  跟日期篩選器分開是刻意的：切到別的月份時比較基準不該被重設，不然每看一個月都要
  *  重選一次「跟去年同期比」。 */

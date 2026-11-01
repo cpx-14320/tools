@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FaIcon } from "@/components/expenses/fa-icon";
-import { DateGroupsSkeleton, PageHeaderSkeleton, SkeletonBar, SummaryCardSkeleton } from "@/components/expenses/skeleton";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
-import { useSkeletonShape, useSkeletonVisible } from "@/components/expenses/skeleton-count";
 import { useSearchParams } from "next/navigation";
 import { SegmentedControl } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
@@ -21,8 +19,7 @@ import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { BreakdownToggle, TransactionBreakdown } from "@/components/expenses/transaction-breakdown";
-import { dateFilterRange, defaultDateFilter } from "@/lib/expenses/date-filter";
-import { isValidYearMonth } from "@/lib/expenses/budgets";
+import { dateFilterRange } from "@/lib/expenses/date-filter";
 import { Modal, ModalFooter, fieldInputClass } from "@/components/expenses/modal";
 import {
   categoryById,
@@ -50,25 +47,34 @@ function matchesQuery(t: TransactionDTO, categories: CategoryDTO[], query: strin
   return haystack.includes(q);
 }
 
-export function TransactionsView() {
-  const { filter, setFilter } = useDateFilter();
+/** 消費紀錄頁。資料都是 page.tsx 在伺服器上讀好傳進來的，所以沒有「載入中」這個狀態，
+ *  也不需要骨架。 */
+export function TransactionsView({
+  initialCategories,
+  initialTransactions,
+  /** 這三份只用來顯示帳戶名稱／圖示跟混進轉帳列，這一頁不會改它們。 */
+  accounts,
+  accountTypes,
+  transfers,
+}: {
+  initialCategories: CategoryDTO[];
+  initialTransactions: TransactionDTO[];
+  accounts: AccountDTO[];
+  accountTypes: AccountTypeDTO[];
+  transfers: TransferDTO[];
+}) {
+  const { filter } = useDateFilter();
   // 首頁那幾個區塊的「查看全部」會帶 ?kind=收入 過來、點某一類的列會再多帶
   // &categoryId=xxx，直接幫使用者切到對的分頁並且篩好分類，不用進來之後再點一次。
   const searchParams = useSearchParams();
   const initialKind: CategoryKind = searchParams.get("kind") === "收入" ? "收入" : "支出";
   const initialCategoryId = searchParams.get("categoryId") ?? "";
-  // 預算卡片是以月為單位的，點進來時會帶 &month=YYYY-MM，把共用的日期篩選器切到同一個月，
-  // 不然首頁顯示的是 10 月預算、進來卻還停在篩選器上次留著的區間，兩邊數字對不起來。
-  const requestedMonth = searchParams.get("month") ?? "";
+  // ?month=YYYY-MM 不在這裡處理——它要在伺服器算繪的那一輪就生效，所以讀的地方是
+  // DateFilterProvider 的 useState 初始值（見 date-filter-context.tsx）。
   const showToast = useToast();
-  const [categories, setCategories] = useState<CategoryDTO[]>([]);
-  const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
-  const [accounts, setAccounts] = useState<AccountDTO[]>([]);
-  const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
-  const [transfers, setTransfers] = useState<TransferDTO[]>([]);
-  const [ready, setReady] = useState(false);
-  const showSkeleton = useSkeletonVisible(!ready);
-  // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
+  // 編輯交易的彈窗裡可以順手建一個新分類（onCategoriesChange），所以分類要是 state。
+  const [categories, setCategories] = useState<CategoryDTO[]>(initialCategories);
+  const [transactions, setTransactions] = useState<TransactionDTO[]>(initialTransactions);
   const [query, setQuery] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
   const [kind, setKind] = useState<CategoryKind>(initialKind);
@@ -88,48 +94,6 @@ export function TransactionsView() {
   const [addOpen, setAddOpen] = useState(false);
   const isSearching = query.trim().length > 0;
   const range = dateFilterRange(filter);
-
-  // 只在掛載時套用一次網址帶來的月份；之後使用者自己在篩選器上改的就不要再被蓋回去。
-  useEffect(() => {
-    if (!isValidYearMonth(requestedMonth)) return;
-    const [y, m] = requestedMonth.split("-").map(Number);
-    setFilter({ ...defaultDateFilter(), mode: "month", year: y, month: m });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      fetch("/api/expenses/categories").then((res) => res.json()),
-      fetch("/api/expenses/transactions").then((res) => res.json()),
-      fetch("/api/expenses/accounts").then((res) => res.json()),
-      fetch("/api/expenses/account-types").then((res) => res.json()),
-      fetch("/api/expenses/transfers").then((res) => res.json()),
-    ])
-      .then(
-        ([categoriesData, txData, accountsData, accountTypesData, transfersData]: [
-          { categories?: CategoryDTO[] },
-          { transactions?: TransactionDTO[] },
-          { accounts?: AccountDTO[] },
-          { accountTypes?: AccountTypeDTO[] },
-          { transfers?: TransferDTO[] },
-        ]) => {
-          if (cancelled) return;
-          setCategories(categoriesData.categories ?? []);
-          setTransactions(txData.transactions ?? []);
-          setAccounts(accountsData.accounts ?? []);
-          setAccountTypes(accountTypesData.accountTypes ?? []);
-          setTransfers(transfersData.transfers ?? []);
-          setReady(true);
-        },
-      )
-      .catch(() => {
-        if (!cancelled) setReady(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const inKind = (t: TransactionDTO) => (categoryById(categories, t.categoryId)?.kind ?? "支出") === kind;
   const totals = totalsForRange(transactions, categories, range);
@@ -172,14 +136,6 @@ export function TransactionsView() {
     list.push(t);
     groups.set(t.date, list);
   }
-
-  // 骨架的形狀＝每一組（每一天）各有幾列，而不是總筆數：只記總數還原不出組數，
-  // 畫成一張大卡就會少掉日期小標跟組間距。支出／收入的筆數差很多，兩個分頁各記各的。
-  const skeletonShape = useSkeletonShape(
-    `cpx-tools:expenses-skeleton:transactions:${kind}`,
-    [3, 2, 4],
-    ready ? [...groups.values()].map((items) => items.length) : undefined,
-  );
 
   function toggleExpanded(id: string) {
     setExpandedIds((set) => {
@@ -244,35 +200,6 @@ export function TransactionsView() {
     showToast(`已刪除 ${selection.selectedIds.size} 筆`);
     setDeleteConfirm(null);
     selection.exit();
-  }
-
-  // 骨架等掛載後才畫：形狀只有瀏覽器讀得到，伺服器端畫出來的一定是預設值，不擋的話
-  // 會先閃一次錯的形狀再換成記住的（見 useSkeletonVisible）。
-  if (!ready) {
-    if (!showSkeleton) return null;
-    // 整頁都畫骨架，不是只畫清單：標題列、日期膠囊、兩顆圖示、支出／收入、選取、搜尋列
-    // 本來都是「資料還沒回來就先長出來」的，結果載入時上半頁是完整的控制項、下半頁才是
-    // 灰條，看起來像壞掉一半。尺寸照真的元件抓，資料回來才不會整塊跳。
-    return (
-      <div className="flex flex-col gap-4">
-        <PageHeaderSkeleton icons={2} flush />
-        <div className="flex items-center gap-2">
-          {/* 支出／收入那組膠囊：容器 p-1 ＋ 兩格 px-3.5 py-1.5 text-xs ≈ 36px 高。 */}
-          <div className="h-9 w-[124px] animate-pulse rounded-full bg-[#EDE6FB]" />
-          <div className="flex min-w-0 flex-1 items-center justify-end">
-            <div className="h-9 w-[60px] animate-pulse rounded-full bg-[#EDE6FB]" />
-          </div>
-        </div>
-        {/* 搜尋欄：跟日期膠囊、圖示鈕同一套「真外框＋灰內容」——整條塗成灰的話，
-            這一頁上半部只有它是實心灰塊。 */}
-        <div className="flex h-[42px] items-center gap-2 rounded-full border border-[#ECE4FA] bg-white px-4">
-          <span className="size-3.5 shrink-0 animate-pulse rounded-full bg-[#EDE6FB]" />
-          <SkeletonBar width={120} height={14} />
-        </div>
-        {skeletonShape.length > 0 && <SummaryCardSkeleton />}
-        <DateGroupsSkeleton shape={skeletonShape} />
-      </div>
-    );
   }
 
   return (

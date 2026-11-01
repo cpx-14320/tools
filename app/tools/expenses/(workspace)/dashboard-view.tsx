@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { MonthFilterPicker } from "@/components/expenses/date-filter-picker";
 import { EmptyListCard, ListCard, ListRow } from "@/components/expenses/list-row";
@@ -8,8 +8,6 @@ import { Card, CardBody } from "@/components/expenses/card";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { HiddenAmountsToggle, useHiddenAmounts } from "@/components/expenses/hidden-amounts";
-import { CardSkeleton, DatePillSkeleton, GroupedSectionSkeleton, SectionSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
-import { useSkeletonCount, useSkeletonShape, useSkeletonVisible } from "@/components/expenses/skeleton-count";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { text } from "@/components/expenses/theme";
@@ -61,21 +59,33 @@ function HeroShell({ children, overlay }: { children: ReactNode; overlay: ReactN
 // 分類一多也不會把首頁拉得又臭又長，完整清單一律用「查看完整報表」導去報表頁看。
 const SUMMARY_LIMIT = PREVIEW_COUNT;
 
-export function DashboardView() {
+/** 首頁。資料都是 page.tsx 在伺服器上讀好傳進來的，所以沒有「載入中」這個狀態，也不
+ *  需要骨架。 */
+export function DashboardView({
+  initialCategories,
+  initialTransactions,
+  /** 這四份只用來算餘額、找帳戶名稱、算預算用掉多少，首頁不會改它們。 */
+  accounts,
+  accountTypes,
+  transfers,
+  budgetRules,
+}: {
+  initialCategories: CategoryDTO[];
+  initialTransactions: TransactionDTO[];
+  accounts: AccountDTO[];
+  accountTypes: AccountTypeDTO[];
+  transfers: TransferDTO[];
+  budgetRules: BudgetRuleDTO[];
+}) {
   // 首頁的期間自己拿著，不接共用的 DateFilterContext——其他頁（報表、消費紀錄、帳戶
   // 明細）仍然共用一個篩選器，但首頁刻意獨立：它問的是「我這個月花得怎麼樣」，去報表頁
   // 翻到 2025/03 或切成「全部」之後回首頁，首頁該還是停在本月。而且永遠是「月」模式
   // （見 MonthFilterPicker），不會出現「全部期間」。
   const [filter, setFilter] = useState(defaultDateFilter);
   const showToast = useToast();
-  const [categories, setCategories] = useState<CategoryDTO[]>([]);
-  const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
-  const [accounts, setAccounts] = useState<AccountDTO[]>([]);
-  const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
-  const [transfers, setTransfers] = useState<TransferDTO[]>([]);
-  const [budgetRules, setBudgetRules] = useState<BudgetRuleDTO[]>([]);
-  const [ready, setReady] = useState(false);
-  const showSkeleton = useSkeletonVisible(!ready);
+  // 新增交易的彈窗裡可以順手建一個新分類（onCategoriesChange），所以分類要是 state。
+  const [categories, setCategories] = useState<CategoryDTO[]>(initialCategories);
+  const [transactions, setTransactions] = useState<TransactionDTO[]>(initialTransactions);
   const [addOpen, setAddOpen] = useState(false);
   // 兩張長清單各自的「展開／收合」，預設都是收起來的（見 ExpandToggle）。
   const [expenseRowsExpanded, setExpenseRowsExpanded] = useState(false);
@@ -92,43 +102,6 @@ export function DashboardView() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      fetch("/api/expenses/categories").then((res) => res.json()),
-      fetch("/api/expenses/transactions").then((res) => res.json()),
-      fetch("/api/expenses/accounts").then((res) => res.json()),
-      fetch("/api/expenses/account-types").then((res) => res.json()),
-      fetch("/api/expenses/transfers").then((res) => res.json()),
-      fetch("/api/expenses/budgets").then((res) => res.json()),
-    ])
-      .then(
-        ([categoriesData, txData, accountsData, accountTypesData, transfersData, budgetsData]: [
-          { categories?: CategoryDTO[] },
-          { transactions?: TransactionDTO[] },
-          { accounts?: AccountDTO[] },
-          { accountTypes?: AccountTypeDTO[] },
-          { transfers?: TransferDTO[] },
-          { rules?: BudgetRuleDTO[] },
-        ]) => {
-          if (cancelled) return;
-          setCategories(categoriesData.categories ?? []);
-          setTransactions(txData.transactions ?? []);
-          setAccounts(accountsData.accounts ?? []);
-          setAccountTypes(accountTypesData.accountTypes ?? []);
-          setTransfers(transfersData.transfers ?? []);
-          setBudgetRules(budgetsData.rules ?? []);
-          setReady(true);
-        },
-      )
-      .catch(() => {
-        if (!cancelled) setReady(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   async function handleCreateTransaction(draft: TransactionModalDraft) {
     const data: { transactions?: TransactionDTO[] } = await fetch("/api/expenses/transactions", {
@@ -189,81 +162,13 @@ export function DashboardView() {
   const budgetDetailQuery = `kind=支出&month=${budgetYearMonth}`;
   const incomeDetailQuery = `kind=收入&month=${budgetYearMonth}`;
 
-  // 載入中畫骨架。三塊清單各記各的筆數——它們長度本來就不一樣（收入來源通常一兩列、
-  // 預算支出五六列），共用一個數字的話一定有兩塊對不上，資料回來時版面就會跳。
-  const incomeSkeletonCount = useSkeletonCount(
-    "cpx-tools:expenses-skeleton:dashboard-income",
-    2,
-    ready ? Math.min(incomeRows.length, SUMMARY_LIMIT) : undefined,
-  );
-  const budgetSkeletonCount = useSkeletonCount(
-    "cpx-tools:expenses-skeleton:dashboard-budget",
-    SUMMARY_LIMIT,
-    ready ? Math.min(expenseRows.length, SUMMARY_LIMIT) : undefined,
-  );
-  // 最近消費是「日期小標＋那天的卡片」一組一組排的，只記總筆數還原不出組數，所以記的是
-  // 形狀（每一組各幾列）。
-  const recentSkeletonShape = useSkeletonShape(
-    "cpx-tools:expenses-skeleton:dashboard-recent",
-    [3, 2],
-    ready ? visibleRecentGroups.map(([, items]) => items.length) : undefined,
-  );
-
   // 主視覺上只有日期（左上角）。首頁是「這個月的現況」，不是拿來做期間比較的地方——
   // 「跟誰比」那組設定收斂到報表頁，四個分頁共用一顆就夠了。
-  //
-  // 載入中也畫成骨架：這顆膠囊本來是唯一一個「資料還沒回來就先長出來」的東西，底下整片
-  // 是灰條、左上角卻已經是完整的日期，看起來像那一塊壞掉。尺寸照真的膠囊抓（34×116）。
   const heroOverlay = (
     <div className="absolute inset-x-5 top-5 flex items-start">
-      {ready ? (
-        <MonthFilterPicker filter={filter} onChange={setFilter} />
-      ) : (
-        <div className="flex justify-center">
-          <DatePillSkeleton />
-        </div>
-      )}
+      <MonthFilterPicker filter={filter} onChange={setFilter} />
     </div>
   );
-
-  // 骨架等掛載後才畫：列數只有瀏覽器讀得到，伺服器端畫出來的一定是預設值，
-  // 不擋的話會先閃一次錯的列數再換成記住的（見 useSkeletonVisible）。
-  if (!ready) {
-    if (!showSkeleton) return null;
-    // 骨架照著載入完成後的版面排——連外層的 gap 都要一樣（下面是 gap-5），不然資料
-    // 回來時每一塊的間距都會變一次。三塊清單的列數各自來自上次記住的實際筆數。
-    return (
-      <HeroShell overlay={heroOverlay}>
-        <div className="flex flex-col gap-5">
-          {/* 收入／支出同一張卡分兩欄，每一欄是「小標一行、金額＋眼睛一行」——跟下面
-              載入完成後那張卡（含 p-3、gap-3、中間那條分隔線、金額列的 min-h-8）
-              對齊，資料回來時高度不會跳。 */}
-          <CardSkeleton className="[&>div]:p-3">
-            <div className="grid grid-cols-2 gap-3">
-              {[false, true].map((divider, i) => (
-                <div key={i} className={divider ? "border-l border-[#F2EEFA] pl-3" : undefined}>
-                  <SkeletonBar width={32} height={12} />
-                  <div className="mt-0.5 flex min-h-8 items-center justify-between gap-1">
-                    <SkeletonBar width={96} height={18} />
-                    {/* 眼睛按鈕是 size-8 的圓，骨架也要佔掉同樣的位置。 */}
-                    <div className="size-8 shrink-0 animate-pulse rounded-full bg-[#EDE6FB]" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardSkeleton>
-          {/* expandToggle：這三塊清單超過 5 筆時下面都會長出「顯示全部」，骨架少畫那一
-              截的話資料回來會往下推。用上次記住的筆數判斷，跟列數同一個依據。 */}
-          <SectionSkeleton count={incomeSkeletonCount} progress expandToggle={incomeSkeletonCount >= SUMMARY_LIMIT} />
-          <SectionSkeleton count={budgetSkeletonCount} progress expandToggle={budgetSkeletonCount >= SUMMARY_LIMIT} />
-          <GroupedSectionSkeleton
-            shape={recentSkeletonShape}
-            expandToggle={recentSkeletonShape.reduce((sum, n) => sum + n, 0) >= PREVIEW_COUNT}
-          />
-        </div>
-      </HeroShell>
-    );
-  }
 
   return (
     <HeroShell overlay={heroOverlay}>

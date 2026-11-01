@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { SectionedListSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonShape, useSkeletonVisible } from "@/components/expenses/skeleton-count";
+import { useState } from "react";
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
@@ -16,15 +14,22 @@ import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { accountTypesByKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { categoryColorClass } from "@/lib/expenses/categories";
 
-export function AccountTypesView() {
-  const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
+/** 帳戶類型頁。
+ *
+ *  類型清單跟帳戶清單都是 page.tsx 在伺服器上讀好傳進來的，所以沒有「載入中」這個狀態，
+ *  也不需要骨架：第一次畫出來就是有資料的畫面。 */
+export function AccountTypesView({
+  initialAccountTypes,
+  /** 不是為了顯示筆數，而是為了知道「這個類型底下還有沒有帳戶」：有的話編輯彈窗裡的
+   *  資產/負債要鎖住（見 account-type-modal.tsx）。帳戶是在別的頁面改的，這一頁不會動它，
+   *  所以不用放進 state。 */
+  accounts,
+}: {
+  initialAccountTypes: AccountTypeDTO[];
+  accounts: { accountTypeId: string }[];
+}) {
+  const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>(initialAccountTypes);
   const showToast = useToast();
-  // 交易、轉帳、分類都不用了——金額的部分整塊搬去資產總表（見下面 section 的說明）。
-  // 帳戶還是要抓一份，但不是為了顯示筆數，而是為了知道「這個類型底下還有沒有帳戶」：
-  // 有的話編輯彈窗裡的資產/負債要鎖住（見 account-type-modal.tsx）。
-  const [accounts, setAccounts] = useState<{ accountTypeId: string }[]>([]);
-  const [ready, setReady] = useState(false);
-  const showSkeleton = useSkeletonVisible(!ready);
   const [modal, setModal] = useState<AccountTypeDTO | null>(null);
   const [batchOpen, setBatchOpen] = useState(false);
   // 擋下來的理由（刪不掉、或資產/負債換不了）直接存成一句話——兩種情況的說明不一樣，
@@ -32,26 +37,6 @@ export function AccountTypesView() {
   const [blockedInfo, setBlockedInfo] = useState<{ message: string } | null>(null);
   // 排序模式：每一列右邊長出 ↑↓。跟多選模式互斥（理由同收支分類頁）。
   const [sorting, setSorting] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      fetch("/api/expenses/account-types").then((res) => res.json()),
-      fetch("/api/expenses/accounts").then((res) => res.json()),
-    ])
-      .then(([data, accountsData]: [{ accountTypes?: AccountTypeDTO[] }, { accounts?: { accountTypeId: string }[] }]) => {
-        if (cancelled) return;
-        setAccountTypes(data.accountTypes ?? []);
-        setAccounts(accountsData.accounts ?? []);
-        setReady(true);
-      })
-      .catch(() => {
-        if (!cancelled) setReady(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   async function handleSave(draft: AccountTypeModalDraft) {
     if (!modal) return;
@@ -132,13 +117,6 @@ export function AccountTypesView() {
   const assetTypes = accountTypesByKind(accountTypes, "asset");
   const liabilityTypes = accountTypesByKind(accountTypes, "liability");
   const selection = useSelection(accountTypes.map((t) => t.id));
-  // 載入中畫骨架。這一頁是「資產一段、負債一段」，各自有小標題跟一張清單卡，所以記的是
-  // 兩段各有幾列，不是一個總數——只記總數會畫成一張大卡，少掉中間那個小標跟段落間距。
-  const skeletonShape = useSkeletonShape(
-    "cpx-tools:expenses-skeleton:account-types",
-    [3, 2],
-    ready ? [assetTypes.length, liabilityTypes.length] : undefined,
-  );
 
   /** 把 group（資產或負債其中一段）裡第 index 筆往上／往下移一格。
    *
@@ -239,9 +217,7 @@ export function AccountTypesView() {
         }
       />
 
-      {/* 等資料回來才出現：它是 fixed、不佔版面，所以不需要骨架，但資料還沒回來就先浮在
-          一片灰條上面很突兀（跟首頁、資產總表同一個處理）。 */}
-      {ready && <FloatingAddButton onClick={() => setBatchOpen(true)} label="新增帳戶類型" />}
+      <FloatingAddButton onClick={() => setBatchOpen(true)} label="新增帳戶類型" />
 
       <AccountTypeModal
         key={modal ? modal.id : "closed"}
@@ -276,9 +252,7 @@ export function AccountTypesView() {
         />
       )}
 
-      {!ready && showSkeleton ? (
-        <SectionedListSkeleton counts={skeletonShape} />
-      ) : accountTypes.length === 0 ? (
+      {accountTypes.length === 0 ? (
         <p className={text.faint}>還沒有任何帳戶類型，點右下角的＋新增</p>
       ) : (
         <div className="flex flex-col gap-5">

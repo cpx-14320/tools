@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Card, CardBody } from "@/components/expenses/card";
 import { Button, ButtonLink, SegmentedControl } from "@/components/expenses/button";
 import { PageHeader } from "@/components/expenses/page-header";
@@ -101,46 +101,24 @@ function downloadCSV(filename: string, csv: string) {
   URL.revokeObjectURL(url);
 }
 
-export function DataView() {
+/** 匯出／匯入頁。資料都是 page.tsx 在伺服器上讀好傳進來的，所以沒有「載入中」這個
+ *  狀態——匯出鈕以前要等資料回來才能按，現在一進來就能按。 */
+export function DataView({
+  initialCategories,
+  /** 匯出用的三份，這一頁不會改它們（匯入是整批 POST 之後重新導頁，不是改這裡的 state）。 */
+  transactions,
+  budgetRules,
+  accounts,
+}: {
+  initialCategories: CategoryDTO[];
+  transactions: TransactionDTO[];
+  budgetRules: BudgetRuleDTO[];
+  accounts: AccountDTO[];
+}) {
   const [mode, setMode] = useState<Mode>("export");
   const [kind, setKind] = useState<DataKind>("transactions");
-
-  const [categories, setCategories] = useState<CategoryDTO[]>([]);
-  const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
-  const [budgetRules, setBudgetRules] = useState<BudgetRuleDTO[]>([]);
-  const [accounts, setAccounts] = useState<AccountDTO[]>([]);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      fetch("/api/expenses/categories").then((res) => res.json()),
-      fetch("/api/expenses/transactions").then((res) => res.json()),
-      fetch("/api/expenses/budgets").then((res) => res.json()),
-      fetch("/api/expenses/accounts").then((res) => res.json()),
-    ])
-      .then(
-        ([categoriesData, txData, budgetsData, accountsData]: [
-          { categories?: CategoryDTO[] },
-          { transactions?: TransactionDTO[] },
-          { rules?: BudgetRuleDTO[] },
-          { accounts?: AccountDTO[] },
-        ]) => {
-          if (cancelled) return;
-          setCategories(categoriesData.categories ?? []);
-          setTransactions(txData.transactions ?? []);
-          setBudgetRules(budgetsData.rules ?? []);
-          setAccounts(accountsData.accounts ?? []);
-          setReady(true);
-        },
-      )
-      .catch(() => {
-        if (!cancelled) setReady(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // 匯入消費分類時 ImportPanel 會回報新建好的分類（onCategoriesChange），所以分類要是 state。
+  const [categories, setCategories] = useState<CategoryDTO[]>(initialCategories);
 
   return (
     <div>
@@ -153,9 +131,9 @@ export function DataView() {
       <SegmentedControl className="mb-4" fullWidth value={kind} onChange={setKind} options={KINDS} />
 
       {mode === "export" ? (
-        <ExportPanel kind={kind} ready={ready} categories={categories} accounts={accounts} transactions={transactions} budgetRules={budgetRules} />
+        <ExportPanel kind={kind} categories={categories} accounts={accounts} transactions={transactions} budgetRules={budgetRules} />
       ) : (
-        <ImportPanel key={kind} kind={kind} ready={ready} categories={categories} accounts={accounts} onCategoriesChange={setCategories} />
+        <ImportPanel key={kind} kind={kind} categories={categories} accounts={accounts} onCategoriesChange={setCategories} />
       )}
     </div>
   );
@@ -167,14 +145,12 @@ export function DataView() {
 
 function ExportPanel({
   kind,
-  ready,
   categories,
   accounts,
   transactions,
   budgetRules,
 }: {
   kind: DataKind;
-  ready: boolean;
   categories: CategoryDTO[];
   accounts: AccountDTO[];
   transactions: TransactionDTO[];
@@ -239,7 +215,7 @@ function ExportPanel({
             <p className={text.body}>完整備份</p>
             <p className={`mt-0.5 ${text.faint}`}>一次下載分類、預算設定、全部消費紀錄共 3 個檔案</p>
           </div>
-          <Button onClick={handleFullBackup} disabled={!ready}>
+          <Button onClick={handleFullBackup}>
             ⬇ 下載完整備份（3 個檔）
           </Button>
         </CardBody>
@@ -285,10 +261,10 @@ function ExportPanel({
             <p className={`mt-1 ${text.faint}`}>{FIELD_HINT[kind]}</p>
           </div>
 
-          <Button onClick={handleExport} disabled={!ready || count === 0}>
+          <Button onClick={handleExport} disabled={count === 0}>
             ⬇ 下載 CSV（{count} 筆）
           </Button>
-          {ready && count === 0 && <p className={`text-center ${text.muted}`}>目前沒有可以匯出的資料。</p>}
+          {count === 0 && <p className={`text-center ${text.muted}`}>目前沒有可以匯出的資料。</p>}
         </CardBody>
       </Card>
     </div>
@@ -308,7 +284,6 @@ type Stage = "pick" | "preview" | "done";
  *  撞名，混進「有問題」裡會變成滿滿一片紅字，看起來像整個檔案壞掉。 */
 function ImportPanel({
   kind,
-  ready,
   categories,
   accounts,
   onCategoriesChange,
@@ -316,7 +291,6 @@ function ImportPanel({
   kind: DataKind;
   /** 分類還沒抓回來之前不能選檔案——那時候 categories 是空陣列，解析出來每一列都會
    *  說「找不到分類」，使用者只會覺得「第一次匯入失敗、再試一次就好了」。 */
-  ready: boolean;
   categories: CategoryDTO[];
   accounts: AccountDTO[];
   onCategoriesChange: (categories: CategoryDTO[]) => void;
@@ -553,8 +527,8 @@ function ImportPanel({
             ))}
           </div>
         </div>
-        <Button onClick={() => fileRef.current?.click()} disabled={!ready}>
-          {ready ? "選擇檔案" : "載入分類中…"}
+        <Button onClick={() => fileRef.current?.click()}>
+          選擇檔案
         </Button>
         {/* 還沒有任何資料時，先下載範本在試算表裡排好再匯入，比在手機上一個一個
             點彈窗建立快得多；範本裡的範例列可以直接改成自己的資料。 */}

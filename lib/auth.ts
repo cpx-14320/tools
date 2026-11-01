@@ -1,4 +1,5 @@
 import { randomBytes } from "crypto";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
@@ -95,8 +96,12 @@ export async function destroyCurrentSession(): Promise<void> {
 }
 
 /** 讀目前請求的 session cookie，查出對應的使用者；沒登入或 session 過期都回傳 null。
- *  sessions 的過期靠 TTL index 自動清掉（見 lib/mongodb.ts），這裡只是讀不到就當作沒登入。 */
-export async function getSessionUser(): Promise<SessionUser | null> {
+ *  sessions 的過期靠 TTL index 自動清掉（見 lib/mongodb.ts），這裡只是讀不到就當作沒登入。
+ *
+ *  用 cache() 包起來：一個請求裡 session 不會變，但呼叫的地方不少——Next 的 layout 跟
+ *  page 是各自算繪的，兩邊都要知道「是誰」。沒有快取的話一次頁面請求會查兩遍 sessions
+ *  跟兩遍 users（這支本身就是兩個 query）。 */
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -109,7 +114,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   if (!user) return null;
 
   return toSessionUser(user);
-}
+});
 
 export async function findUserByUsername(username: string) {
   const db = await getDb();

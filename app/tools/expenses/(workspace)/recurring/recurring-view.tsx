@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { SkeletonBar, StackedCardsSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonCount, useSkeletonVisible } from "@/components/expenses/skeleton-count";
+import { useState } from "react";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
@@ -44,16 +42,27 @@ interface PendingOccurrence {
   date: string;
 }
 
-export function RecurringView() {
-  const [categories, setCategories] = useState<CategoryDTO[]>([]);
+/** 固定收支頁。資料都是 page.tsx 在伺服器上讀好傳進來的，所以沒有「載入中」這個狀態，
+ *  也不需要骨架。 */
+export function RecurringView({
+  initialCategories,
+  initialTransactions,
+  initialRules,
+  /** 規則可以綁一個存錢目標，只拿來顯示目標名稱。目標是在存錢目標那一頁改的，這一頁
+   *  只讀，所以不用放進 state。 */
+  goals,
+  initialPending,
+}: {
+  initialCategories: CategoryDTO[];
+  initialTransactions: TransactionDTO[];
+  initialRules: RecurringRuleDTO[];
+  goals: SavingsGoalDTO[];
+  initialPending: PendingOccurrence[];
+}) {
+  const [categories, setCategories] = useState<CategoryDTO[]>(initialCategories);
   const showToast = useToast();
-  const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
-  const [rules, setRules] = useState<RecurringRuleDTO[]>([]);
-  const [goals, setGoals] = useState<SavingsGoalDTO[]>([]);
-  const [ready, setReady] = useState(false);
-  const showSkeleton = useSkeletonVisible(!ready);
-  // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
-  const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:recurring", 4, ready ? rules.length : undefined);
+  const [transactions, setTransactions] = useState<TransactionDTO[]>(initialTransactions);
+  const [rules, setRules] = useState<RecurringRuleDTO[]>(initialRules);
   const [modal, setModal] = useState<ModalState | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
   // 待確認預設只顯示前幾筆：一條週期規則積上半年就是二三十筆，整張攤開會把下面的規則
@@ -63,43 +72,9 @@ export function RecurringView() {
   // 混在同一份清單裡要自己用金額顏色分辨，分頁之後一次只看一種。
   const [kind, setKind] = useState<CategoryKind>("支出");
   // 到期但還沒入帳的那幾期。以前是進記帳本就自動寫進交易紀錄，現在改成列在這裡等確認。
-  const [pending, setPending] = useState<PendingOccurrence[]>([]);
+  const [pending, setPending] = useState<PendingOccurrence[]>(initialPending);
   // 正在送出的那幾期（"ruleId|date"），避免連點送出兩次、按鈕也變成不能按。
   const [busy, setBusy] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      fetch("/api/expenses/categories").then((res) => res.json()),
-      fetch("/api/expenses/transactions").then((res) => res.json()),
-      fetch("/api/expenses/recurring-rules").then((res) => res.json()),
-      fetch("/api/expenses/goals").then((res) => res.json()),
-      fetch("/api/expenses/recurring-rules/pending").then((res) => res.json()),
-    ])
-      .then(
-        ([categoriesData, txData, rulesData, goalsData, pendingData]: [
-          { categories?: CategoryDTO[] },
-          { transactions?: TransactionDTO[] },
-          { rules?: RecurringRuleDTO[] },
-          { goals?: SavingsGoalDTO[] },
-          { pending?: PendingOccurrence[] },
-        ]) => {
-          if (cancelled) return;
-          setCategories(categoriesData.categories ?? []);
-          setTransactions(txData.transactions ?? []);
-          setRules(rulesData.rules ?? []);
-          setGoals(goalsData.goals ?? []);
-          setPending(pendingData.pending ?? []);
-          setReady(true);
-        },
-      )
-      .catch(() => {
-        if (!cancelled) setReady(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   /** 確認或略過其中幾期。送出後伺服器會回傳新的待確認清單跟交易紀錄，直接換上。 */
   async function resolvePending(action: "confirm" | "skip", items: { ruleId: string; date: string }[]) {
@@ -208,7 +183,7 @@ export function RecurringView() {
       {/* 新增搬到右下角的浮動按鈕，跟首頁新增交易、消費分類頁同一招。 */}
       {/* 等資料回來才出現：它是 fixed、不佔版面，所以不需要骨架，但資料還沒回來就先浮在
           一片灰條上面很突兀（跟首頁、資產總表同一個處理）。 */}
-      {ready && <FloatingAddButton onClick={() => setModal({ mode: "create" })} label="新增固定收支" />}
+      <FloatingAddButton onClick={() => setModal({ mode: "create" })} label="新增固定收支" />
 
       <div className="flex items-center justify-between gap-2">
         <SegmentedControl
@@ -273,7 +248,7 @@ export function RecurringView() {
           ——本來是刻意不分頁的（「現在要你處理的事」不該被藏起來），但那造成切到收入時
           上面列著電話費、下面的清單卻空了，看起來像資料不見了。現在整頁講的是同一種
           收支，兩邊才對得起來；另一邊有待確認的話，切過去就看得到。 */}
-      {ready && visiblePending.length > 0 && !selection.selecting && (
+      {visiblePending.length > 0 && !selection.selecting && (
         <Card>
           <CardBody>
             <div className="flex items-center justify-between gap-2">
@@ -353,36 +328,7 @@ export function RecurringView() {
         </Card>
       )}
 
-      {!ready && showSkeleton ? (
-        // 一筆固定收支一張獨立的卡，照真的那張排：圖示 size-11（IconAvatar 預設）跟文字
-        // 垂直置中，右上角兩顆 32px 的圓鈕（編輯、暫停／恢復）；底下是金額那一排、
-        // 循環進度條、起訖日期各一行。
-        <StackedCardsSkeleton count={skeletonCount}>
-          <div className="flex items-center gap-3">
-            <div className="size-11 shrink-0 animate-pulse rounded-2xl bg-[#EDE6FB]" />
-            <div className="min-w-0 flex-1">
-              <div className="flex h-5 items-center">
-                <SkeletonBar width={96} height={14} />
-              </div>
-              <div className="mt-0.5 flex h-4 items-center">
-                <SkeletonBar width="55%" height={12} />
-              </div>
-            </div>
-            <span className="flex shrink-0 items-center gap-1 self-start">
-              <div className="size-8 animate-pulse rounded-full bg-[#EDE6FB]" />
-              <div className="size-8 animate-pulse rounded-full bg-[#EDE6FB]" />
-            </span>
-          </div>
-          <div className="mt-2 flex h-7 items-end justify-between">
-            <SkeletonBar width={148} height={24} />
-            <SkeletonBar width={112} height={16} />
-          </div>
-          <SkeletonBar width="100%" height={8} className="mt-2" />
-          <div className="mt-1 flex justify-end">
-            <SkeletonBar width={148} height={16} />
-          </div>
-        </StackedCardsSkeleton>
-      ) : visibleRules.length === 0 ? (
+      {visibleRules.length === 0 ? (
         <p className={text.faint}>還沒有任何固定{kind}，點右下角的＋新增第一筆</p>
       ) : (
         <div className="flex flex-col gap-4">

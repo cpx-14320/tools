@@ -68,7 +68,7 @@ function collection() {
 }
 
 /** 跟固定收支那邊同一套：一律用台北時區的今天，不是伺服器所在時區的今天。 */
-function todayInTaipei(): string {
+export function todayInTaipei(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" });
 }
 

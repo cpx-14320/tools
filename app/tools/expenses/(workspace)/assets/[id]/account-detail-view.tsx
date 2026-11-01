@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/expenses/page-header";
-import { CardSkeleton, DateGroupsSkeleton, PageHeaderSkeleton, SelectFieldSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
-import { useSkeletonVisible, useSkeletonShape } from "@/components/expenses/skeleton-count";
 import { LineIconButton } from "@/components/expenses/line-icon-button";
 import { SegmentedControl } from "@/components/expenses/button";
 import { BackLink } from "@/components/expenses/back-link";
@@ -36,17 +34,32 @@ import { formatCurrency, formatDateWithWeekday } from "@/lib/format";
 
 type TxModalState = { mode: "create" } | { mode: "edit"; transaction: TransactionDTO };
 
-export function AccountDetailView({ accountId }: { accountId: string }) {
+/** 單一帳戶的明細頁。五份資料都是 page.tsx 在伺服器上讀好傳進來的，所以沒有「載入中」
+ *  這個狀態，也不需要骨架。五份都放進 state——這一頁可以改帳戶本身、改交易、改轉帳，
+ *  彈窗裡還能順手新增帳戶類型跟分類，每一種都會動到其中一份。 */
+export function AccountDetailView({
+  accountId,
+  initialAccounts,
+  initialAccountTypes,
+  initialCategories,
+  initialTransactions,
+  initialTransfers,
+}: {
+  accountId: string;
+  initialAccounts: AccountDTO[];
+  initialAccountTypes: AccountTypeDTO[];
+  initialCategories: CategoryDTO[];
+  initialTransactions: TransactionDTO[];
+  initialTransfers: TransferDTO[];
+}) {
   const router = useRouter();
   const { filter } = useDateFilter();
   const showToast = useToast();
-  const [accounts, setAccounts] = useState<AccountDTO[]>([]);
-  const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
-  const [categories, setCategories] = useState<CategoryDTO[]>([]);
-  const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
-  const [transfers, setTransfers] = useState<TransferDTO[]>([]);
-  const [ready, setReady] = useState(false);
-  const showSkeleton = useSkeletonVisible(!ready);
+  const [accounts, setAccounts] = useState<AccountDTO[]>(initialAccounts);
+  const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>(initialAccountTypes);
+  const [categories, setCategories] = useState<CategoryDTO[]>(initialCategories);
+  const [transactions, setTransactions] = useState<TransactionDTO[]>(initialTransactions);
+  const [transfers, setTransfers] = useState<TransferDTO[]>(initialTransfers);
   const [editOpen, setEditOpen] = useState(false);
   const [reconcileOpen, setReconcileOpen] = useState(false);
   // 換帳戶：點上面那顆下拉欄位開帳戶選擇彈窗，選了直接換到那個帳戶的明細頁。
@@ -64,40 +77,6 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
   const [deleteConfirm, setDeleteConfirm] = useState<{ inUseCount: number } | null>(null);
   // 哪幾筆的明細是展開的——預設全部收起來，只有有明細的那幾筆才看得到展開箭頭。
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      fetch("/api/expenses/accounts").then((res) => res.json()),
-      fetch("/api/expenses/account-types").then((res) => res.json()),
-      fetch("/api/expenses/categories").then((res) => res.json()),
-      fetch("/api/expenses/transactions").then((res) => res.json()),
-      fetch("/api/expenses/transfers").then((res) => res.json()),
-    ])
-      .then(
-        ([accountsData, accountTypesData, categoriesData, txData, transfersData]: [
-          { accounts?: AccountDTO[] },
-          { accountTypes?: AccountTypeDTO[] },
-          { categories?: CategoryDTO[] },
-          { transactions?: TransactionDTO[] },
-          { transfers?: TransferDTO[] },
-        ]) => {
-          if (cancelled) return;
-          setAccounts(accountsData.accounts ?? []);
-          setAccountTypes(accountTypesData.accountTypes ?? []);
-          setCategories(categoriesData.categories ?? []);
-          setTransactions(txData.transactions ?? []);
-          setTransfers(transfersData.transfers ?? []);
-          setReady(true);
-        },
-      )
-      .catch(() => {
-        if (!cancelled) setReady(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const account = accounts.find((a) => a.id === accountId);
 
@@ -207,10 +186,6 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
     setTransferModal(null);
   }
 
-  // ── 明細的分組推導刻意放在早期 return 之前 ──────────────────────────────────
-  // 骨架要照「上次明細有幾組、每組幾列」來畫，記形狀的 useSkeletonShape 是 hook，不能
-  // 擺在 return 後面。帳戶還沒載到（accounts 還是空的）時這一段一律算在空陣列上，算完
-  // 的結果不會被用到，成本也只是幾個空陣列。
   const range = dateFilterRange(filter);
   const accountTx = account ? transactions.filter((t) => t.accountId === account.id) : [];
   // 只拿這段期間的收入／支出交易來組明細，總額本身不用——「這段期間進出多少」改成
@@ -259,59 +234,6 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
     const v = entryDelta(e);
     return v < 0 ? sum - v : sum;
   }, 0);
-
-  const detailSkeletonShape = useSkeletonShape(
-    "cpx-tools:expenses-skeleton:account-detail",
-    [3, 2],
-    ready && account ? [...groups.values()].map((items) => items.length) : undefined,
-  );
-
-  // 骨架等掛載後才畫：明細的組數只有瀏覽器讀得到（localStorage），伺服器端畫出來的
-  // 一定是預設值，不擋的話會先閃一次錯的形狀再換成記住的（見 useSkeletonVisible）。
-  if (!ready) {
-    if (!showSkeleton) return null;
-    // 骨架照著載入完成後的版面排：標題＋日期＋鉛筆、換帳戶欄位、餘額卡（含「這段期間
-    // 進出多少」那一行跟對帳鈕）、明細卡。這一頁本來只寫一行「載入中…」，資料回來整頁
-    // 一次長出來，畫面會從一行字暴衝成滿滿一頁。
-    // 這裡沒有返回鍵——標題右邊的返回鍵已經移除了，骨架留著的話載入完成那一刻會多消失
-    // 一顆東西。要回總表走底部導覽列的「資產」。
-    return (
-      <div className="flex flex-col gap-4">
-        <PageHeaderSkeleton titleWidth={120} icons={2} />
-        <div>
-          <SkeletonBar width={56} height={16} />
-          <div className="mt-1.5">
-            <SelectFieldSkeleton />
-          </div>
-        </div>
-        <CardSkeleton className="py-3.5">
-          <div className="flex items-center justify-between">
-            <div>
-              <SkeletonBar width={56} height={16} />
-              <SkeletonBar width={148} height={28} className="mt-0.5" />
-            </div>
-            <div className="size-11 shrink-0 animate-pulse rounded-2xl bg-[#EDE6FB]" />
-          </div>
-          {/* 「這段期間 進 ＋◯ 出 －◯」那一行。 */}
-          <div className="mt-2">
-            <SkeletonBar width={220} height={16} />
-          </div>
-          <div className="mt-3 h-[34px] animate-pulse rounded-xl bg-[#EDE6FB]" />
-        </CardSkeleton>
-        <CardSkeleton>
-          {/* 明細的標題列右邊有「全部／只看轉帳」那組切換（h-9 ＝ 36px）。 */}
-          <div className="flex items-center justify-between gap-2">
-            <SkeletonBar width={48} height={20} />
-            <div className="h-9 w-[124px] animate-pulse rounded-full bg-[#EDE6FB]" />
-          </div>
-          <div className="mt-3">
-            <DateGroupsSkeleton shape={detailSkeletonShape} />
-          </div>
-        </CardSkeleton>
-      </div>
-    );
-  }
-
   if (!account) {
     return (
       <div className="flex flex-col gap-4">

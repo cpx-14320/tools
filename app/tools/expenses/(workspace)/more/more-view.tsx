@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { IconImg } from "@/components/expenses/icon-img";
@@ -53,31 +53,24 @@ type ResetScope = "records" | "all";
 /** 這一頁所屬的工具，用來把自己從「其他小工具」的清單裡排除。 */
 const CURRENT_TOOL_ID = "expenses";
 
-export function MoreView() {
+export function MoreView({
+  /** 固定收支有幾期到期還沒確認——只拿來在那一列右邊掛一顆數字徽章。到期的那幾期現在
+   *  不會自動入帳（見 recurring-rules.server.ts 的 listPendingOccurrences），不在這裡提示
+   *  的話，使用者要自己想到去固定收支頁才看得到。
+   *
+   *  由 page.tsx 在伺服器上算好傳進來。清除資料後的 router.refresh() 會重跑那一頁，
+   *  這個數字跟著歸零，不用自己再打一次 API。 */
+  pendingCount,
+}: {
+  pendingCount: number;
+}) {
   const router = useRouter();
   const { user, logout } = useAuth();
   const otherTools = TOOLS_REGISTRY.filter((t) => t.toolId !== CURRENT_TOOL_ID && (user?.tools ?? []).includes(t.toolId));
-  // 固定收支有幾期到期還沒確認——只拿來在那一列右邊掛一顆數字徽章。到期的那幾期現在
-  // 不會自動入帳（見 recurring-rules.server.ts 的 listPendingOccurrences），不在這裡提示
-  // 的話，使用者要自己想到去固定收支頁才看得到。
-  const [pendingCount, setPendingCount] = useState(0);
   const [resetScope, setResetScope] = useState<ResetScope | null>(null);
   // 預設不勾：清資料多半是想重新記帳，不是想放棄養成進度。
   const [resetPet, setResetPet] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/expenses/recurring-rules/pending")
-      .then((res) => res.json())
-      .then((data: { pending?: unknown[] }) => {
-        if (!cancelled) setPendingCount(data.pending?.length ?? 0);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   async function handleLogout() {
     await logout();

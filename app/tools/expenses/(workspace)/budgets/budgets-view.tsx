@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { GroupedCardsSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonShape, useSkeletonVisible } from "@/components/expenses/skeleton-count";
+import { useState } from "react";
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
 import { ListRow } from "@/components/expenses/list-row";
@@ -30,33 +28,14 @@ type EditTarget = { category: CategoryDTO; rule?: BudgetRuleDTO };
  *  月份會讓人以為那是「在看哪個月的預算」，其實它是「這次要從哪個月開始改」——那個
  *  選擇現在搬進各別分類的編輯彈窗裡（見 BudgetModal）。想看「這個月總共編了多少、
  *  花到哪」請看首頁的本月預算支出跟報表頁。 */
-export function BudgetsView() {
-  const [categories, setCategories] = useState<CategoryDTO[]>([]);
+export function BudgetsView({ initialCategories, initialRules }: { initialCategories: CategoryDTO[]; initialRules: BudgetRuleDTO[] }) {
+  // 資料是 page.tsx 在伺服器上讀好傳進來的，所以這一頁沒有「載入中」這個狀態，也就
+  // 不需要骨架：第一次畫出來就是有資料的畫面。之後的新增／刪除還是打 API，拿回傳的
+  // 完整清單覆蓋這裡的 state（不用 router.refresh()，少一趟來回）。
+  const categories = initialCategories;
   const showToast = useToast();
-  const [rules, setRules] = useState<BudgetRuleDTO[]>([]);
-  const [ready, setReady] = useState(false);
-  const showSkeleton = useSkeletonVisible(!ready);
+  const [rules, setRules] = useState<BudgetRuleDTO[]>(initialRules);
   const [editing, setEditing] = useState<EditTarget | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      fetch("/api/expenses/categories").then((res) => res.json()),
-      fetch("/api/expenses/budgets").then((res) => res.json()),
-    ])
-      .then(([catData, budgetData]: [{ categories?: CategoryDTO[] }, { rules?: BudgetRuleDTO[] }]) => {
-        if (cancelled) return;
-        setCategories(catData.categories ?? []);
-        setRules(budgetData.rules ?? []);
-        setReady(true);
-      })
-      .catch(() => {
-        if (!cancelled) setReady(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   async function handleSave(yearMonth: string, amount: number) {
     if (!editing) return;
@@ -96,21 +75,12 @@ export function BudgetsView() {
   // 改版前存在分類身上的舊預算會補成一筆虛擬規則，使用者的舊設定不會因為改版就不見。
   const effectiveRules = withLegacyCategoryBudgets(rules, categories);
   const thisMonth = currentYearMonth();
-  // 載入中畫骨架。版面跟收支分類一樣是「一個分類一張卡、底下掛它設過的那幾筆」，
-  // 所以記的是形狀（每張卡有幾筆規則）而不是單一列數。
-  const skeletonShape = useSkeletonShape(
-    "cpx-tools:expenses-skeleton:budgets",
-    [0, 1, 0, 0, 0, 0],
-    ready ? expenseCategories.map((c) => rulesForCategory(effectiveRules, c.id).length) : undefined,
-  );
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader flush title="預算設定" help="點分類設定「從哪個月起每月多少」，之後的月份會沿用；要調整時再設一筆新的，之前的月份不會被追溯蓋掉" />
 
-      {!ready && showSkeleton ? (
-        <GroupedCardsSkeleton shape={skeletonShape} />
-      ) : expenseCategories.length === 0 ? (
+      {expenseCategories.length === 0 ? (
         <p className={text.faint}>還沒有任何支出分類，先去「收支分類」建立分類才能編預算</p>
       ) : (
         <div className="flex flex-col gap-3">

@@ -1,16 +1,7 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useState } from "react";
 import Link from "next/link";
-import {
-  CardSkeleton,
-  DateFilterPickerSkeleton,
-  GroupedSectionSkeleton,
-  KpiCardSkeleton,
-  SectionSkeleton,
-  SkeletonBar,
-} from "@/components/expenses/skeleton";
-import { useSkeletonCount, useSkeletonVisible, useSkeletonShape } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton, FloatingSecondaryButton } from "@/components/expenses/floating-add-button";
 import { EmptyListCard, ListCard, ListRow } from "@/components/expenses/list-row";
@@ -35,17 +26,29 @@ import { type TransactionDTO } from "@/lib/expenses/transactions";
 import { type TransferDTO } from "@/lib/expenses/transfers";
 import { formatCurrency, formatDate, formatDateWithWeekday } from "@/lib/format";
 
-export function AssetsView() {
+/** 資產總表。五份資料都是 page.tsx 在伺服器上一次讀好傳進來的，所以沒有「載入中」這個
+ *  狀態，也不需要骨架：第一次畫出來就是有資料的畫面。 */
+export function AssetsView({
+  initialAccounts,
+  initialAccountTypes,
+  /** 交易跟分類只用來算餘額（哪一筆算進哪個帳戶），這一頁不會改它們，所以不放進 state。 */
+  transactions,
+  categories,
+  initialTransfers,
+}: {
+  initialAccounts: AccountDTO[];
+  initialAccountTypes: AccountTypeDTO[];
+  transactions: TransactionDTO[];
+  categories: CategoryDTO[];
+  initialTransfers: TransferDTO[];
+}) {
   const { filter } = useDateFilter();
   const showToast = useToast();
-  const [accounts, setAccounts] = useState<AccountDTO[]>([]);
-  const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
-  const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
-  const [categories, setCategories] = useState<CategoryDTO[]>([]);
-  const [transfers, setTransfers] = useState<TransferDTO[]>([]);
-  const [ready, setReady] = useState(false);
-  const showSkeleton = useSkeletonVisible(!ready);
-  // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
+  const [accounts, setAccounts] = useState<AccountDTO[]>(initialAccounts);
+  // 新增帳戶的彈窗裡可以順手建一個新的帳戶類型（onAccountTypesChange），所以類型也要
+  // 是 state，不能直接用 prop。
+  const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>(initialAccountTypes);
+  const [transfers, setTransfers] = useState<TransferDTO[]>(initialTransfers);
   const [createOpen, setCreateOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   // 轉帳明細那一區：點某一列會開同一個轉帳彈窗來改／刪那一筆（轉帳沒有自己的明細頁，
@@ -59,39 +62,6 @@ export function AssetsView() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      fetch("/api/expenses/accounts").then((res) => res.json()),
-      fetch("/api/expenses/account-types").then((res) => res.json()),
-      fetch("/api/expenses/transactions").then((res) => res.json()),
-      fetch("/api/expenses/categories").then((res) => res.json()),
-      fetch("/api/expenses/transfers").then((res) => res.json()),
-    ])
-      .then(
-        ([accountsData, accountTypesData, txData, categoriesData, transfersData]: [
-          { accounts?: AccountDTO[] },
-          { accountTypes?: AccountTypeDTO[] },
-          { transactions?: TransactionDTO[] },
-          { categories?: CategoryDTO[] },
-          { transfers?: TransferDTO[] },
-        ]) => {
-          if (cancelled) return;
-          setAccounts(accountsData.accounts ?? []);
-          setAccountTypes(accountTypesData.accountTypes ?? []);
-          setTransactions(txData.transactions ?? []);
-          setCategories(categoriesData.categories ?? []);
-          setTransfers(transfersData.transfers ?? []);
-          setReady(true);
-        },
-      )
-      .catch(() => {
-        if (!cancelled) setReady(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   async function handleCreate(draft: AccountModalDraft) {
     const data: { accounts?: AccountDTO[] } = await fetch("/api/expenses/accounts", {
@@ -143,27 +113,6 @@ export function AssetsView() {
     setTransferEdit(null);
   }
 
-  /** 這一段實際會畫出幾列——骨架要照這個數字畫，不是帳戶數。常見情況是一個類型底下
-   *  只有一個同名帳戶，那整個類型只佔一列而不是兩列（見 section() 的 soloAccount）；
-   *  用帳戶數去猜的話，那種帳戶愈多骨架就超得愈多，資料回來整段會縮一截。 */
-  function sectionRowCount(kind: AccountKind): number {
-    return accountTypesByKind(accountTypes, kind).reduce((sum, type) => {
-      const typeAccounts = accounts.filter((a) => a.accountTypeId === type.id);
-      if (typeAccounts.length === 0) return sum;
-      const solo = typeAccounts.length === 1 && typeAccounts[0].name === type.name;
-      return sum + 1 + (solo ? 0 : typeAccounts.length);
-    }, 0);
-  }
-
-  // 資產跟負債兩段各記各的筆數——大多數人資產好幾個、負債零到一個，共用一個數字一定
-  // 有一段對不上。
-  const assetSkeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:assets-asset", 2, ready ? sectionRowCount("asset") : undefined);
-  const liabilitySkeletonCount = useSkeletonCount(
-    "cpx-tools:expenses-skeleton:assets-liability",
-    1,
-    ready ? sectionRowCount("liability") : undefined,
-  );
-
   // 這一整頁（淨資產、各類型佔比、每個帳戶的餘額）講的都是「某一天當時」的數字，基準日
   // 就是選到的這段期間的最後一天——跟報表「資產」分頁同一套解讀（選 2026-09 就看九月底
   // 的淨資產）。選「全部」沒有結束日，那就是今天。餘額函式本來就是「傳進去哪些交易／
@@ -194,13 +143,6 @@ export function AssetsView() {
   // 同一天會出現兩個不同的金額（理由同首頁 recentDayTotals）。
   const transferDayTotals = new Map(transferGroups.map(([date, items]) => [date, items.reduce((sum, t) => sum + t.amount, 0)]));
   const visibleTransferGroups = transfersExpanded ? transferGroups : limitDateGroups(transferGroups, PREVIEW_COUNT);
-  // 這一區是「日期小標＋那天幾列」一組一組排的，只記總筆數還原不出組數，所以記形狀。
-  const transferSkeletonShape = useSkeletonShape(
-    "cpx-tools:expenses-skeleton:assets-transfers",
-    [2, 1],
-    ready ? visibleTransferGroups.map(([, items]) => items.length) : undefined,
-  );
-
   const accountNameOf = (id: string) => accounts.find((a) => a.id === id)?.name ?? "（未知帳戶）";
 
   /** 一種資產／負債底下：每個類型一組（類型自己一列帶佔比進度條，它的帳戶列在下面）。 */
@@ -296,25 +238,19 @@ export function AssetsView() {
       <PageHeader
         title="資產總表"
         flush
-        actions={ready ? <DateFilterPicker /> : <DateFilterPickerSkeleton />}
+        actions={<DateFilterPicker />}
       />
 
       {/* 轉帳疊在「新增帳戶」正上方：兩個都是這一頁的新增動作，擺在同一個角落才找得到
           （本來掛在標題列的圖示那一排，跟日曆、期間混在一起，看起來像一個檢視設定）。
-          帳戶不到兩個時轉不了，按鈕留著但按不動。
-          兩顆都等資料回來才出現，跟首頁一樣——它們是 fixed、不佔版面，所以不需要骨架，
-          但資料還沒回來就先浮在一片灰條上面會很突兀。 */}
-      {ready && (
-        <>
-          <FloatingSecondaryButton
-            icon={<LineIcon name="transfer" />}
-            label={accounts.length < 2 ? "至少要有兩個帳戶才能轉帳" : "新增轉帳"}
-            disabled={accounts.length < 2}
-            onClick={() => setTransferOpen(true)}
-          />
-          <FloatingAddButton onClick={() => setCreateOpen(true)} label="新增帳戶" />
-        </>
-      )}
+          帳戶不到兩個時轉不了，按鈕留著但按不動。 */}
+      <FloatingSecondaryButton
+        icon={<LineIcon name="transfer" />}
+        label={accounts.length < 2 ? "至少要有兩個帳戶才能轉帳" : "新增轉帳"}
+        disabled={accounts.length < 2}
+        onClick={() => setTransferOpen(true)}
+      />
+      <FloatingAddButton onClick={() => setCreateOpen(true)} label="新增帳戶" />
 
       <AccountModal
         open={createOpen}
@@ -351,7 +287,7 @@ export function AssetsView() {
         onDelete={handleDeleteTransfer}
       />
 
-      {ready && accounts.length > 0 && (
+      {accounts.length > 0 && (
         <div className="flex flex-col gap-3">
           <Card>
             <CardBody>
@@ -379,40 +315,7 @@ export function AssetsView() {
         </div>
       )}
 
-      {!ready && showSkeleton ? (
-        // 骨架照著載入完成後的版面排：淨資產大卡、資產/負債兩張小卡，再來是兩段帳戶清單。
-        <div>
-          <div className="flex flex-col gap-3">
-            {/* 淨資產卡：小標、金額＋百分比、底下那條進度條。進度條以前沒畫，資料回來
-                整張卡會多長 16px 出來。 */}
-            <CardSkeleton>
-              <SkeletonBar width={96} height={16} />
-              <div className="mt-0.5 flex h-7 items-end justify-between gap-2">
-                <SkeletonBar width={148} height={24} />
-                <SkeletonBar width={32} height={16} />
-              </div>
-              <div className="mt-2">
-                <SkeletonBar width="100%" height={8} />
-              </div>
-            </CardSkeleton>
-            <div className="grid grid-cols-2 gap-3">
-              <KpiCardSkeleton />
-              <KpiCardSkeleton />
-            </div>
-          </div>
-          <div className="flex flex-col gap-5">
-            {/* 兩段的小標右邊都沒有連結，所以 action={false}；每一列都帶進度條
-                （類型列一定有，子帳戶列沒有但那是少數情況），所以 progress。 */}
-            <SectionSkeleton count={assetSkeletonCount} progress action={false} />
-            {/* 上次就沒有負債帳戶的話整段不畫——section() 在沒有任何類型時回傳 null，
-                畫一張「還沒有任何資料」的空卡反而比真畫面多出一塊。轉帳明細同理。 */}
-            {liabilitySkeletonCount > 0 && <SectionSkeleton count={liabilitySkeletonCount} progress action={false} />}
-            {/* 轉帳明細的小標右邊沒有連結，所以 action={false}——留一條假的灰條在那裡，
-                資料回來那個位置會空掉。 */}
-            {transferSkeletonShape.length > 0 && <GroupedSectionSkeleton shape={transferSkeletonShape} action={false} />}
-          </div>
-        </div>
-      ) : accounts.length === 0 ? (
+      {accounts.length === 0 ? (
         <p className={text.faint}>還沒有任何帳戶，點右下角的＋新增第一個</p>
       ) : (
         // 依「帳戶類型」分組：每個類型一列（金額＋佔同類型總額的進度條，本來在設定頁的

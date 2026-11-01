@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { SkeletonBar, StackedCardsSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonCount, useSkeletonVisible } from "@/components/expenses/skeleton-count";
+import { useState } from "react";
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
 import { Badge } from "@/components/expenses/button";
@@ -20,33 +18,14 @@ import { formatCurrency, formatDateRange } from "@/lib/format";
 
 type ModalState = { mode: "create" } | { mode: "edit"; goal: SavingsGoalDTO };
 
-export function GoalsView() {
-  const [goals, setGoals] = useState<SavingsGoalDTO[]>([]);
+/** 目標清單由 page.tsx 在伺服器端讀好傳進來（見那支的說明）。之後的新增／編輯／刪除
+ *  照舊走 API，handler 拿回傳的完整清單 setState，所以這份 state 一直是最新的。 */
+export function GoalsView({ initialGoals }: { initialGoals: SavingsGoalDTO[] }) {
+  const [goals, setGoals] = useState(initialGoals);
   const showToast = useToast();
-  const [ready, setReady] = useState(false);
-  const showSkeleton = useSkeletonVisible(!ready);
-  // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
-  const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:goals", 3, ready ? goals.length : undefined);
   const [modal, setModal] = useState<ModalState | null>(null);
   const [contributeId, setContributeId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/expenses/goals")
-      .then((res) => res.json())
-      .then((data: { goals?: SavingsGoalDTO[] }) => {
-        if (cancelled) return;
-        setGoals(data.goals ?? []);
-        setReady(true);
-      })
-      .catch(() => {
-        if (!cancelled) setReady(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   async function handleSave(draft: GoalModalDraft) {
     if (!modal) return;
@@ -131,9 +110,7 @@ export function GoalsView() {
         actions={<SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />}
       />
 
-      {/* 等資料回來才出現：它是 fixed、不佔版面，所以不需要骨架，但資料還沒回來就先浮在
-          一片灰條上面很突兀（跟首頁、資產總表同一個處理）。 */}
-      {ready && <FloatingAddButton onClick={() => setModal({ mode: "create" })} label="新增存錢目標" />}
+      <FloatingAddButton onClick={() => setModal({ mode: "create" })} label="新增存錢目標" />
 
       <GoalModal
         key={modal ? JSON.stringify(modal) : "closed"}
@@ -163,35 +140,7 @@ export function GoalsView() {
         />
       )}
 
-      {!ready && showSkeleton ? (
-        // 一個目標一張獨立的卡（不是一張卡切成好幾列）：圖示＋名稱／期限一排，底下
-        // 金額、進度條、百分比各一行。
-        <StackedCardsSkeleton count={skeletonCount}>
-          {/* 圖示跟文字是 items-center 垂直置中（跟真的那張卡一樣，不是 items-start）；
-              右邊是一顆 32px 的圓形鉛筆鈕，不是一塊圓角長條。名稱 h-5（text-sm 的行高）、
-              期限 h-4（text-xs）。 */}
-          <div className="flex items-center gap-3">
-            <div className="size-11 shrink-0 animate-pulse rounded-2xl bg-[#EDE6FB]" />
-            <div className="min-w-0 flex-1">
-              <div className="flex h-5 items-center">
-                <SkeletonBar width={96} height={14} />
-              </div>
-              <div className="mt-0.5 flex h-4 items-center">
-                <SkeletonBar width={160} height={12} />
-              </div>
-            </div>
-            <div className="size-8 shrink-0 animate-pulse self-start rounded-full bg-[#EDE6FB]" />
-          </div>
-          <div className="mt-4 flex items-end justify-between">
-            <SkeletonBar width={148} height={20} />
-            <SkeletonBar width={88} height={12} />
-          </div>
-          <SkeletonBar width="100%" height={8} className="mt-2" />
-          <div className="mt-1 flex justify-end">
-            <SkeletonBar width={28} height={12} />
-          </div>
-        </StackedCardsSkeleton>
-      ) : goals.length === 0 ? (
+      {goals.length === 0 ? (
         <p className={text.faint}>還沒有任何目標，點右下角的＋新增第一個</p>
       ) : (
         <div className="flex flex-col gap-4">

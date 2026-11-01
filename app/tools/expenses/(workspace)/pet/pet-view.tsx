@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSkeletonVisible } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
-import { CardSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
 import { Card, CardBody } from "@/components/expenses/card";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { ProgressBar } from "@/components/expenses/progress-bar";
@@ -66,68 +64,40 @@ function StageIconButton({ label, icon, onClick }: { label: string; icon: string
 /** 食物背包／商店的食物清單——骨架跟真畫面都用同一份，格數才不會對不上。 */
 const FOOD_ITEMS = PET_ITEMS.filter((i) => i.kind === "食物");
 
-export function PetView() {
-  const [pet, setPet] = useState<PetState | null>(null);
-  const [accounts, setAccounts] = useState<AccountDTO[]>([]);
-  const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
-  const [categories, setCategories] = useState<CategoryDTO[]>([]);
-  const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
-  const [transfers, setTransfers] = useState<TransferDTO[]>([]);
-  const [ready, setReady] = useState(false);
-  const showSkeleton = useSkeletonVisible(!ready);
+/** 養成頁。
+ *
+ *  資料都是 page.tsx 在伺服器上讀好傳進來的，所以沒有「載入中」這個狀態，也不需要骨架。
+ *  initialPet 已經是結算過的狀態（含 justEarned），不用再打一次 GET /api/expenses/pet。 */
+export function PetView({
+  initialPet,
+  /** 這五份只用來算淨資產、決定角色的「財富等級」，這一頁不會改它們。 */
+  accounts,
+  accountTypes,
+  categories,
+  transactions,
+  transfers,
+}: {
+  initialPet: PetState | null;
+  accounts: AccountDTO[];
+  accountTypes: AccountTypeDTO[];
+  categories: CategoryDTO[];
+  transactions: TransactionDTO[];
+  transfers: TransferDTO[];
+}) {
+  const [pet, setPet] = useState<PetState | null>(initialPet);
   const [shopOpen, setShopOpen] = useState(false);
   const [bagOpen, setBagOpen] = useState(false);
   const [mood, setMood] = useState<PetMood>("idle");
   // 連續餵第二次時 mood 已經是 "eating"、setMood 等於沒變，下面那個計時器就不會重新
   // 計時，第二次的動畫會被第一次的計時器提早切掉。用這個每次遞增的數字當重新計時的依據。
   const [feedNonce, setFeedNonce] = useState(0);
-  const [message, setMessage] = useState<string | null>(null);
-  // 「今天」掛載時算一次固定住（本地日期，不是 UTC）——伺服器時區不一定跟使用者同一個，
-  // 所以結算要看的「今天」由這邊決定。
-  const [todayISO] = useState(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  });
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      fetch(`/api/expenses/pet?today=${todayISO}`).then((res) => res.json()),
-      fetch("/api/expenses/accounts").then((res) => res.json()),
-      fetch("/api/expenses/account-types").then((res) => res.json()),
-      fetch("/api/expenses/categories").then((res) => res.json()),
-      fetch("/api/expenses/transactions").then((res) => res.json()),
-      fetch("/api/expenses/transfers").then((res) => res.json()),
-    ])
-      .then(
-        ([petData, accountsData, typesData, catData, txData, transfersData]: [
-          { pet?: PetState },
-          { accounts?: AccountDTO[] },
-          { accountTypes?: AccountTypeDTO[] },
-          { categories?: CategoryDTO[] },
-          { transactions?: TransactionDTO[] },
-          { transfers?: TransferDTO[] },
-        ]) => {
-          if (cancelled) return;
-          setPet(petData.pet ?? null);
-          setAccounts(accountsData.accounts ?? []);
-          setAccountTypes(typesData.accountTypes ?? []);
-          setCategories(catData.categories ?? []);
-          setTransactions(txData.transactions ?? []);
-          setTransfers(transfersData.transfers ?? []);
-          if (petData.pet?.justEarned?.length) {
-            setMessage(`獲得 ${petData.pet.justEarned.reduce((s, r) => s + r.coins, 0)} 顆星星幣：${petData.pet.justEarned.map((r) => r.label).join("、")}`);
-          }
-          setReady(true);
-        },
-      )
-      .catch(() => {
-        if (!cancelled) setReady(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [todayISO]);
+  // 進頁面時剛結算到的獎勵先報一句。放在 state 初始值而不是 effect 裡：這是算得出來的
+  // 初始畫面，不是副作用。
+  const [message, setMessage] = useState<string | null>(() =>
+    initialPet?.justEarned?.length
+      ? `獲得 ${initialPet.justEarned.reduce((s, r) => s + r.coins, 0)} 顆星星幣：${initialPet.justEarned.map((r) => r.label).join("、")}`
+      : null,
+  );
 
   /** count 只有「買食物」會用到，一次買好幾份（見 pet-shop.tsx 的數量選擇器）。 */
   async function act(action: "feed" | "buy" | "equip", itemId: string, count = 1) {
@@ -172,67 +142,6 @@ export function PetView() {
     const timer = setTimeout(() => setMood("idle"), PET_EATING_MS);
     return () => clearTimeout(timer);
   }, [mood, feedNonce]);
-
-  // 骨架等掛載後才畫：列數只有瀏覽器讀得到，伺服器端畫出來的一定是預設值，
-  // 不擋的話會先閃一次錯的列數再換成記住的（見 useSkeletonVisible）。
-  if (!ready) {
-    if (!showSkeleton) return null;
-    // 這一頁的版面是固定的（角色場地、簽到、食物背包三張卡），不像清單頁會隨筆數
-    // 變長，所以骨架直接把那三張卡的形狀畫出來，載入前後的高度就一樣。
-    return (
-      <div className="flex flex-col gap-4">
-        <PageHeader title="養成" flush />
-        <CardSkeleton>
-          {/* 骨架跟著場地的 16:9 走（見下面的 aspect-[16/9]）。 */}
-          <div className="aspect-[16/9] w-full animate-pulse rounded-2xl bg-[#EDE6FB]" />
-          <div className="mt-3">
-            <SkeletonBar width={56} height={14} />
-            <SkeletonBar width={140} height={12} className="mt-1.5" />
-          </div>
-          <div className="mt-3">
-            <div className="mb-1 flex items-center justify-between">
-              <SkeletonBar width={40} height={12} />
-              <SkeletonBar width={48} height={12} />
-            </div>
-            <SkeletonBar width="100%" height={8} />
-          </div>
-        </CardSkeleton>
-
-        {/* 簽到卡：標題＋今天拿多少一排、說明一行、底下七個格子。 */}
-        <CardSkeleton>
-          <div className="flex items-center justify-between gap-2">
-            <SkeletonBar width={64} height={20} />
-            <SkeletonBar width={72} height={16} />
-          </div>
-          <div className="mt-0.5">
-            <SkeletonBar width={180} height={16} />
-          </div>
-          <div className="mt-3 flex gap-1.5">
-            {Array.from({ length: SIGNIN_STREAK_CAP }, (_, i) => (
-              <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                <div className="h-8 w-full animate-pulse rounded-xl bg-[#EDE6FB]" />
-                <SkeletonBar width={28} height={12} />
-              </div>
-            ))}
-          </div>
-        </CardSkeleton>
-
-        <CardSkeleton>
-          {/* 格數直接數 PET_ITEMS 裡的食物有幾種，不要寫死 3：之後多加一種食物時，
-              骨架會自己跟上，不會變成「載入時三格、載完四格」。 */}
-          <div className="flex items-center justify-between gap-2">
-            {FOOD_ITEMS.map((item) => (
-              <div key={item.id} className="flex flex-1 flex-col items-center gap-1 py-1">
-                <div className="size-10 animate-pulse rounded-xl bg-[#EDE6FB]" />
-                <SkeletonBar width={56} height={11} />
-              </div>
-            ))}
-          </div>
-        </CardSkeleton>
-
-      </div>
-    );
-  }
 
   const level = levelFromXp(pet?.xp ?? 0);
   const net = netWorth(accounts, accountTypes, transactions, categories, transfers);
