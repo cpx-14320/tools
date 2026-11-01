@@ -9,7 +9,7 @@ import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { HiddenAmountsToggle, useHiddenAmounts } from "@/components/expenses/hidden-amounts";
 import { CardSkeleton, DatePillSkeleton, GroupedSectionSkeleton, SectionSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
-import { useSkeletonCount, useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
+import { useSkeletonCount, useSkeletonShape, useSkeletonVisible } from "@/components/expenses/skeleton-count";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { text } from "@/components/expenses/theme";
@@ -69,13 +69,13 @@ export function DashboardView() {
   const [filter, setFilter] = useState(defaultDateFilter);
   const showToast = useToast();
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
-  const skeletonReady = useSkeletonReady();
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [budgetRules, setBudgetRules] = useState<BudgetRuleDTO[]>([]);
   const [ready, setReady] = useState(false);
+  const showSkeleton = useSkeletonVisible(!ready);
   const [addOpen, setAddOpen] = useState(false);
   // 兩張長清單各自的「展開／收合」，預設都是收起來的（見 ExpandToggle）。
   const [expenseRowsExpanded, setExpenseRowsExpanded] = useState(false);
@@ -227,10 +227,9 @@ export function DashboardView() {
   );
 
   // 骨架等掛載後才畫：列數只有瀏覽器讀得到，伺服器端畫出來的一定是預設值，
-  // 不擋的話會先閃一次錯的列數再換成記住的（見 useSkeletonReady）。
-  if (!skeletonReady) return null;
-
+  // 不擋的話會先閃一次錯的列數再換成記住的（見 useSkeletonVisible）。
   if (!ready) {
+    if (!showSkeleton) return null;
     // 骨架照著載入完成後的版面排——連外層的 gap 都要一樣（下面是 gap-5），不然資料
     // 回來時每一塊的間距都會變一次。三塊清單的列數各自來自上次記住的實際筆數。
     return (

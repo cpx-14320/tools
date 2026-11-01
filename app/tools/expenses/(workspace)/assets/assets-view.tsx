@@ -10,7 +10,7 @@ import {
   SectionSkeleton,
   SkeletonBar,
 } from "@/components/expenses/skeleton";
-import { useSkeletonCount, useSkeletonReady, useSkeletonShape } from "@/components/expenses/skeleton-count";
+import { useSkeletonCount, useSkeletonVisible, useSkeletonShape } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton, FloatingSecondaryButton } from "@/components/expenses/floating-add-button";
 import { EmptyListCard, ListCard, ListRow } from "@/components/expenses/list-row";
@@ -39,12 +39,12 @@ export function AssetsView() {
   const { filter } = useDateFilter();
   const showToast = useToast();
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
-  const skeletonReady = useSkeletonReady();
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [ready, setReady] = useState(false);
+  const showSkeleton = useSkeletonVisible(!ready);
   // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
   const [createOpen, setCreateOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
@@ -379,7 +379,7 @@ export function AssetsView() {
         </div>
       )}
 
-      {!skeletonReady ? null : !ready ? (
+      {!ready && showSkeleton ? (
         // 骨架照著載入完成後的版面排：淨資產大卡、資產/負債兩張小卡，再來是兩段帳戶清單。
         <div>
           <div className="flex flex-col gap-3">

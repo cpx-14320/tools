@@ -45,7 +45,7 @@ import {
 } from "@/components/expenses/skeleton";
 import { YearCompareTable, type YearColumn } from "@/components/expenses/year-compare-table";
 import { YearPickerModal } from "@/components/expenses/year-picker-modal";
-import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
+import { useSkeletonShape, useSkeletonVisible } from "@/components/expenses/skeleton-count";
 import { formatCurrency, formatDate } from "@/lib/format";
 
 type ReportKind = "支出" | "收入" | "結餘" | "資產";
@@ -82,12 +82,12 @@ const TOP_N = PREVIEW_COUNT;
 export function ReportsView() {
   const { filter, compare } = useDateFilter();
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
-  const skeletonReady = useSkeletonReady();
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [ready, setReady] = useState(false);
+  const showSkeleton = useSkeletonVisible(!ready);
   const [kind, setKind] = useState<ReportKind>("支出");
   const [expanded, setExpanded] = useState(false);
   const [granularity, setGranularity] = useState<TrendGranularity>("month");
@@ -476,10 +476,9 @@ export function ReportsView() {
   const selectedExpensePoint = kind === "結餘" ? (expenseTrendPoints.find((p) => p.start === selectedTrendStart) ?? null) : null;
 
   // 骨架等掛載後才畫：列數只有瀏覽器讀得到，伺服器端畫出來的一定是預設值，
-  // 不擋的話會先閃一次錯的列數再換成記住的（見 useSkeletonReady）。
-  if (!skeletonReady) return null;
-
+  // 不擋的話會先閃一次錯的列數再換成記住的（見 useSkeletonVisible）。
   if (!ready) {
+    if (!showSkeleton) return null;
     // 骨架照著載入完成後的版面排：分頁切換、日期篩選器、期間總額、明細（圓餅＋清單）、
     // 趨勢。前兩排是固定的控制項，直接畫出它們的形狀，資料回來時只有數字長出來。
     return (

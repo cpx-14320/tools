@@ -5,7 +5,7 @@ import { FaIcon } from "@/components/expenses/fa-icon";
 import { DateGroupsSkeleton, PageHeaderSkeleton, SkeletonBar, SummaryCardSkeleton } from "@/components/expenses/skeleton";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
-import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
+import { useSkeletonShape, useSkeletonVisible } from "@/components/expenses/skeleton-count";
 import { useSearchParams } from "next/navigation";
 import { SegmentedControl } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
@@ -62,12 +62,12 @@ export function TransactionsView() {
   const requestedMonth = searchParams.get("month") ?? "";
   const showToast = useToast();
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
-  const skeletonReady = useSkeletonReady();
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [ready, setReady] = useState(false);
+  const showSkeleton = useSkeletonVisible(!ready);
   // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
   const [query, setQuery] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
@@ -247,10 +247,9 @@ export function TransactionsView() {
   }
 
   // 骨架等掛載後才畫：形狀只有瀏覽器讀得到，伺服器端畫出來的一定是預設值，不擋的話
-  // 會先閃一次錯的形狀再換成記住的（見 useSkeletonReady）。
-  if (!skeletonReady) return null;
-
+  // 會先閃一次錯的形狀再換成記住的（見 useSkeletonVisible）。
   if (!ready) {
+    if (!showSkeleton) return null;
     // 整頁都畫骨架，不是只畫清單：標題列、日期膠囊、兩顆圖示、支出／收入、選取、搜尋列
     // 本來都是「資料還沒回來就先長出來」的，結果載入時上半頁是完整的控制項、下半頁才是
     // 灰條，看起來像壞掉一半。尺寸照真的元件抓，資料回來才不會整塊跳。

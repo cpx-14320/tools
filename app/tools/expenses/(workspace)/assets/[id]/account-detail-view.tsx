@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/expenses/page-header";
 import { CardSkeleton, DateGroupsSkeleton, PageHeaderSkeleton, SelectFieldSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
-import { useSkeletonReady, useSkeletonShape } from "@/components/expenses/skeleton-count";
+import { useSkeletonVisible, useSkeletonShape } from "@/components/expenses/skeleton-count";
 import { LineIconButton } from "@/components/expenses/line-icon-button";
 import { SegmentedControl } from "@/components/expenses/button";
 import { BackLink } from "@/components/expenses/back-link";
@@ -40,13 +40,13 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
   const router = useRouter();
   const { filter } = useDateFilter();
   const showToast = useToast();
-  const skeletonReady = useSkeletonReady();
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [ready, setReady] = useState(false);
+  const showSkeleton = useSkeletonVisible(!ready);
   const [editOpen, setEditOpen] = useState(false);
   const [reconcileOpen, setReconcileOpen] = useState(false);
   // 換帳戶：點上面那顆下拉欄位開帳戶選擇彈窗，選了直接換到那個帳戶的明細頁。
@@ -267,10 +267,9 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
   );
 
   // 骨架等掛載後才畫：明細的組數只有瀏覽器讀得到（localStorage），伺服器端畫出來的
-  // 一定是預設值，不擋的話會先閃一次錯的形狀再換成記住的（見 useSkeletonReady）。
-  if (!skeletonReady) return null;
-
+  // 一定是預設值，不擋的話會先閃一次錯的形狀再換成記住的（見 useSkeletonVisible）。
   if (!ready) {
+    if (!showSkeleton) return null;
     // 骨架照著載入完成後的版面排：標題＋日期＋鉛筆、換帳戶欄位、餘額卡（含「這段期間
     // 進出多少」那一行跟對帳鈕）、明細卡。這一頁本來只寫一行「載入中…」，資料回來整頁
     // 一次長出來，畫面會從一行字暴衝成滿滿一頁。

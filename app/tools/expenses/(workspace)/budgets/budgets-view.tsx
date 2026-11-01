@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { GroupedCardsSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
+import { useSkeletonShape, useSkeletonVisible } from "@/components/expenses/skeleton-count";
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
 import { ListRow } from "@/components/expenses/list-row";
@@ -33,9 +33,9 @@ type EditTarget = { category: CategoryDTO; rule?: BudgetRuleDTO };
 export function BudgetsView() {
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const showToast = useToast();
-  const skeletonReady = useSkeletonReady();
   const [rules, setRules] = useState<BudgetRuleDTO[]>([]);
   const [ready, setReady] = useState(false);
+  const showSkeleton = useSkeletonVisible(!ready);
   const [editing, setEditing] = useState<EditTarget | null>(null);
 
   useEffect(() => {
@@ -108,7 +108,7 @@ export function BudgetsView() {
     <div className="flex flex-col gap-4">
       <PageHeader flush title="預算設定" help="點分類設定「從哪個月起每月多少」，之後的月份會沿用；要調整時再設一筆新的，之前的月份不會被追溯蓋掉" />
 
-      {!skeletonReady ? null : !ready ? (
+      {!ready && showSkeleton ? (
         <GroupedCardsSkeleton shape={skeletonShape} />
       ) : expenseCategories.length === 0 ? (
         <p className={text.faint}>還沒有任何支出分類，先去「收支分類」建立分類才能編預算</p>

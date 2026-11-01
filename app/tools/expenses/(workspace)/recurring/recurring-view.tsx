@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { SkeletonBar, StackedCardsSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonCount, useSkeletonReady } from "@/components/expenses/skeleton-count";
+import { useSkeletonCount, useSkeletonVisible } from "@/components/expenses/skeleton-count";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
@@ -47,11 +47,11 @@ interface PendingOccurrence {
 export function RecurringView() {
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const showToast = useToast();
-  const skeletonReady = useSkeletonReady();
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [rules, setRules] = useState<RecurringRuleDTO[]>([]);
   const [goals, setGoals] = useState<SavingsGoalDTO[]>([]);
   const [ready, setReady] = useState(false);
+  const showSkeleton = useSkeletonVisible(!ready);
   // 載入中畫骨架，列數用上次記住的實際筆數（見 skeleton-count.ts）。
   const skeletonCount = useSkeletonCount("cpx-tools:expenses-skeleton:recurring", 4, ready ? rules.length : undefined);
   const [modal, setModal] = useState<ModalState | null>(null);
@@ -353,7 +353,7 @@ export function RecurringView() {
         </Card>
       )}
 
-      {!skeletonReady ? null : !ready ? (
+      {!ready && showSkeleton ? (
         // 一筆固定收支一張獨立的卡，照真的那張排：圖示 size-11（IconAvatar 預設）跟文字
         // 垂直置中，右上角兩顆 32px 的圓鈕（編輯、暫停／恢復）；底下是金額那一排、
         // 循環進度條、起訖日期各一行。

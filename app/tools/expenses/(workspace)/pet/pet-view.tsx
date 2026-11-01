@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSkeletonReady } from "@/components/expenses/skeleton-count";
+import { useSkeletonVisible } from "@/components/expenses/skeleton-count";
 import { PageHeader } from "@/components/expenses/page-header";
 import { CardSkeleton, SkeletonBar } from "@/components/expenses/skeleton";
 import { Card, CardBody } from "@/components/expenses/card";
@@ -68,13 +68,13 @@ const FOOD_ITEMS = PET_ITEMS.filter((i) => i.kind === "食物");
 
 export function PetView() {
   const [pet, setPet] = useState<PetState | null>(null);
-  const skeletonReady = useSkeletonReady();
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [transactions, setTransactions] = useState<TransactionDTO[]>([]);
   const [transfers, setTransfers] = useState<TransferDTO[]>([]);
   const [ready, setReady] = useState(false);
+  const showSkeleton = useSkeletonVisible(!ready);
   const [shopOpen, setShopOpen] = useState(false);
   const [bagOpen, setBagOpen] = useState(false);
   const [mood, setMood] = useState<PetMood>("idle");
@@ -174,10 +174,9 @@ export function PetView() {
   }, [mood, feedNonce]);
 
   // 骨架等掛載後才畫：列數只有瀏覽器讀得到，伺服器端畫出來的一定是預設值，
-  // 不擋的話會先閃一次錯的列數再換成記住的（見 useSkeletonReady）。
-  if (!skeletonReady) return null;
-
+  // 不擋的話會先閃一次錯的列數再換成記住的（見 useSkeletonVisible）。
   if (!ready) {
+    if (!showSkeleton) return null;
     // 這一頁的版面是固定的（角色場地、簽到、食物背包三張卡），不像清單頁會隨筆數
     // 變長，所以骨架直接把那三張卡的形狀畫出來，載入前後的高度就一樣。
     return (

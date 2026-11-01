@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { SectionedListSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
+import { useSkeletonShape, useSkeletonVisible } from "@/components/expenses/skeleton-count";
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
@@ -19,12 +19,12 @@ import { categoryColorClass } from "@/lib/expenses/categories";
 export function AccountTypesView() {
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const showToast = useToast();
-  const skeletonReady = useSkeletonReady();
   // 交易、轉帳、分類都不用了——金額的部分整塊搬去資產總表（見下面 section 的說明）。
   // 帳戶還是要抓一份，但不是為了顯示筆數，而是為了知道「這個類型底下還有沒有帳戶」：
   // 有的話編輯彈窗裡的資產/負債要鎖住（見 account-type-modal.tsx）。
   const [accounts, setAccounts] = useState<{ accountTypeId: string }[]>([]);
   const [ready, setReady] = useState(false);
+  const showSkeleton = useSkeletonVisible(!ready);
   const [modal, setModal] = useState<AccountTypeDTO | null>(null);
   const [batchOpen, setBatchOpen] = useState(false);
   // 擋下來的理由（刪不掉、或資產/負債換不了）直接存成一句話——兩種情況的說明不一樣，
@@ -276,7 +276,7 @@ export function AccountTypesView() {
         />
       )}
 
-      {!skeletonReady ? null : !ready ? (
+      {!ready && showSkeleton ? (
         <SectionedListSkeleton counts={skeletonShape} />
       ) : accountTypes.length === 0 ? (
         <p className={text.faint}>還沒有任何帳戶類型，點右下角的＋新增</p>

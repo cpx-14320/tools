@@ -8,7 +8,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /** 再長的清單超出第一屏的部分本來就看不到，畫上百列骨架只會讓載入本身變慢。 */
 const MAX_SKELETON = 12;
@@ -36,22 +36,47 @@ export function saveSkeletonCount(key: string, count: number) {
   }
 }
 
-/** 骨架可以畫了嗎——掛載完成才是 true。
+/** 骨架要等「載入真的慢到會被察覺」才畫。
  *
- *  列數只有瀏覽器讀得到（localStorage），伺服器端畫出來的一定是 fallback。如果骨架在
- *  伺服器端就畫出來，使用者會先看到 fallback 的五列、hydration 完才換成記住的兩列，
- *  變成「骨架自己先跳一次」。所以骨架一律等掛載後才畫：呼叫端在 !ready 的分支前面先
- *  擋一道 `if (!skeletonReady) return null`，第一次畫出來的就是正確的列數。
+ *  `loading` 一變 true 不立刻顯示，先等 DELAY_MS；資料在那之前就回來了就整個不畫——
+ *  快的時候閃一下骨架再換成內容，比直接等內容還吵。人對「畫面沒反應」的容忍大約是
+ *  100ms，超過 300ms 才開始覺得卡，所以 250ms 之前不畫是安全的。
  *
- *  掛載 effect 跟抓資料的 effect 是同一輪跑的，所以「什麼都不畫」的那一瞬間只有一個
- *  frame，不會看到空白停留。 */
-export function useSkeletonReady(): boolean {
-  const [mounted, setMounted] = useState(false);
+ *  一旦畫了就至少停 MIN_VISIBLE_MS 再收：資料在第 260ms 回來的話，骨架只存在 10ms，
+ *  那是比不顯示更糟的一閃。
+ *
+ *  這個 hook 也同時取代了原本的 useSkeletonReady——它回傳的第一個值一定是 false
+ *  （計時器只在瀏覽器端跑），伺服器端跟 hydration 當下畫出來的都是「沒有骨架」，
+ *  不會有兩邊對不起來的問題。 */
+const DELAY_MS = 250;
+const MIN_VISIBLE_MS = 400;
+
+export function useSkeletonVisible(loading: boolean): boolean {
+  const [visible, setVisible] = useState(false);
+  const shownAt = useRef(0);
+
   useEffect(() => {
-    /* eslint-disable-next-line react-hooks/set-state-in-effect */
-    setMounted(true);
-  }, []);
-  return mounted;
+    if (loading) {
+      const timer = setTimeout(() => {
+        shownAt.current = Date.now();
+        setVisible(true);
+      }, DELAY_MS);
+      return () => clearTimeout(timer);
+    }
+    // 載入結束：還沒畫出來就直接不畫；已經畫了就補滿最短顯示時間再收。
+    let cancelled = false;
+    const shownFor = shownAt.current === 0 ? Infinity : Date.now() - shownAt.current;
+    const remaining = Math.max(0, MIN_VISIBLE_MS - shownFor);
+    const timer = setTimeout(() => {
+      if (!cancelled) setVisible(false);
+    }, remaining);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [loading]);
+
+  return visible;
 }
 
 /** 每一頁都要「讀上次的筆數、載入完成後記住這次的筆數」，包成 hook 讓各頁一行接上。

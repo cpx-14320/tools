@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { GroupedCardsSkeleton } from "@/components/expenses/skeleton";
-import { useSkeletonShape, useSkeletonReady } from "@/components/expenses/skeleton-count";
+import { useSkeletonShape, useSkeletonVisible } from "@/components/expenses/skeleton-count";
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
@@ -29,9 +29,9 @@ export function CategoriesView() {
   const [accounts, setAccounts] = useState<AccountDTO[]>([]);
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>([]);
   const showToast = useToast();
-  const skeletonReady = useSkeletonReady();
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [ready, setReady] = useState(false);
+  const showSkeleton = useSkeletonVisible(!ready);
   const [modal, setModal] = useState<CategoryDTO | null>(null);
   const [batchTarget, setBatchTarget] = useState<BatchTarget | null>(null);
   const [kind, setKind] = useState<CategoryKind>("支出");
@@ -340,7 +340,7 @@ export function CategoriesView() {
         />
       )}
 
-      {!skeletonReady ? null : !ready ? (
+      {!ready && showSkeleton ? (
         // 多選／排序模式下每張卡最後那一列「＋ 新增子分類」不顯示，骨架也跟著不畫。
         <GroupedCardsSkeleton shape={skeletonShape} footer={!selection.selecting && !sorting} />
       ) : parents.length === 0 ? (
