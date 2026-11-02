@@ -65,8 +65,24 @@ export function YearPickerModal({
       footer={<ModalFooter onClose={onClose} onConfirm={() => onSave({ baseYear: base, compareYears: compare, deltaMode: mode })} />}
     >
       <div>
+        {/* 金額跟百分比回答的不是同一種問題：「三月比去年多花了 NT$ 1,200」是可以直接
+            拿來做決定的數字；「多了 38%」則是在基數差很多的年份之間才看得出意義（今年
+            才開始記帳的分類，金額差不大但比例會很誇張）。兩個都留著讓使用者自己選，
+            比替他決定一個好。 */}
+        <p className={`mb-2 ${text.label}`}>增減顯示方式</p>
+        <SegmentedControl
+          className="self-start"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: "amount", label: "金額" },
+            { value: "percent", label: "百分比" },
+          ]}
+        />
+      </div>
+
+      <div>
         <p className={`mb-2 ${text.label}`}>基準年</p>
-        <p className={`mb-2 ${text.muted}`}>表格上每一欄的增減都是跟這一年比。</p>
         <div className={YEAR_GRID}>
           {availableYears.map((y) => (
             <OptionChip key={y} active={y === base} onClick={() => chooseBase(y)}>
@@ -88,26 +104,6 @@ export function YearPickerModal({
             ))}
         </div>
         {compare.length === 0 && <p className={`mt-2 ${text.faint}`}>一年都沒挑的話，表格只會有基準年那一欄。</p>}
-      </div>
-
-      <div>
-        {/* 金額跟百分比回答的不是同一種問題：「三月比去年多花了 NT$ 1,200」是可以直接
-            拿來做決定的數字；「多了 38%」則是在基數差很多的年份之間才看得出意義（今年
-            才開始記帳的分類，金額差不大但比例會很誇張）。兩個都留著讓使用者自己選，
-            比替他決定一個好。 */}
-        <p className={`mb-2 ${text.label}`}>增減顯示方式</p>
-        <SegmentedControl
-          className="self-start"
-          value={mode}
-          onChange={setMode}
-          options={[
-            { value: "amount", label: "金額" },
-            { value: "percent", label: "百分比" },
-          ]}
-        />
-        <p className={`mt-2 ${text.faint}`}>
-          {mode === "percent" ? "基準年那一格是 0 的時候改顯示金額——除以 0 算不出比例。" : "每一格數字下面顯示跟基準年差了多少錢。"}
-        </p>
       </div>
     </Modal>
   );

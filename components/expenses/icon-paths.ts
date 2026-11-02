@@ -16,6 +16,9 @@ export const ICON_PATHS = {
   // 養成頁疊在場地右上角的兩顆入口
   petShop: "/expenses/pet-shop.png",
   petBag: "/expenses/pet-bag.png",
+  // 星星幣。本來是 ⭐ emoji，但 emoji 在不同平台長得不一樣（iOS 立體、Android 扁平、
+  // Windows 又是另一種），跟整頁的插畫風格對不上。
+  petStar: "/expenses/pet-star.png",
 
   // 設定頁各項功能
   settingCategories: "/expenses/setting-category.png",

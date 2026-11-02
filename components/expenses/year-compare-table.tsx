@@ -103,11 +103,11 @@ export function YearCompareTable({
                   {/* sticky：年份多到要捲時，月份這一欄要釘住，不然捲到右邊就不知道
                       自己在看第幾個月。bg 要補上，不然捲過去的數字會透出來疊在上面。 */}
                   <th className="sticky left-0 z-10 bg-white px-1 py-2 text-left text-xs font-medium text-[#9C94C4]">月份</th>
-                  {columns.map((c, col) => (
+                  {/* 第一欄就是基準年，標題不再另外寫「基準」兩個字：那是在選擇年份的
+                      彈窗裡決定的，使用者剛設完就知道；每次看表都被提醒一次反而是雜訊。 */}
+                  {columns.map((c) => (
                     <th key={c.year} className="whitespace-nowrap px-3 py-2 text-right text-xs font-semibold tabular-nums text-[#4A3B7C]">
                       {c.year}
-                      {/* 標一下哪一欄是基準——不然三欄以上時看不出那些 ▲▼ 在跟誰比。 */}
-                      {col === 0 && <span className="ml-1 font-normal text-[#9C94C4]">基準</span>}
                     </th>
                   ))}
                 </tr>
@@ -134,10 +134,12 @@ export function YearCompareTable({
                     })}
                   </tr>
                 ))}
+                {/* 合計這一列跟上面十二個月之間拉開一點（pt-4），看得出它是結論不是第十三
+                    個月；底下不用留白，卡片自己的 padding 就到了。 */}
                 <tr>
-                  <th className="sticky left-0 z-10 bg-white px-1 py-2 text-left align-top text-xs font-medium text-[#4A3B7C]">合計</th>
+                  <th className="sticky left-0 z-10 bg-white px-1 pb-0 pt-4 text-left align-top text-xs font-medium text-[#4A3B7C]">合計</th>
                   {totals.map((t, col) => (
-                    <td key={columns[col].year} className={`${cellClass} font-semibold`}>
+                    <td key={columns[col].year} className={`${cellClass} px-3 pb-0 pt-4 font-semibold`}>
                       {t === null ? (
                         <span className="text-[#DDD6F3]">—</span>
                       ) : (

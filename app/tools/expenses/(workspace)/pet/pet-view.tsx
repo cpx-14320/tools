@@ -43,19 +43,28 @@ interface PetState {
   justEarned: { key: string; coins: number; label: string }[];
 }
 
-/** 疊在場地右上角的小圖示鈕（商店、背包）。半透明白底＋毛玻璃，不管背景換成哪一張
- *  都看得見；尺寸比照日期旁邊那排圖示鈕（32px）。 */
+/** 疊在場地右上角的小圖示鈕（商店、背包）——圖直接放上去，不墊白色圓底。
+ *
+ *  圖本身已經是有造型、有顏色的去背插圖，再套一層白圓等於把它框在一個跟場地無關的
+ *  方塊裡；去掉之後兩顆看起來就是「場地裡的東西」，跟角色同一個世界。 */
 function StageIconButton({ label, icon, onClick }: { label: string; icon: string; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="grid size-9 place-items-center rounded-full bg-white/85 shadow-sm backdrop-blur transition-opacity hover:opacity-90"
-    >
-      <IconImg src={icon} alt={label} size={20} background={false} />
+    // flex 而不是預設的 inline 內容流：IconImg 是 inline-block，在按鈕裡會按基線對齊，
+    // 底下多出一截行高的空間（量到 40px 的圖撐成 46px 高的按鈕）。
+    <button type="button" onClick={onClick} aria-label={label} title={label} className="flex transition-opacity hover:opacity-80">
+      <IconImg src={icon} alt={label} size={40} background={false} />
     </button>
+  );
+}
+
+/** 「星星圖＋數字」——說明彈窗裡那幾列獎勵金額都長這樣，收成一個元件才不會四個地方
+ *  各寫一次 emoji 跟樣式。 */
+function CoinAmount({ value }: { value: number | string }) {
+  return (
+    <span className="flex items-center gap-1 text-xs font-semibold tabular-nums text-[#6F5FD6]">
+      <IconImg src={ICON_PATHS.petStar} alt="星星幣" size={14} background={false} />
+      {value}
+    </span>
   );
 }
 
@@ -159,17 +168,15 @@ export function PetView({
             <p className={`${text.muted} leading-relaxed`}>好好記帳就能賺星星幣，拿去餵角色、換衣服。</p>
             <p className={text.sectionHeading}>怎麼賺星星幣</p>
             <ListCard>
-              <ListRow name="每日簽到（打開記帳本就算）" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ {signinCoins(1)}</span>} />
+              <ListRow name="每日簽到（打開記帳本就算）" right={<CoinAmount value={signinCoins(1)} />} />
               <ListRow
                 name={`連續簽到第 2～${SIGNIN_STREAK_CAP} 天`}
                 right={
-                  <span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">
-                    ⭐ {signinCoins(2)}～{signinCoins(SIGNIN_STREAK_CAP)}
-                  </span>
+                  <CoinAmount value={`${signinCoins(2)}～${signinCoins(SIGNIN_STREAK_CAP)}`} />
                 }
               />
-              <ListRow name="每記一筆帳" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ {ENTRY_COINS}</span>} />
-              <ListRow name="上個月每個分類都沒超支" right={<span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">⭐ {BUDGET_KEPT_COINS}</span>} />
+              <ListRow name="每記一筆帳" right={<CoinAmount value={ENTRY_COINS} />} />
+              <ListRow name="上個月每個分類都沒超支" right={<CoinAmount value={BUDGET_KEPT_COINS} />} />
             </ListCard>
             <p className={`${text.faint} leading-relaxed`}>
               連續簽到是累加的：第一天 {signinCoins(1)}、第二天再多 {SIGNIN_STEP_COINS * 2}、第三天再多 {SIGNIN_STEP_COINS * 3}
@@ -198,7 +205,8 @@ export function PetView({
             style={{ background: petBackground(pet?.backgroundId ?? "") }}
           >
             <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-white/85 px-2.5 py-1 text-sm font-semibold tabular-nums text-[#6F5FD6] backdrop-blur">
-              ⭐ {pet?.coins ?? 0}
+              <IconImg src={ICON_PATHS.petStar} alt="星星幣" size={16} background={false} />
+              {pet?.coins ?? 0}
             </span>
             <span className="absolute right-3 top-3 flex flex-col gap-2">
               <StageIconButton label="商店" onClick={() => setShopOpen(true)} icon={ICON_PATHS.petShop} />
@@ -291,7 +299,7 @@ export function PetView({
                       done ? "bg-[#6F5ED4] text-white" : "bg-[#F3EFFC] text-[#C7BFE6]"
                     }`}
                   >
-                    {done ? "⭐" : ""}
+                    {done && <IconImg src={ICON_PATHS.petStar} alt="已簽到" size={16} background={false} />}
                   </span>
                   <span className={`text-[10px] ${isCurrent ? "font-semibold text-[#6F5FD6]" : text.faint}`}>第 {day} 天</span>
                 </div>
