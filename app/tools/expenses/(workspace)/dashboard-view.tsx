@@ -291,7 +291,7 @@ export function DashboardView({
             {(incomeRowsExpanded ? incomeRows : incomeRows.slice(0, SUMMARY_LIMIT)).map((row) => (
               <Link
                 key={row.id}
-                href={`/tools/expenses/transactions?${incomeDetailQuery}&categoryId=${row.id}`}
+                href={`/tools/expenses/transactions?${incomeDetailQuery}`}
                 className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
               >
                 <ListProgressRow
@@ -359,7 +359,7 @@ export function DashboardView({
               row.budget ? (
                 <Link
                   key={row.category.id}
-                  href={`/tools/expenses/transactions?${budgetDetailQuery}&categoryId=${row.category.id}`}
+                  href={`/tools/expenses/transactions?${budgetDetailQuery}`}
                   className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
                 >
                   <ListProgressRow
@@ -375,7 +375,7 @@ export function DashboardView({
               ) : (
                 <ListRow
                   key={row.category.id}
-                  href={`/tools/expenses/transactions?${budgetDetailQuery}&categoryId=${row.category.id}`}
+                  href={`/tools/expenses/transactions?${budgetDetailQuery}`}
                   icon={row.category.icon}
                   iconClassName={categoryColorClass[row.category.color]}
                   name={row.category.name}
@@ -402,7 +402,9 @@ export function DashboardView({
       <div>
         <div className="mb-2 flex items-center justify-between px-1">
           <p className={text.sectionHeading}>最近消費</p>
-          <Link href="/tools/expenses/transactions" className="text-xs font-medium text-[#6F5FD6]">
+          {/* 「查看全部」帶的是現在看的那個月，跟上面兩區一致。這一區的內容允許跨月
+              （見上面 recentEnd 的說明），但「全部」指的是這個月的全部。 */}
+          <Link href={`/tools/expenses/transactions?${budgetDetailQuery}`} className="text-xs font-medium text-[#6F5FD6]">
             查看全部
           </Link>
         </div>
@@ -430,8 +432,14 @@ export function DashboardView({
                       // 子分類沿用大分類的圖示與顏色：「下午茶」顯示的是「餐飲」那顆。
                       const cat = displayCategoryOf(categories, t.categoryId);
                       return (
-                        // 整列都可以點，跟右上角的「查看全部」去同一頁。
-                        <Link key={t.id} href="/tools/expenses/transactions" className="flex w-full items-center gap-3 px-4 py-3 text-left">
+                        // 整列帶的是**這一筆自己的月份**，不是上面「查看全部」那個月：
+                        // 這一區會同時出現 11 月跟 10 月的紀錄（跨月界，見 recentEnd），
+                        // 點 10/30 那一筆卻跳到 11 月的清單，等於找不到剛剛點的東西。
+                        <Link
+                          key={t.id}
+                          href={`/tools/expenses/transactions?kind=支出&month=${t.date.slice(0, 7)}`}
+                          className="flex w-full items-center gap-3 px-4 py-3 text-left"
+                        >
                           <TransactionRowLabel
                             icon={cat?.icon ?? "🏷️"}
                             iconClassName={cat ? categoryColorClass[cat.color] : undefined}

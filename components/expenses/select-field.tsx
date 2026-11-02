@@ -22,6 +22,7 @@ export function SelectField({
   disabled = false,
   onClick,
   className = "",
+  chevron = false,
   "aria-label": ariaLabel,
 }: {
   /** 已經選好的內容；沒有值（undefined／空字串）就顯示 placeholder。 */
@@ -32,6 +33,14 @@ export function SelectField({
   disabled?: boolean;
   onClick: () => void;
   className?: string;
+  /** 右邊補一個朝下的箭頭。
+   *
+   *  只給「點了會展開一份清單讓你挑」的欄位用（切換帳戶）——那種欄位長得跟輸入框一樣，
+   *  不加箭頭的話看起來像一塊唯讀的文字，不會有人想去點它。
+   *
+   *  金額那一欄刻意不加：它點下去是把底部的小鍵盤切到這一欄，不是展開選單，掛一個
+   *  下拉箭頭等於在騙人。 */
+  chevron?: boolean;
   "aria-label"?: string;
 }) {
   const hasValue = value !== undefined && value !== null && value !== "";
@@ -45,7 +54,14 @@ export function SelectField({
     >
       {/* block min-h-5：空字串的 placeholder（例如目標金額那一欄刻意不給提示文字）會讓
           行內元素高度變成 0，整顆按鈕比旁邊的輸入框矮一截。固定一行的高度就不會。 */}
-      <span className={`block min-h-5 truncate ${hasValue ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}`}>{hasValue ? value : placeholder}</span>
+      <span className="flex min-h-5 items-center gap-2">
+        <span className={`min-w-0 flex-1 truncate ${hasValue ? "text-[#4A3B7C]" : "text-[#B3ABD4]"}`}>{hasValue ? value : placeholder}</span>
+        {chevron && (
+          <svg aria-hidden viewBox="0 0 16 16" className="size-4 shrink-0 text-[#9C94C4]" fill="none">
+            <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </span>
     </button>
   );
 }

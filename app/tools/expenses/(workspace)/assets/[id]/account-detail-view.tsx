@@ -272,7 +272,7 @@ export function AccountDetailView({
           點了開的也是同一個 AccountPickerModal——那份清單本來就列了每個帳戶的餘額，
           等於順手看得到別的戶頭現在有多少。 */}
       <Field label="切換資產">
-        <SelectField value={account.name} placeholder="選擇帳戶" aria-label="切換帳戶" onClick={() => setSwitchOpen(true)} />
+        <SelectField value={account.name} placeholder="選擇帳戶" aria-label="切換帳戶" chevron onClick={() => setSwitchOpen(true)} />
       </Field>
 
       <AccountPickerModal

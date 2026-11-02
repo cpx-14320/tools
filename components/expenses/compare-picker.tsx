@@ -6,6 +6,7 @@ import { PillButton } from "./button";
 import { useDateFilter } from "./date-filter-context";
 import { text } from "./theme";
 import { compareLabel, type CompareMode } from "@/lib/expenses/date-filter";
+import { OptionChip } from "./button";
 
 const OPTIONS: { value: CompareMode; label: string; hint: string }[] = [
   { value: "previous", label: "上一期", hint: "月模式比上個月、年模式比去年、日模式比前一天" },
@@ -71,21 +72,21 @@ export function ComparePicker({ className = "" }: { className?: string }) {
         {compare.mode === "year" && (
           <div>
             <p className={`mb-2 ${text.label}`}>基準年</p>
-            <div className="flex flex-wrap gap-2">
+            {/* 跟「選擇年份」彈窗同一顆 OptionChip、同樣固定六欄：年份都是四位數、寬度
+                一樣，grid 才會每列剛好六個、首尾切齊彈窗左右邊界、中間等距。flex-wrap 是
+                「排得下就繼續排」，最後一列會短一截、左右也切不齊。 */}
+            <div className="grid grid-cols-6 gap-2">
               {years.map((y) => (
-                <button
+                <OptionChip
                   key={y}
-                  type="button"
+                  active={compare.year === y}
                   onClick={() => {
                     setCompare({ mode: "year", year: y });
                     setOpen(false);
                   }}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium tabular-nums transition-colors ${
-                    compare.year === y ? "border-[#6F5FD6] bg-[#6F5FD6] text-white" : "border-[#ECE4FA] bg-white text-[#4A3B7C]"
-                  }`}
                 >
                   {y}
-                </button>
+                </OptionChip>
               ))}
             </div>
             {/* 基準年跟現在看的年份一樣時沒東西可比，講清楚比讓百分比默默消失好。 */}

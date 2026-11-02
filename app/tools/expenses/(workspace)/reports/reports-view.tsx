@@ -621,7 +621,7 @@ export function ReportsView({
           {/* 年度對照：趨勢圖看走勢，這張表看精確值。擺在趨勢下面是閱讀順序——先看
               這段期間多少、再看組成、再看走勢，最後才是跨年逐月比對。 */}
           <YearCompareTable
-            title="淨資產增減年度對照"
+            title="淨資產年度對照"
             goodWhenUp
             columns={yearColumns}
             deltaMode={yearDeltaMode}

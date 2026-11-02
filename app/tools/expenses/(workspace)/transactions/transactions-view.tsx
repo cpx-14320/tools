@@ -68,7 +68,6 @@ export function TransactionsView({
   // &categoryId=xxx，直接幫使用者切到對的分頁並且篩好分類，不用進來之後再點一次。
   const searchParams = useSearchParams();
   const initialKind: CategoryKind = searchParams.get("kind") === "收入" ? "收入" : "支出";
-  const initialCategoryId = searchParams.get("categoryId") ?? "";
   // ?month=YYYY-MM 不在這裡處理——它要在伺服器算繪的那一輪就生效，所以讀的地方是
   // DateFilterProvider 的 useState 初始值（見 date-filter-context.tsx）。
   const showToast = useToast();
@@ -79,7 +78,9 @@ export function TransactionsView({
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
   const [kind, setKind] = useState<CategoryKind>(initialKind);
   // 只看某一個大分類（含它的子分類）的篩選，空字串＝全部分類。
-  const [categoryFilter, setCategoryFilter] = useState(initialCategoryId);
+  // 只看哪幾個大分類（含各自的子分類）；空陣列＝全部。複選而不是單選——「這個月餐飲
+  // 加交通總共花多少」這種問題，單選一次只能看一邊，得自己把兩個數字加起來。
+  const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
   // 金額區間篩選（字串是因為使用者可能只填一邊）——翻舊帳時「我記得那筆大概一兩萬」
   // 比關鍵字好用，備註常常根本沒打。
@@ -99,7 +100,8 @@ export function TransactionsView({
   const totals = totalsForRange(transactions, categories, range);
 
   // 分類篩選比對的是「頂層分類」，所以選「餐飲」時連它底下的子分類（早餐…）也會留下來。
-  const inCategoryFilter = (t: TransactionDTO) => !categoryFilter || topLevelCategoryId(categories, t.categoryId) === categoryFilter;
+  const inCategoryFilter = (t: TransactionDTO) =>
+    categoryFilters.length === 0 || categoryFilters.includes(topLevelCategoryId(categories, t.categoryId));
 
   // 空字串＝那一邊不設限；填了不是數字的東西也當成沒設限，不要讓清單忽然全空。
   const minNum = Number(minAmount);
@@ -112,21 +114,23 @@ export function TransactionsView({
   // 也算進來，它們一樣掛不到任何帳戶上。
   const accountIds = new Set(accounts.map((a) => a.id));
   const inAccountFilter = (t: TransactionDTO) => !unassignedOnly || !t.accountId || !accountIds.has(t.accountId);
-  const filterCount = (categoryFilter ? 1 : 0) + (hasMin || hasMax ? 1 : 0) + (unassignedOnly ? 1 : 0);
+  const filterCount = (categoryFilters.length > 0 ? 1 : 0) + (hasMin || hasMax ? 1 : 0) + (unassignedOnly ? 1 : 0);
   // 目前生效的條件，一個一個寫成人看得懂的短句。
   //
   // 為什麼需要：條件是在彈窗裡設的，關掉彈窗之後畫面上唯一的線索是日期旁邊那顆篩選
   // 圖示變紫色——看到一份「怎麼只有三筆」的清單時，很難聯想到是自己上次留下來的條件
   // 在作用，更不會記得當初設了什麼。把條件攤在清單正上方，順便給一顆「清除」。
   const filterLabels = [
-    categoryFilter ? (categories.find((c) => c.id === categoryFilter)?.name ?? "某個分類") : null,
+    categoryFilters.length > 0
+      ? categoryFilters.map((id) => categories.find((c) => c.id === id)?.name ?? "某個分類").join("、")
+      : null,
     unassignedOnly ? "未指定帳戶" : null,
     hasMin && hasMax ? `${formatCurrency(minNum)}–${formatCurrency(maxNum)}` : hasMin ? `${formatCurrency(minNum)} 以上` : hasMax ? `${formatCurrency(maxNum)} 以下` : null,
   ].filter((l): l is string => l !== null);
 
   /** 一次清掉所有條件——一個一個回彈窗關很煩，而且容易漏掉其中一個還在作用。 */
   function clearFilters() {
-    setCategoryFilter("");
+    setCategoryFilters([]);
     setUnassignedOnly(false);
     setMinAmount("");
     setMaxAmount("");
@@ -290,35 +294,41 @@ export function TransactionsView({
           <ModalFooter
             onClose={() => setFilterOpen(false)}
             onConfirm={() => setFilterOpen(false)}
-            onDelete={filterCount > 0 ? () => {
-              setCategoryFilter("");
-              setMinAmount("");
-              setMaxAmount("");
-              setUnassignedOnly(false);
-            } : undefined}
+            onDelete={filterCount > 0 ? clearFilters : undefined}
             deleteLabel="清除條件"
           />
         }
       >
         <div>
-          <p className={`mb-2 ${text.label}`}>分類</p>
+          <p className={`mb-2 ${text.label}`}>分類（可複選）</p>
           <div className="grid grid-cols-5 gap-x-1 gap-y-2.5">
-            <button type="button" onClick={() => setCategoryFilter("")} className="flex flex-col items-center gap-1 py-0.5">
+            {/* 「全部」＝把選擇清空，不是另一個可以被選起來的分類。 */}
+            <button type="button" onClick={() => setCategoryFilters([])} className="flex flex-col items-center gap-1 py-0.5">
               {/* 圖檔還沒放進 public/expenses，先指到之後要放的檔名；在那之前 IconAvatar
                   會顯示漸層佔位，不會壞版。 */}
               <IconAvatar
                 icon="/expenses/income-category-all.png"
                 size="sm"
-                className={`bg-[#F3EFFC] text-[#6F5FD6] ${!categoryFilter ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`}
+                className={`bg-[#F3EFFC] text-[#6F5FD6] ${categoryFilters.length === 0 ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`}
               />
-              <span className={`line-clamp-1 w-full text-center text-[11px] ${!categoryFilter ? "font-semibold text-[#6F5FD6]" : "font-medium text-[#4A3B7C]"}`}>
+              <span
+                className={`line-clamp-1 w-full text-center text-[11px] ${
+                  categoryFilters.length === 0 ? "font-semibold text-[#6F5FD6]" : "font-medium text-[#4A3B7C]"
+                }`}
+              >
                 全部
               </span>
             </button>
             {topLevelCategories(categories, kind).map((c) => {
-              const active = c.id === categoryFilter;
+              const active = categoryFilters.includes(c.id);
               return (
-                <button key={c.id} type="button" onClick={() => setCategoryFilter(c.id)} className="flex flex-col items-center gap-1 py-0.5">
+                <button
+                  key={c.id}
+                  type="button"
+                  // 點一下加入、再點一下移除。
+                  onClick={() => setCategoryFilters((cur) => (cur.includes(c.id) ? cur.filter((id) => id !== c.id) : [...cur, c.id]))}
+                  className="flex flex-col items-center gap-1 py-0.5"
+                >
                   <IconAvatar icon={c.icon} size="sm" className={`${categoryColorClass[c.color]} ${active ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`} />
                   <span className={`line-clamp-1 w-full text-center text-[11px] ${active ? "font-semibold text-[#6F5FD6]" : "font-medium text-[#4A3B7C]"}`}>
                     {c.name}
