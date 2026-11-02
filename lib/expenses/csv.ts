@@ -330,6 +330,9 @@ export type CSVCategoryKind = "支出" | "收入";
 export interface CSVCategoryItem {
   name: string;
   kind: CSVCategoryKind;
+  /** 圖示路徑。空字串＝交給後端給預設的共用圖（見 app/api/expenses/categories 的
+   *  ICON_OTHER）。子分類送什麼都會被父分類的圖蓋掉（見 createCategory）。 */
+  icon: string;
   color: string;
   /** 空字串＝頂層分類；有值＝這是那個大分類底下的子分類（用名稱對應）。 */
   parentName: string;
@@ -372,6 +375,28 @@ export function parseCategoriesCSV(
   existingNameById: Map<string, string>,
 ): { results: CategoryImportRowResult[]; validCount: number; invalidCount: number; skippedCount: number } {
   const rows = parseCSV(text);
+  // 照標頭的欄位名稱對位置，不是寫死索引。
+  //
+  // 本來是 `const [name, kind, color, parent] = cols` 寫死四欄，但匯出的檔案是五欄
+  // （名稱, 收支類型, 圖示, 顏色, 上層分類）——匯出再匯入時整排往後錯一格：圖示路徑被
+  // 當成顏色（不符合 /^[a-f]$/ 所以一律退回 "a"），顏色代號被當成上層分類名稱（對不到
+  // 任何分類），結果是所有分類的顏色跟階層都毀了。
+  //
+  // 改成讀標頭之後，五欄的匯出檔跟舊的四欄範本都吃得下，欄位順序被使用者在試算表裡
+  // 調動過也不受影響。
+  const header = (rows[0] ?? []).map((h) => h.trim());
+  const col = (...names: string[]) => {
+    for (const n of names) {
+      const i = header.indexOf(n);
+      if (i >= 0) return i;
+    }
+    return -1;
+  };
+  const iName = col("名稱", "分類");
+  const iKind = col("收支類型");
+  const iIcon = col("圖示");
+  const iColor = col("顏色");
+  const iParent = col("上層分類");
   const dataRows = rows.slice(1);
   const seen = new Set<string>();
   const existingKeys = new Set(
@@ -380,10 +405,11 @@ export function parseCategoriesCSV(
 
   const results: CategoryImportRowResult[] = dataRows.map((cols, idx) => {
     const rowNum = idx + 2;
-    const [nameText, kindText, colorText, parentText] = cols;
-    const name = (nameText ?? "").trim();
-    const kind = (kindText ?? "").trim();
-    const parentName = (parentText ?? "").trim();
+    // 找不到標頭（舊檔、或使用者把標頭列刪了）就退回原本的欄位順序。
+    const cell = (i: number, fallback: number) => (cols[i >= 0 ? i : fallback] ?? "").trim();
+    const name = cell(iName, 0);
+    const kind = cell(iKind, 1);
+    const parentName = cell(iParent, 3);
 
     if (!name) return { row: rowNum, ok: false, error: "分類名稱不能空白" };
     if (kind !== "支出" && kind !== "收入") {
@@ -400,12 +426,14 @@ export function parseCategoriesCSV(
     }
     seen.add(key);
 
-    const color = (colorText ?? "").trim().toLowerCase();
+    const color = cell(iColor, 2).toLowerCase();
+    // 圖示沒有標頭就是舊的四欄檔，那種檔案本來就沒帶圖示，留空讓後端補預設。
+    const icon = iIcon >= 0 ? cell(iIcon, -1) : "";
 
     return {
       row: rowNum,
       ok: true,
-      category: { name, kind, color: /^[a-f]$/.test(color) ? color : "a", parentName },
+      category: { name, kind, icon, color: /^[a-f]$/.test(color) ? color : "a", parentName },
     };
   });
 
@@ -434,15 +462,17 @@ const CSV_TEMPLATES: Record<CSVTemplateKind, string[][]> = {
     ["2026-01-10", "月薪", "44000", "一月薪資", "本薪:+50000;勞健保:-6000", "銀行帳戶"],
   ],
   categories: [
-    ["名稱", "收支類型", "顏色", "上層分類"],
-    ["餐飲", "支出", "a", ""],
-    ["交通", "支出", "b", ""],
-    ["薪水", "收入", "c", ""],
-    ["早餐", "支出", "a", "餐飲"],
+    // 欄位順序跟「匯出分類」產生的檔案完全一致，匯出的檔案才能原樣改一改再匯回去。
+    // 圖示可以留空，後端會補一張共用的預設圖；子分類填了也會被父分類的圖蓋掉。
+    ["名稱", "收支類型", "圖示", "顏色", "上層分類"],
+    ["餐飲", "支出", "/expenses/expenses-category-food.png", "a", ""],
+    ["交通", "支出", "/expenses/expenses-category-transport.png", "b", ""],
+    ["薪水", "收入", "/expenses/income-category-salary.png", "c", ""],
+    ["早餐", "支出", "", "a", "餐飲"],
     // 大分類一旦有子項目就不能直接記帳（見 categories.ts 的 needsSubcategory），
     // 所以「薪水」底下一定要跟著一個收薪水用的項目，不然消費紀錄範本的那一列會
     // 找不到分類。
-    ["月薪", "收入", "c", "薪水"],
+    ["月薪", "收入", "", "c", "薪水"],
   ],
   budgets: [
     ["分類", "生效月份", "每月預算"],

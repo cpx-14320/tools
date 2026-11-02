@@ -362,7 +362,7 @@ function ImportPanel({
 
   // 逐筆依序 POST（不是 Promise.all 併發）：新分類的 order 是用當下已存在筆數算出來的，
   // 併發送出會拿到同一個 order。大分類一定要先建好，子分類才找得到 parentId，所以把
-  // 沒有上層分類的列排前面再送。圖示不走 CSV，由後端給預設的共用圖（見 csv.ts）。
+  // 沒有上層分類的列排前面再送。圖示會跟著 CSV 一起帶回去，留空的話後端補預設圖。
   async function importCategories() {
     const valid = catResults.flatMap((r) => (r.ok && r.category ? [r.category] : []));
     const ordered = [...valid.filter((c) => !c.parentName), ...valid.filter((c) => c.parentName)];
@@ -374,7 +374,7 @@ function ImportPanel({
       const data: { categories?: CategoryDTO[] } = await fetch("/api/expenses/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: item.name, color: item.color, kind: item.kind, parentId: parent?.id }),
+        body: JSON.stringify({ name: item.name, icon: item.icon || undefined, color: item.color, kind: item.kind, parentId: parent?.id }),
       })
         .then((res) => res.json())
         .catch(() => ({}));

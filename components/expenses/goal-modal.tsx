@@ -85,7 +85,7 @@ export function GoalModal({
       <GoalIconPicker value={icon} onChange={setIcon} required />
       {/* placeholder 留空：欄位本來就標著「目標金額」，再寫一次「點這裡用下方鍵盤輸入」
           只是把同一件事說兩遍。 */}
-      <AmountField label="目標金額" value={targetAmountNum} active={target === "target"} onFocus={() => setTarget("target")} placeholder="" />
+      <AmountField label="目標金額" required value={targetAmountNum} active={target === "target"} onFocus={() => setTarget("target")} placeholder="" />
       {!isEdit && (
         <AmountField
           label="目前已經存了多少"

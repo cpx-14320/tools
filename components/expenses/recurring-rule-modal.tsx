@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SegmentedControl } from "./button";
+import { OptionChip, SegmentedControl } from "./button";
 import { Modal, Field, RequiredMark, fieldInputClass, ModalFooter } from "./modal";
 import { DateField } from "./date-field";
 import { CategoryGridPicker } from "./category-grid-picker";
@@ -11,6 +11,7 @@ import { text } from "./theme";
 import { categoryPath, needsSubcategory, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 import { occurrencesUpTo, type RecurrenceFrequencyUnit } from "@/lib/expenses/recurring-rules";
 import type { SavingsGoalDTO } from "@/lib/expenses/goals";
+import { InlineIcon } from "./icon-avatar";
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -227,27 +228,19 @@ export function RecurringRuleModal({
 
       {kind === "收入" && goals.length > 0 && (
         <Field label="同時存入目標——「週期存錢」就是在這裡選一個目標">
+          {/* 這幾顆本來是手刻的，跟「項目」那一排長一樣卻各寫一份；換成共用的 OptionChip。
+              目標的 icon 存的是圖片路徑（例如 /expenses/expenses-category-travel.png），
+              本來直接 `{g.icon} {g.name}` 印出來，畫面上就是一整串路徑文字接著名稱。
+              改用 InlineIcon：是路徑就畫成圖，是 emoji 就原樣輸出。 */}
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setLinkedGoalId("")}
-              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                !linkedGoalId ? "border-[#6F5FD6] bg-[#6F5FD6] text-white" : "border-[#ECE4FA] bg-white text-[#4A3B7C]"
-              }`}
-            >
+            <OptionChip active={!linkedGoalId} onClick={() => setLinkedGoalId("")}>
               不連動目標
-            </button>
+            </OptionChip>
             {goals.map((g) => (
-              <button
-                key={g.id}
-                type="button"
-                onClick={() => setLinkedGoalId(g.id)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                  linkedGoalId === g.id ? "border-[#6F5FD6] bg-[#6F5FD6] text-white" : "border-[#ECE4FA] bg-white text-[#4A3B7C]"
-                }`}
-              >
-                {g.icon} {g.name}
-              </button>
+              <OptionChip key={g.id} active={linkedGoalId === g.id} onClick={() => setLinkedGoalId(g.id)}>
+                <InlineIcon icon={g.icon} />
+                {g.name}
+              </OptionChip>
             ))}
           </div>
         </Field>

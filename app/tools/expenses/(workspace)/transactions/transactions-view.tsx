@@ -8,7 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { SegmentedControl } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { ListCard } from "@/components/expenses/list-row";
-import { IconAvatar } from "@/components/expenses/icon-avatar";
+import { OptionGrid } from "@/components/expenses/option-grid";
 import { LineIconButton } from "@/components/expenses/line-icon-button";
 import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
 import { text } from "@/components/expenses/theme";
@@ -301,42 +301,28 @@ export function TransactionsView({
       >
         <div>
           <p className={`mb-2 ${text.label}`}>分類（可複選）</p>
-          <div className="grid grid-cols-5 gap-x-1 gap-y-2.5">
-            {/* 「全部」＝把選擇清空，不是另一個可以被選起來的分類。 */}
-            <button type="button" onClick={() => setCategoryFilters([])} className="flex flex-col items-center gap-1 py-0.5">
-              {/* 圖檔還沒放進 public/expenses，先指到之後要放的檔名；在那之前 IconAvatar
-                  會顯示漸層佔位，不會壞版。 */}
-              <IconAvatar
-                icon="/expenses/income-category-all.png"
-                size="sm"
-                className={`bg-[#F3EFFC] text-[#6F5FD6] ${categoryFilters.length === 0 ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`}
-              />
-              <span
-                className={`line-clamp-1 w-full text-center text-[11px] ${
-                  categoryFilters.length === 0 ? "font-semibold text-[#6F5FD6]" : "font-medium text-[#4A3B7C]"
-                }`}
-              >
-                全部
-              </span>
-            </button>
-            {topLevelCategories(categories, kind).map((c) => {
-              const active = categoryFilters.includes(c.id);
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  // 點一下加入、再點一下移除。
-                  onClick={() => setCategoryFilters((cur) => (cur.includes(c.id) ? cur.filter((id) => id !== c.id) : [...cur, c.id]))}
-                  className="flex flex-col items-center gap-1 py-0.5"
-                >
-                  <IconAvatar icon={c.icon} size="sm" className={`${categoryColorClass[c.color]} ${active ? "ring-2 ring-[#6F5FD6] ring-offset-2" : ""}`} />
-                  <span className={`line-clamp-1 w-full text-center text-[11px] ${active ? "font-semibold text-[#6F5FD6]" : "font-medium text-[#4A3B7C]"}`}>
-                    {c.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          {/* 跟新增收支紀錄的分類格子同一顆 OptionGrid：選中的那一格是「亮的那一個」，
+              沒選中的淡掉，不另外畫外框或色環。本來這裡是手刻的一份，用 ring 當選中
+              狀態——同一個工具裡「挑分類」這件事不該有兩種長相。
+              「全部」放在第一格（OptionGrid 的 addSlot 位置，跟新增那邊的「＋新增」
+              同一個位置），它是「把選擇清空」不是另一個可以被選起來的分類。 */}
+          <OptionGrid
+            multiple
+            options={topLevelCategories(categories, kind).map((c) => ({
+              id: c.id,
+              name: c.name,
+              icon: c.icon,
+              colorClass: categoryColorClass[c.color],
+            }))}
+            values={categoryFilters}
+            onToggle={(id) => setCategoryFilters((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))}
+            leadingSlot={{
+              icon: "/expenses/income-category-all.png",
+              name: "全部",
+              active: categoryFilters.length === 0,
+              onClick: () => setCategoryFilters([]),
+            }}
+          />
         </div>
 
         <div>

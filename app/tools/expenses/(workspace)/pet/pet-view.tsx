@@ -162,6 +162,7 @@ export function PetView({
     <div className="flex flex-col gap-4">
       {/* 說明跟賺幣規則都收在標題右邊的問號裡（PageHeader 的 help），跟記帳本其他頁一致。 */}
       <PageHeader
+        flush
         title="養成"
         help={
           <>
@@ -201,14 +202,14 @@ export function PetView({
               版面。本來商店是底下一整列的入口卡，為了一顆按鈕吃掉 80px；星星幣也只在
               那張卡上出現，要看餘額得先捲下去。 */}
           <div
-            className="relative grid aspect-[16/9] w-full place-items-center rounded-2xl p-3"
+            className="relative grid aspect-[9/12] w-full place-items-center rounded-2xl p-3"
             style={{ background: petBackground(pet?.backgroundId ?? "") }}
           >
             <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-white/85 px-2.5 py-1 text-sm font-semibold tabular-nums text-[#6F5FD6] backdrop-blur">
               <IconImg src={ICON_PATHS.petStar} alt="星星幣" size={16} background={false} />
               {pet?.coins ?? 0}
             </span>
-            <span className="absolute right-3 top-3 flex flex-col gap-2">
+            <span className="absolute right-3 top-3 flex flex-col">
               <StageIconButton label="商店" onClick={() => setShopOpen(true)} icon={ICON_PATHS.petShop} />
               <StageIconButton label="背包" onClick={() => setBagOpen(true)} icon={ICON_PATHS.petBag} />
             </span>
