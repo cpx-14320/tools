@@ -6,19 +6,21 @@ import { listAccounts } from "@/lib/expenses/accounts.server";
 import { listAccountTypes } from "@/lib/expenses/account-types.server";
 import { listTransfers } from "@/lib/expenses/transfers.server";
 import { listBudgetRules } from "@/lib/expenses/budgets.server";
+import { getExpensesSettings } from "@/lib/expenses/settings.server";
 import { newOsSeed } from "@/lib/expenses/pet-os";
 
 export const dynamic = "force-dynamic";
 
 export default async function ExpensesDashboardPage() {
   const userId = await expensesUserId();
-  const [categories, transactions, accounts, accountTypes, transfers, budgetRules] = await Promise.all([
+  const [categories, transactions, accounts, accountTypes, transfers, budgetRules, settings] = await Promise.all([
     listCategories(userId),
     listTransactions(userId),
     listAccounts(userId),
     listAccountTypes(userId),
     listTransfers(userId),
     listBudgetRules(userId),
+    getExpensesSettings(userId),
   ]);
   return (
     <DashboardView
@@ -33,6 +35,7 @@ export default async function ExpensesDashboardPage() {
       // （見 lib/expenses/pet-os.ts 的 seededShuffle）。每次請求都是新的數字，所以
       // 「每次重新整理換一批句子」還是成立。
       osSeed={newOsSeed()}
+      aiEnabled={settings.aiEnabled}
     />
   );
 }

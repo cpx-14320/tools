@@ -147,6 +147,7 @@ export function ModalFooter({
   disabledHint,
   onDelete,
   deleteLabel = "刪除",
+  deleteConfirm,
 }: {
   onClose: () => void;
   /** 回傳 Promise 的話（呼叫端的 onSave 是 async function 就會是），送出期間儲存鍵會
@@ -160,9 +161,19 @@ export function ModalFooter({
   /** 有給才顯示左下角的刪除；新增用的彈窗不給，位置用空元素佔著維持左右分佈。 */
   onDelete?: () => void;
   deleteLabel?: string;
+  /** 刪除前的二次確認。
+   *
+   *  **預設一定會問**。這顆按鈕就在「儲存」的同一排、離輸入欄位很近，而且刪掉的是使用者
+   *  自己一筆一筆記了好幾年的資料，沒有復原機制——實際發生過：編輯一筆交易時手滑點到
+   *  刪除，那筆就沒了，連刪了什麼都不知道。
+   *
+   *  傳 false 代表呼叫端自己已經有一套更清楚的確認（例如刪分類要先講「底下五個子分類
+   *  會一起不見」），不要再疊第二層。 */
+  deleteConfirm?: false | { title?: string; message?: ReactNode };
 }) {
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   async function handleConfirm() {
     if (savingRef.current) return;
@@ -179,7 +190,11 @@ export function ModalFooter({
   return (
     <>
       {onDelete ? (
-        <Button variant="ghost" className="text-[#D1517E] hover:text-[#D1517E]" onClick={onDelete}>
+        <Button
+          variant="ghost"
+          className="text-[#D1517E] hover:text-[#D1517E]"
+          onClick={() => (deleteConfirm === false ? onDelete() : setConfirmingDelete(true))}
+        >
           {deleteLabel}
         </Button>
       ) : confirmDisabled && disabledHint ? (
@@ -195,6 +210,35 @@ export function ModalFooter({
           {confirmLabel}
         </Button>
       </div>
+
+      {/* 確認用的小彈窗直接用 Modal 自己組，不是沿用 ConfirmModal——後者 import 這個檔案，
+          反過來 import 它會變成循環相依。這裡只要一句話加兩顆按鈕，不值得為它冒那個險。 */}
+      {onDelete && deleteConfirm !== false && (
+        <Modal
+          open={confirmingDelete}
+          onClose={() => setConfirmingDelete(false)}
+          title={deleteConfirm?.title ?? `確定要${deleteLabel}嗎？`}
+          footer={
+            <div className="flex w-full items-center justify-end gap-2">
+              <Button variant="ghost" onClick={() => setConfirmingDelete(false)}>
+                取消
+              </Button>
+              <Button
+                className="!shadow-none"
+                style={{ background: "#D1517E" }}
+                onClick={() => {
+                  setConfirmingDelete(false);
+                  onDelete();
+                }}
+              >
+                {deleteLabel}
+              </Button>
+            </div>
+          }
+        >
+          <p className={`${text.body} leading-relaxed`}>{deleteConfirm?.message ?? "刪掉之後沒辦法復原。"}</p>
+        </Modal>
+      )}
     </>
   );
 }

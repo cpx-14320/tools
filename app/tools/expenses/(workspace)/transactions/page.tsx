@@ -7,6 +7,7 @@ import { listTransactions } from "@/lib/expenses/transactions.server";
 import { listAccounts } from "@/lib/expenses/accounts.server";
 import { listAccountTypes } from "@/lib/expenses/account-types.server";
 import { listTransfers } from "@/lib/expenses/transfers.server";
+import { getExpensesSettings } from "@/lib/expenses/settings.server";
 
 export const metadata: Metadata = { title: "消費紀錄" };
 export const dynamic = "force-dynamic";
@@ -15,12 +16,13 @@ export const dynamic = "force-dynamic";
  *  Next.js 要求用到 useSearchParams 的元件外面要包 Suspense，不然 build 時會報錯。 */
 export default async function TransactionsPage() {
   const userId = await expensesUserId();
-  const [categories, transactions, accounts, accountTypes, transfers] = await Promise.all([
+  const [categories, transactions, accounts, accountTypes, transfers, settings] = await Promise.all([
     listCategories(userId),
     listTransactions(userId),
     listAccounts(userId),
     listAccountTypes(userId),
     listTransfers(userId),
+    getExpensesSettings(userId),
   ]);
   return (
     <Suspense fallback={null}>
@@ -30,6 +32,7 @@ export default async function TransactionsPage() {
         accounts={accounts}
         accountTypes={accountTypes}
         transfers={transfers}
+        aiEnabled={settings.aiEnabled}
       />
     </Suspense>
   );

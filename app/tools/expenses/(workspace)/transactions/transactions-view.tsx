@@ -20,6 +20,7 @@ import { TOAST, useToast } from "@/components/expenses/toast";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
+import { AiEntryButton } from "@/components/expenses/ai/ai-entry-button";
 import { BreakdownToggle, TransactionBreakdown } from "@/components/expenses/transaction-breakdown";
 import { dateFilterRange } from "@/lib/expenses/date-filter";
 import { Modal, ModalFooter, fieldInputClass } from "@/components/expenses/modal";
@@ -59,12 +60,15 @@ export function TransactionsView({
   accounts,
   accountTypes,
   transfers,
+  aiEnabled,
 }: {
   initialCategories: CategoryDTO[];
   initialTransactions: TransactionDTO[];
   accounts: AccountDTO[];
   accountTypes: AccountTypeDTO[];
   transfers: TransferDTO[];
+  /** 要不要顯示 AI 記帳的入口（見 lib/expenses/settings.server.ts）。 */
+  aiEnabled: boolean;
 }) {
   const { filter } = useDateFilter();
   // 首頁那幾個區塊的「查看全部」會帶 ?kind=收入 過來、點某一類的列會再多帶
@@ -315,6 +319,8 @@ export function TransactionsView({
       {/* 這一頁本來只能編輯既有紀錄，要新增得先回首頁——但看著清單想到「啊還有一筆沒記」
           才是最常見的時機。跟首頁同一顆浮動鈕、同一個彈窗。 */}
       <FloatingAddButton onClick={() => setAddOpen(true)} label="新增收支紀錄" />
+      {/* AI 記帳疊在＋上面。不想要的話刪這一行＋刪 components/expenses/ai/ 就乾淨了。 */}
+      <AiEntryButton enabled={aiEnabled} categories={categories} onCommitted={setTransactions} />
 
       {/* key 跟著開關變動＝每次打開都是一個乾淨的彈窗，不會留著上一筆填過的內容。 */}
       <TransactionModal

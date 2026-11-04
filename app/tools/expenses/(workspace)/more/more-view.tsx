@@ -12,6 +12,9 @@ import { ListCard } from "@/components/expenses/list-row";
 import { PageHeader } from "@/components/expenses/page-header";
 import { text } from "@/components/expenses/theme";
 import { TOOLS_REGISTRY } from "@/lib/tools-registry";
+import { AiSettingsSection } from "@/components/expenses/ai/ai-settings-section";
+import type { AiDraftDTO } from "@/lib/expenses/ai-drafts";
+import type { CategoryDTO } from "@/lib/expenses/categories";
 
 interface SettingItem {
   href: string;
@@ -61,8 +64,17 @@ export function MoreView({
    *  由 page.tsx 在伺服器上算好傳進來。清除資料後的 router.refresh() 會重跑那一頁，
    *  這個數字跟著歸零，不用自己再打一次 API。 */
   pendingCount,
+  aiEnabled,
+  aiDrafts,
+  categories,
 }: {
   pendingCount: number;
+  /** AI 記帳整區的狀態。整個功能在這一頁的接觸點只有下面那一行 <AiSettingsSection />，
+   *  不要的話刪那一行＋刪 components/expenses/ai/ 資料夾就乾淨了。 */
+  aiEnabled: boolean;
+  aiDrafts: AiDraftDTO[];
+  /** 待確認清單要用它顯示分類、補分類。 */
+  categories: CategoryDTO[];
 }) {
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -141,6 +153,10 @@ export function MoreView({
             </ListCard>
           </div>
         )}
+
+        {/* AI 記帳：擺在「帳號」之前、功能入口之後——它是一個可以開關的附加功能，跟上面
+            那幾組「記帳本的設定」是同一層；放在帳號／清除資料後面會像是系統層級的東西。 */}
+        <AiSettingsSection initialEnabled={aiEnabled} initialDrafts={aiDrafts} categories={categories} />
 
         <div>
           <p className={`mb-2 px-1 ${text.label}`}>帳號</p>

@@ -8,6 +8,7 @@ import { Card, CardBody } from "@/components/expenses/card";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { PageHeader } from "@/components/expenses/page-header";
 import { PetOsBubble } from "@/components/expenses/pet-os-bubble";
+import { AiEntryButton } from "@/components/expenses/ai/ai-entry-button";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { HiddenAmountsToggle, useHiddenAmounts } from "@/components/expenses/hidden-amounts";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
@@ -73,6 +74,7 @@ export function DashboardView({
   transfers,
   budgetRules,
   osSeed,
+  aiEnabled,
 }: {
   initialCategories: CategoryDTO[];
   initialTransactions: TransactionDTO[];
@@ -82,6 +84,9 @@ export function DashboardView({
   budgetRules: BudgetRuleDTO[];
   /** 主視覺對話框抽句子用的亂數種子，由 page.tsx 在伺服器產生（見 pet-os.ts）。 */
   osSeed: number;
+  /** 要不要顯示 AI 記帳的入口。伺服器決定（見 lib/expenses/settings.server.ts），
+   *  關著的話那顆鈕跟它底下的彈窗完全不會出現，手動記帳不受影響。 */
+  aiEnabled: boolean;
 }) {
   // 首頁的期間自己拿著，不接共用的 DateFilterContext——其他頁（報表、消費紀錄、帳戶
   // 明細）仍然共用一個篩選器，但首頁刻意獨立：它問的是「我這個月花得怎麼樣」，去報表頁
@@ -219,6 +224,8 @@ export function DashboardView({
           fixed 子孫以外殼卡片容器（有 transform）為定位基準，不是整個瀏覽器視窗。用純
           「＋」而不是其他 emoji，跟選單圖示區分開，一眼就看得出是「新增」的動作。 */}
       <FloatingAddButton onClick={() => setAddOpen(true)} label="新增收支紀錄" />
+      {/* AI 記帳疊在＋上面。整個 AI 功能對外就只有這一顆元件，不想要的話刪這一行就好。 */}
+      <AiEntryButton enabled={aiEnabled} categories={categories} onCommitted={setTransactions} />
 
       {/* 結餘、收入、支出三個數字合併成一張卡，不是三張（原本是一張整寬的結餘＋一個
           兩欄輪播）：三者本來就是同一道算式的三個部分（收入－支出＝結餘），拆成三張卡

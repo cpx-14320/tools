@@ -161,6 +161,9 @@ export function RecurringRuleModal({
           }
           confirmDisabled={!canSave}
           onDelete={onDelete}
+          // 呼叫端自己有一套講得更清楚的確認（會說明底下的子項目／紀錄會怎麼樣），
+          // 不要再疊一層空泛的「確定要刪除嗎」。
+          deleteConfirm={false}
         />
       }
     >
