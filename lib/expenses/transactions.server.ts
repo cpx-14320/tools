@@ -93,6 +93,42 @@ export async function deleteTransaction(userId: ObjectId, id: string): Promise<T
   return listTransactions(userId);
 }
 
+/** 批次只改「掛在哪個分類／哪個帳戶」，不碰金額、日期、備註、明細。
+ *
+ *  給明細頁的多選模式用：最常見的情境是一開始沒指定帳戶，後來想一次補上一整批
+ *  （篩「只看未指定帳戶」→ 全選 → 改帳戶）；一筆一筆開彈窗改五十次不是辦法。
+ *
+ *  `accountId` 三種值意義不同，不能混：
+ *    - `undefined`  不要動這個欄位
+ *    - `null`       改成「不指定帳戶」
+ *    - 字串          改成那個帳戶
+ *  分類沒有「清空」這種事（每筆交易一定屬於某個分類），所以 categoryId 只有
+ *  「不要動」跟「改成這個」兩種。
+ *
+ *  只更新 `_id ∈ ids` **而且** `userId` 是自己的那幾筆——id 是前端送來的，不能信。
+ *  回傳實際改到幾筆：中途被別的裝置刪掉的那幾筆不會算進去，畫面上的提示才不會
+ *  報一個比實際多的數字。 */
+export async function bulkUpdateTransactions(
+  userId: ObjectId,
+  ids: string[],
+  set: { categoryId?: string; accountId?: string | null },
+): Promise<{ updated: number; transactions: TransactionDTO[] }> {
+  const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  const update: Record<string, unknown> = {};
+  if (set.categoryId) update.categoryId = new ObjectId(set.categoryId);
+  // undefined 會被 mongo driver 序列化成 null（見 lib/expenses 的既知坑），這裡正好
+  // 就是要 null＝不指定帳戶，所以直接寫進去沒問題。
+  if (set.accountId !== undefined) update.accountId = set.accountId ? new ObjectId(set.accountId) : undefined;
+
+  if (objectIds.length === 0 || Object.keys(update).length === 0) {
+    return { updated: 0, transactions: await listTransactions(userId) };
+  }
+
+  const col = await collection();
+  const result = await col.updateMany({ _id: { $in: objectIds }, userId }, { $set: update });
+  return { updated: result.modifiedCount, transactions: await listTransactions(userId) };
+}
+
 /** 匯入流程專用的批次新增——前端已經用 parseTransactionsCSV 驗證過格式、API route 再
  *  驗一次，這裡只負責寫入。有帶明細的話金額一律以明細淨額為準（跟 createTransaction
  *  的 resolveAmount 同一個規則），不信任 CSV 裡那個可能跟明細兜不起來的總額。 */

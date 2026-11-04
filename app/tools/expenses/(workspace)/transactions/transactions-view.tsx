@@ -4,6 +4,8 @@ import { useState } from "react";
 import { FaIcon } from "@/components/expenses/fa-icon";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
+import { AccountPickerModal } from "@/components/expenses/account-picker-modal";
+import { CategoryGridPicker } from "@/components/expenses/category-grid-picker";
 import { useSearchParams } from "next/navigation";
 import { SegmentedControl } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
@@ -25,6 +27,7 @@ import {
   categoryById,
   categoryColorClass,
   categoryPath,
+  needsSubcategory,
   topLevelCategories,
   topLevelCategoryId,
   type CategoryDTO,
@@ -38,7 +41,7 @@ import {
 import { type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
-import { formatCurrency, formatDateWithWeekday } from "@/lib/format";
+import { formatCurrency, formatDate, formatDateWithWeekday } from "@/lib/format";
 
 function matchesQuery(t: TransactionDTO, categories: CategoryDTO[], query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -76,6 +79,16 @@ export function TransactionsView({
   const [transactions, setTransactions] = useState<TransactionDTO[]>(initialTransactions);
   const [query, setQuery] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
+  // 批次改帳戶／改分類：先開選擇彈窗挑目標，挑完存在這裡、換成確認彈窗，按下去才真的改。
+  // 分兩步是因為「改 23 筆」這種事按錯了要一筆一筆救回來，中間一定要有一次看得到筆數
+  // 跟去向的確認。bulkTarget 的 account 用 `string | null`：null＝改成不指定帳戶。
+  const [bulkPicker, setBulkPicker] = useState<"account" | "category" | null>(null);
+  const [bulkTarget, setBulkTarget] = useState<{ kind: "account"; accountId: string | null } | { kind: "category"; categoryId: string } | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  // 改分類彈窗裡「目前點到哪一格」。必須存起來傳回給 CategoryGridPicker 當 value，
+  // 它才知道要展開哪個大分類底下的「項目」那一排——寫死空字串的話，點了有子分類的
+  // 大分類會停在原地、下一步的項目永遠不出現。
+  const [bulkCategoryPick, setBulkCategoryPick] = useState("");
   const [kind, setKind] = useState<CategoryKind>(initialKind);
   // 只看某一個大分類（含它的子分類）的篩選，空字串＝全部分類。
   // 只看哪幾個大分類（含各自的子分類）；空陣列＝全部。複選而不是單選——「這個月餐飲
@@ -205,6 +218,57 @@ export function TransactionsView({
     if (data.transactions) setTransactions(data.transactions);
     showToast(TOAST.deleted);
     setModal(null);
+  }
+
+  /** 這次要改成什麼，寫成一句人看得懂的話（確認彈窗的標題跟成功後的 Toast 共用）。 */
+  const bulkTargetName =
+    bulkTarget?.kind === "account"
+      ? bulkTarget.accountId
+        ? `改掛到「${accounts.find((a) => a.id === bulkTarget.accountId)?.name ?? "（已刪除帳戶）"}」`
+        : "改成不指定帳戶"
+      : bulkTarget?.kind === "category"
+        ? `改成「${categoryPath(categories, bulkTarget.categoryId)}」`
+        : "";
+
+  /** 選到的那批紀錄。確認彈窗要用它算「原本掛在哪幾個帳戶／分類、各幾筆」。 */
+  const bulkRows = transactions.filter((t) => selection.selectedIds.has(t.id));
+
+  /** 把選到的那批依某個欄位分組計數，用來在確認彈窗講清楚「原本是什麼，會被改掉」。
+   *  只回傳**跟目標不一樣**的那幾組——本來就已經是目標值的那幾筆不算「會被改掉」。 */
+  function bulkOriginSummary(label: (t: TransactionDTO) => string, isAlreadyTarget: (t: TransactionDTO) => boolean): string {
+    const counts = new Map<string, number>();
+    for (const t of bulkRows) {
+      if (isAlreadyTarget(t)) continue;
+      const key = label(t);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return [...counts.entries()].map(([name, n]) => `${name} ${n}`).join("、");
+  }
+
+  async function applyBulk() {
+    if (!bulkTarget) return;
+    setBulkBusy(true);
+    const body =
+      bulkTarget.kind === "account"
+        ? { ids: [...selection.selectedIds], accountId: bulkTarget.accountId }
+        : { ids: [...selection.selectedIds], categoryId: bulkTarget.categoryId };
+    const data: { updated?: number; transactions?: TransactionDTO[] } = await fetch("/api/expenses/transactions/bulk", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+      .then((res) => res.json())
+      .catch(() => ({}));
+    setBulkBusy(false);
+    if (!data.transactions) {
+      showToast("改不動，再試一次");
+      return;
+    }
+    setTransactions(data.transactions);
+    // 報實際改到的筆數，不是選取的筆數——中途被別的裝置刪掉的那幾筆不會算進去。
+    showToast(`已改好 ${data.updated ?? 0} 筆${bulkTargetName ? `，${bulkTargetName}` : ""}`);
+    setBulkTarget(null);
+    selection.exit();
   }
 
   // 逐筆依序 DELETE：API 一次只收一個 id，而且每次都回傳最新的完整清單，照順序打完
@@ -404,11 +468,100 @@ export function TransactionsView({
         <SelectionBar
           count={selection.selectedIds.size}
           total={selection.total}
+          // 只有這一頁有批次改資料的動作：其他用到 SelectionBar 的頁面管的是分類、帳戶
+          // 類型這種「定義」，一批一批改的需求不存在。
+          actions={[
+            { label: "改帳戶", onClick: () => setBulkPicker("account") },
+            {
+              label: "改分類",
+              onClick: () => {
+                // 每次打開都歸零，不要留著上一次點到一半的大分類。
+                setBulkCategoryPick("");
+                setBulkPicker("category");
+              },
+            },
+          ]}
           onToggleAll={selection.toggleAll}
           onCancel={selection.exit}
           onDelete={() => setDeleteConfirm([...selection.selectedIds])}
         />
       )}
+
+      {/* 批次改帳戶：挑帳戶用跟記帳時同一個彈窗（它本來就帶餘額、也本來就有「不指定」
+          那一項），不要為了批次再刻一份。 */}
+      <AccountPickerModal
+        open={bulkPicker === "account"}
+        title="改掛到哪個帳戶"
+        accounts={accounts}
+        accountTypes={accountTypes}
+        transactions={transactions}
+        categories={categories}
+        transfers={transfers}
+        onClose={() => setBulkPicker(null)}
+        onSelect={(accountId) => {
+          setBulkPicker(null);
+          setBulkTarget({ kind: "account", accountId: accountId || null });
+        }}
+      />
+
+      {/* 批次改分類：只列目前這個分頁（支出／收入）的分類，所以不可能把一筆支出改成
+          收入分類、把收支方向整個翻掉。子分類的規則也照舊（大分類底下有項目就要選到
+          項目），由 CategoryGridPicker 自己管。 */}
+      <Modal open={bulkPicker === "category"} onClose={() => setBulkPicker(null)} title="改成哪個分類" fullHeight>
+        <CategoryGridPicker
+          categories={categories}
+          kind={kind}
+          value={bulkCategoryPick}
+          onChange={(categoryId) => {
+            setBulkCategoryPick(categoryId);
+            // 點到還需要選項目的大分類時先不關窗：上面那一行會讓「項目」那一排展開，
+            // 挑到項目（葉節點）才算選好。
+            if (needsSubcategory(categories, categoryId)) return;
+            setBulkPicker(null);
+            setBulkTarget({ kind: "category", categoryId });
+          }}
+        />
+      </Modal>
+
+      {/* 改之前的最後一關。標題講「改成什麼」、內文講「有幾筆、原本是什麼」——原本就
+          已經是目標值的那幾筆不列（那不算被改掉）。不用紅色的破壞性樣式：這是補資料，
+          不是刪資料。 */}
+      <ConfirmModal
+        open={bulkTarget !== null}
+        title={bulkTargetName}
+        danger={false}
+        message={
+          <>
+            選取的 {selection.selectedIds.size} 筆紀錄會{bulkTarget?.kind === "account" ? "改掛到這個帳戶" : "改成這個分類"}。
+            {bulkTarget?.kind === "account" &&
+              (() => {
+                const origins = bulkOriginSummary(
+                  (t) => (t.accountId ? (accounts.find((a) => a.id === t.accountId)?.name ?? "（已刪除帳戶）") : "未指定"),
+                  (t) => (t.accountId ?? null) === bulkTarget.accountId,
+                );
+                return origins ? <span className="mt-2 block">其中原本掛在：{origins}，都會一起改掉。帳戶餘額會跟著重算。</span> : null;
+              })()}
+            {bulkTarget?.kind === "category" &&
+              (() => {
+                const origins = bulkOriginSummary(
+                  (t) => categoryPath(categories, t.categoryId) || "（已刪除分類）",
+                  (t) => t.categoryId === bulkTarget.categoryId,
+                );
+                return origins ? <span className="mt-2 block">原本的分類（{origins}）會被取代。</span> : null;
+              })()}
+            {/* 搜尋時不吃上方的日期篩選，選到的可能橫跨好幾個月——畫面上看不出來，要講。 */}
+            {isSearching && bulkRows.length > 0 && (
+              <span className="mt-2 block">
+                這批紀錄橫跨 {formatDate([...bulkRows].sort((a, b) => (a.date < b.date ? -1 : 1))[0].date)} ～{" "}
+                {formatDate([...bulkRows].sort((a, b) => (a.date < b.date ? 1 : -1))[0].date)}。
+              </span>
+            )}
+          </>
+        }
+        confirmLabel={bulkBusy ? "處理中…" : `${bulkTarget?.kind === "account" ? "改掛" : "改成"} ${selection.selectedIds.size} 筆`}
+        onConfirm={applyBulk}
+        onClose={() => setBulkTarget(null)}
+      />
 
       <ConfirmModal
         open={deleteConfirm !== null}
@@ -452,7 +605,9 @@ export function TransactionsView({
         {rows.length === 0 ? (
           <Card>
             <CardBody className={`py-10 text-center ${text.muted}`}>
-              {isSearching ? "沒有符合的紀錄。" : `這段期間還沒有${kind}紀錄。`}
+              {/* 有條件在作用時不能寫成「這段期間還沒有支出紀錄」——剛批次改完帳戶的人
+                  會以為資料被改不見了，其實只是不符合「只看未指定帳戶」了。 */}
+              {isSearching ? "沒有符合的紀錄。" : filterLabels.length > 0 ? "沒有符合篩選條件的紀錄。" : `這段期間還沒有${kind}紀錄。`}
             </CardBody>
           </Card>
         ) : (
