@@ -335,14 +335,12 @@ export function AssetsView({
               一樣（日期小標＋當天小計、底下一張卡列那天幾筆、超過五筆收起來），兩個
               地方都是「依日期排的流水明細」，不要有兩套長相。 */}
           <div>
-            {/* 「查看更多」先放著不接去處：這一區只看得到近一個月，再舊的轉帳目前只能
-                進個別帳戶的明細慢慢翻。去處還沒決定（見下面的討論），所以先 disabled，
-                不要給一顆點了沒反應的連結。 */}
-            <div className="mb-2 flex items-center justify-between px-1">
+            {/* 右邊原本掛著一顆 disabled 的「查看更多」占位：這一區只看得到近一個月，
+                再舊的轉帳目前只能進個別帳戶的明細慢慢翻，去處還沒決定。但灰字看起來
+                就是一個連結，使用者會一直點、一直沒反應。既然還沒有去處，就先整顆拿掉
+                ——之後真的做了再加回來。 */}
+            <div className="mb-2 px-1">
               <p className={text.sectionHeading}>轉帳明細</p>
-              <button type="button" disabled className="text-xs font-medium text-[#C7BFE6]">
-                查看更多
-              </button>
             </div>
             {transferGroups.length === 0 ? (
               <EmptyListCard>還沒有任何轉帳紀錄，點右上角的圖示新增</EmptyListCard>

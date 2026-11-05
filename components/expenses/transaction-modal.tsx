@@ -371,8 +371,21 @@ export function TransactionModal({
           <button
             type="button"
             onClick={() => {
-              setBreakdown([blankBreakdownItem()]);
-              setScratchExpr("");
+              // 已經打好的金額直接帶成第一筆明細的金額。
+              //
+              // 開始拆明細之後，這筆交易的金額就改由明細加總決定（見 amountNum），所以
+              // 原本那個數字在畫面上會立刻變成 0。但使用者的順序通常是「先打 120、填完
+              // 備註，最後才想到要記裡面買了什麼」——而這顆按鈕就在表單的最後面，等到
+              // 按下去時，被清掉的金額已經是好幾步以前輸入的了，數字無聲消失只會讓人
+              // 以為自己根本沒打過。金額長一點（15800 這種）更是整串要重打。
+              //
+              // 帶進第一項之後，淨額維持原本的數字、鍵盤也直接停在那一項，使用者只要
+              // 補一個名稱就好。amountExpr 本身不動：按「移除全部明細」還是會退回原本
+              // 打的那個算式。
+              const entered = evaluateExpr(amountExpr);
+              const seeded = Number.isFinite(entered) && entered > 0 ? entered : 0;
+              setBreakdown([{ ...blankBreakdownItem(), amount: seeded }]);
+              setScratchExpr(seeded ? String(seeded) : "");
               setTarget({ kind: "breakdown", index: 0 });
             }}
             className="self-start text-xs font-medium text-[#6F5FD6] hover:underline"

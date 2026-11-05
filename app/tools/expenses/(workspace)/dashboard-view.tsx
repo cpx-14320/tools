@@ -100,6 +100,7 @@ export function DashboardView({
   const [addOpen, setAddOpen] = useState(false);
   // 兩張長清單各自的「展開／收合」，預設都是收起來的（見 ExpandToggle）。
   const [expenseRowsExpanded, setExpenseRowsExpanded] = useState(false);
+  const [unbudgetedRowsExpanded, setUnbudgetedRowsExpanded] = useState(false);
   const [incomeRowsExpanded, setIncomeRowsExpanded] = useState(false);
   const [recentExpanded, setRecentExpanded] = useState(false);
   // 在外面看記帳本時把金額遮起來，記在這台裝置上（見 hidden-amounts.tsx）。
@@ -165,15 +166,25 @@ export function DashboardView({
   const budget = budgetSummary(budgetMonthExpenseTx, categories, withLegacyCategoryBudgets(budgetRules, categories), budgetYearMonth);
   const budgetDaysLeft = monthDaysLeft(budgetYearMonth, todayISO);
 
-  // 首頁的支出清單把「有編預算」跟「沒編預算」的分類列在一起（跟預算設定頁同一種列法），
-  // 所以不需要再另外放一個「消費分類佔比」區塊——那塊列的分類這裡全都有，而且還多了
-  // 預算狀態。沒編預算的分類只顯示花了多少，不畫進度條（沒有分母可以畫）。
+  // 首頁的支出清單涵蓋「有編預算」跟「沒編預算」兩種分類，所以不需要再另外放一個
+  // 「消費分類佔比」區塊——那塊列的分類這裡全都有，而且還多了預算狀態。
+  //
+  // 但兩種分類**分成兩張卡**，不混在同一張：
+  // 「預算支出」卡最上面那一行是「已用 ／ 預算」的總結，它只加得動有編預算的分類。
+  // 以前兩種列在同一張卡裡，畫面就會變成上面寫「NT$ 563 / NT$ 5,000　11%」、下面卻
+  // 還列著日用品 342、零食 68、其他 62——看起來像是這幾筆也被算進那個 11% 裡，實際
+  // 沒有。只設了一個分類預算的人會因此以為自己「還在預算內」，但那個月可能花了好幾倍。
+  // 所以沒編預算的另外開一張「尚未設定預算」，標題自己把狀態講完，列上也就不用再掛
+  // 一個貼在金額旁邊的「未設定」小字。
   const budgetedById = new Map(budget.rows.map((r) => [r.category.id, r]));
   const spentById = new Map(categoryBreakdown(budgetMonthExpenseTx, categories).map((r) => [r.category.id, r.amount]));
   const expenseRows = topLevelCategories(categories, "支出")
     .map((category) => ({ category, spent: spentById.get(category.id) ?? 0, budget: budgetedById.get(category.id) ?? null }))
     .filter((row) => row.spent > 0 || row.budget !== null)
     .sort((a, b) => b.spent - a.spent);
+  const budgetedRows = expenseRows.filter((row) => row.budget !== null);
+  // 沒編預算、而且這個月有花到錢的才列。沒編又沒花的分類列出來只是把清單拉長。
+  const unbudgetedRows = expenseRows.filter((row) => row.budget === null && row.spent > 0);
 
   // 收入來源：跟底下的預算卡同一個月份（budgetMonthRange），不是吃篩選器的任意區間——
   // 兩塊疊在一起，月份不一樣的話數字對不起來。
@@ -335,8 +346,11 @@ export function DashboardView({
             查看全部
           </Link>
         </div>
-        {expenseRows.length === 0 ? (
-          <EmptyListCard />
+        {budgetedRows.length === 0 ? (
+          // 一個預算都沒編的時候不要畫「NT$ 0 / NT$ 0　剩 26 天　0%」：那一行每一個數字
+          // 都是真的（沒有分母所以是 0），但擺在一起看起來像「這個月還沒開始花」，而底下
+          // 「尚未設定預算」那張卡明明列著花掉的錢。沒有分母就不要畫分母，直接講要做什麼。
+          <EmptyListCard>還沒設定任何預算，到「設定 › 預算設定」幫常花的分類設一個</EmptyListCard>
         ) : (
           <ListCard>
             <div className="px-4 py-3.5">
@@ -369,51 +383,71 @@ export function DashboardView({
               </div>
             </div>
             {/* 每一列都可以點，直接跳到紀錄頁、而且已經幫你篩好那個分類的明細。
-                有編預算的畫「花了多少／預算多少」的進度條，沒編預算的只報金額——沒有
-                分母就沒有進度可言，硬畫一條空的反而像是用了 0%。 */}
-            {(expenseRowsExpanded ? expenseRows : expenseRows.slice(0, SUMMARY_LIMIT)).map((row) =>
-              row.budget ? (
-                <Link
-                  key={row.category.id}
-                  href={`/tools/expenses/transactions?${budgetDetailQuery}`}
-                  className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
-                >
-                  <ListProgressRow
-                    icon={row.category.icon}
-                    iconClassName={categoryColorClass[row.category.color]}
-                    name={row.category.name}
-                    amount={expense.mask(`${formatCurrency(row.budget.spent)} / ${formatCurrency(row.budget.budgetAmount)}`)}
-                    pct={row.budget.pct}
-                    pctLabel={<span className={row.budget.pct > 100 ? "text-[#D1517E]" : undefined}>{row.budget.pct}%</span>}
-                    barColorClass={row.budget.pct > 100 ? "bg-[#D1517E]" : categoryFillClass[row.category.color]}
-                  />
-                </Link>
-              ) : (
-                <ListRow
-                  key={row.category.id}
-                  href={`/tools/expenses/transactions?${budgetDetailQuery}`}
+                這張卡裡的分類一定有預算，所以一律畫「花了多少／預算多少」的進度條。 */}
+            {(expenseRowsExpanded ? budgetedRows : budgetedRows.slice(0, SUMMARY_LIMIT)).map((row) => (
+              <Link
+                key={row.category.id}
+                href={`/tools/expenses/transactions?${budgetDetailQuery}`}
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+              >
+                <ListProgressRow
                   icon={row.category.icon}
                   iconClassName={categoryColorClass[row.category.color]}
                   name={row.category.name}
-                  right={
-                    <span className="text-sm">
-                      <span className="tabular-nums font-semibold text-[#4A3B7C]">{expense.mask(formatCurrency(row.spent))}</span>
-                      <span className={`ml-1.5 ${text.muted}`}>未設定</span>
-                    </span>
-                  }
+                  amount={expense.mask(`${formatCurrency(row.budget!.spent)} / ${formatCurrency(row.budget!.budgetAmount)}`)}
+                  pct={row.budget!.pct}
+                  pctLabel={<span className={row.budget!.pct > 100 ? "text-[#D1517E]" : undefined}>{row.budget!.pct}%</span>}
+                  barColorClass={row.budget!.pct > 100 ? "bg-[#D1517E]" : categoryFillClass[row.category.color]}
                 />
-              ),
-            )}
+              </Link>
+            ))}
           </ListCard>
         )}
-        {expenseRows.length > SUMMARY_LIMIT && (
+        {budgetedRows.length > SUMMARY_LIMIT && (
           <ExpandToggle
             expanded={expenseRowsExpanded}
-            total={expenseRows.length}
+            total={budgetedRows.length}
             onToggle={() => setExpenseRowsExpanded((v) => !v)}
           />
         )}
       </div>
+
+      {/* 沒編預算、這個月有花到錢的分類。獨立一張卡，不混進上面那張——理由見上面
+          budgetedRows／unbudgetedRows 那段註解。標題已經把「尚未設定預算」講完了，
+          所以列上只報金額，不再掛一個貼在金額旁邊的「未設定」小字（那個小字黏在數字
+          後面，看起來像在描述那筆金額，而不是在講預算狀態）。
+          沒有分母所以不畫進度條——硬畫一條空的反而像是用了 0%。 */}
+      {unbudgetedRows.length > 0 && (
+        <div>
+          <div className="mb-2 flex items-center justify-between px-1">
+            <p className={text.sectionHeading}>尚未設定預算</p>
+            <Link href="/tools/expenses/budgets" className="text-xs font-medium text-[#6F5FD6]">
+              去設定
+            </Link>
+          </div>
+          <ListCard>
+            {(unbudgetedRowsExpanded ? unbudgetedRows : unbudgetedRows.slice(0, SUMMARY_LIMIT)).map((row) => (
+              <ListRow
+                key={row.category.id}
+                href={`/tools/expenses/transactions?${budgetDetailQuery}`}
+                icon={row.category.icon}
+                iconClassName={categoryColorClass[row.category.color]}
+                name={row.category.name}
+                right={
+                  <span className="text-sm tabular-nums font-semibold text-[#4A3B7C]">{expense.mask(formatCurrency(row.spent))}</span>
+                }
+              />
+            ))}
+          </ListCard>
+          {unbudgetedRows.length > SUMMARY_LIMIT && (
+            <ExpandToggle
+              expanded={unbudgetedRowsExpanded}
+              total={unbudgetedRows.length}
+              onToggle={() => setUnbudgetedRowsExpanded((v) => !v)}
+            />
+          )}
+        </div>
+      )}
 
       <div>
         <div className="mb-2 flex items-center justify-between px-1">
