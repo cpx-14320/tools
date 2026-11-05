@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import { occurrencesUpTo, type RecurringRuleDTO, type RecurringRuleInput } from "./recurring-rules";
 import { contributeToGoal } from "./goals.server";
+import { putInTrash } from "./trash.server";
 
 interface RecurringRuleDoc {
   _id: ObjectId;
@@ -106,10 +107,19 @@ export async function setRecurringRuleActive(userId: ObjectId, id: string, activ
 /** 刪除規則本身——已經自動入帳的交易紀錄是獨立快照，不會被這個操作動到；還沒到期的
  *  期數本來就不是資料庫裡真的存在的資料（都是即時算出來的），刪除後自然就不會再被
  *  入帳，等同於「提前解約，之後的期數不用再管」。 */
-export async function deleteRecurringRule(userId: ObjectId, id: string): Promise<RecurringRuleDTO[]> {
+export async function deleteRecurringRule(userId: ObjectId, id: string): Promise<{ rules: RecurringRuleDTO[]; trashId?: string }> {
   const col = await collection();
-  await col.deleteOne({ _id: new ObjectId(id), userId });
-  return listRecurringRules(userId);
+  const doc = await col.findOne({ _id: new ObjectId(id), userId });
+  if (!doc) return { rules: await listRecurringRules(userId) };
+
+  const trashId = await putInTrash(userId, {
+    kind: "recurringRule",
+    label: doc.note?.trim() || "固定收支",
+    sublabel: `每 ${doc.interval} ${doc.frequencyUnit} · ${doc.amount}`,
+    entries: [{ collection: "expenses.recurringRules", doc }],
+  });
+  await col.deleteOne({ _id: doc._id, userId });
+  return { rules: await listRecurringRules(userId), trashId };
 }
 
 /** 這條規則目前已經入帳的那幾期——key 是發生日期（YYYY-MM-DD），value 是對應的

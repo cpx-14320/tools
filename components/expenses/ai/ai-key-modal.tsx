@@ -11,12 +11,11 @@ import { maskKey, useAiKey } from "./use-ai-key";
  *  三句說明是這個彈窗最重要的部分，不是裝飾：使用者正要把一把能花自己錢的憑證交出去，
  *  「存在哪、誰看得到、花誰的錢、沒有的話去哪拿」四件事必須在按下儲存之前就講完。 */
 export function AiKeyModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { key, ready } = useAiKey();
+  const { key } = useAiKey();
   // key 綁在「開關狀態＋目前的金鑰」上＝每次打開都重新掛載一份乾淨的內容：輸入框從現值
   // 開始、「顯示」收回去。用 useEffect 去同步那兩個 state 也做得到，但那是「把可以靠
   // 重新掛載解決的事寫成副作用」，React 的 lint 規則擋的正是這種寫法。
-  // ready 也進 key：SSR 那一輪還讀不到 localStorage，讀到之後要讓輸入框跟著帶出現值。
-  return <AiKeyModalBody key={open ? `open-${ready}-${key}` : "closed"} open={open} onClose={onClose} />;
+  return <AiKeyModalBody key={open ? `open-${key}` : "closed"} open={open} onClose={onClose} />;
 }
 
 function AiKeyModalBody({ open, onClose }: { open: boolean; onClose: () => void }) {

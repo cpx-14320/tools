@@ -4,13 +4,14 @@ import { useState } from "react";
 import { Modal } from "../modal";
 import { Button } from "../button";
 import { ListCard } from "../list-row";
-import { CategoryGridPicker } from "../category-grid-picker";
 import { ConfirmModal } from "../confirm-modal";
+import { TransactionModal, type TransactionModalDraft } from "../transaction-modal";
 import { text } from "../theme";
 import { useToast } from "../toast";
 import { AiDraftList } from "./ai-draft-list";
+import { useDraftEditData } from "./use-draft-edit-data";
 import { draftSummaryLine, pendingItems, unclassifiedItems, type AiDraftDTO, type AiDraftItemDTO } from "@/lib/expenses/ai-drafts";
-import { needsSubcategory, type CategoryDTO } from "@/lib/expenses/categories";
+import type { CategoryDTO } from "@/lib/expenses/categories";
 import { formatDate } from "@/lib/format";
 
 /** 設定頁的「待確認的解析結果」——先看有哪幾批，點進去處理其中一批。
@@ -33,10 +34,13 @@ export function AiDraftsModal({
 }) {
   const showToast = useToast();
   const [openId, setOpenId] = useState<string | null>(null);
-  const [picking, setPicking] = useState<AiDraftItemDTO | null>(null);
-  const [pickValue, setPickValue] = useState("");
+  const [editing, setEditing] = useState<AiDraftItemDTO | null>(null);
   const [discardId, setDiscardId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // 編輯一筆草稿要用到帳戶、交易、轉帳（新增／編輯彈窗裡的帳戶選擇要顯示餘額）。
+  // 這些刻意不從設定頁的 Server Component 傳下來——那會讓每次進設定頁都多載一份完整的
+  // 交易清單（量過大約 80KB），只為了一個多數時候不會打開的彈窗。改成真的打開才抓。
+  const editData = useDraftEditData(openId !== null, categories);
 
   const current = openId ? (drafts.find((d) => d.id === openId) ?? null) : null;
   const pendingDrafts = drafts.filter((d) => d.status === "pending" && pendingItems(d).length > 0);
@@ -108,10 +112,7 @@ export function AiDraftsModal({
           <AiDraftList
             draft={current}
             categories={categories}
-            onEdit={(item) => {
-              setPicking(item);
-              setPickValue(item.categoryId ?? "");
-            }}
+            onEdit={setEditing}
             onSkip={(item) => patchItem(item.key, { state: "skipped" })}
           />
 
@@ -121,19 +122,45 @@ export function AiDraftsModal({
             </p>
           )}
 
-          <Modal open={picking !== null} onClose={() => setPicking(null)} title="這一筆算哪一類" fullHeight>
-            <CategoryGridPicker
-              categories={categories}
-              kind="支出"
-              value={pickValue}
-              onChange={(categoryId) => {
-                setPickValue(categoryId);
-                if (needsSubcategory(categories, categoryId)) return;
-                if (picking) patchItem(picking.key, { categoryId });
-                setPicking(null);
-              }}
-            />
-          </Modal>
+          {/* 編輯用的是記帳本原本那個新增／編輯彈窗（跟 AI 記帳彈窗裡同一個），分類、
+              名稱、日期、金額、帳戶全都能改，而且值已經帶好。 */}
+          <TransactionModal
+            key={editing ? editing.key : "closed"}
+            open={editing !== null}
+            title="確認這一筆"
+            confirmLabel="改好了"
+            categories={editData.categories}
+            accounts={editData.accounts}
+            accountTypes={editData.accountTypes}
+            transactions={editData.transactions}
+            transfers={editData.transfers}
+            defaultKind="支出"
+            initial={
+              editing
+                ? {
+                    categoryId: editing.categoryId ?? "",
+                    amount: editing.amount,
+                    date: editing.date,
+                    note: editing.note,
+                    accountId: editing.accountId,
+                  }
+                : undefined
+            }
+            onClose={() => setEditing(null)}
+            onSave={(next: TransactionModalDraft) => {
+              if (editing) {
+                patchItem(editing.key, {
+                  categoryId: next.categoryId,
+                  amount: next.amount,
+                  date: next.date,
+                  note: next.note ?? null,
+                  accountId: next.accountId ?? null,
+                });
+              }
+              setEditing(null);
+            }}
+            onCategoriesChange={editData.setCategories}
+          />
         </Modal>
 
         <ConfirmModal

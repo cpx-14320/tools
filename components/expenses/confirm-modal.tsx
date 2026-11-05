@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { useAsyncAction } from "./use-async-action";
 import { Button } from "./button";
 import { Modal, fieldInputClass } from "./modal";
 import { text } from "./theme";
@@ -37,10 +38,19 @@ export function ConfirmModal({
   onlyAcknowledge?: boolean;
   requireText?: string;
   option?: { label: string; checked: boolean; onChange: (checked: boolean) => void };
-  onConfirm?: () => void;
+  onConfirm?: () => void | Promise<unknown>;
   onClose: () => void;
 }) {
   const [typed, setTyped] = useState("");
+  // 確認鍵要擋連點，而且要**等 onConfirm 做完才關窗**。
+  //
+  // 本來是 `onConfirm(); onClose();` ——不 await 也不擋重複：手快點兩下就送出兩次
+  // （彈窗要等重繪才消失，中間那一瞬間按得到），而且 onConfirm 多半是非同步的，
+  // 失敗了彈窗早就關掉，使用者只看到「什麼都沒發生」。
+  const confirmAction = useAsyncAction(async () => {
+    await onConfirm?.();
+    onClose();
+  });
 
   // 每次重新打開都把輸入框清空，不然上一次打過的確認文字會留著，等於沒擋到。
   useEffect(() => {
@@ -63,15 +73,12 @@ export function ConfirmModal({
             </Button>
           )}
           <Button
-            disabled={!canConfirm}
-            onClick={() => {
-              onConfirm?.();
-              onClose();
-            }}
+            disabled={!canConfirm || confirmAction.busy}
+            onClick={confirmAction.run}
             className={danger && !onlyAcknowledge ? "!shadow-none" : undefined}
             style={danger && !onlyAcknowledge ? { background: "#D1517E" } : undefined}
           >
-            {onlyAcknowledge ? "知道了" : confirmLabel}
+            {onlyAcknowledge ? "知道了" : confirmAction.busy ? "處理中…" : confirmLabel}
           </Button>
         </div>
       }

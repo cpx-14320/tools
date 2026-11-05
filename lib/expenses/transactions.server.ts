@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import { breakdownNet, type BreakdownItem, type TransactionDTO, type TransactionInput } from "./transactions";
+import { putInTrash } from "./trash.server";
 
 interface TransactionDoc {
   _id: ObjectId;
@@ -87,10 +88,22 @@ export async function updateTransaction(userId: ObjectId, id: string, input: Tra
   return listTransactions(userId);
 }
 
-export async function deleteTransaction(userId: ObjectId, id: string): Promise<TransactionDTO[]> {
+/** 刪一筆交易。先原封不動搬進垃圾桶再真的刪掉——還原時用原本的 _id 插回去，所以
+ *  指向它的東西（例如固定收支的已入帳紀錄）會自動接回來。回傳 trashId 給 Undo 用。 */
+export async function deleteTransaction(userId: ObjectId, id: string): Promise<{ transactions: TransactionDTO[]; trashId?: string }> {
   const col = await collection();
-  await col.deleteOne({ _id: new ObjectId(id), userId });
-  return listTransactions(userId);
+  const doc = await col.findOne({ _id: new ObjectId(id), userId });
+  if (!doc) return { transactions: await listTransactions(userId) };
+
+  const trashId = await putInTrash(userId, {
+    kind: "transaction",
+    // 標籤在刪除當下就算好存起來：分類之後可能也被刪掉，到時候反查不到名字。
+    label: doc.note?.trim() || "（沒有備註）",
+    sublabel: `${doc.date} · ${doc.amount}`,
+    entries: [{ collection: "expenses.transactions", doc }],
+  });
+  await col.deleteOne({ _id: doc._id, userId });
+  return { transactions: await listTransactions(userId), trashId };
 }
 
 /** 批次只改「掛在哪個分類／哪個帳戶」，不碰金額、日期、備註、明細。

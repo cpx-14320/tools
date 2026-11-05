@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import { accountNameTaken, type AccountDTO } from "./accounts";
+import { putInTrash } from "./trash.server";
 
 interface AccountDoc {
   _id: ObjectId;
@@ -89,8 +90,16 @@ export async function countAccountUsage(userId: ObjectId, id: string): Promise<n
   return txCount + transferCount;
 }
 
-export async function deleteAccount(userId: ObjectId, id: string): Promise<AccountDTO[]> {
+export async function deleteAccount(userId: ObjectId, id: string): Promise<{ accounts: AccountDTO[]; trashId?: string }> {
   const col = await collection();
-  await col.deleteOne({ _id: new ObjectId(id), userId });
-  return listAccounts(userId);
+  const doc = await col.findOne({ _id: new ObjectId(id), userId });
+  if (!doc) return { accounts: await listAccounts(userId) };
+
+  const trashId = await putInTrash(userId, {
+    kind: "account",
+    label: doc.name,
+    entries: [{ collection: "expenses.accounts", doc }],
+  });
+  await col.deleteOne({ _id: doc._id, userId });
+  return { accounts: await listAccounts(userId), trashId };
 }

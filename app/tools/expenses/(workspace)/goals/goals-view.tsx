@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { TOAST, useToast } from "@/components/expenses/toast";
+import { useUndoDelete } from "@/components/expenses/use-undo-delete";
 import { PageHeader } from "@/components/expenses/page-header";
 import { Badge } from "@/components/expenses/button";
 import { LineIconButton } from "@/components/expenses/line-icon-button";
@@ -23,6 +24,7 @@ type ModalState = { mode: "create" } | { mode: "edit"; goal: SavingsGoalDTO };
 export function GoalsView({ initialGoals }: { initialGoals: SavingsGoalDTO[] }) {
   const [goals, setGoals] = useState(initialGoals);
   const showToast = useToast();
+  const showDeleteToast = useUndoDelete();
   const [modal, setModal] = useState<ModalState | null>(null);
   const [contributeId, setContributeId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
@@ -61,14 +63,23 @@ export function GoalsView({ initialGoals }: { initialGoals: SavingsGoalDTO[] }) 
 
   async function performDelete(ids: string[]) {
     let latest = goals;
+    const trashIds: (string | undefined)[] = [];
     for (const id of ids) {
-      const data: { goals?: SavingsGoalDTO[] } = await fetch(`/api/expenses/goals?id=${id}`, { method: "DELETE" })
+      const data: { goals?: SavingsGoalDTO[]; trashId?: string } = await fetch(`/api/expenses/goals?id=${id}`, { method: "DELETE" })
         .then((res) => res.json())
         .catch(() => ({}));
       if (data.goals) latest = data.goals;
+      trashIds.push(data.trashId);
     }
     setGoals(latest);
-    showToast(ids.length === 1 ? TOAST.deleted : `已刪除 ${ids.length} 筆`);
+    showDeleteToast(
+      trashIds,
+      async () => {
+        const fresh: { goals?: SavingsGoalDTO[] } = await fetch("/api/expenses/goals").then((r) => r.json());
+        if (fresh.goals) setGoals(fresh.goals);
+      },
+      ids.length === 1 ? TOAST.deleted : `已刪除 ${ids.length} 筆`,
+    );
   }
 
   function requestDelete() {

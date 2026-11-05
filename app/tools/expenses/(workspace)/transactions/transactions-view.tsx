@@ -17,6 +17,7 @@ import { text } from "@/components/expenses/theme";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { PageHeader } from "@/components/expenses/page-header";
 import { TOAST, useToast } from "@/components/expenses/toast";
+import { useUndoDelete } from "@/components/expenses/use-undo-delete";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
@@ -78,6 +79,7 @@ export function TransactionsView({
   // ?month=YYYY-MM 不在這裡處理——它要在伺服器算繪的那一輪就生效，所以讀的地方是
   // DateFilterProvider 的 useState 初始值（見 date-filter-context.tsx）。
   const showToast = useToast();
+  const showDeleteToast = useUndoDelete();
   // 編輯交易的彈窗裡可以順手建一個新分類（onCategoriesChange），所以分類要是 state。
   const [categories, setCategories] = useState<CategoryDTO[]>(initialCategories);
   const [transactions, setTransactions] = useState<TransactionDTO[]>(initialTransactions);
@@ -214,13 +216,17 @@ export function TransactionsView({
 
   async function handleDelete() {
     if (!modal) return;
-    const data: { transactions?: TransactionDTO[] } = await fetch(`/api/expenses/transactions?id=${modal.id}`, {
+    const data: { transactions?: TransactionDTO[]; trashId?: string } = await fetch(`/api/expenses/transactions?id=${modal.id}`, {
       method: "DELETE",
     })
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transactions) setTransactions(data.transactions);
-    showToast(TOAST.deleted);
+    // 提示上帶一顆「復原」。錯過了也沒關係，東西在「設定 › 最近刪除」裡。
+    showDeleteToast(data.trashId, async () => {
+      const latest: { transactions?: TransactionDTO[] } = await fetch("/api/expenses/transactions").then((r) => r.json());
+      if (latest.transactions) setTransactions(latest.transactions);
+    });
     setModal(null);
   }
 
@@ -279,15 +285,25 @@ export function TransactionsView({
   // 最後那一份就是正確的結果（併發送出的話回傳順序不保證，可能拿到中間狀態）。
   async function handleBulkDelete() {
     let latest = transactions;
+    const trashIds: (string | undefined)[] = [];
     for (const id of selection.selectedIds) {
-      const data: { transactions?: TransactionDTO[] } = await fetch(`/api/expenses/transactions?id=${id}`, { method: "DELETE" })
+      const data: { transactions?: TransactionDTO[]; trashId?: string } = await fetch(`/api/expenses/transactions?id=${id}`, { method: "DELETE" })
         .then((res) => res.json())
         .catch(() => ({}));
       if (data.transactions) latest = data.transactions;
+      trashIds.push(data.trashId);
     }
     setTransactions(latest);
     // 多選刪除講清楚刪了幾筆——按下去之前選的是一整批，只說「刪除成功」看不出有沒有漏。
-    showToast(`已刪除 ${selection.selectedIds.size} 筆`);
+    // 復原會把這一批全部拿回來（見 useUndoDelete）。
+    showDeleteToast(
+      trashIds,
+      async () => {
+        const fresh: { transactions?: TransactionDTO[] } = await fetch("/api/expenses/transactions").then((r) => r.json());
+        if (fresh.transactions) setTransactions(fresh.transactions);
+      },
+      `已刪除 ${selection.selectedIds.size} 筆`,
+    );
     setDeleteConfirm(null);
     selection.exit();
   }
@@ -320,7 +336,16 @@ export function TransactionsView({
           才是最常見的時機。跟首頁同一顆浮動鈕、同一個彈窗。 */}
       <FloatingAddButton onClick={() => setAddOpen(true)} label="新增收支紀錄" />
       {/* AI 記帳疊在＋上面。不想要的話刪這一行＋刪 components/expenses/ai/ 就乾淨了。 */}
-      <AiEntryButton enabled={aiEnabled} categories={categories} onCommitted={setTransactions} />
+      <AiEntryButton
+        enabled={aiEnabled}
+        categories={categories}
+        accounts={accounts}
+        accountTypes={accountTypes}
+        transactions={transactions}
+        transfers={transfers}
+        onCommitted={setTransactions}
+        onCategoriesChange={setCategories}
+      />
 
       {/* key 跟著開關變動＝每次打開都是一個乾淨的彈窗，不會留著上一筆填過的內容。 */}
       <TransactionModal

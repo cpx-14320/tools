@@ -75,6 +75,7 @@ export async function DELETE(request: Request) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "缺少 id" }, { status: 400 });
 
-  const transactions = await deleteTransaction(new ObjectId(user.id), id);
-  return NextResponse.json({ transactions });
+  // 刪除會先進垃圾桶，trashId 回給前端讓 toast 上的「復原」按得到（見 lib/expenses/trash.server.ts）。
+  const { transactions, trashId } = await deleteTransaction(new ObjectId(user.id), id);
+  return NextResponse.json({ transactions, trashId });
 }

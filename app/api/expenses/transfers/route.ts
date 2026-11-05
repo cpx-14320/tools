@@ -56,6 +56,6 @@ export async function DELETE(request: Request) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "缺少 id" }, { status: 400 });
 
-  const transfers = await deleteTransfer(new ObjectId(user.id), id);
-  return NextResponse.json({ transfers });
+  const { transfers, trashId } = await deleteTransfer(new ObjectId(user.id), id);
+  return NextResponse.json({ transfers, trashId });
 }

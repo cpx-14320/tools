@@ -3,6 +3,7 @@ import { getDb } from "../mongodb";
 import { categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "./categories";
 import { deleteBudgetRulesForCategories } from "./budgets.server";
 import { ICON_UNCATEGORIZED } from "./presets";
+import { putInTrash } from "./trash.server";
 
 interface CategoryDoc {
   _id: ObjectId;
@@ -234,7 +235,7 @@ export async function deleteCategory(
   userId: ObjectId,
   id: string,
   options?: { force?: boolean },
-): Promise<{ categories: CategoryDTO[] } | { error: string; inUseCount: number }> {
+): Promise<{ categories: CategoryDTO[]; trashId?: string } | { error: string; inUseCount: number }> {
   const col = await collection();
   const target = new ObjectId(id);
 
@@ -243,6 +244,15 @@ export async function deleteCategory(
   if (targetDocForGuard?.isUncategorized) {
     return { error: "「未分類」是系統用來收容已刪除分類紀錄的地方，不能刪除", inUseCount: 0 };
   }
+
+  const db = await getDb();
+  // 被改掛到「未分類」的那幾筆要記下來，還原時才改得回去。
+  //
+  // 這是整個垃圾桶唯一一個「文件以外的副作用」：刪分類不只刪掉分類本身，還會把它底下
+  // 所有交易搬到未分類。沒有這份清單的話，還原分類之後那些交易會留在未分類裡，而且
+  // **分不出哪幾筆是這次被搬過去的**——未分類裡本來就混著各種來源的紀錄，要人工一筆
+  // 一筆回想原本是什麼分類，那比重記一次還痛苦。
+  const reassigned: { collection: string; ids: ObjectId[]; fromCategoryId: ObjectId }[] = [];
 
   if (!options?.force) {
     const inUseCount = await countCategoryUsage(userId, id);
@@ -253,7 +263,14 @@ export async function deleteCategory(
       const subs = await col.find({ userId, parentId: target }, { projection: { _id: 1 } }).toArray();
       const ids = [target, ...subs.map((s) => s._id)];
       const uncategorizedId = await ensureUncategorized(userId, targetDoc.kind);
-      const db = await getDb();
+      // 先把「等一下會被搬走的是哪幾筆」抓下來，搬完就查不到了。子分類的紀錄還原時
+      // 要回到它原本那個子分類，所以一個分類一組、不是全部混在一起。
+      for (const collectionName of ["expenses.transactions", "expenses.recurringRules"]) {
+        for (const categoryId of ids) {
+          const docs = await db.collection(collectionName).find({ userId, categoryId }, { projection: { _id: 1 } }).toArray();
+          if (docs.length > 0) reassigned.push({ collection: collectionName, ids: docs.map((d) => d._id), fromCategoryId: categoryId });
+        }
+      }
       await Promise.all([
         db.collection("expenses.transactions").updateMany({ userId, categoryId: { $in: ids } }, { $set: { categoryId: uncategorizedId } }),
         db.collection("expenses.recurringRules").updateMany({ userId, categoryId: { $in: ids } }, { $set: { categoryId: uncategorizedId } }),
@@ -263,8 +280,33 @@ export async function deleteCategory(
 
   // 連這個分類（跟它的子分類）的預算規則一起清掉，不留下指向不存在分類的孤兒設定。
   const subsForBudget = await col.find({ userId, parentId: target }, { projection: { _id: 1 } }).toArray();
+  const budgetDocs = await db
+    .collection("expenses.budgets")
+    .find({ userId, categoryId: { $in: [target, ...subsForBudget.map((s) => s._id)] } })
+    .toArray();
   await deleteBudgetRulesForCategories(userId, [target, ...subsForBudget.map((s) => s._id)]);
 
+  // 分類本體＋子分類＋預算規則全部存成同一個垃圾桶項目：一次刪除就該是一次還原，
+  // 拆開會出現「分類回來了但預算規則沒回來」這種半套狀態。
+  const toDelete = await col.find({ userId, $or: [{ _id: target }, { parentId: target }] }).toArray();
+  const mainDoc = toDelete.find((d) => d._id.equals(target));
+  let trashId: string | undefined;
+  if (mainDoc) {
+    const subCount = toDelete.length - 1;
+    trashId = await putInTrash(userId, {
+      kind: "category",
+      label: mainDoc.name,
+      sublabel: [mainDoc.kind, subCount > 0 ? `含 ${subCount} 個子分類` : null, budgetDocs.length > 0 ? `含 ${budgetDocs.length} 筆預算` : null]
+        .filter(Boolean)
+        .join(" · "),
+      entries: [
+        ...toDelete.map((doc) => ({ collection: "expenses.categories", doc })),
+        ...budgetDocs.map((doc) => ({ collection: "expenses.budgets", doc })),
+      ],
+      reassigned,
+    });
+  }
+
   await col.deleteMany({ userId, $or: [{ _id: target }, { parentId: target }] });
-  return { categories: await listCategories(userId) };
+  return { categories: await listCategories(userId), trashId };
 }

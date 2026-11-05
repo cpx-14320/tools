@@ -13,6 +13,8 @@ import { PageHeader } from "@/components/expenses/page-header";
 import { text } from "@/components/expenses/theme";
 import { TOOLS_REGISTRY } from "@/lib/tools-registry";
 import { AiSettingsSection } from "@/components/expenses/ai/ai-settings-section";
+import { TrashModal } from "@/components/expenses/trash-modal";
+import type { TrashItemDTO } from "@/lib/expenses/trash";
 import type { AiDraftDTO } from "@/lib/expenses/ai-drafts";
 import type { CategoryDTO } from "@/lib/expenses/categories";
 
@@ -67,6 +69,7 @@ export function MoreView({
   aiEnabled,
   aiDrafts,
   categories,
+  trash,
 }: {
   pendingCount: number;
   /** AI 記帳整區的狀態。整個功能在這一頁的接觸點只有下面那一行 <AiSettingsSection />，
@@ -75,10 +78,14 @@ export function MoreView({
   aiDrafts: AiDraftDTO[];
   /** 待確認清單要用它顯示分類、補分類。 */
   categories: CategoryDTO[];
+  /** 垃圾桶裡的項目。空的時候那一區整個不顯示（見下面）。 */
+  trash: TrashItemDTO[];
 }) {
   const router = useRouter();
   const { user, logout } = useAuth();
   const otherTools = TOOLS_REGISTRY.filter((t) => t.toolId !== CURRENT_TOOL_ID && (user?.tools ?? []).includes(t.toolId));
+  const [trashItems, setTrashItems] = useState(trash);
+  const [trashOpen, setTrashOpen] = useState(false);
   const [resetScope, setResetScope] = useState<ResetScope | null>(null);
   // 預設不勾：清資料多半是想重新記帳，不是想放棄養成進度。
   const [resetPet, setResetPet] = useState(false);
@@ -158,6 +165,24 @@ export function MoreView({
             那幾組「記帳本的設定」是同一層；放在帳號／清除資料後面會像是系統層級的東西。 */}
         <AiSettingsSection initialEnabled={aiEnabled} initialDrafts={aiDrafts} categories={categories} />
 
+        {/* 最近刪除擺在「清除資料」正上方：兩者講的是同一件事的兩端（刪掉的東西去哪了、
+            怎麼真的清掉），放在一起才讀得出關係。垃圾桶是空的時候整區不顯示，不要讓一個
+            平常用不到的東西天天佔版面。 */}
+        {trashItems.length > 0 && (
+          <div>
+            <p className={`mb-2 px-1 ${text.label}`}>最近刪除</p>
+            <ListCard>
+              <button type="button" onClick={() => setTrashOpen(true)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-[#F3EFFC]">
+                <span className={`min-w-0 flex-1 ${text.body}`}>已刪除的項目</span>
+                <span className="shrink-0 rounded-full bg-[#F3EFFC] px-2 py-0.5 text-xs font-semibold tabular-nums text-[#6F5FD6]">
+                  {trashItems.length}
+                </span>
+                <span className={text.faint}>›</span>
+              </button>
+            </ListCard>
+          </div>
+        )}
+
         <div>
           <p className={`mb-2 px-1 ${text.label}`}>帳號</p>
           <button
@@ -188,6 +213,16 @@ export function MoreView({
         </div>
       </div>
 
+      <TrashModal
+        open={trashOpen}
+        items={trashItems}
+        onClose={() => setTrashOpen(false)}
+        onItemsChange={setTrashItems}
+        // 還原之後固定收支的待確認筆數可能會變（還原一條規則＝它過去的期數又回來了），
+        // 整頁重抓最簡單也最不會漏。
+        onRestored={() => router.refresh()}
+      />
+
       <ConfirmModal
         open={resetScope !== null}
         title={resetScope === "all" ? "清除全部資料" : "清除所有消費紀錄"}
@@ -203,7 +238,9 @@ export function MoreView({
         }
         confirmLabel="確定清除"
         requireText={resetScope === "all" ? "清除全部" : "清除紀錄"}
-        onConfirm={() => resetScope && handleReset(resetScope)}
+        onConfirm={async () => {
+          if (resetScope) await handleReset(resetScope);
+        }}
         onClose={() => {
           setResetScope(null);
           // 關掉就把勾選歸零——下次打開不該留著上次的選擇，那是會多刪東西的方向。

@@ -16,6 +16,7 @@ import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { text } from "@/components/expenses/theme";
 import { TOAST, useToast } from "@/components/expenses/toast";
+import { useUndoDelete } from "@/components/expenses/use-undo-delete";
 import { AccountModal, type AccountModalDraft } from "@/components/expenses/account-modal";
 import { TransferModal, type TransferModalDraft } from "@/components/expenses/transfer-modal";
 import { accountBalance, netWorth, totalByKind, type AccountDTO } from "@/lib/expenses/accounts";
@@ -44,6 +45,7 @@ export function AssetsView({
 }) {
   const { filter } = useDateFilter();
   const showToast = useToast();
+  const showDeleteToast = useUndoDelete();
   const [accounts, setAccounts] = useState<AccountDTO[]>(initialAccounts);
   // 新增帳戶的彈窗裡可以順手建一個新的帳戶類型（onAccountTypesChange），所以類型也要
   // 是 state，不能直接用 prop。
@@ -105,11 +107,14 @@ export function AssetsView({
 
   async function handleDeleteTransfer() {
     if (!transferEdit) return;
-    const data: { transfers?: TransferDTO[] } = await fetch(`/api/expenses/transfers?id=${transferEdit.id}`, { method: "DELETE" })
+    const data: { transfers?: TransferDTO[]; trashId?: string } = await fetch(`/api/expenses/transfers?id=${transferEdit.id}`, { method: "DELETE" })
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transfers) setTransfers(data.transfers);
-    showToast(TOAST.deleted);
+    showDeleteToast(data.trashId, async () => {
+      const fresh: { transfers?: TransferDTO[] } = await fetch("/api/expenses/transfers").then((r) => r.json());
+      if (fresh.transfers) setTransfers(fresh.transfers);
+    });
     setTransferEdit(null);
   }
 

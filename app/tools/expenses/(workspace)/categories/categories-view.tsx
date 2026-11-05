@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { TOAST, useToast } from "@/components/expenses/toast";
+import { useUndoDelete } from "@/components/expenses/use-undo-delete";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { SegmentedControl, Badge } from "@/components/expenses/button";
@@ -39,6 +40,7 @@ export function CategoriesView({
 }) {
   const [categories, setCategories] = useState<CategoryDTO[]>(initialCategories);
   const showToast = useToast();
+  const showDeleteToast = useUndoDelete();
   const [modal, setModal] = useState<CategoryDTO | null>(null);
   const [batchTarget, setBatchTarget] = useState<BatchTarget | null>(null);
   const [kind, setKind] = useState<CategoryKind>("支出");
@@ -70,23 +72,36 @@ export function CategoriesView({
   async function tryDeleteCategories(ids: string[], force: boolean) {
     let latest = categories;
     const blocked: string[] = [];
+    const trashIds: (string | undefined)[] = [];
     let totalInUse = 0;
     for (const id of ids) {
       const res = await fetch(`/api/expenses/categories?id=${id}${force ? "&force=1" : ""}`, { method: "DELETE" }).catch(() => null);
       if (!res) continue;
-      const data: { categories?: CategoryDTO[]; inUseCount?: number } = await res.json().catch(() => ({}));
+      const data: { categories?: CategoryDTO[]; inUseCount?: number; trashId?: string } = await res.json().catch(() => ({}));
       if (res.status === 409) {
         blocked.push(id);
         totalInUse += data.inUseCount ?? 0;
       } else if (data.categories) {
         latest = data.categories;
+        trashIds.push(data.trashId);
       }
     }
     setCategories(latest);
     // 被 409 擋下的那幾筆不算刪掉了，所以用「送出的筆數 － 被擋下的」當真正刪掉的數量；
     // 一筆都沒刪成功時不報，不然使用者會以為刪掉了。
     const deleted = ids.length - blocked.length;
-    if (deleted > 0) showToast(deleted === 1 ? TOAST.deleted : `已刪除 ${deleted} 筆`);
+    if (deleted > 0) {
+      // 復原會把分類、子分類、預算規則，以及「被改掛到未分類的那幾筆交易」一起拿回來
+      // （見 categories.server.ts 的 reassigned）。
+      showDeleteToast(
+        trashIds,
+        async () => {
+          const fresh: { categories?: CategoryDTO[] } = await fetch("/api/expenses/categories").then((r) => r.json());
+          if (fresh.categories) setCategories(fresh.categories);
+        },
+        deleted === 1 ? TOAST.deleted : `已刪除 ${deleted} 筆`,
+      );
+    }
     return { blocked, totalInUse };
   }
 

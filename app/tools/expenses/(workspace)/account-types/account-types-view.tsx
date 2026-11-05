@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { TOAST, useToast } from "@/components/expenses/toast";
+import { useUndoDelete } from "@/components/expenses/use-undo-delete";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { text } from "@/components/expenses/theme";
@@ -30,6 +31,7 @@ export function AccountTypesView({
 }) {
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>(initialAccountTypes);
   const showToast = useToast();
+  const showDeleteToast = useUndoDelete();
   const [modal, setModal] = useState<AccountTypeDTO | null>(null);
   const [batchOpen, setBatchOpen] = useState(false);
   // 擋下來的理由（刪不掉、或資產/負債換不了）直接存成一句話——兩種情況的說明不一樣，
@@ -64,21 +66,32 @@ export function AccountTypesView({
     let latest = accountTypes;
     let totalInUse = 0;
     let blockedCount = 0;
+    const trashIds: (string | undefined)[] = [];
     for (const id of ids) {
       const res = await fetch(`/api/expenses/account-types?id=${id}`, { method: "DELETE" }).catch(() => null);
       if (!res) continue;
-      const data: { accountTypes?: AccountTypeDTO[]; inUseCount?: number } = await res.json().catch(() => ({}));
+      const data: { accountTypes?: AccountTypeDTO[]; inUseCount?: number; trashId?: string } = await res.json().catch(() => ({}));
       if (res.status === 409) {
         blockedCount++;
         totalInUse += data.inUseCount ?? 0;
       } else if (data.accountTypes) {
         latest = data.accountTypes;
+        trashIds.push(data.trashId);
       }
     }
     setAccountTypes(latest);
     // 被擋下的（底下還有帳戶在用）不算刪掉了，只報真的刪掉的那幾筆。
     const deleted = ids.length - blockedCount;
-    if (deleted > 0) showToast(deleted === 1 ? TOAST.deleted : `已刪除 ${deleted} 筆`);
+    if (deleted > 0) {
+      showDeleteToast(
+        trashIds,
+        async () => {
+          const fresh: { accountTypes?: AccountTypeDTO[] } = await fetch("/api/expenses/account-types").then((r) => r.json());
+          if (fresh.accountTypes) setAccountTypes(fresh.accountTypes);
+        },
+        deleted === 1 ? TOAST.deleted : `已刪除 ${deleted} 筆`,
+      );
+    }
     return { blockedCount, totalInUse };
   }
 

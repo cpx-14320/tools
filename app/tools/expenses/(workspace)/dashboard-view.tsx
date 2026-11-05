@@ -225,7 +225,16 @@ export function DashboardView({
           「＋」而不是其他 emoji，跟選單圖示區分開，一眼就看得出是「新增」的動作。 */}
       <FloatingAddButton onClick={() => setAddOpen(true)} label="新增收支紀錄" />
       {/* AI 記帳疊在＋上面。整個 AI 功能對外就只有這一顆元件，不想要的話刪這一行就好。 */}
-      <AiEntryButton enabled={aiEnabled} categories={categories} onCommitted={setTransactions} />
+      <AiEntryButton
+        enabled={aiEnabled}
+        categories={categories}
+        accounts={accounts}
+        accountTypes={accountTypes}
+        transactions={transactions}
+        transfers={transfers}
+        onCommitted={setTransactions}
+        onCategoriesChange={setCategories}
+      />
 
       {/* 結餘、收入、支出三個數字合併成一張卡，不是三張（原本是一張整寬的結餘＋一個
           兩欄輪播）：三者本來就是同一道算式的三個部分（收入－支出＝結餘），拆成三張卡

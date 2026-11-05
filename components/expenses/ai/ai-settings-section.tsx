@@ -8,7 +8,7 @@ import { useToast } from "../toast";
 import { AiKeyModal } from "./ai-key-modal";
 import { AiDraftsModal } from "./ai-drafts-modal";
 import { maskKey, useAiKey } from "./use-ai-key";
-import { draftSummaryLine, pendingItems, type AiDraftDTO } from "@/lib/expenses/ai-drafts";
+import { pendingItems, type AiDraftDTO } from "@/lib/expenses/ai-drafts";
 import type { CategoryDTO } from "@/lib/expenses/categories";
 
 /** 設定頁的「AI 記帳」整區——整個 AI 功能在設定頁的唯一接觸點。
@@ -75,12 +75,10 @@ export function AiSettingsSection({
         <div className="mt-2">
           <ListCard>
             <button type="button" onClick={() => setKeyOpen(true)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-[#F3EFFC]">
-              <span className="min-w-0 flex-1">
-                <span className={`block ${text.body}`}>OpenAI API Key</span>
-                <span className={`block ${text.muted}`}>
-                  {hasKey ? `已設定（${maskKey(key)}）· 只存在這台裝置` : "尚未設定 · 目前使用模擬解析"}
-                </span>
-              </span>
+              {/* 只留標題跟右邊的狀態，下面不再掛一行小字：解釋「金鑰存在哪、怎麼用」
+                  的地方是點進去的彈窗，在清單上重複一次只是把這一區變長。 */}
+              <span className={`min-w-0 flex-1 ${text.body}`}>OpenAI API Key</span>
+              <span className={`shrink-0 ${text.muted}`}>{hasKey ? maskKey(key) : "尚未設定"}</span>
               <span className={text.faint}>›</span>
             </button>
 
@@ -90,10 +88,7 @@ export function AiSettingsSection({
                 onClick={() => setDraftsOpen(true)}
                 className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-[#F3EFFC]"
               >
-                <span className="min-w-0 flex-1">
-                  <span className={`block ${text.body}`}>待確認的解析結果</span>
-                  <span className={`block ${text.muted}`}>{pendingDrafts.map(draftSummaryLine).join(" ／ ")}</span>
-                </span>
+                <span className={`min-w-0 flex-1 ${text.body}`}>待確認的解析結果</span>
                 <span className="shrink-0 rounded-full bg-[#F3EFFC] px-2 py-0.5 text-xs font-semibold tabular-nums text-[#6F5FD6]">
                   {pendingDrafts.length}
                 </span>

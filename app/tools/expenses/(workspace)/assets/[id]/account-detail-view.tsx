@@ -12,6 +12,7 @@ import { TransactionRowLabel } from "@/components/expenses/transaction-row-label
 import { ICON_PATHS } from "@/components/expenses/icon-paths";
 import { text } from "@/components/expenses/theme";
 import { TOAST, useToast } from "@/components/expenses/toast";
+import { useUndoDelete } from "@/components/expenses/use-undo-delete";
 import { DateFilterPicker } from "@/components/expenses/date-filter-picker";
 import { useDateFilter } from "@/components/expenses/date-filter-context";
 import { AccountModal, type AccountModalDraft } from "@/components/expenses/account-modal";
@@ -55,6 +56,7 @@ export function AccountDetailView({
   const router = useRouter();
   const { filter } = useDateFilter();
   const showToast = useToast();
+  const showDeleteToast = useUndoDelete();
   const [accounts, setAccounts] = useState<AccountDTO[]>(initialAccounts);
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>(initialAccountTypes);
   const [categories, setCategories] = useState<CategoryDTO[]>(initialCategories);
@@ -101,13 +103,18 @@ export function AccountDetailView({
       setDeleteConfirm({ inUseCount: data.inUseCount ?? 0 });
       return;
     }
-    showToast(TOAST.deleted);
+    const data: { trashId?: string } = (await res?.json().catch(() => ({}))) ?? {};
+    // 刪完會離開這一頁，所以復原之後用 refresh 讓資產總表重新讀——這一頁的 state
+    // 已經不在了，沒有東西可以就地更新。
+    showDeleteToast(data.trashId, () => router.refresh());
     router.push("/tools/expenses/assets");
   }
 
   async function handleForceDeleteAccount() {
-    await fetch(`/api/expenses/accounts?id=${accountId}&force=1`, { method: "DELETE" }).catch(() => {});
-    showToast(TOAST.deleted);
+    const data: { trashId?: string } = await fetch(`/api/expenses/accounts?id=${accountId}&force=1`, { method: "DELETE" })
+      .then((r) => r.json())
+      .catch(() => ({}));
+    showDeleteToast(data.trashId, () => router.refresh());
     router.push("/tools/expenses/assets");
   }
 
@@ -143,13 +150,16 @@ export function AccountDetailView({
 
   async function handleTxDelete() {
     if (txModal?.mode !== "edit") return;
-    const data: { transactions?: TransactionDTO[] } = await fetch(`/api/expenses/transactions?id=${txModal.transaction.id}`, {
+    const data: { transactions?: TransactionDTO[]; trashId?: string } = await fetch(`/api/expenses/transactions?id=${txModal.transaction.id}`, {
       method: "DELETE",
     })
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transactions) setTransactions(data.transactions);
-    showToast(TOAST.deleted);
+    showDeleteToast(data.trashId, async () => {
+      const fresh: { transactions?: TransactionDTO[] } = await fetch("/api/expenses/transactions").then((r) => r.json());
+      if (fresh.transactions) setTransactions(fresh.transactions);
+    });
     setTxModal(null);
   }
 
@@ -178,11 +188,14 @@ export function AccountDetailView({
 
   async function handleTransferDelete() {
     if (!transferModal) return;
-    const data: { transfers?: TransferDTO[] } = await fetch(`/api/expenses/transfers?id=${transferModal.id}`, { method: "DELETE" })
+    const data: { transfers?: TransferDTO[]; trashId?: string } = await fetch(`/api/expenses/transfers?id=${transferModal.id}`, { method: "DELETE" })
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transfers) setTransfers(data.transfers);
-    showToast(TOAST.deleted);
+    showDeleteToast(data.trashId, async () => {
+      const fresh: { transfers?: TransferDTO[] } = await fetch("/api/expenses/transfers").then((r) => r.json());
+      if (fresh.transfers) setTransfers(fresh.transfers);
+    });
     setTransferModal(null);
   }
 

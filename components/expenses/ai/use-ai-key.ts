@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "cpx-tools:expenses:openai-key";
 
@@ -12,45 +12,74 @@ const STORAGE_KEY = "cpx-tools:expenses:openai-key";
  *
  *  代價講清楚：換裝置或清掉瀏覽器資料就要重貼一次。這是刻意的取捨，不是沒想到。
  *
- *  `ready` 是給 SSR 用的：伺服器讀不到 localStorage，所以第一次算繪一律當作「還不知道」。
- *  直接用 `key === ""` 當「沒設定」的話，伺服器會畫成未設定、瀏覽器接手再跳成已設定，
- *  畫面閃一下，也可能 hydration 對不起來。 */
-export function useAiKey() {
-  const [{ key, ready }, setState] = useState({ key: "", ready: false });
+ *  **為什麼是共用的 store 而不是各自的 useState**：設定頁的那一列跟金鑰彈窗是兩個不同
+ *  的元件，各自拿一份 state 的話，在彈窗裡存好之後，外面那一列還停在「尚未設定」，
+ *  要重新整理才會更新。localStorage 是外部狀態，就該用 useSyncExternalStore 訂閱它，
+ *  所有訂閱者會在同一刻拿到同一個值。順便也處理掉 SSR（getServerSnapshot）跟「另一個
+ *  分頁改了金鑰」（storage 事件）。 */
 
-  useEffect(() => {
-    // localStorage 只有瀏覽器有，所以一定得等掛載後才讀——這正是 effect 存在的理由，
-    // 不是「可以搬到 render 裡算」的那種。一次 setState 把值跟 ready 一起更新，不要
-    // 分兩次觸發兩輪重繪。
-    let value = "";
-    try {
-      value = window.localStorage.getItem(STORAGE_KEY) ?? "";
-    } catch {
-      // 無痕模式／封鎖 storage 的瀏覽器會丟例外。當成沒設定就好，不要讓整頁壞掉。
-    }
-    /* eslint-disable-next-line react-hooks/set-state-in-effect */
-    setState({ key: value, ready: true });
-  }, []);
+let cached: string | null = null;
+const listeners = new Set<() => void>();
 
-  function save(next: string) {
-    const trimmed = next.trim();
-    setState({ key: trimmed, ready: true });
-    try {
-      if (trimmed) window.localStorage.setItem(STORAGE_KEY, trimmed);
-      else window.localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* 同上 */
-    }
+function read(): string {
+  if (cached !== null) return cached;
+  try {
+    cached = window.localStorage.getItem(STORAGE_KEY) ?? "";
+  } catch {
+    // 無痕模式／封鎖 storage 的瀏覽器會丟例外。當成沒設定就好，不要讓整頁壞掉。
+    cached = "";
   }
-
-  return { key, ready, hasKey: ready && key !== "", save, clear: () => save("") };
+  return cached;
 }
 
-/** 顯示用的遮罩：`sk-proj-abcd…7f9c`。
+function emit() {
+  for (const listener of listeners) listener();
+}
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  // 另一個分頁改了金鑰時同步過來。storage 事件只會在「其他」分頁觸發，所以本頁自己
+  // 的修改要靠 writeKey 主動 emit。
+  const onStorage = (e: StorageEvent) => {
+    if (e.key !== STORAGE_KEY) return;
+    cached = e.newValue ?? "";
+    emit();
+  };
+  window.addEventListener("storage", onStorage);
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+
+/** 伺服器端讀不到 localStorage，一律回空字串。這也讓第一次算繪一定是「尚未設定」，
+ *  瀏覽器接手後才會變成真正的值——不會有 hydration 不一致。 */
+function getServerSnapshot(): string {
+  return "";
+}
+
+function writeKey(next: string) {
+  const trimmed = next.trim();
+  cached = trimmed;
+  try {
+    if (trimmed) window.localStorage.setItem(STORAGE_KEY, trimmed);
+    else window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* 同上：存不進去就算了，至少這次操作期間是有值的 */
+  }
+  emit();
+}
+
+export function useAiKey() {
+  const key = useSyncExternalStore(subscribe, read, getServerSnapshot);
+  return { key, hasKey: key !== "", save: writeKey, clear: () => writeKey("") };
+}
+
+/** 顯示用的遮罩：前三碼 ＋ 三個星號 ＋ 後三碼，例如 `sk-***f9c`。
  *
- *  只露頭尾——使用者要認出「這是我哪一把 key」靠的就是尾碼，但整串露出來等於在畫面上
- *  常駐一個憑證，旁邊有人看一眼就抄走了。 */
+ *  中間固定三個星號、不是一個字元一個星號——星號的數量會洩漏金鑰長度，而且不同長度的
+ *  金鑰在清單上會排成參差不齊的一片。使用者要認的是「這是我哪一把」，頭尾六碼就夠了。 */
 export function maskKey(key: string): string {
-  if (key.length <= 12) return key;
-  return `${key.slice(0, 7)}…${key.slice(-4)}`;
+  if (key.length <= 6) return key;
+  return `${key.slice(0, 3)}***${key.slice(-3)}`;
 }

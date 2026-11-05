@@ -66,6 +66,6 @@ export async function DELETE(request: Request) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "缺少 id" }, { status: 400 });
 
-  const goals = await deleteGoal(new ObjectId(user.id), id);
-  return NextResponse.json({ goals });
+  const { goals, trashId } = await deleteGoal(new ObjectId(user.id), id);
+  return NextResponse.json({ goals, trashId });
 }

@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import { accountTypeNameTaken, DEFAULT_ACCOUNT_TYPE_COLOR, type AccountKind, type AccountTypeDTO } from "./account-types";
 import type { CategoryColor } from "./categories";
+import { putInTrash } from "./trash.server";
 
 interface AccountTypeDoc {
   _id: ObjectId;
@@ -136,11 +137,20 @@ export async function countAccountTypeUsage(userId: ObjectId, id: string): Promi
 export async function deleteAccountType(
   userId: ObjectId,
   id: string,
-): Promise<{ accountTypes: AccountTypeDTO[] } | { error: string; inUseCount: number }> {
+): Promise<{ accountTypes: AccountTypeDTO[]; trashId?: string } | { error: string; inUseCount: number }> {
   const inUseCount = await countAccountTypeUsage(userId, id);
   if (inUseCount > 0) return { error: "帳戶類型仍有帳戶使用中", inUseCount };
 
   const col = await collection();
-  await col.deleteOne({ _id: new ObjectId(id), userId });
-  return { accountTypes: await listAccountTypes(userId) };
+  const doc = await col.findOne({ _id: new ObjectId(id), userId });
+  if (!doc) return { accountTypes: await listAccountTypes(userId) };
+
+  const trashId = await putInTrash(userId, {
+    kind: "accountType",
+    label: doc.name,
+    sublabel: doc.kind === "liability" ? "負債" : "資產",
+    entries: [{ collection: "expenses.accountTypes", doc }],
+  });
+  await col.deleteOne({ _id: doc._id, userId });
+  return { accountTypes: await listAccountTypes(userId), trashId };
 }

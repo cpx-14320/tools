@@ -61,6 +61,6 @@ export async function DELETE(request: Request) {
     if (inUseCount > 0) return NextResponse.json({ error: "帳戶仍有使用中的紀錄", inUseCount }, { status: 409 });
   }
 
-  const accounts = await deleteAccount(userId, id);
-  return NextResponse.json({ accounts });
+  const { accounts, trashId } = await deleteAccount(userId, id);
+  return NextResponse.json({ accounts, trashId });
 }

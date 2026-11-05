@@ -5,7 +5,6 @@ import { listCategories } from "@/lib/expenses/categories.server";
 import { createAiDraft, findRecentAiDraft } from "@/lib/expenses/ai-drafts.server";
 import { AI_MAX_ITEMS, mockParse } from "@/lib/expenses/ai-mock";
 import { todayInTaipei } from "@/lib/expenses/pet.server";
-import type { CategoryKind } from "@/lib/expenses/categories";
 
 /** 把一句話解析成一批待確認的收支紀錄。
  *
@@ -21,7 +20,6 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
   const text = typeof body?.text === "string" ? body.text.trim() : "";
-  const kind: CategoryKind = body?.kind === "收入" ? "收入" : "支出";
   const apiKey = typeof body?.apiKey === "string" ? body.apiKey.trim() : "";
   if (!text) return NextResponse.json({ error: "請先輸入一段文字" }, { status: 400 });
 
@@ -39,7 +37,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "真實模型還沒接上，目前只能用模擬解析（先把金鑰清掉試試）" }, { status: 501 });
   }
 
-  const items = mockParse(text, categories, kind, todayInTaipei());
+  const items = mockParse(text, categories, todayInTaipei());
   if (items.length === 0) {
     return NextResponse.json({ error: "這段文字裡找不到金額，試試「午餐便當 120」這種寫法" }, { status: 422 });
   }

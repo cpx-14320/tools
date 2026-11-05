@@ -97,6 +97,6 @@ export async function DELETE(request: Request) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "缺少 id" }, { status: 400 });
 
-  const rules = await deleteRecurringRule(new ObjectId(user.id), id);
-  return NextResponse.json({ rules });
+  const { rules, trashId } = await deleteRecurringRule(new ObjectId(user.id), id);
+  return NextResponse.json({ rules, trashId });
 }

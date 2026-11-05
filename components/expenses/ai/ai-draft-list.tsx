@@ -32,6 +32,9 @@ export function AiDraftList({
       {items.map((item) => {
         const category = item.categoryId ? categoryById(categories, item.categoryId) : undefined;
         const display = item.categoryId ? displayCategoryOf(categories, item.categoryId) : undefined;
+        // 正負號跟著分類的收支類型走，不能寫死減號：解析不分支出收入（收支方向由配到
+        // 哪個分類決定），所以同一批裡會同時出現兩種。子分類的 kind 看它的大分類。
+        const isIncome = display?.kind === "收入";
         return (
           <div key={item.key} className="flex items-center gap-3 px-4 py-3">
             {display ? (
@@ -47,7 +50,10 @@ export function AiDraftList({
                 <span className={`ml-1.5 ${text.faint}`}>{formatDate(item.date)}</span>
               </p>
             </button>
-            <span className="shrink-0 tabular-nums text-sm font-semibold text-[#4A3B7C]">－{formatCurrency(item.amount)}</span>
+            <span className={`shrink-0 tabular-nums text-sm font-semibold ${isIncome ? "text-[#2FAE82]" : "text-[#4A3B7C]"}`}>
+              {isIncome ? "＋" : "－"}
+              {formatCurrency(item.amount)}
+            </span>
             <button type="button" onClick={() => onSkip(item)} className="shrink-0 text-xs font-medium text-[#9C94C4]">
               略過
             </button>

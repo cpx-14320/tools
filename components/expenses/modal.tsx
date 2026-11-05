@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "./button";
 import { text } from "./theme";
+import { useAsyncAction } from "./use-async-action";
 
 // placeholder 的顏色寫在這裡，不要讓瀏覽器自己配灰色：同一列裡常常一邊是真 input、
 // 一邊是假成輸入框的 SelectField（它的提示文字是自己畫的 #B3ABD4，見 select-field.tsx），
@@ -159,7 +160,7 @@ export function ModalFooter({
    *  那個位置（新增用的彈窗本來就空在那裡）。灰掉的按鈕不講原因，使用者只會反覆點它。 */
   disabledHint?: ReactNode;
   /** 有給才顯示左下角的刪除；新增用的彈窗不給，位置用空元素佔著維持左右分佈。 */
-  onDelete?: () => void;
+  onDelete?: () => void | Promise<unknown>;
   deleteLabel?: string;
   /** 刪除前的二次確認。
    *
@@ -174,6 +175,11 @@ export function ModalFooter({
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // 刪除也要擋連點，理由同 confirm-modal.tsx。
+  const deleteAction = useAsyncAction(async () => {
+    await onDelete?.();
+    setConfirmingDelete(false);
+  });
 
   async function handleConfirm() {
     if (savingRef.current) return;
@@ -226,12 +232,10 @@ export function ModalFooter({
               <Button
                 className="!shadow-none"
                 style={{ background: "#D1517E" }}
-                onClick={() => {
-                  setConfirmingDelete(false);
-                  onDelete();
-                }}
+                disabled={deleteAction.busy}
+                onClick={deleteAction.run}
               >
-                {deleteLabel}
+                {deleteAction.busy ? "處理中…" : deleteLabel}
               </Button>
             </div>
           }

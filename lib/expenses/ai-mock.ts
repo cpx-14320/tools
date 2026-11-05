@@ -14,7 +14,7 @@ import type { AiDraftItemDTO } from "./ai-drafts";
  *
  *  有子分類的大分類本身不能直接記帳（見 categories.ts 的 needsSubcategory），所以不管是
  *  假解析還是之後真的呼叫模型，能選的範圍都只有這一份。 */
-export function leafCategories(categories: CategoryDTO[], kind: CategoryKind): CategoryDTO[] {
+export function leafCategories(categories: CategoryDTO[], kind?: CategoryKind): CategoryDTO[] {
   const out: CategoryDTO[] = [];
   for (const parent of topLevelCategories(categories, kind)) {
     const subs = subCategoriesOf(categories, parent.id);
@@ -78,13 +78,10 @@ function guessCategory(fragment: string, leaves: CategoryDTO[], categories: Cate
  *  而且待確認區一次要確認五十筆也不是好體驗。 */
 export const AI_MAX_ITEMS = 20;
 
-export function mockParse(
-  text: string,
-  categories: CategoryDTO[],
-  kind: CategoryKind,
-  todayISO: string,
-): AiDraftItemDTO[] {
-  const leaves = leafCategories(categories, kind);
+export function mockParse(text: string, categories: CategoryDTO[], todayISO: string): AiDraftItemDTO[] {
+  // 支出跟收入一起找。收支方向由「配到哪個分類」決定，不是另外問一次——多問一次就多
+  // 一個會答錯的地方，而且使用者會先被迫自己做一次分類判斷，那正是 AI 該做的事。
+  const leaves = leafCategories(categories);
   const items: AiDraftItemDTO[] = [];
   for (const fragment of splitFragments(text)) {
     const amount = extractAmount(fragment);

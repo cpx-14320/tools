@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import type { TransferDTO, TransferInput } from "./transfers";
+import { putInTrash } from "./trash.server";
 
 interface TransferDoc {
   _id: ObjectId;
@@ -71,8 +72,17 @@ export async function updateTransfer(userId: ObjectId, id: string, input: Transf
   return listTransfers(userId);
 }
 
-export async function deleteTransfer(userId: ObjectId, id: string): Promise<TransferDTO[]> {
+export async function deleteTransfer(userId: ObjectId, id: string): Promise<{ transfers: TransferDTO[]; trashId?: string }> {
   const col = await collection();
-  await col.deleteOne({ _id: new ObjectId(id), userId });
-  return listTransfers(userId);
+  const doc = await col.findOne({ _id: new ObjectId(id), userId });
+  if (!doc) return { transfers: await listTransfers(userId) };
+
+  const trashId = await putInTrash(userId, {
+    kind: "transfer",
+    label: doc.note?.trim() || "轉帳",
+    sublabel: `${doc.date} · ${doc.amount}`,
+    entries: [{ collection: "expenses.transfers", doc }],
+  });
+  await col.deleteOne({ _id: doc._id, userId });
+  return { transfers: await listTransfers(userId), trashId };
 }

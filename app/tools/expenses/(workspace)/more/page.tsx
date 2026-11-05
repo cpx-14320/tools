@@ -4,6 +4,7 @@ import { expensesUserId } from "@/lib/expenses/page-data.server";
 import { listPendingOccurrences } from "@/lib/expenses/recurring-rules.server";
 import { getExpensesSettings } from "@/lib/expenses/settings.server";
 import { listAiDrafts } from "@/lib/expenses/ai-drafts.server";
+import { listTrash } from "@/lib/expenses/trash.server";
 import { listCategories } from "@/lib/expenses/categories.server";
 
 export const metadata: Metadata = { title: "設定" };
@@ -13,11 +14,14 @@ export const dynamic = "force-dynamic";
 
 export default async function MorePage() {
   const userId = await expensesUserId();
-  const [pending, settings, aiDrafts, categories] = await Promise.all([
+  const [pending, settings, aiDrafts, categories, trash] = await Promise.all([
     listPendingOccurrences(userId),
     getExpensesSettings(userId),
     listAiDrafts(userId),
     listCategories(userId),
+    listTrash(userId),
   ]);
-  return <MoreView pendingCount={pending.length} aiEnabled={settings.aiEnabled} aiDrafts={aiDrafts} categories={categories} />;
+  return (
+    <MoreView pendingCount={pending.length} aiEnabled={settings.aiEnabled} aiDrafts={aiDrafts} categories={categories} trash={trash} />
+  );
 }

@@ -56,6 +56,8 @@ export function TransactionModal({
   onSave,
   onDelete,
   onCategoriesChange,
+  title,
+  confirmLabel,
 }: {
   open: boolean;
   categories: CategoryDTO[];
@@ -71,6 +73,11 @@ export function TransactionModal({
   /** 分類格子裡「＋新增」當場建好新分類後，把最新的分類清單回報給呼叫端更新自己的
    *  categories 狀態——不然關掉這個彈窗後分類列表又變回舊的。 */
   onCategoriesChange: (categories: CategoryDTO[]) => void;
+  /** 蓋掉預設的「新增／編輯收支紀錄」。AI 解析出來的那一批還不是真的紀錄，標題講
+   *  「編輯收支紀錄」會讓人以為已經寫進帳本了。 */
+  title?: string;
+  /** 同理，那種情境下按下去不是「儲存」而是「改好這一筆」。 */
+  confirmLabel?: string;
 }) {
   const initialCategory = initial ? categories.find((c) => c.id === initial.categoryId) : undefined;
   const [kind, setKind] = useState<CategoryKind>(initialCategory?.kind ?? defaultKind);
@@ -200,7 +207,7 @@ export function TransactionModal({
       onClose={onClose}
       // 「收支」不是「消費」：同一個彈窗也用來記收入（上面的支出／收入分頁），
       // 寫成「消費紀錄」會讓人以為記收入要去別的地方。
-      title={initial ? "編輯收支紀錄" : "新增收支紀錄"}
+      title={title ?? (initial ? "編輯收支紀錄" : "新增收支紀錄")}
       fullHeight
       // 小鍵盤固定在彈窗最下面不跟著捲動，使用者可以一邊捲上面的分類／日期／帳戶，
       // 一邊隨時按數字；按明細項目的金額時這個鍵盤會改成編那一項（見 keypadLabel）。
@@ -218,6 +225,7 @@ export function TransactionModal({
               accountId: accountId || undefined,
             })
           }
+          confirmLabel={confirmLabel}
           confirmDisabled={!canSave}
           disabledHint={missingHint}
           onDelete={onDelete}

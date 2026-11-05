@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import type { SavingsGoalDTO } from "./goals";
+import { putInTrash } from "./trash.server";
 
 interface SavingsGoalDoc {
   _id: ObjectId;
@@ -81,12 +82,23 @@ export async function contributeToGoal(userId: ObjectId, id: string, amount: num
  *  一個指向已刪除目標的 id，之後每次自動入帳都會對一個不存在的目標做 $inc，靜默什麼事
  *  都不會發生，使用者永遠不會發現連動早就失效了（見 recurring-rules.server.ts 的
  *  confirmOneOccurrence）。規則本身不用跟著刪，只是不再連動存錢目標。 */
-export async function deleteGoal(userId: ObjectId, id: string): Promise<SavingsGoalDTO[]> {
+export async function deleteGoal(userId: ObjectId, id: string): Promise<{ goals: SavingsGoalDTO[]; trashId?: string }> {
   const db = await getDb();
   const goalId = new ObjectId(id);
+  const col = await collection();
+  const doc = await col.findOne({ _id: goalId, userId });
+  if (!doc) return { goals: await listGoals(userId) };
+
+  // 解除固定收支對它的連動。這個副作用刻意**不**記進垃圾桶：還原目標之後要不要重新
+  // 連動是使用者的決定，自作主張接回去反而會讓一條他已經改過的規則突然又開始存錢。
   await db.collection("expenses.recurringRules").updateMany({ userId, linkedGoalId: goalId }, { $unset: { linkedGoalId: "" } });
 
-  const col = await collection();
+  const trashId = await putInTrash(userId, {
+    kind: "goal",
+    label: doc.name,
+    sublabel: `目標 ${doc.targetAmount}`,
+    entries: [{ collection: "expenses.goals", doc }],
+  });
   await col.deleteOne({ _id: goalId, userId });
-  return listGoals(userId);
+  return { goals: await listGoals(userId), trashId };
 }

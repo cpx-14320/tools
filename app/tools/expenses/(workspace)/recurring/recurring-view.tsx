@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ExpandToggle, PREVIEW_COUNT } from "@/components/expenses/expand-toggle";
 import { TOAST, useToast } from "@/components/expenses/toast";
+import { useUndoDelete } from "@/components/expenses/use-undo-delete";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { Badge, SegmentedControl } from "@/components/expenses/button";
@@ -61,6 +62,7 @@ export function RecurringView({
 }) {
   const [categories, setCategories] = useState<CategoryDTO[]>(initialCategories);
   const showToast = useToast();
+  const showDeleteToast = useUndoDelete();
   const [transactions, setTransactions] = useState<TransactionDTO[]>(initialTransactions);
   const [rules, setRules] = useState<RecurringRuleDTO[]>(initialRules);
   const [modal, setModal] = useState<ModalState | null>(null);
@@ -128,14 +130,24 @@ export function RecurringView({
 
   async function performDelete(ids: string[]) {
     let latest = rules;
+    const trashIds: (string | undefined)[] = [];
     for (const id of ids) {
-      const data: { rules?: RecurringRuleDTO[] } = await fetch(`/api/expenses/recurring-rules?id=${id}`, { method: "DELETE" })
+      const data: { rules?: RecurringRuleDTO[]; trashId?: string } = await fetch(`/api/expenses/recurring-rules?id=${id}`, { method: "DELETE" })
         .then((res) => res.json())
         .catch(() => ({}));
       if (data.rules) latest = data.rules;
+      trashIds.push(data.trashId);
     }
     setRules(latest);
-    showToast(ids.length === 1 ? TOAST.deleted : `已刪除 ${ids.length} 筆`);
+    showDeleteToast(
+      trashIds,
+      async () => {
+        const fresh: { rules?: RecurringRuleDTO[] } = await fetch("/api/expenses/recurring-rules").then((r) => r.json());
+        if (fresh.rules) setRules(fresh.rules);
+        await refreshPending();
+      },
+      ids.length === 1 ? TOAST.deleted : `已刪除 ${ids.length} 筆`,
+    );
     await refreshPending();
   }
 
