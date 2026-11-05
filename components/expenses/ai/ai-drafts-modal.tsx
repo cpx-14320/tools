@@ -138,7 +138,9 @@ export function AiDraftsModal({
             initial={
               editing
                 ? {
-                    categoryId: editing.categoryId ?? "",
+                    // 沒分類就帶 AI 判到的大分類（見 ai-mock 的 hint）：CategoryGridPicker 會
+                // 自動展開那一類的「項目」那一排，使用者點一下就好。
+                categoryId: editing.categoryId ?? editing.categoryHintId ?? "",
                     amount: editing.amount,
                     date: editing.date,
                     note: editing.note,

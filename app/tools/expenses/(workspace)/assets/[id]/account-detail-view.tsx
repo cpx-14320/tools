@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
+import { useBulkEdit } from "@/components/expenses/use-bulk-edit";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/expenses/page-header";
 import { LineIconButton } from "@/components/expenses/line-icon-button";
@@ -77,6 +79,7 @@ export function AccountDetailView({
   const [txModal, setTxModal] = useState<TxModalState | null>(null);
   const [transferModal, setTransferModal] = useState<TransferDTO | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ inUseCount: number } | null>(null);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState<string[] | null>(null);
   // 哪幾筆的明細是展開的——預設全部收起來，只有有明細的那幾筆才看得到展開箭頭。
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
@@ -214,6 +217,53 @@ export function AccountDetailView({
     ...accountTransfers.map((transfer): DetailEntry => ({ kind: "transfer", date: transfer.date, transfer })),
   ].sort((a, b) => (a.date < b.date ? 1 : -1));
   const visibleEntries = transfersOnly ? entries.filter((e) => e.kind === "transfer") : entries;
+
+  // 只有一般交易能被選：轉帳沒有分類、而「改帳戶」對它來說是改轉出或轉入哪一邊，
+  // 跟批次改一批交易不是同一件事（要改就點開那一筆自己改）。
+  const selectableTx = visibleEntries.flatMap((e) => (e.kind === "tx" ? [e.tx] : []));
+  const selection = useSelection(selectableTx.map((t) => t.id));
+  // 這一頁支出收入混排，所以「選到的那批是哪一種」要自己算；兩種都有就傳 null，
+  // 改分類會擋下來講原因（見 useBulkEdit）。
+  const selectedKinds = new Set(
+    selectableTx.filter((t) => selection.selectedIds.has(t.id)).map((t) => (categoryById(categories, t.categoryId)?.kind === "收入" ? "收入" : "支出")),
+  );
+  // 跟明細頁共用同一套「改帳戶／改分類」：兩邊列的都是交易，操作當然該一模一樣。
+  const bulkEdit = useBulkEdit({
+    transactions,
+    categories,
+    accounts,
+    accountTypes,
+    transfers,
+    selectedIds: selection.selectedIds,
+    kind: selectedKinds.size === 1 ? ([...selectedKinds][0] as "支出" | "收入") : null,
+    onUpdated: setTransactions,
+    onDone: selection.exit,
+  });
+
+  // 逐筆依序 DELETE：API 一次只收一個 id，每次都回傳最新的完整清單，照順序打完最後
+  // 那一份就是對的（併發送出的話回傳順序不保證，可能拿到中間狀態）。
+  async function handleBulkDelete() {
+    let latest = transactions;
+    const trashIds: (string | undefined)[] = [];
+    for (const id of selection.selectedIds) {
+      const data: { transactions?: TransactionDTO[]; trashId?: string } = await fetch(`/api/expenses/transactions?id=${id}`, { method: "DELETE" })
+        .then((res) => res.json())
+        .catch(() => ({}));
+      if (data.transactions) latest = data.transactions;
+      trashIds.push(data.trashId);
+    }
+    setTransactions(latest);
+    showDeleteToast(
+      trashIds,
+      async () => {
+        const fresh: { transactions?: TransactionDTO[] } = await fetch("/api/expenses/transactions").then((r) => r.json());
+        if (fresh.transactions) setTransactions(fresh.transactions);
+      },
+      `已刪除 ${selection.selectedIds.size} 筆`,
+    );
+    setBulkDeleteConfirm(null);
+    selection.exit();
+  }
   const groups = new Map<string, DetailEntry[]>();
   for (const e of visibleEntries) {
     const list = groups.get(e.date) ?? [];
@@ -317,6 +367,17 @@ export function AccountDetailView({
         onAccountTypesChange={setAccountTypes}
       />
 
+      {bulkEdit.element}
+
+      <ConfirmModal
+        open={bulkDeleteConfirm !== null}
+        title={`刪除 ${bulkDeleteConfirm?.length ?? 0} 筆紀錄`}
+        message="刪除的紀錄會先進「設定 › 最近刪除」，之後還可以還原。確定要刪除選取的紀錄嗎？"
+        confirmLabel="刪除"
+        onClose={() => setBulkDeleteConfirm(null)}
+        onConfirm={handleBulkDelete}
+      />
+
       <ConfirmModal
         open={deleteConfirm !== null}
         title="這個帳戶還有紀錄"
@@ -403,16 +464,34 @@ export function AccountDetailView({
               而且這一頁本來就是最常拿來核對轉帳的地方。 */}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className={text.sectionHeading}>明細</p>
-            <SegmentedControl
-              value={transfersOnly ? "transfer" : "all"}
-              onChange={(v) => setTransfersOnly(v === "transfer")}
-              activeTone="solid"
-              options={[
-                { value: "all", label: "全部" },
-                { value: "transfer", label: "只看轉帳" },
-              ]}
-            />
+            <div className="flex items-center gap-2">
+              <SegmentedControl
+                value={transfersOnly ? "transfer" : "all"}
+                onChange={(v) => setTransfersOnly(v === "transfer")}
+                activeTone="solid"
+                options={[
+                  { value: "all", label: "全部" },
+                  { value: "transfer", label: "只看轉帳" },
+                ]}
+              />
+              {/* 只看轉帳的時候一筆都選不到，按鈕就不出現——擺一顆按了只會得到空工具列
+                  的按鈕，比沒有更讓人困惑。 */}
+              {!transfersOnly && <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />}
+            </div>
           </div>
+
+          {selection.selecting && (
+            <div className="mt-3">
+              <SelectionBar
+                count={selection.selectedIds.size}
+                total={selection.total}
+                actions={bulkEdit.actions}
+                onToggleAll={selection.toggleAll}
+                onCancel={selection.exit}
+                onDelete={() => setBulkDeleteConfirm([...selection.selectedIds])}
+              />
+            </div>
+          )}
           {visibleEntries.length === 0 ? (
             <p className={`mt-3 ${text.muted}`}>
               {transfersOnly ? "這段期間這個帳戶沒有轉帳紀錄。" : "這段期間這個帳戶還沒有掛任何交易或轉帳。"}
@@ -447,11 +526,16 @@ export function AccountDetailView({
                         return (
                           <div key={t.id}>
                             <div className="flex w-full items-center gap-1 px-3 py-3">
+                              {/* 選取模式時整一列就是一個勾選目標（圓點只是指示器，點它
+                                  本身沒有事件）——跟明細頁同一個做法。 */}
                               <button
                                 type="button"
-                                onClick={() => setTxModal({ mode: "edit", transaction: t })}
+                                role={selection.selecting ? "checkbox" : undefined}
+                                aria-checked={selection.selecting ? selection.selectedIds.has(t.id) : undefined}
+                                onClick={() => (selection.selecting ? selection.toggle(t.id) : setTxModal({ mode: "edit", transaction: t }))}
                                 className="flex min-w-0 flex-1 items-center gap-3 text-left"
                               >
+                                {selection.selecting && <SelectionDot selected={selection.selectedIds.has(t.id)} />}
                                 <TransactionRowLabel
                                   icon={category?.icon ?? ""}
                                   iconClassName={category ? categoryColorClass[category.color] : undefined}
@@ -466,9 +550,13 @@ export function AccountDetailView({
                                   {balanceAfter !== undefined && <span className={`mt-0.5 tabular-nums ${text.faint}`}>餘額 {formatCurrency(balanceAfter)}</span>}
                                 </div>
                               </button>
-                              {breakdown.length > 0 && <BreakdownToggle expanded={expanded} onClick={() => toggleExpanded(t.id)} />}
+                              {/* 選取模式時不顯示展開箭頭：正在挑要改哪幾筆的時候不會想
+                                  展開看拆帳明細，留著它等於在勾選範圍右邊挖一個點不到的洞。 */}
+                              {!selection.selecting && breakdown.length > 0 && (
+                                <BreakdownToggle expanded={expanded} onClick={() => toggleExpanded(t.id)} />
+                              )}
                             </div>
-                            {expanded && breakdown.length > 0 && <TransactionBreakdown items={breakdown} />}
+                            {!selection.selecting && expanded && breakdown.length > 0 && <TransactionBreakdown items={breakdown} />}
                           </div>
                         );
                       }
@@ -484,8 +572,11 @@ export function AccountDetailView({
                         <button
                           key={transfer.id}
                           type="button"
+                          disabled={selection.selecting}
                           onClick={() => setTransferModal(transfer)}
-                          className="flex w-full items-center gap-3 px-3 py-3 text-left"
+                          // 選取模式下轉帳列選不到（沒有分類、帳戶也不是同一個意思），
+                          // 淡掉表示「這幾列現在不參與」，而不是讓它看起來點了沒反應。
+                          className={`flex w-full items-center gap-3 px-3 py-3 text-left ${selection.selecting ? "opacity-40" : ""}`}
                         >
                           {/* 標題放備註、副標放「轉到／來自 哪個帳戶」——跟上面的交易列
                               一致（標題是這筆是什麼、副標是它歸在哪裡）。沒寫備註的話

@@ -1,4 +1,5 @@
 import { categoryPath, topLevelCategories, subCategoriesOf, type CategoryDTO, type CategoryKind } from "./categories";
+import { matchKeywordCategories } from "./ai-keywords";
 import type { AiDraftItemDTO } from "./ai-drafts";
 
 /** 還沒有 API 金鑰時用的「假解析」。
@@ -54,24 +55,89 @@ function extractDate(fragment: string, todayISO: string): string {
   return todayISO;
 }
 
-/** 用分類名稱當關鍵字去配。先比子分類（比較具體），再比大分類。
+/** 一天裡的時段 → 餐別。只有「餐飲」這種照時段分子項目的分類用得上。 */
+const MEAL_BY_TIME: { pattern: RegExp; sub: string }[] = [
+  { pattern: /早上|上午|早餐|早午餐/, sub: "早餐" },
+  { pattern: /中午|午餐|午飯/, sub: "午餐" },
+  { pattern: /晚上|晚餐|晚飯|宵夜|傍晚/, sub: "晚餐" },
+];
+
+/** 把一個「候選分類名稱」對到這個使用者實際有的分類。
  *
- *  真的模型會用語意理解（「全家便當」→ 餐飲），這裡只能做字面比對，所以配不到是常態
- *  ——那正好可以看到「未分類」在 UI 上長什麼樣。 */
-function guessCategory(fragment: string, leaves: CategoryDTO[], categories: CategoryDTO[]): CategoryDTO | null {
+ *  **大分類底下還有子項目時，不會隨便挑一個頂著。** 那會產生「自信地猜錯」——
+ *  「麥當勞 89」被歸成餐飲›早餐、「捷運 32」被歸成大眾交通›月票，使用者在待確認區
+ *  掃過去很可能就直接確認掉了。
+ *
+ *  **但也不會就此丟掉已經知道的事**：判得出大分類、只是挑不出子項目時，大分類會當成
+ *  「提示」回傳（hint）。待確認區拿它把那個大分類先展開，使用者點一下子項目就好，不用
+ *  從十幾個大分類重找一次。分類本身依舊算「未分類」，一樣擋住寫入——範圍縮小了，但
+ *  決定還是使用者自己做的。
+ *
+ *  餐別是例外：句子裡有「中午」「晚上」這種時段詞時，那就是真的知道是哪一餐，
+ *  不是用猜的。 */
+function resolveCategoryName(
+  name: string,
+  fragment: string,
+  leaves: CategoryDTO[],
+  categories: CategoryDTO[],
+): { category: CategoryDTO | null; hint: CategoryDTO | null } {
+  const leaf = leaves.find((c) => c.name === name);
+  if (leaf) return { category: leaf, hint: null };
+
+  const parent = categories.find((c) => !c.parentId && c.name === name);
+  if (!parent) return { category: null, hint: null };
+  const subs = subCategoriesOf(categories, parent.id);
+  if (subs.length === 0) return { category: parent, hint: null };
+
+  for (const { pattern, sub } of MEAL_BY_TIME) {
+    if (!pattern.test(fragment)) continue;
+    const hit = subs.find((s) => s.name === sub);
+    if (hit) return { category: hit, hint: null };
+  }
+  return { category: null, hint: parent };
+}
+
+/** 猜這一段屬於哪個分類。兩個階段：
+ *
+ *  1. **關鍵字字典**（ai-keywords.ts）——「全家便當」「星巴克」「捷運」這種日常用詞跟
+ *     店名，字面上跟分類名稱一點都不像，但其實最常出現。字典把它們對到候選分類名稱，
+ *     再去比對這個使用者實際有哪些分類。
+ *  2. **字面比對**——字典沒收的詞，退回「這段文字裡有沒有出現分類名稱」。
+ *
+ *  兩階段都配不到就回 null（未分類），讓待確認區擋住寫入、由使用者自己選。配錯比配不到
+ *  糟糕得多：配不到至少看得見，配錯卻可能被直接確認掉。
+ *
+ *  回傳的 hint 是「只差子項目」的那個大分類，見 resolveCategoryName。 */
+function guessCategory(
+  fragment: string,
+  leaves: CategoryDTO[],
+  categories: CategoryDTO[],
+): { category: CategoryDTO | null; hint: CategoryDTO | null } {
+  // 字典跟字面兩條路都可能只拿到 hint（比如「麥當勞」→ 餐飲）。先記起來，繼續試後面的
+  // 候選：說不定下一個候選就是一個沒有子項目、配得起來的分類。
+  let hint: CategoryDTO | null = null;
+
+  // 1. 關鍵字字典。候選由具體排到通用（例如 ["午餐", "餐飲"]），取第一個這個使用者
+  //    真的有的分類。
+  for (const name of matchKeywordCategories(fragment)) {
+    const r = resolveCategoryName(name, fragment, leaves, categories);
+    if (r.category) return { category: r.category, hint: null };
+    hint = hint ?? r.hint;
+  }
+
+  // 2. 字面比對：長的分類名稱優先，「大眾交通」要比「交通」先中。
   const bySpecificity = [...leaves].sort((a, b) => b.name.length - a.name.length);
   for (const c of bySpecificity) {
-    if (c.name && fragment.includes(c.name)) return c;
+    if (c.name && fragment.includes(c.name)) return { category: c, hint: null };
   }
-  // 名稱配不到時，試試大分類的名字（「吃了什麼餐飲」這種）；大分類有子項目就不能直接用，
-  // 挑它底下第一個子項目頂著——使用者在待確認區看得到、改得掉。
-  for (const parent of categories.filter((c) => !c.parentId)) {
+  for (const parent of [...categories.filter((c) => !c.parentId)].sort((a, b) => b.name.length - a.name.length)) {
     if (parent.name && fragment.includes(parent.name)) {
-      const subs = subCategoriesOf(categories, parent.id);
-      return subs.length > 0 ? subs[0] : parent;
+      const r = resolveCategoryName(parent.name, fragment, leaves, categories);
+      if (r.category) return { category: r.category, hint: null };
+      hint = hint ?? r.hint;
     }
   }
-  return null;
+  return { category: null, hint };
 }
 
 /** 一次最多認幾筆。防呆用，不是遊戲規則——貼一整個月的帳單進來，回應會大到不好處理，
@@ -86,7 +152,7 @@ export function mockParse(text: string, categories: CategoryDTO[], todayISO: str
   for (const fragment of splitFragments(text)) {
     const amount = extractAmount(fragment);
     if (amount === null) continue; // 沒有金額就不是一筆帳
-    const category = guessCategory(fragment, leaves, categories);
+    const { category, hint } = guessCategory(fragment, leaves, categories);
     // 備註用「把數字拿掉之後剩下的字」——使用者打的是「午餐全家便當 120」，備註應該是
     // 「午餐全家便當」，不是整串含金額的原文。
     const note = fragment.replace(/\d[\d,]*\s*元?/g, "").trim();
@@ -97,7 +163,10 @@ export function mockParse(text: string, categories: CategoryDTO[], todayISO: str
       date: extractDate(fragment, todayISO),
       note: note || undefined,
       state: "pending",
-      aiGuess: category ? categoryPath(categories, category.id) : undefined,
+      categoryHintId: hint?.id,
+      // 只猜到大分類時也記下來（帶個問號），之後回頭看才分得出「完全不知道」跟
+      // 「知道是餐飲、只是不知道哪一餐」。
+      aiGuess: category ? categoryPath(categories, category.id) : hint ? hint.name + " › ?" : undefined,
     });
     if (items.length >= AI_MAX_ITEMS) break;
   }

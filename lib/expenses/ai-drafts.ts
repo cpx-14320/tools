@@ -26,6 +26,14 @@ export interface AiDraftItemDTO {
   note?: string;
   accountId?: string;
   state: AiDraftItemState;
+  /** 已經確定大分類、但判斷不出是哪個子項目時，把那個大分類的 id 放這裡。
+   *
+   *  「麥當勞 89」知道是餐飲，但沒人看得出那是早餐跟晚餐；「uniqlo 790」知道是服飾，
+   *  但不知道買的是衣服還是包包。這種時候把大分類交出來當提示，待確認區就能
+   *  直接展開那個大分類的項目讓使用者點一下，而不是从十幾個大分類重找一次。
+   *
+   *  **這不算分好類**：categoryId 依舊是 null，一樣擋住寫入（見 unclassifiedItems）。 */
+  categoryHintId?: string;
   /** AI 原本判斷的分類路徑。使用者改過之後，還看得出它本來說什麼——之後要調 prompt
    *  或換模型時，這是唯一的判斷依據。 */
   aiGuess?: string;

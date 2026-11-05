@@ -49,12 +49,28 @@ export interface PresetCategorySeed {
  *  想知道是日用品還是電話費就得一筆一筆翻。 */
 export const PRESET_EXPENSE_CATEGORIES: PresetCategorySeed[] = [
   { name: "餐飲", icon: expenseCategoryIcon("food"), color: "a", children: ["早餐", "午餐", "晚餐"] },
+  // 飲料不歸在「餐飲」底下：餐飲的子項目是早／午／晚餐，一杯手搖卡不進任何一餐，
+  // 而且「一個月喝掉多少飲料」本來就是很多人會想單獨看的數字。
+  { name: "飲料", icon: expenseCategoryIcon("beverage"), color: "b" },
   { name: "零食", icon: expenseCategoryIcon("dessert"), color: "f" },
-  { name: "大眾交通", icon: expenseCategoryIcon("transport"), color: "a", children: ["月票"] },
+  // 子項目排「怎麼搭」而不是「搭去哪」：月票放第一個（最常記的固定支出），
+  // 其他依搭乘頻率排。沒有子項目的話「捷運 30」跟「高鐵 1490」會混在同一格，
+  // 而這兩筆在報表上的意義完全不同。
+  {
+    name: "大眾交通",
+    icon: expenseCategoryIcon("transport"),
+    color: "a",
+    children: ["月票", "捷運", "公車", "火車", "高鐵", "客運", "計程車", "共享運具"],
+  },
+  // 自己開車騎車的花費（加油、停車、過路費、保養）——跟大眾運輸分開記，
+  // 兩者的金額規模、頻率、能不能節省都不一樣。
+  { name: "開車", icon: expenseCategoryIcon("transportation"), color: "d" },
   { name: "電商購物", icon: expenseCategoryIcon("shopping"), color: "c" },
-  { name: "服飾", icon: expenseCategoryIcon("clothing"), color: "c", children: ["衣服", "包包"] },
+  { name: "服飾", icon: expenseCategoryIcon("clothing"), color: "c", children: ["衣服", "裙子", "鞋子", "包包"] },
   { name: "保養品", icon: expenseCategoryIcon("beauty"), color: "e" },
   { name: "日用品", icon: expenseCategoryIcon("life"), color: "d" },
+  // 家電 3C 單筆金額大、次數少，混在日用品裡會把那個月的「日用品」撞成兩倍。
+  { name: "家電", icon: expenseCategoryIcon("electronics"), color: "e" },
   { name: "寵物", icon: expenseCategoryIcon("pet"), color: "c" },
   { name: "學習", icon: expenseCategoryIcon("education"), color: "d" },
   { name: "娛樂", icon: expenseCategoryIcon("entertainment"), color: "f" },
@@ -63,6 +79,9 @@ export const PRESET_EXPENSE_CATEGORIES: PresetCategorySeed[] = [
   { name: "醫療", icon: expenseCategoryIcon("medical"), color: "a" },
   { name: "保險", icon: expenseCategoryIcon("insurance"), color: "b" },
   { name: "房租", icon: expenseCategoryIcon("rent"), color: "e" },
+  // 水電瓦斯沒有專屬圖，先跟「繳稅」共用帳單那張（兩者都是「收到單子去繳」），
+  // 之後補上 expenses-category-utility.png 再改指過去。
+  { name: "水電", icon: expenseCategoryIcon("bill"), color: "c" },
   { name: "繳稅", icon: expenseCategoryIcon("bill"), color: "a" },
   { name: "電話費", icon: expenseCategoryIcon("phone"), color: "c" },
   { name: "服務訂閱", icon: expenseCategoryIcon("subscription"), color: "b" },
