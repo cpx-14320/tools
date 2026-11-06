@@ -83,11 +83,26 @@ function toDTO(doc: PetDoc, justEarned: PetReward[] = [], today = todayInTaipei(
   };
 }
 
+/** 商店下架的食物（改版前買的壽司之類）留在背包裡只會變成「看不到也餵不了」的孤兒數量
+ *  ——餵食鍵只畫 PET_ITEMS 裡的食物，feedPet 又查不到這個 id。所以讀到就順手 $unset
+ *  清掉，清過一次之後這段就不會再做事。 */
+async function dropRetiredFoods(doc: PetDoc): Promise<PetDoc> {
+  const retired = Object.keys(doc.foodCounts ?? {}).filter((id) => petItemById(id)?.kind !== "食物");
+  if (retired.length === 0) return doc;
+  const col = await collection();
+  const updated = await col.findOneAndUpdate(
+    { _id: doc._id },
+    { $unset: Object.fromEntries(retired.map((id) => [`foodCounts.${id}`, ""])) },
+    { returnDocument: "after" },
+  );
+  return updated ?? doc;
+}
+
 /** 讀取（沒有就建一個初始狀態）。第一次進養成頁的人直接有一套預設服裝、0 幣 0 經驗。 */
 async function ensurePet(userId: ObjectId): Promise<PetDoc> {
   const col = await collection();
   const existing = await col.findOne({ userId });
-  if (existing) return existing;
+  if (existing) return dropRetiredFoods(existing);
   const doc: PetDoc = {
     _id: new ObjectId(),
     userId,

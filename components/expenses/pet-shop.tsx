@@ -8,7 +8,7 @@ import { Button, SegmentedControl } from "./button";
 import { IconImg } from "./icon-img";
 import { PetSprite, type PetStage } from "./pet-sprite";
 import { text } from "./theme";
-import { PET_ITEMS, petBackground, petItemById, type PetItem, type PetItemKind } from "@/lib/expenses/pet";
+import { PET_ITEMS, petBackground, petItemById, petItemThumb, type PetItem, type PetItemKind } from "@/lib/expenses/pet";
 
 interface ShopPetState {
   coins: number;
@@ -68,8 +68,8 @@ export function PetShopModal({
   // 跟記帳本其他輸入金額的地方（新增交易、存入、對帳）用的自製鍵盤長得完全不一樣。
   const [qtyKeypadOpen, setQtyKeypadOpen] = useState(false);
   const items = PET_ITEMS.filter((i) => i.kind === kind);
-  const outfit = petItemById(pet.outfitId);
   const selectedItem = selected ? petItemById(selected) : undefined;
+  const selectedThumb = selectedItem ? petItemThumb(selectedItem) : null;
   const isFood = selectedItem?.kind === "食物";
   // 食物看的是「買這麼多份夠不夠」，不是單價夠不夠。
   const totalPrice = selectedItem ? selectedItem.price * (isFood ? qty : 1) : 0;
@@ -104,8 +104,8 @@ export function PetShopModal({
         selectedItem && (
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2">
-              {selectedItem.kind === "背景" ? (
-                <span className="size-9 shrink-0 rounded-lg border border-[#ECE4FA]" style={{ background: selectedItem.background }} />
+              {selectedThumb ? (
+                <span className="size-9 shrink-0 rounded-lg border border-[#ECE4FA]" style={{ background: selectedThumb }} />
               ) : (
                 <IconImg src={selectedItem.image} alt={selectedItem.name} size={36} />
               )}
@@ -146,7 +146,7 @@ export function PetShopModal({
       {/* 跟養成頁的場地一樣是固定高度、角色置中，只是矮一點——彈窗裡還要放頁籤跟
           商品格子，預覽佔太高的話下面就只剩一點點位置。 */}
       <div className="grid h-36 w-full place-items-center rounded-2xl p-3" style={{ background: petBackground(pet.backgroundId) }}>
-        <PetSprite stage={stage} mood="idle" hueRotate={outfit?.hueRotate ?? 0} size={96} />
+        <PetSprite stage={stage} mood="idle" outfitId={pet.outfitId} size={96} />
       </div>
 
       {message && <div className="rounded-2xl bg-[#F3EFFC] px-4 py-2.5 text-center text-xs text-[#4A3B7C]">{message}</div>}
@@ -226,6 +226,7 @@ function ShopTile({ item, pet, selected, onClick }: { item: PetItem; pet: ShopPe
   const owned = wearable?.owned ?? false;
   const equipped = wearable?.equipped ?? false;
   const count = item.kind === "食物" ? (pet.foodCounts[item.id] ?? 0) : 0;
+  const thumb = petItemThumb(item);
 
   return (
     <button
@@ -243,9 +244,10 @@ function ShopTile({ item, pet, selected, onClick }: { item: PetItem; pet: ShopPe
           </span>
         </span>
       )}
-      {/* 背景直接把漸層畫出來當縮圖——它本來就是一塊顏色，比起放一張圖更準確。 */}
-      {item.kind === "背景" ? (
-        <span className="size-14 rounded-xl border border-[#ECE4FA]" style={{ background: item.background }} />
+      {/* 背景跟服裝的縮圖都是那張大圖裁出來的（背景置中裁成方形、服裝取精靈圖的第一格），
+          不走 IconImg——IconImg 是 contain，整張塞進方框會留白或縮成一排小人。 */}
+      {thumb ? (
+        <span className="size-14 rounded-xl border border-[#ECE4FA]" style={{ background: thumb }} />
       ) : (
         <IconImg src={item.image} alt={item.name} size={56} />
       )}

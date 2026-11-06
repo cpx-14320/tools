@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PageHeader } from "@/components/expenses/page-header";
-import { Card, CardBody } from "@/components/expenses/card";
+import { Modal } from "@/components/expenses/modal";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { ProgressBar } from "@/components/expenses/progress-bar";
 import { PetSprite, petStage, PET_EATING_MS, type PetMood } from "@/components/expenses/pet-sprite";
 import { PetShopModal } from "@/components/expenses/pet-shop";
 import { PetBagModal } from "@/components/expenses/pet-bag-modal";
+import { PetSigninModal } from "@/components/expenses/pet-signin-modal";
 import { IconImg } from "@/components/expenses/icon-img";
 import { ICON_PATHS } from "@/components/expenses/icon-paths";
 import { text } from "@/components/expenses/theme";
@@ -21,14 +21,8 @@ import {
   petBackground,
   petItemById,
   signinCoins,
-  wealthTier,
+  type PetItemKind,
 } from "@/lib/expenses/pet";
-import { netWorth, type AccountDTO } from "@/lib/expenses/accounts";
-import { type AccountTypeDTO } from "@/lib/expenses/account-types";
-import { type CategoryDTO } from "@/lib/expenses/categories";
-import { type TransactionDTO } from "@/lib/expenses/transactions";
-import { type TransferDTO } from "@/lib/expenses/transfers";
-import { formatCurrency } from "@/lib/format";
 
 interface PetState {
   coins: number;
@@ -43,16 +37,20 @@ interface PetState {
   justEarned: { key: string; coins: number; label: string }[];
 }
 
-/** 疊在場地右上角的小圖示鈕（商店、背包）——圖直接放上去，不墊白色圓底。
+/** 疊在場地下緣、餵食鍵底下那排入口（簽到／商店／衣服／背景）的其中一顆。
  *
- *  圖本身已經是有造型、有顏色的去背插圖，再套一層白圓等於把它框在一個跟場地無關的
- *  方塊裡；去掉之後兩顆看起來就是「場地裡的東西」，跟角色同一個世界。 */
-function StageIconButton({ label, icon, onClick }: { label: string; icon: string; onClick: () => void }) {
+ *  本來商店跟背包是疊在場地右上角的兩顆小圖示：背景換成實景圖之後那兩顆很容易被圖吃掉，
+ *  而且「換衣服」跟「換背景」都藏在背包的頁籤裡、從外面看不出來。改成一排有名字的大
+ *  圖示，四個入口一字排開，點哪顆會開什麼一眼就知道。 */
+function StageNavButton({ label, icon, onClick }: { label: string; icon: string; onClick: () => void }) {
   return (
-    // flex 而不是預設的 inline 內容流：IconImg 是 inline-block，在按鈕裡會按基線對齊，
-    // 底下多出一截行高的空間（量到 40px 的圖撐成 46px 高的按鈕）。
-    <button type="button" onClick={onClick} aria-label={label} title={label} className="flex transition-opacity hover:opacity-80">
-      <IconImg src={icon} alt={label} size={40} background={false} />
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-1 flex-col items-center gap-1 rounded-xl py-1 transition-transform active:scale-95"
+    >
+      <IconImg src={icon} alt={label} size={60} background={false} />
+      <span className="text-[11px] font-medium text-[#4A3B7C]">{label}</span>
     </button>
   );
 }
@@ -68,32 +66,25 @@ function CoinAmount({ value }: { value: number | string }) {
   );
 }
 
-/** 食物背包／商店的食物清單——骨架跟真畫面都用同一份，格數才不會對不上。 */
+/** 餵食鍵那一排的食物（固定四種，見 lib/expenses/pet.ts 的說明）。 */
 const FOOD_ITEMS = PET_ITEMS.filter((i) => i.kind === "食物");
 
 /** 養成頁。
  *
  *  資料都是 page.tsx 在伺服器上讀好傳進來的，所以沒有「載入中」這個狀態，也不需要骨架。
  *  initialPet 已經是結算過的狀態（含 justEarned），不用再打一次 GET /api/expenses/pet。 */
-export function PetView({
-  initialPet,
-  /** 這五份只用來算淨資產、決定角色的「財富等級」，這一頁不會改它們。 */
-  accounts,
-  accountTypes,
-  categories,
-  transactions,
-  transfers,
-}: {
-  initialPet: PetState | null;
-  accounts: AccountDTO[];
-  accountTypes: AccountTypeDTO[];
-  categories: CategoryDTO[];
-  transactions: TransactionDTO[];
-  transfers: TransferDTO[];
-}) {
+export function PetView({ initialPet }: { initialPet: PetState | null }) {
   const [pet, setPet] = useState<PetState | null>(initialPet);
   const [shopOpen, setShopOpen] = useState(false);
+  const [signinOpen, setSigninOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  // 背包的頁籤狀態放在這裡：「衣服」跟「背景」是兩顆不同的入口，各自要開在對應的那一頁。
   const [bagOpen, setBagOpen] = useState(false);
+  const [bagKind, setBagKind] = useState<Exclude<PetItemKind, "食物">>("服裝");
+  const openBag = (kind: Exclude<PetItemKind, "食物">) => {
+    setBagKind(kind);
+    setBagOpen(true);
+  };
   const [mood, setMood] = useState<PetMood>("idle");
   // 連續餵第二次時 mood 已經是 "eating"、setMood 等於沒變，下面那個計時器就不會重新
   // 計時，第二次的動畫會被第一次的計時器提早切掉。用這個每次遞增的數字當重新計時的依據。
@@ -151,165 +142,133 @@ export function PetView({
   }, [mood, feedNonce]);
 
   const level = levelFromXp(pet?.xp ?? 0);
-  const net = netWorth(accounts, accountTypes, transactions, categories, transfers);
-  const tier = wealthTier(net);
-  // 簽到是進頁面就自動結算的，所以 signinStreak > 0 就代表今天已經簽到了。
+  // 簽到是進頁面就自動結算的，所以 signinStreak > 0 就代表今天已經簽到了（簽到彈窗
+  // 自己用這個數字判斷）。
   const streak = pet?.signinStreak ?? 0;
-  const signedInToday = streak > 0;
-  const outfit = petItemById(pet?.outfitId ?? "");
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* 說明跟賺幣規則都收在標題右邊的問號裡（PageHeader 的 help），跟記帳本其他頁一致。 */}
-      <PageHeader
-        flush
-        title="養成"
-        help={
-          <>
-            <p className={`${text.muted} leading-relaxed`}>好好記帳就能賺星星幣，拿去餵角色、換衣服。</p>
-            <p className={text.sectionHeading}>怎麼賺星星幣</p>
-            <ListCard>
-              <ListRow name="每日簽到（打開記帳本就算）" right={<CoinAmount value={signinCoins(1)} />} />
-              <ListRow
-                name={`連續簽到第 2～${SIGNIN_STREAK_CAP} 天`}
-                right={
-                  <CoinAmount value={`${signinCoins(2)}～${signinCoins(SIGNIN_STREAK_CAP)}`} />
-                }
-              />
-              <ListRow name="每記一筆帳" right={<CoinAmount value={ENTRY_COINS} />} />
-              <ListRow name="上個月每個分類都沒超支" right={<CoinAmount value={BUDGET_KEPT_COINS} />} />
-            </ListCard>
-            <p className={`${text.faint} leading-relaxed`}>
-              連續簽到是累加的：第一天 {signinCoins(1)}、第二天再多 {SIGNIN_STEP_COINS * 2}、第三天再多 {SIGNIN_STEP_COINS * 3}
-              ……連到第 {SIGNIN_STREAK_CAP} 天那天一次拿 {signinCoins(SIGNIN_STREAK_CAP)}；斷掉就從頭算，第 {SIGNIN_STREAK_CAP + 1}{" "}
-              天之後維持在 {signinCoins(SIGNIN_STREAK_CAP)} 不再往上加。
-            </p>
-            <p className={`${text.faint} leading-relaxed`}>
-              星星幣只看記帳習慣，不看你有多少錢——淨資產只拿來算上面那個理財段位，才不會因為一筆大額支出就讓角色跟著「變窮」。
-              食物的價格跟經驗值是一比一，花掉多少就換回多少。
-            </p>
-          </>
-        }
-      />
-
-      {/* 角色場地：平常待機呼吸，餵食時切成吃東西的動畫、跑完一輪自己回到待機。 */}
-      <Card>
-        <CardBody>
-          {/* 場地高度固定，角色置中；換背景、換裝都只是換這塊的底色跟角色色相，版面
-              不會跟著變動。角色本身是固定 110px（見 PetSprite 的 size），所以場地不用
-              跟著螢幕寬度長成一個很大的正方形——那只會在角色四周留一大片空白。 */}
-          {/* 星星幣釘在左上、商店跟背包釘在右上——三個都疊在場地上（absolute），不佔
-              版面。本來商店是底下一整列的入口卡，為了一顆按鈕吃掉 80px；星星幣也只在
-              那張卡上出現，要看餘額得先捲下去。 */}
-          <div
-            className="relative grid aspect-[9/12] w-full place-items-center rounded-2xl p-3"
-            style={{ background: petBackground(pet?.backgroundId ?? "") }}
-          >
-            <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-white/85 px-2.5 py-1 text-sm font-semibold tabular-nums text-[#6F5FD6] backdrop-blur">
-              <IconImg src={ICON_PATHS.petStar} alt="星星幣" size={16} background={false} />
-              {pet?.coins ?? 0}
-            </span>
-            <span className="absolute right-3 top-3 flex flex-col">
-              <StageIconButton label="商店" onClick={() => setShopOpen(true)} icon={ICON_PATHS.petShop} />
-              <StageIconButton label="背包" onClick={() => setBagOpen(true)} icon={ICON_PATHS.petBag} />
-            </span>
-            <PetSprite stage={petStage(level.level)} mood={mood} hueRotate={outfit?.hueRotate ?? 0} />
-          </div>
-
-          {/* 「散步」拿掉了：新的角色圖只有正面定點的待機／吃東西兩種動畫，沒有側面
-              走路那一組，留著一顆按不出動作的按鈕只會讓人以為壞了。 */}
-          <div className="mt-3 min-w-0">
-            <p className={text.sectionHeading}>Lv.{level.level}</p>
-            <p className={text.muted}>
-              {tier.name}・淨資產 {formatCurrency(net)}
-            </p>
-          </div>
-
-          <div className="mt-3">
-            <div className="mb-1 flex items-center justify-between">
-              <span className={text.muted}>經驗值</span>
-              <span className={`tabular-nums ${text.muted}`}>
+    // 整頁就是一張遊戲畫面：外殼那層的左右／上下留白在養成頁關掉（見 ExpensesMobileShell
+    // 的 fullBleed），場地圖直接貼到四個邊，狀態列、說明、餵食鍵、入口全部疊在圖上。
+    // 本來的標題列、等級卡、經驗值卡、簽到卡都收掉了——那是「一張一張白卡」的資訊頁長相，
+    // 跟角色站在房間裡這件事互相打架。
+    <div className="relative flex flex-1 flex-col">
+      {/* flex-1 而不是 min-h-full：外殼那層是 min-h-full 的 flex 直欄，高度是「至少跟
+          捲動區一樣高」而不是固定值，百分比高度在那種父層上量不出東西，撐不滿會露出
+          底下的紫色漸層。 */}
+      <div
+        className="relative w-full flex-1"
+        style={{ background: petBackground(pet?.backgroundId ?? "") }}
+      >
+        {/* 左上角的狀態：星星幣在上、等級經驗接在底下。兩塊都墊半透明白底——背景換成
+            實景圖之後，純文字直接壓在圖上有的地方看得到、有的地方（深色窗戶、地毯花紋）
+            整個糊掉。 */}
+        <div className="absolute left-3 top-3 flex w-[48%] flex-col items-start gap-1.5">
+          <span className="flex items-center gap-1 rounded-full bg-white/85 px-2.5 py-1 text-sm font-semibold tabular-nums text-[#6F5FD6] backdrop-blur">
+            <IconImg src={ICON_PATHS.petStar} alt="星星幣" size={16} background={false} />
+            {pet?.coins ?? 0}
+          </span>
+          <div className="w-full rounded-2xl bg-white/85 px-2.5 py-1.5 backdrop-blur">
+            <div className="mb-1 flex items-center justify-between text-[11px] font-semibold text-[#6F5FD6]">
+              <span>Lv.{level.level}</span>
+              <span className="tabular-nums">
                 {level.xpInLevel} / {level.xpNeeded}
               </span>
             </div>
             <ProgressBar pct={level.pct} tone="brand" />
           </div>
-        </CardBody>
-      </Card>
+        </div>
 
-      {/* 食物背包——固定顯示三種食物的持有數量，直接點了就吃（消耗一份、換成經驗值）。
-          在商店買的食物進的是這裡，不是點了商店格子就直接吃掉；兩個動作分開。 */}
-      <Card>
-        <CardBody className="flex items-center justify-between gap-2">
-          {FOOD_ITEMS.map((item) => {
-            const count = pet?.foodCounts?.[item.id] ?? 0;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => count > 0 && act("feed", item.id)}
-                disabled={count === 0}
-                className={`flex flex-1 flex-col items-center gap-1 rounded-xl py-1 ${count === 0 ? "opacity-40" : ""}`}
-              >
-                <IconImg src={item.image} alt={item.name} size={40} />
-                <span className="text-[11px] font-medium text-[#4A3B7C]">
-                  {item.name}
-                  <span className="tabular-nums"> ×{count}</span>
-                </span>
-              </button>
-            );
-          })}
-        </CardBody>
-      </Card>
+        {/* 說明收在右上角那顆問號裡（本來掛在「養成」標題旁邊，標題整個拿掉了）。 */}
+        <button
+          type="button"
+          onClick={() => setHelpOpen(true)}
+          aria-label="養成的說明"
+          className="absolute right-3 top-3 grid size-8 place-items-center rounded-full bg-white/85 text-sm font-bold text-[#6F5FD6] backdrop-blur transition-colors hover:bg-white"
+        >
+          ?
+        </button>
 
-      {/* 簽到：進這一頁就自動簽到（見 settlePetRewards），所以這一塊是「結果」不是
-          「按鈕」——它要回答的是「我連幾天了、今天拿到多少、明天會拿多少」。
-          擺在食物下面：上面兩塊（角色、食物）是「現在可以做什麼」，簽到是今天已經發生
-          的結果，不需要搶在互動前面。 */}
-      <Card>
-        <CardBody>
-          <div className="flex items-center justify-between gap-2">
-            <p className={text.sectionHeading}>每日簽到</p>
-            <span className="text-xs font-semibold tabular-nums text-[#6F5FD6]">
-              {signedInToday ? `今天 ＋${signinCoins(streak)}` : "今天還沒簽到"}
-            </span>
-          </div>
-          <p className={`mt-0.5 ${text.muted}`}>
-            {signedInToday
-              ? streak >= SIGNIN_STREAK_CAP
-                ? `已連續 ${streak} 天，每天都是 ${signinCoins(SIGNIN_STREAK_CAP)} 顆`
-                : `已連續 ${streak} 天，明天連上去是 ＋${signinCoins(streak + 1)}`
-              : "打開這一頁就會自動簽到"}
-          </p>
-          {/* 格子畫的是「這一輪連續簽到的進度」，不是最近七天的日曆：第一天就在第一格，
-              斷掉就回到第一格，連滿 SIGNIN_STREAK_CAP 天之後一直停在最後一格。
-              本來是「N 天前／今天」的日曆排法，但那排在講的是哪一天有沒有簽到，跟上面
-              那句「已連續 N 天，明天連上去是 ＋X」問的不是同一件事——使用者要看的是
-              「我走到第幾格了、下一格有多少」，所以改成直接標第幾天。 */}
-          <div className="mt-3 flex gap-1.5">
-            {Array.from({ length: SIGNIN_STREAK_CAP }, (_, i) => {
-              const day = i + 1;
-              // streak 超過上限之後一律停在最後一格（第 8 天起獎勵也不再往上加）。
-              const current = Math.min(streak, SIGNIN_STREAK_CAP);
-              const done = day <= current;
-              const isCurrent = day === current;
+        {/* 角色釘在場地 45% 高的位置：六張房間圖的地毯／地板中心都落在這附近，
+            正中央（50%）站會偏低、貼到下面那排餵食鍵，純置中則因為精靈圖四周留白
+            看起來像浮在半空。 */}
+        <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2">
+          <PetSprite stage={petStage(level.level)} mood={mood} outfitId={pet?.outfitId ?? ""} />
+        </div>
+
+        {/* 下半部由下往上疊：入口列在最底、餵食鍵在它上面、動作提示再上面一層。
+            bottom-24 是讓開底部導覽列的高度——場地圖本身鋪到卡片最底下（外殼那層的
+            pb-24 在這一頁關掉了），但按鈕不能被導覽列蓋住。 */}
+        <div className="absolute inset-x-3 bottom-24 flex flex-col gap-2">
+          {/* 餵了什麼、買了什麼就在角色腳邊報一句。本來這句只在商店彈窗裡看得到，
+              但餵食已經搬到場地上了，按下去沒有任何回應。 */}
+          {message && (
+            <p className="mx-auto max-w-full truncate rounded-full bg-[#4A3B7C]/80 px-3 py-1 text-center text-[11px] font-medium text-white backdrop-blur">
+              {message}
+            </p>
+          )}
+
+          {/* 餵食鍵：一排四顆，按鈕框是 pet-buttonbox.png、食物圖疊在框中間。
+              沒有的食物整顆淡掉（不是藏起來）：格數固定四格，少一格會讓剩下的跳位置。 */}
+          <div className="flex items-end gap-2">
+            {FOOD_ITEMS.map((item) => {
+              const count = pet?.foodCounts?.[item.id] ?? 0;
               return (
-                <div key={day} className="flex flex-1 flex-col items-center gap-1">
-                  <span
-                    className={`grid h-8 w-full place-items-center rounded-xl text-[11px] font-semibold tabular-nums ${
-                      done ? "bg-[#6F5ED4] text-white" : "bg-[#F3EFFC] text-[#C7BFE6]"
-                    }`}
-                  >
-                    {done && <IconImg src={ICON_PATHS.petStar} alt="已簽到" size={16} background={false} />}
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => count > 0 && act("feed", item.id)}
+                  disabled={count === 0}
+                  // 框裡只放得下食物圖，名字改成掛在 aria-label／title 上——四顆框塞四行
+                  // 字會把框本身的插畫擠掉，而食物圖本身已經夠好認了。
+                  aria-label={`餵${item.name}（還有 ${count} 份）`}
+                  title={`${item.name} ×${count}`}
+                  className={`relative grid aspect-[249/230] flex-1 place-items-center bg-contain bg-center bg-no-repeat transition-transform active:scale-95 ${
+                    count === 0 ? "opacity-40" : ""
+                  }`}
+                  style={{ backgroundImage: `url("${ICON_PATHS.petButtonBox}")` }}
+                >
+                  <IconImg src={item.image} alt={item.name} size={60} background={false} />
+                  {/* 持有數量釘在框的右上角——框裡本來就只有食物圖，數字壓在圖上會糊成一團。 */}
+                  <span className="absolute -right-0.5 -top-0.5 min-w-[18px] rounded-full bg-[#6F5ED4] px-1 text-[10px] font-semibold leading-[18px] text-white tabular-nums">
+                    {count}
                   </span>
-                  <span className={`text-[10px] ${isCurrent ? "font-semibold text-[#6F5FD6]" : text.faint}`}>第 {day} 天</span>
-                </div>
+                </button>
               );
             })}
           </div>
-        </CardBody>
-      </Card>
 
+          {/* 四個入口緊接在餵食鍵底下：上面那排是「餵」，這排是「去別的地方」。
+              整排墊一層半透明白底——圖示本身是去背插圖、底下那行字是深紫色，直接壓在
+              房間圖上會跟傢俱的花紋糊在一起。 */}
+          <div className="flex items-start gap-1 rounded-2xl bg-white/80 px-1 py-1 backdrop-blur">
+            <StageNavButton label="簽到" icon={ICON_PATHS.petNavCheckin} onClick={() => setSigninOpen(true)} />
+            <StageNavButton label="商店" icon={ICON_PATHS.petNavShop} onClick={() => setShopOpen(true)} />
+            <StageNavButton label="衣服" icon={ICON_PATHS.petNavOutfit} onClick={() => openBag("服裝")} />
+            <StageNavButton label="背景" icon={ICON_PATHS.petNavBackground} onClick={() => openBag("背景")} />
+          </div>
+        </div>
+      </div>
+
+      {/* 怎麼賺星星幣——右上角那顆問號開的說明。 */}
+      <Modal open={helpOpen} onClose={() => setHelpOpen(false)} title="養成">
+        <p className={`${text.muted} leading-relaxed`}>好好記帳就能賺星星幣，拿去餵角色、換衣服。</p>
+        <p className={text.sectionHeading}>怎麼賺星星幣</p>
+        <ListCard>
+          <ListRow name="每日簽到（打開記帳本就算）" right={<CoinAmount value={signinCoins(1)} />} />
+          <ListRow name={`連續簽到第 2～${SIGNIN_STREAK_CAP} 天`} right={<CoinAmount value={`${signinCoins(2)}～${signinCoins(SIGNIN_STREAK_CAP)}`} />} />
+          <ListRow name="每記一筆帳" right={<CoinAmount value={ENTRY_COINS} />} />
+          <ListRow name="上個月每個分類都沒超支" right={<CoinAmount value={BUDGET_KEPT_COINS} />} />
+        </ListCard>
+        <p className={`${text.faint} leading-relaxed`}>
+          連續簽到是累加的：第一天 {signinCoins(1)}、第二天再多 {SIGNIN_STEP_COINS * 2}、第三天再多 {SIGNIN_STEP_COINS * 3}
+          ……連到第 {SIGNIN_STREAK_CAP} 天那天一次拿 {signinCoins(SIGNIN_STREAK_CAP)}；斷掉就從頭算，第 {SIGNIN_STREAK_CAP + 1}{" "}
+          天之後維持在 {signinCoins(SIGNIN_STREAK_CAP)} 不再往上加。
+        </p>
+        <p className={`${text.faint} leading-relaxed`}>
+          星星幣只看記帳習慣，不看你有多少錢——一筆大額支出不會讓角色跟著「變窮」。
+          食物的價格跟經驗值是一比一，花掉多少就換回多少。
+        </p>
+      </Modal>
 
       <PetShopModal
         open={shopOpen}
@@ -331,6 +290,8 @@ export function PetView({
         open={bagOpen}
         onClose={() => setBagOpen(false)}
         stage={petStage(level.level)}
+        kind={bagKind}
+        onKindChange={setBagKind}
         pet={{
           outfitId: pet?.outfitId ?? "",
           ownedOutfitIds: pet?.ownedOutfitIds ?? [],
@@ -339,6 +300,8 @@ export function PetView({
         }}
         onEquip={(itemId) => act("equip", itemId)}
       />
+
+      <PetSigninModal open={signinOpen} onClose={() => setSigninOpen(false)} streak={streak} />
 
     </div>
   );

@@ -11,11 +11,16 @@
 export type PetItemKind = "食物" | "服裝" | "背景";
 
 /** 商店圖片路徑——跟 presets.ts 的 expenseCategoryIcon 同一套「用途前綴＋英文名」規則。
- *  id 本身已經是英文 slug（food-sushi、outfit-mint…），直接接在 `pet-` 後面就好：
- *  `pet-food-sushi.png`、`pet-outfit-mint.png`。原本多夾一段 `item`（pet-item-food-sushi）
+ *  id 本身已經是英文 slug（food-cake、bg-beach…），直接接在 `pet-` 後面就好：
+ *  `pet-food-cake.png`、`pet-bg-beach.png`。原本多夾一段 `item`（pet-item-food-cake）
  *  是贅字，檔名長又難掃。圖檔還沒放進 public/expenses 之前 IconImg 會用漸層佔位，
- *  404 不會破版。 */
+ *  404 不會破版。（服裝不走這條規則，見下面的 petModelSprite。） */
 export const petItemImage = (id: string) => `/expenses/pet-${id}.png`;
+
+/** 服裝的圖就是角色那套造型的待機精靈圖本身（intj-model-laboratory-idle.png…），
+ *  不另外出一張商店用的縮圖：商店格子直接裁第一格來顯示（見 petItemThumb），
+ *  換上之後場地裡播的也是同一張，看到的跟穿起來的保證一致。 */
+export const petModelSprite = (slug: string) => `/expenses/intj-model-${slug}-idle.png`;
 
 export interface PetItem {
   id: string;
@@ -24,14 +29,6 @@ export interface PetItem {
   price: number;
   /** 食物餵一次給多少經驗值。服裝沒有這個欄位。 */
   xp?: number;
-  /** 服裝目前用色相旋轉模擬換裝（還沒有各套服裝的圖），單位是度。 */
-  hueRotate?: number;
-  /** 背景目前用 CSS 漸層模擬（還沒有背景圖），直接套在角色場地那塊上。
-   *
-   *  一定要是淺色：角色圖是白底、不是去背的 PNG，場地上是靠 mix-blend-mode: multiply
-   *  把白色融掉的（見 components/expenses/pet-sprite.tsx），底色一深，角色自己也會跟著
-   *  被乘暗。等換成去背的圖才能放深色背景。 */
-  background?: string;
   desc: string;
   image: string;
 }
@@ -41,66 +38,77 @@ export const PET_ITEMS: PetItem[] = [
   // 由便宜到貴排。價格＝經驗值，一比一：買的時候花掉多少星星幣，餵下去就換回多少
   // 經驗值，不用在腦袋裡算匯率。（同經驗值的自然就同價格，蛋糕跟串燒都是 80
   // 星星幣），不要出現「同樣經驗值但比較貴」這種永遠不該選的選項。
+  //
+  // 固定四種：養成頁的餵食鍵是疊在場地上的一排按鈕框（見 pet-view.tsx），一排剛好四格，
+  // 要加第五種食物就得先決定那排怎麼排。
   { id: "food-noodle", name: "拉麵", kind: "食物", price: 30, xp: 30, desc: "吃飽一點，心情也好", image: petItemImage("food-noodle") },
-  { id: "food-sushi", name: "壽司", kind: "食物", price: 50, xp: 50, desc: "小小奢侈一下", image: petItemImage("food-sushi") },
   { id: "food-cake", name: "蛋糕", kind: "食物", price: 80, xp: 80, desc: "慶祝一下這個月守住預算", image: petItemImage("food-cake") },
   { id: "food-skewer", name: "串燒", kind: "食物", price: 80, xp: 80, desc: "下班後的宵夜場", image: petItemImage("food-skewer") },
   { id: "food-yuzu", name: "柚子酒", kind: "食物", price: 100, xp: 100, desc: "給自己的大獎勵", image: petItemImage("food-yuzu") },
-  { id: "outfit-default", name: "原色套裝", kind: "服裝", price: 0, hueRotate: 0, desc: "一開始就有的衣服", image: petItemImage("outfit-default") },
-  { id: "outfit-mint", name: "薄荷綠", kind: "服裝", price: 80, hueRotate: 120, desc: "清爽的配色", image: petItemImage("outfit-mint") },
-  { id: "outfit-ocean", name: "海洋藍", kind: "服裝", price: 120, hueRotate: 200, desc: "沉穩的深藍", image: petItemImage("outfit-ocean") },
-  { id: "outfit-sunset", name: "夕陽橘", kind: "服裝", price: 160, hueRotate: 300, desc: "暖色系，存到一筆錢的獎勵", image: petItemImage("outfit-sunset") },
-  {
-    id: "bg-default",
-    name: "淡紫日常",
-    kind: "背景",
-    price: 0,
-    background: "linear-gradient(to bottom, #F3EFFC, #FDF5F8)",
-    desc: "一開始就有的場地",
-    image: petItemImage("bg-default"),
-  },
-  {
-    id: "bg-garden",
-    name: "草地庭院",
-    kind: "背景",
-    price: 100,
-    background: "linear-gradient(to bottom, #E6F5E9, #F7FBF0)",
-    desc: "出門曬太陽的好天氣",
-    image: petItemImage("bg-garden"),
-  },
-  {
-    id: "bg-sunset",
-    name: "黃昏河堤",
-    kind: "背景",
-    price: 150,
-    background: "linear-gradient(to bottom, #FFE8D8, #FFF5EC)",
-    desc: "下班後散步的那段路",
-    image: petItemImage("bg-sunset"),
-  },
-  {
-    id: "bg-night",
-    name: "夜空微光",
-    kind: "背景",
-    price: 200,
-    background: "linear-gradient(to bottom, #DEE4FA, #F0F2FD)",
-    desc: "睡前記帳的時間",
-    image: petItemImage("bg-night"),
-  },
+  // 服裝＝一整套角色造型（換的是那張精靈圖，不是色相旋轉），所以 id 的後半要對得上
+  // 檔名：outfit-plushroom → intj-model-plushroom-idle.png。目前只有待機那一組圖，
+  // 吃東西還是共用 intj-eating.png（見 pet-sprite.tsx）。
+  { id: "outfit-laboratory", name: "書房便服", kind: "服裝", price: 0, desc: "一開始就有的衣服", image: petModelSprite("laboratory") },
+  { id: "outfit-plushroom", name: "兔兔睡衣", kind: "服裝", price: 80, desc: "抱著玩偶的居家時間", image: petModelSprite("plushroom") },
+  { id: "outfit-studio", name: "畫室圍裙", kind: "服裝", price: 120, desc: "動手做點東西的日子", image: petModelSprite("studio") },
+  { id: "outfit-dessertcafe", name: "甜點圍裙", kind: "服裝", price: 160, desc: "今天換你站在櫃檯裡", image: petModelSprite("dessertcafe") },
+  { id: "outfit-beach", name: "海灘花襯衫", kind: "服裝", price: 200, desc: "存到一筆錢的獎勵", image: petModelSprite("beach") },
+  // 背景就是商店圖本身（pet-bg-*.png，900×1600 的直式房間圖），不再用 CSS 漸層代替，
+  // 所以 id 要跟檔名對得起來：bg-laboratory → pet-bg-laboratory.png。角色是去背的 PNG，
+  // 直接疊在圖上就好，背景深一點也不會把角色一起乘暗。
+  { id: "bg-laboratory", name: "星空書房", kind: "背景", price: 0, desc: "一開始就有的場地", image: petItemImage("bg-laboratory") },
+  { id: "bg-bedroom", name: "臥室", kind: "背景", price: 100, desc: "睡前記帳的時間", image: petItemImage("bg-bedroom") },
+  { id: "bg-studio", name: "工作室", kind: "背景", price: 150, desc: "專心做自己事情的角落", image: petItemImage("bg-studio") },
+  { id: "bg-dessertcafe", name: "甜點咖啡廳", kind: "背景", price: 200, desc: "小小奢侈的下午", image: petItemImage("bg-dessertcafe") },
+  { id: "bg-gamingroom", name: "電玩房", kind: "背景", price: 250, desc: "下班後的放鬆場地", image: petItemImage("bg-gamingroom") },
+  { id: "bg-beach", name: "海邊", kind: "背景", price: 300, desc: "存到一筆錢才去得成的旅行", image: petItemImage("bg-beach") },
 ];
 
-export const DEFAULT_OUTFIT_ID = "outfit-default";
-export const DEFAULT_BACKGROUND_ID = "bg-default";
+export const DEFAULT_OUTFIT_ID = "outfit-laboratory";
+export const DEFAULT_BACKGROUND_ID = "bg-laboratory";
 
-/** 沒有設定、或指到不存在的背景時退回預設場地的漸層，畫面不會變成一塊空白。 */
-export const FALLBACK_BACKGROUND = "linear-gradient(to bottom, #F3EFFC, #FDF5F8)";
+/** 沒有設定、或指到不存在的背景（例如資料庫裡還存著舊的 bg-default）時退回預設場地，
+ *  畫面不會變成一塊空白。 */
+export const FALLBACK_BACKGROUND_IMAGE = petItemImage(DEFAULT_BACKGROUND_ID);
 
 export function petItemById(id: string): PetItem | undefined {
   return PET_ITEMS.find((i) => i.id === id);
 }
 
-/** 角色場地要用的 CSS background 值。 */
+/** 服裝精靈圖的排法：7 欄 × 3 列、一格 500×500（整張 3500×1500），從左上往右接成一輪
+ *  連續動畫。pet-sprite.tsx 播動畫、這裡裁第一格當縮圖，兩邊用的是同一組數字。 */
+export const SPRITE_COLS = 7;
+export const SPRITE_ROWS = 3;
+
+/** 沒有設定、或指到不存在的服裝時退回預設造型（例如資料庫裡還存著舊的 outfit-mint）。 */
+export const FALLBACK_MODEL_SPRITE = petModelSprite("laboratory");
+
+/** 角色身上那套造型的待機精靈圖。 */
+export function petOutfitSprite(id: string): string {
+  const item = petItemById(id);
+  return item?.kind === "服裝" ? item.image : FALLBACK_MODEL_SPRITE;
+}
+
+/** 角色場地（跟商店／背包裡的背景縮圖）要用的 CSS background 值。
+ *
+ *  圖是 9:16 的直式圖、場地跟縮圖都比它矮，所以用 cover 置中裁切——contain 會在兩側
+ *  留白，房間圖看起來就像一張貼紙而不是場景。 */
 export function petBackground(id: string): string {
-  return petItemById(id)?.background ?? FALLBACK_BACKGROUND;
+  const item = petItemById(id);
+  const src = item?.kind === "背景" ? item.image : FALLBACK_BACKGROUND_IMAGE;
+  return `url("${src}") center / cover no-repeat`;
+}
+
+/** 商店／背包格子裡的縮圖要用的 CSS background 值；食物回 null——食物有自己的去背小圖，
+ *  照常交給 IconImg 畫就好。
+ *
+ *  背景跟服裝都不能走 IconImg：背景是 9:16 的大圖（contain 會兩側留白），服裝則是一張
+ *  21 格的精靈圖（整張縮進格子裡會變成 21 個小人）。這裡用 background 的簡寫一次指定
+ *  位置與大小——服裝放大成 700% × 300% 再對齊左上角，看到的就只有第一格。 */
+export function petItemThumb(item: PetItem): string | null {
+  if (item.kind === "背景") return petBackground(item.id);
+  if (item.kind === "服裝") return `url("${item.image}") 0% 0% / ${SPRITE_COLS * 100}% ${SPRITE_ROWS * 100}% no-repeat`;
+  return null;
 }
 
 // ── 等級 ─────────────────────────────────────────────────────────────────────
