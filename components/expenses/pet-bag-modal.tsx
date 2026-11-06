@@ -99,10 +99,11 @@ export function PetBagModal({
                   ) : (
                     <IconImg src={item.image} alt={item.name} size={40} />
                   )}
-                  {/* 「使用中」釘在縮圖右上角。本來是名字底下固定留一行高（沒在用的就留空），
-                      結果每一格的下緣都空著一條，看起來像少畫了一行字。 */}
+                  {/* 「使用中」壓在縮圖右上角、往內縮一點。本來是名字底下固定留一行高
+                      （沒在用的就留空），結果每一格的下緣都空著一條；之後改成貼著角落
+                      又剛好卡在圖片跟外框的交界上，一半在圖上一半在白邊上。 */}
                   {equipped && (
-                    <span className="absolute -right-1 -top-1 rounded-full bg-[#6F5ED4] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                    <span className="absolute right-1.5 top-1.5 rounded-full bg-[#6F5ED4] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
                       使用中
                     </span>
                   )}

@@ -199,14 +199,6 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
             bottom-24 是讓開底部導覽列的高度——場地圖本身鋪到卡片最底下（外殼那層的
             pb-24 在這一頁關掉了），但按鈕不能被導覽列蓋住。 */}
         <div className="absolute inset-x-3 bottom-24 flex flex-col gap-2">
-          {/* 餵了什麼、買了什麼就在角色腳邊報一句。本來這句只在商店彈窗裡看得到，
-              但餵食已經搬到場地上了，按下去沒有任何回應。 */}
-          {message && (
-            <p className="mx-auto max-w-full truncate rounded-full bg-[#4A3B7C]/80 px-3 py-1 text-center text-[11px] font-medium text-white backdrop-blur">
-              {message}
-            </p>
-          )}
-
           {/* 餵食鍵：一排四顆，按鈕框是 pet-buttonbox.png、食物圖疊在框中間。
               沒有的食物整顆淡掉（不是藏起來）：格數固定四格，少一格會讓剩下的跳位置。 */}
           <div className="flex items-end gap-2">
