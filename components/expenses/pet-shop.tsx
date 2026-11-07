@@ -6,9 +6,9 @@ import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { IconButton } from "./icon-button";
 import { Button, SegmentedControl } from "./button";
 import { IconImg } from "./icon-img";
-import { PetSprite, type PetStage } from "./pet-sprite";
+import { PetSprite } from "./pet-sprite";
 import { text } from "./theme";
-import { PET_ITEMS, petBackground, petItemById, petItemThumb, type PetItem, type PetItemKind } from "@/lib/expenses/pet";
+import { PET_ITEMS, PET_HATCH_LEVEL, effectiveOutfitId, outfitUnlocked, petBackground, petItemById, petItemThumb, type PetItem, type PetItemKind } from "@/lib/expenses/pet";
 
 interface ShopPetState {
   coins: number;
@@ -24,8 +24,11 @@ interface ShopPetState {
  *
  *  免費的那一件一律算已擁有，跟後端 ownedList() 同一套規則——兩邊判斷不一致的話，
  *  畫面會顯示「可購買」但送出去被擋下來。 */
-function wearableState(item: PetItem, pet: ShopPetState): { owned: boolean; equipped: boolean } | null {
-  if (item.kind === "服裝") return { owned: item.price === 0 || pet.ownedOutfitIds.includes(item.id), equipped: pet.outfitId === item.id };
+function wearableState(item: PetItem, pet: ShopPetState, level: number): { owned: boolean; equipped: boolean } | null {
+  if (item.kind === "服裝") {
+    // equipped 比的是畫面上實際穿著的那套（等級不夠時是蛋），理由同 pet-bag-modal 的 ownedState。
+    return { owned: item.price === 0 || pet.ownedOutfitIds.includes(item.id), equipped: effectiveOutfitId(pet.outfitId, level) === item.id };
+  }
   if (item.kind === "背景") return { owned: item.price === 0 || pet.ownedBackgroundIds.includes(item.id), equipped: pet.backgroundId === item.id };
   return null;
 }
@@ -46,15 +49,15 @@ export function PetShopModal({
   open,
   onClose,
   pet,
-  stage,
+  level,
   message,
   onAct,
 }: {
   open: boolean;
   onClose: () => void;
   pet: ShopPetState;
-  /** 預覽要畫蛋還是角色，由呼叫端依等級決定（見 pet-sprite.ts 的 petStage）。 */
-  stage: PetStage;
+  /** 目前等級——決定造型格子要不要標「Lv.10 解鎖」。 */
+  level: number;
   /** 最近一次動作的提示文字，彈窗開著的時候原本頁面底下的訊息看不到，這裡另外顯示一份。 */
   message?: string | null;
   /** 食物可以一次買好幾份，count 只對食物有意義（服裝／背景固定一份）。 */
@@ -79,7 +82,7 @@ export function PetShopModal({
     // 已經買過的服裝／背景在商店裡只是標示「已擁有」，點了不做事——換裝是背包的工作
     // （見 PetBagModal）。本來點了會直接換上，結果同一個格子有時候扣錢有時候換裝，
     // 差別只在這件有沒有買過，猜錯就是星星幣飛走。
-    if (wearableState(item, pet)?.owned) return;
+    if (wearableState(item, pet, level)?.owned) return;
     setSelected(item.id);
     setQty(1);
   }
@@ -146,7 +149,7 @@ export function PetShopModal({
       {/* 跟養成頁的場地一樣是固定高度、角色置中，只是矮一點——彈窗裡還要放頁籤跟
           商品格子，預覽佔太高的話下面就只剩一點點位置。 */}
       <div className="grid h-36 w-full place-items-center rounded-2xl p-3" style={{ background: petBackground(pet.backgroundId) }}>
-        <PetSprite stage={stage} mood="idle" outfitId={pet.outfitId} size={96} />
+        <PetSprite mood="idle" outfitId={effectiveOutfitId(pet.outfitId, level)} size={96} />
       </div>
 
       {message && <div className="rounded-2xl bg-[#F3EFFC] px-4 py-2.5 text-center text-xs text-[#4A3B7C]">{message}</div>}
@@ -167,9 +170,11 @@ export function PetShopModal({
         <span className="text-sm font-semibold tabular-nums text-[#6F5FD6]">⭐ {pet.coins}</span>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      {/* 食物三欄（圖小、只要看得出是哪一種），服裝跟背景兩欄——它們的縮圖是整張場景圖
+          跟整個角色，裁進三欄的小格子裡看不出差別（跟背包同一個理由）。 */}
+      <div className={`grid gap-3 ${kind === "食物" ? "grid-cols-3" : "grid-cols-2"}`}>
         {items.map((item) => (
-          <ShopTile key={item.id} item={item} pet={pet} selected={item.id === selected} onClick={() => handleTileClick(item)} />
+          <ShopTile key={item.id} item={item} pet={pet} level={level} selected={item.id === selected} onClick={() => handleTileClick(item)} />
         ))}
       </div>
 
@@ -221,12 +226,26 @@ function QtyKeypadModal({
   );
 }
 
-function ShopTile({ item, pet, selected, onClick }: { item: PetItem; pet: ShopPetState; selected: boolean; onClick: () => void }) {
-  const wearable = wearableState(item, pet);
+function ShopTile({
+  item,
+  pet,
+  level,
+  selected,
+  onClick,
+}: {
+  item: PetItem;
+  pet: ShopPetState;
+  level: number;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  const wearable = wearableState(item, pet, level);
   const owned = wearable?.owned ?? false;
   const equipped = wearable?.equipped ?? false;
   const count = item.kind === "食物" ? (pet.foodCounts[item.id] ?? 0) : 0;
   const thumb = petItemThumb(item);
+  // 還沒孵化的造型照樣買得到（先買起來放），只是買完不會自動換上，格子上標幾級才穿得上。
+  const locked = item.kind === "服裝" && !outfitUnlocked(item, level);
 
   return (
     <button
@@ -245,9 +264,10 @@ function ShopTile({ item, pet, selected, onClick }: { item: PetItem; pet: ShopPe
         </span>
       )}
       {/* 背景跟服裝的縮圖都是那張大圖裁出來的（背景置中裁成方形、服裝取精靈圖的第一格），
-          不走 IconImg——IconImg 是 contain，整張塞進方框會留白或縮成一排小人。 */}
+          不走 IconImg——IconImg 是 contain，整張塞進方框會留白或縮成一排小人。
+          寬度跟著格子走（兩欄的格子比食物那欄寬很多），高度用 aspect-square 鎖住比例。 */}
       {thumb ? (
-        <span className="size-14 rounded-xl border border-[#ECE4FA]" style={{ background: thumb }} />
+        <span className="aspect-square w-full rounded-xl border border-[#ECE4FA]" style={{ background: thumb }} />
       ) : (
         <IconImg src={item.image} alt={item.name} size={56} />
       )}
@@ -257,7 +277,17 @@ function ShopTile({ item, pet, selected, onClick }: { item: PetItem; pet: ShopPe
         {count > 0 && <span className="tabular-nums"> ×{count}</span>}
       </span>
       <span className="text-[11px] font-medium text-[#9C94C4]">
-        {equipped ? (item.kind === "背景" ? "使用中" : "穿著中") : owned ? "點擊換上" : item.price === 0 ? "免費" : `⭐ ${item.price}`}
+        {owned && locked
+          ? `Lv.${PET_HATCH_LEVEL} 解鎖`
+          : equipped
+            ? item.kind === "背景"
+              ? "使用中"
+              : "穿著中"
+            : owned
+              ? "點擊換上"
+              : item.price === 0
+                ? "免費"
+                : `⭐ ${item.price}`}
       </span>
     </button>
   );

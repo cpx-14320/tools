@@ -94,7 +94,9 @@ export function SelectionBar({
   const allSelected = total > 0 && count === total;
   const disabled = count === 0;
   return (
-    <div className="flex flex-col gap-1.5 rounded-2xl bg-[#F3EFFC] px-4 py-2.5">
+    // 白底＋淡紫邊框，跟清單卡片同一種底色。本來整條是淡紫底（#F3EFFC），在同樣是淡紫
+    // 的頁面背景上看起來像一塊暈開的色塊，而且它壓在白色清單卡上方時又變成第三種底色。
+    <div className="flex flex-col gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-4 py-2.5">
       <div className="flex items-center justify-between gap-2">
         <button type="button" onClick={onToggleAll} className="shrink-0 text-xs font-medium text-[#6F5FD6]">
           {allSelected ? "取消全選" : "全選"}
@@ -108,7 +110,8 @@ export function SelectionBar({
               onClick={action.onClick}
               // 改資料的動作用淡紫膠囊（跟固定收支待確認的「確認」同一顆），刪除維持純紅字
               // 不加底——同樣是按鈕，但一個是補資料、一個是不可逆，不該長得一樣重。
-              className="rounded-full bg-white px-3 py-1 text-xs font-medium text-[#6F5FD6] disabled:opacity-40"
+              // 底色跟著整條列從白底換成淡紫：整條變白之後，原本的白底膠囊在白上看不見。
+              className="rounded-full bg-[#F3EFFC] px-3 py-1 text-xs font-medium text-[#6F5FD6] disabled:opacity-40"
             >
               {action.label}
             </button>

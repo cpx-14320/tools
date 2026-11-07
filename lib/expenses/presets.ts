@@ -14,14 +14,16 @@
 //   支出分類  expenses-category-<英文名>.png
 //   收入分類  income-category-<英文名>.png
 //   帳戶類型  account-<英文名>.png
-// 還沒有專屬圖檔的分類（目前全部子分類、以及「其他」）一律指向同一張共用的佔位圖
-// ICON_OTHER，三種情境共用一張，不另外各做一張。圖檔還沒放進 public/expenses 之前，
-// IconAvatar 會顯示漸層佔位，404 不會弄壞畫面。
+// 還沒有專屬圖檔的分類（目前是全部子分類）指向共用的佔位圖 ICON_OTHER。至於「其他」
+// 這個分類本身，有自己那一組的圖就用自己的（支出＝expenses-category-other.png）——
+// 檔名帶著用途前綴，從檔案就看得出哪一區在用它，不會因為三個地方共用一張而不知道改了
+// 會影響到誰。圖檔還沒放進 public/expenses 之前，IconAvatar 會顯示漸層佔位，404 不會
+// 弄壞畫面。
 
 import type { CategoryColor } from "./categories";
 import type { AccountKind } from "./account-types";
 
-/** 沒有專屬圖檔時共用的佔位圖——收入分類、支出分類、帳戶類型三種情境共用這一張。 */
+/** 沒有專屬圖檔時共用的佔位圖——子分類、以及還沒有自己那張「其他」的情境用這一張。 */
 export const ICON_OTHER = "/expenses/category-other.png";
 
 /** 「未分類」專用的圖——刪掉還有紀錄在用的分類時，那些紀錄會被收容到這裡
@@ -32,6 +34,12 @@ export const ICON_UNCATEGORIZED = "/expenses/category-uncategorized.png";
 export const expenseCategoryIcon = (slug: string) => `/expenses/expenses-category-${slug}.png`;
 export const incomeCategoryIcon = (slug: string) => `/expenses/income-category-${slug}.png`;
 export const accountIcon = (slug: string) => `/expenses/account-${slug}.png`;
+
+/** 支出的「其他」用支出自己那張（expenses-category-other.png），不跟收入、帳戶共用
+ *  ICON_OTHER——同一張圖被三個地方用的話，要改其中一邊就得先確認會不會波及另外兩邊。
+ *  收入跟帳戶目前還沒有對應的檔（income-category-other.png／account-other.png），
+ *  補上之後照這一行的寫法各自指過去就好。 */
+export const EXPENSE_ICON_OTHER = expenseCategoryIcon("other");
 
 export interface PresetCategorySeed {
   name: string;
@@ -85,7 +93,7 @@ export const PRESET_EXPENSE_CATEGORIES: PresetCategorySeed[] = [
   { name: "繳稅", icon: expenseCategoryIcon("bill"), color: "a" },
   { name: "電話費", icon: expenseCategoryIcon("phone"), color: "c" },
   { name: "服務訂閱", icon: expenseCategoryIcon("subscription"), color: "b" },
-  { name: "其他", icon: ICON_OTHER, color: "f" },
+  { name: "其他", icon: EXPENSE_ICON_OTHER, color: "f" },
 ];
 
 export const PRESET_INCOME_CATEGORIES: PresetCategorySeed[] = [
@@ -141,11 +149,7 @@ export interface IconOption {
 
 /** 預設支出分類以外、只拿來給使用者挑的支出圖——有圖檔但不會自動建立對應的分類
  *  （跟 EXTRA_ACCOUNT_ICONS 同一個做法）。label 是給讀螢幕軟體用的（選擇器只排圖、
- *  不顯示文字），所以寫的是「這張圖畫的是什麼」。
- *
- *  public/expenses 裡還有一張 expenses-category-other.png，沒有收進來：它跟共用的
- *  ICON_OTHER（category-other.png）都是「…」，只差圓形跟圓角方形，排在同一個選擇器裡
- *  會變成兩個看起來一樣的「其他」，挑了也分不出差別。 */
+ *  不顯示文字），所以寫的是「這張圖畫的是什麼」。 */
 const EXTRA_EXPENSE_ICONS: IconOption[] = [
   { path: expenseCategoryIcon("beverage"), label: "飲料" },
   { path: expenseCategoryIcon("dessert"), label: "甜點" },
@@ -158,6 +162,44 @@ const EXTRA_EXPENSE_ICONS: IconOption[] = [
   { path: expenseCategoryIcon("phone"), label: "電話費" },
   { path: expenseCategoryIcon("bill"), label: "帳單" },
   { path: expenseCategoryIcon("subscription"), label: "訂閱" },
+  // ── 帳單類再細分：水電瓦斯網路本來只有一張共用的「帳單」圖，分開記的人分不出哪筆是哪筆 ──
+  { path: expenseCategoryIcon("electricity"), label: "電費" },
+  { path: expenseCategoryIcon("water"), label: "水費" },
+  { path: expenseCategoryIcon("gas"), label: "瓦斯費" },
+  { path: expenseCategoryIcon("internet"), label: "網路費" },
+  { path: expenseCategoryIcon("rental-home"), label: "租屋" },
+  // ── 居家 ──
+  { path: expenseCategoryIcon("furniture"), label: "家具" },
+  { path: expenseCategoryIcon("cleaning"), label: "打掃" },
+  { path: expenseCategoryIcon("housekeeping"), label: "清潔用品" },
+  { path: expenseCategoryIcon("toilet-paper"), label: "衛生紙" },
+  { path: expenseCategoryIcon("repair"), label: "維修" },
+  { path: expenseCategoryIcon("gardening"), label: "園藝" },
+  // ── 個人 ──
+  { path: expenseCategoryIcon("skincare"), label: "保養品" },
+  { path: expenseCategoryIcon("lipstick"), label: "彩妝" },
+  { path: expenseCategoryIcon("bath"), label: "沐浴" },
+  { path: expenseCategoryIcon("shoes"), label: "鞋子" },
+  { path: expenseCategoryIcon("stethoscope"), label: "看診" },
+  // ── 外出 ──
+  { path: expenseCategoryIcon("coffee"), label: "咖啡" },
+  { path: expenseCategoryIcon("store"), label: "商店" },
+  { path: expenseCategoryIcon("movie"), label: "電影" },
+  { path: expenseCategoryIcon("camera"), label: "攝影" },
+  { path: expenseCategoryIcon("hotel"), label: "住宿" },
+  { path: expenseCategoryIcon("flight-ticket"), label: "機票" },
+  { path: expenseCategoryIcon("toll"), label: "過路費" },
+  // ── 其他 ──
+  { path: expenseCategoryIcon("work"), label: "工作" },
+  { path: expenseCategoryIcon("stationery"), label: "文具" },
+  { path: expenseCategoryIcon("gift"), label: "禮物" },
+  { path: expenseCategoryIcon("donation"), label: "捐款" },
+  { path: expenseCategoryIcon("discount"), label: "折扣" },
+];
+
+/** 預設收入分類以外、只拿來給使用者挑的收入圖（跟 EXTRA_EXPENSE_ICONS 同一個做法）。 */
+const EXTRA_INCOME_ICONS: IconOption[] = [
+  { path: incomeCategoryIcon("salary-envelope"), label: "薪資袋" },
 ];
 
 /** 同一張圖只留第一筆——選擇器是用 path 當 React key 的，重複的話畫面上會出現兩顆一模
@@ -167,23 +209,33 @@ const dedupeByPath = (all: IconOption[]) => all.filter((opt, i) => all.findIndex
 /** EXTRA_EXPENSE_ICONS 裡的甜點／服飾／保養品／寵物／電話費／帳單／訂閱，跟
  *  PRESET_EXPENSE_CATEGORIES 用的是同一張圖，所以這裡一定要去重。 */
 export const EXPENSE_ICON_OPTIONS: IconOption[] = dedupeByPath([
-  ...PRESET_EXPENSE_CATEGORIES.filter((c) => c.icon !== ICON_OTHER).map((c) => ({ path: c.icon, label: c.name })),
+  ...PRESET_EXPENSE_CATEGORIES.filter((c) => c.icon !== EXPENSE_ICON_OTHER).map((c) => ({ path: c.icon, label: c.name })),
   ...EXTRA_EXPENSE_ICONS,
-  { path: ICON_OTHER, label: "其他" },
+  // 「其他」永遠排在最後一個：它是「挑不到合適的就用這張」，不該出現在清單中間。
+  { path: EXPENSE_ICON_OTHER, label: "其他" },
 ]);
 
 export const INCOME_ICON_OPTIONS: IconOption[] = dedupeByPath([
   ...PRESET_INCOME_CATEGORIES.filter((c) => c.icon !== ICON_OTHER).map((c) => ({ path: c.icon, label: c.name })),
+  ...EXTRA_INCOME_ICONS,
   { path: ICON_OTHER, label: "其他" },
 ]);
 
 /** 預設類型以外、只拿來給使用者挑的帳戶類型圖——有圖檔但不會自動建立對應的類型，
  *  想用哪一張自己在新增類型時挑。label 是給讀螢幕軟體用的（選擇器只排圖、不顯示
- *  文字），所以寫的是「這張圖畫的是什麼」。 */
+ *  文字），所以寫的是「這張圖畫的是什麼」。
+ *
+ *  public/expenses/account-transfer.png 不在這裡：那張是「帳戶之間搬錢」那一列固定用的
+ *  圖（見 icon-paths.ts），不是一種帳戶類型，收進來只會讓人挑到一個不存在的類型。 */
 const EXTRA_ACCOUNT_ICONS: IconOption[] = [
   { path: accountIcon("calendar"), label: "定存" },
   { path: accountIcon("business"), label: "店面" },
   { path: accountIcon("deduction"), label: "扣款" },
+  { path: accountIcon("savings"), label: "撲滿" },
+  { path: accountIcon("savings-target"), label: "存錢目標" },
+  { path: accountIcon("long-term-deposit"), label: "長期存款" },
+  { path: accountIcon("mobile-payment"), label: "行動支付" },
+  { path: accountIcon("safe"), label: "保險箱" },
 ];
 
 /** 預設類型的圖排前面、額外的接在後面，同一張圖只出現一次——預設類型現在涵蓋了信用卡、

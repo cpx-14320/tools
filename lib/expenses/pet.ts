@@ -22,6 +22,17 @@ export const petItemImage = (id: string) => `/expenses/pet-${id}.png`;
  *  換上之後場地裡播的也是同一張，看到的跟穿起來的保證一致。 */
 export const petModelSprite = (slug: string) => `/expenses/intj-model-${slug}-idle.png`;
 
+/** 蛋（出生造型）的兩張圖。它不走 petModelSprite 的命名——蛋不是「某一套衣服」，
+ *  是孵化前的樣子，圖也是另外一組。 */
+const EGG_IDLE_SPRITE = "/expenses/egg-state.png";
+const EGG_EATING_SPRITE = "/expenses/egg-eating.png";
+
+/** 孵化後的造型共用的「吃東西」圖——還沒有各造型自己的那一張。 */
+const HATCHED_EATING_SPRITE = "/expenses/intj-eating.png";
+
+/** 幾級孵化：到這一級之前角色一律是蛋，其他造型穿不上（但可以先買）。 */
+export const PET_HATCH_LEVEL = 10;
+
 export interface PetItem {
   id: string;
   name: string;
@@ -29,6 +40,13 @@ export interface PetItem {
   price: number;
   /** 食物餵一次給多少經驗值。服裝沒有這個欄位。 */
   xp?: number;
+  /** 服裝「吃東西」那一輪要播的精靈圖。蛋有自己的一張，孵化後的造型目前共用
+   *  intj-eating.png（還沒有各造型的吃東西圖）。 */
+  eating?: string;
+  /** 服裝要幾級才能穿。蛋沒有限制（它就是出生造型），其他造型要孵化（Lv.PET_HATCH_LEVEL）
+   *  之後才穿得上——沒孵化前角色是一顆蛋，穿什麼都看不出來。
+   *  可以先買起來放，只是換上去時會被擋（前後端都擋，見 pet.server.ts 的 buyWearable）。 */
+  minLevel?: number;
   desc: string;
   image: string;
 }
@@ -48,11 +66,13 @@ export const PET_ITEMS: PetItem[] = [
   // 服裝＝一整套角色造型（換的是那張精靈圖，不是色相旋轉），所以 id 的後半要對得上
   // 檔名：outfit-plushroom → intj-model-plushroom-idle.png。目前只有待機那一組圖，
   // 吃東西還是共用 intj-eating.png（見 pet-sprite.tsx）。
-  { id: "outfit-laboratory", name: "書房便服", kind: "服裝", price: 0, desc: "一開始就有的衣服", image: petModelSprite("laboratory") },
-  { id: "outfit-plushroom", name: "兔兔睡衣", kind: "服裝", price: 80, desc: "抱著玩偶的居家時間", image: petModelSprite("plushroom") },
-  { id: "outfit-studio", name: "畫室圍裙", kind: "服裝", price: 120, desc: "動手做點東西的日子", image: petModelSprite("studio") },
-  { id: "outfit-dessertcafe", name: "甜點圍裙", kind: "服裝", price: 160, desc: "今天換你站在櫃檯裡", image: petModelSprite("dessertcafe") },
-  { id: "outfit-beach", name: "海灘花襯衫", kind: "服裝", price: 200, desc: "存到一筆錢的獎勵", image: petModelSprite("beach") },
+  { id: "outfit-egg", name: "蛋", kind: "服裝", price: 0, eating: EGG_EATING_SPRITE, desc: "還沒孵化的樣子，孵化後也可以換回來", image: EGG_IDLE_SPRITE },
+  { id: "outfit-laboratory", name: "書房便服", kind: "服裝", price: 0, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "孵化後的第一套衣服", image: petModelSprite("laboratory") },
+  { id: "outfit-plushroom", name: "兔兔睡衣", kind: "服裝", price: 80, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "抱著玩偶的居家時間", image: petModelSprite("plushroom") },
+  { id: "outfit-studio", name: "畫室圍裙", kind: "服裝", price: 120, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "動手做點東西的日子", image: petModelSprite("studio") },
+  { id: "outfit-gamingroom", name: "電玩連帽衣", kind: "服裝", price: 140, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "手把握著就不想放下", image: petModelSprite("gamingroom") },
+  { id: "outfit-dessertcafe", name: "甜點圍裙", kind: "服裝", price: 160, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "今天換你站在櫃檯裡", image: petModelSprite("dessertcafe") },
+  { id: "outfit-beach", name: "海灘花襯衫", kind: "服裝", price: 200, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "存到一筆錢的獎勵", image: petModelSprite("beach") },
   // 背景就是商店圖本身（pet-bg-*.png，900×1600 的直式房間圖），不再用 CSS 漸層代替，
   // 所以 id 要跟檔名對得起來：bg-laboratory → pet-bg-laboratory.png。角色是去背的 PNG，
   // 直接疊在圖上就好，背景深一點也不會把角色一起乘暗。
@@ -64,7 +84,11 @@ export const PET_ITEMS: PetItem[] = [
   { id: "bg-beach", name: "海邊", kind: "背景", price: 300, desc: "存到一筆錢才去得成的旅行", image: petItemImage("bg-beach") },
 ];
 
-export const DEFAULT_OUTFIT_ID = "outfit-laboratory";
+/** 新帳號一開始身上的造型＝蛋。孵化（Lv.PET_HATCH_LEVEL）那一次會自動換成
+ *  DEFAULT_HATCHED_OUTFIT_ID，之後想換回蛋可以自己在背包切（見 pet.server.ts）。 */
+export const EGG_OUTFIT_ID = "outfit-egg";
+export const DEFAULT_OUTFIT_ID = EGG_OUTFIT_ID;
+export const DEFAULT_HATCHED_OUTFIT_ID = "outfit-laboratory";
 export const DEFAULT_BACKGROUND_ID = "bg-laboratory";
 
 /** 沒有設定、或指到不存在的背景（例如資料庫裡還存著舊的 bg-default）時退回預設場地，
@@ -80,13 +104,30 @@ export function petItemById(id: string): PetItem | undefined {
 export const SPRITE_COLS = 7;
 export const SPRITE_ROWS = 3;
 
-/** 沒有設定、或指到不存在的服裝時退回預設造型（例如資料庫裡還存著舊的 outfit-mint）。 */
-export const FALLBACK_MODEL_SPRITE = petModelSprite("laboratory");
+/** 沒有設定、或指到不存在的服裝時退回蛋（例如資料庫裡還存著改版前的 outfit-mint）——
+ *  蛋是每個人都有的出生造型，退到它一定不會變成「穿著一件不該有的衣服」。 */
+export const FALLBACK_MODEL_SPRITE = EGG_IDLE_SPRITE;
 
-/** 角色身上那套造型的待機精靈圖。 */
-export function petOutfitSprite(id: string): string {
+/** 角色身上那套造型的精靈圖（待機／吃東西各一張）。 */
+export function petOutfitSprite(id: string, mood: "idle" | "eating" = "idle"): string {
   const item = petItemById(id);
-  return item?.kind === "服裝" ? item.image : FALLBACK_MODEL_SPRITE;
+  if (item?.kind !== "服裝") return mood === "eating" ? HATCHED_EATING_SPRITE : FALLBACK_MODEL_SPRITE;
+  return mood === "eating" ? (item.eating ?? HATCHED_EATING_SPRITE) : item.image;
+}
+
+/** 這套造型這個等級穿得上嗎。 */
+export function outfitUnlocked(item: PetItem, level: number): boolean {
+  return level >= (item.minLevel ?? 1);
+}
+
+/** 畫面上實際要畫的造型——還沒到孵化等級一律畫蛋，不管資料裡存的是哪一套。
+ *
+ *  資料可能不同步：舊帳號存的是改版前的 outfit-laboratory 但才 Lv.3，或是先買了衣服
+ *  卻還沒孵化。畫面一律以等級為準，不然會看到一隻「還沒孵化但已經穿好衣服」的角色。 */
+export function effectiveOutfitId(id: string, level: number): string {
+  const item = petItemById(id);
+  if (item?.kind !== "服裝" || !outfitUnlocked(item, level)) return EGG_OUTFIT_ID;
+  return item.id;
 }
 
 /** 角色場地（跟商店／背包裡的背景縮圖）要用的 CSS background 值。

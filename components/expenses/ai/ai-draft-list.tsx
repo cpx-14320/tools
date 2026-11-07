@@ -44,7 +44,7 @@ export function AiDraftList({
               <IconAvatar icon={display.icon} size="sm" className={categoryColorClass[display.color]} />
             ) : (
               // 真的完全不知道的才用問號的空位，不要讓那一列比別人矮一截。
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#FDF4E7] text-sm font-bold text-[#E0A33E]">？</span>
+              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#FDF4E7] text-sm font-bold text-[#E0A33E]">？</span>
             )}
             <button type="button" onClick={() => onEdit(item)} className="min-w-0 flex-1 text-left">
               <p className={`truncate ${text.body}`}>{item.note || category?.name || "（沒有備註）"}</p>

@@ -32,6 +32,9 @@ export const ICON_PATHS = {
   settingRecurring: "/expenses/setting-recurring.png",
   settingAssets: "/expenses/setting-assets.png",
   settingAccountTypes: "/expenses/setting-account.png",
+  // AI 記帳那一區的開關列。命名跟上面那幾個設定項一致（setting-<功能>.png），
+  // 圖還沒放進 public/expenses 之前 IconImg 會用漸層佔位，不會壞版。
+  settingAi: "/expenses/setting-ai.png",
   settingExport: "/expenses/setting-export.png",
   settingImport: "/expenses/setting-import.png",
 } as const;

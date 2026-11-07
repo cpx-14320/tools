@@ -121,7 +121,7 @@ export function MoreView({
                 <Link key={item.href} href={item.href} className="flex items-center gap-3 px-4 py-3.5 active:bg-[#F3EFFC]">
                   {/* 不帶底色方塊，跟搭乘車設定頁「其他小工具」那排一樣，圖直接放在白底上
                       （圖本身是去背的）。圖檔還沒放進 public/expenses 之前這裡會是空白。 */}
-                  <IconImg src={item.icon} alt={item.label} size={40} background={false} />
+                  <IconImg src={item.icon} alt={item.label} size={36} background={false} />
                   <span className="min-w-0 flex-1">
                     <span className={`block ${text.body}`}>{item.label}</span>
                     <span className={`block ${text.muted}`}>{item.desc}</span>
@@ -138,8 +138,14 @@ export function MoreView({
           </div>
         ))}
 
+        {/* AI 記帳：緊接在上面那幾組功能入口後面——它是一個可以開關的附加功能，跟那幾組
+            「記帳本的設定」是同一層；放到帳號／清除資料後面會像是系統層級的東西。 */}
+        <AiSettingsSection initialEnabled={aiEnabled} initialDrafts={aiDrafts} categories={categories} />
+
         {/* 其他小工具——比照搭乘車設定頁同名區塊：列出這個帳號有權限、而且不是現在這個
-            工具的項目，點了直接跳過去。清單是 TOOLS_REGISTRY（純靜態資料），不用另外打 API。 */}
+            工具的項目，點了直接跳過去。清單是 TOOLS_REGISTRY（純靜態資料），不用另外打 API。
+            擺在 AI 記帳底下：上面全部都是「記帳本自己的設定」，這一塊是離開記帳本去別的
+            工具，夾在中間會把同一類的設定切成兩半。 */}
         {otherTools.length > 0 && (
           <div>
             <p className={`mb-2 px-1 ${text.label}`}>其他小工具</p>
@@ -147,9 +153,9 @@ export function MoreView({
               {otherTools.map((tool) => (
                 <Link key={tool.toolId} href={tool.href} className="flex items-center gap-3 px-4 py-3.5 active:bg-[#F3EFFC]">
                   {tool.iconImage ? (
-                    <IconImg src={tool.iconImage} alt={tool.name} size={40} background={false} />
+                    <IconImg src={tool.iconImage} alt={tool.name} size={36} background={false} />
                   ) : (
-                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#F3EFFC] text-lg">{tool.icon}</span>
+                    <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#F3EFFC] text-base">{tool.icon}</span>
                   )}
                   <span className={`min-w-0 flex-1 ${text.body}`}>{tool.name}</span>
                   <span aria-hidden className="text-[#C7BFE6]">
@@ -160,10 +166,6 @@ export function MoreView({
             </ListCard>
           </div>
         )}
-
-        {/* AI 記帳：擺在「帳號」之前、功能入口之後——它是一個可以開關的附加功能，跟上面
-            那幾組「記帳本的設定」是同一層；放在帳號／清除資料後面會像是系統層級的東西。 */}
-        <AiSettingsSection initialEnabled={aiEnabled} initialDrafts={aiDrafts} categories={categories} />
 
         {/* 最近刪除擺在「清除資料」正上方：兩者講的是同一件事的兩端（刪掉的東西去哪了、
             怎麼真的清掉），放在一起才讀得出關係。垃圾桶是空的時候整區不顯示，不要讓一個

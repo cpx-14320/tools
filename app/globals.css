@@ -29,6 +29,16 @@
   --cat-d-bg: #DEEDFF; --cat-d-fg: #79B4FF;
   --cat-e-bg: #F4EBD4; --cat-e-fg: #D3AC41;
   --cat-f-bg: #D5F3ED; --cat-f-fg: #22CBB9;
+  /* 後面六色（2026-11 補）：填的是原本六色在色相環上留下的空檔——草綠補 b(64°) 到
+     f(174°) 之間那一大段、薄荷補到 150°、天青補 174°～212° 之間、薰衣草與蘭花紫補
+     a(243°) 到 c(342°) 之間、珊瑚補 c 到 e(44°) 之間。彩度與亮度照前六色那組馬卡龍
+     糖果色調配，所以十二色擺在一起仍然是同一系列，不是「六色＋另外六色」。 */
+  --cat-g-bg: #EBF4E1; --cat-g-fg: #8FC46B;
+  --cat-h-bg: #DEF5EA; --cat-h-fg: #63CF99;
+  --cat-i-bg: #DFF2FA; --cat-i-fg: #5BC2E0;
+  --cat-j-bg: #F0E6FB; --cat-j-fg: #C193E8;
+  --cat-k-bg: #FCE8F8; --cat-k-fg: #EE97E2;
+  --cat-l-bg: #FFE7E1; --cat-l-fg: #FC9480;
 }
 
 @theme inline {
@@ -56,6 +66,12 @@
   --color-cat-d-bg: var(--cat-d-bg); --color-cat-d-fg: var(--cat-d-fg);
   --color-cat-e-bg: var(--cat-e-bg); --color-cat-e-fg: var(--cat-e-fg);
   --color-cat-f-bg: var(--cat-f-bg); --color-cat-f-fg: var(--cat-f-fg);
+  --color-cat-g-bg: var(--cat-g-bg); --color-cat-g-fg: var(--cat-g-fg);
+  --color-cat-h-bg: var(--cat-h-bg); --color-cat-h-fg: var(--cat-h-fg);
+  --color-cat-i-bg: var(--cat-i-bg); --color-cat-i-fg: var(--cat-i-fg);
+  --color-cat-j-bg: var(--cat-j-bg); --color-cat-j-fg: var(--cat-j-fg);
+  --color-cat-k-bg: var(--cat-k-bg); --color-cat-k-fg: var(--cat-k-fg);
+  --color-cat-l-bg: var(--cat-l-bg); --color-cat-l-fg: var(--cat-l-fg);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

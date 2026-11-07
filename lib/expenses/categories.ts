@@ -3,7 +3,7 @@
 // 到 `mongodb` 套件，不能被瀏覽器端的程式碼 import 到（那個套件用了 tls/net/child_process
 // 這些 Node-only 模組，打包進瀏覽器會整個炸掉）。
 
-export type CategoryColor = "a" | "b" | "c" | "d" | "e" | "f";
+export type CategoryColor = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l";
 export type CategoryKind = "支出" | "收入";
 
 export interface CategoryDTO {
@@ -108,6 +108,12 @@ export const categoryColorClass: Record<CategoryColor, string> = {
   d: "bg-cat-d-bg text-cat-d-fg",
   e: "bg-cat-e-bg text-cat-e-fg",
   f: "bg-cat-f-bg text-cat-f-fg",
+  g: "bg-cat-g-bg text-cat-g-fg",
+  h: "bg-cat-h-bg text-cat-h-fg",
+  i: "bg-cat-i-bg text-cat-i-fg",
+  j: "bg-cat-j-bg text-cat-j-fg",
+  k: "bg-cat-k-bg text-cat-k-fg",
+  l: "bg-cat-l-bg text-cat-l-fg",
 };
 
 // Tailwind 要在原始碼看到完整字串才會產生對應 class，不能用字串拼接／replace 動態組出 bg-cat-a-fg
@@ -119,6 +125,12 @@ export const categoryFillClass: Record<CategoryColor, string> = {
   d: "bg-cat-d-fg",
   e: "bg-cat-e-fg",
   f: "bg-cat-f-fg",
+  g: "bg-cat-g-fg",
+  h: "bg-cat-h-fg",
+  i: "bg-cat-i-fg",
+  j: "bg-cat-j-fg",
+  k: "bg-cat-k-fg",
+  l: "bg-cat-l-fg",
 };
 
 // SVG 圖表的 stroke/fill 需要真的顏色值，不能用 Tailwind class（class 只會在编译时被
@@ -131,4 +143,10 @@ export const categoryColorHex: Record<CategoryColor, string> = {
   d: "#79B4FF",
   e: "#D3AC41",
   f: "#22CBB9",
+  g: "#8FC46B",
+  h: "#63CF99",
+  i: "#5BC2E0",
+  j: "#C193E8",
+  k: "#EE97E2",
+  l: "#FC9480",
 };

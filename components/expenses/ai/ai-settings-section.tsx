@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Card, CardBody } from "../card";
+import { IconImg } from "../icon-img";
+import { ICON_PATHS } from "../icon-paths";
 import { ListCard } from "../list-row";
 import { text } from "../theme";
 import { useToast } from "../toast";
@@ -60,6 +62,8 @@ export function AiSettingsSection({
       <Card>
         <CardBody className="p-0">
           <label className="flex items-center gap-3 px-4 py-3.5">
+            {/* 圖示的尺寸跟畫法比照上面那幾組功能入口（40px、不墊底色方塊，圖本身是去背的）。 */}
+            <IconImg src={ICON_PATHS.settingAi} alt="AI 記帳" size={36} background={false} />
             <span className="min-w-0 flex-1">
               <span className={`block ${text.body}`}>顯示 AI 記帳入口</span>
               <span className={`block ${text.muted}`}>打開後，明細與首頁右下角會多一顆按鈕，可以打一句話自動拆成好幾筆</span>

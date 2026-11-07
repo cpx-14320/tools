@@ -130,7 +130,7 @@ export function useBulkEdit({
       {/* 挑帳戶用跟記帳時同一個彈窗（它本來就帶餘額、也本來就有「不指定」那一項）。 */}
       <AccountPickerModal
         open={picker === "account"}
-        title="改掛到哪個帳戶"
+        title="調整帳戶"
         accounts={accounts}
         accountTypes={accountTypes}
         transactions={transactions}
@@ -145,7 +145,8 @@ export function useBulkEdit({
 
       {/* 只列目前這一邊的分類，所以不可能把一筆支出改成收入分類、把收支方向整個翻掉。
           子分類的規則也照舊（大分類底下有項目就要選到項目）。 */}
-      <Modal open={picker === "category" && kind !== null} onClose={() => setPicker(null)} title="改成哪個分類" fullHeight>
+      {/* 不用 fullHeight：分類格子就那幾排，撐到滿版下面會空一大片。 */}
+      <Modal open={picker === "category" && kind !== null} onClose={() => setPicker(null)} title="調整分類">
         <CategoryGridPicker
           categories={categories}
           kind={kind ?? "支出"}

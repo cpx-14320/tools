@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Modal } from "@/components/expenses/modal";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { ProgressBar } from "@/components/expenses/progress-bar";
-import { PetSprite, petStage, PET_EATING_MS, type PetMood } from "@/components/expenses/pet-sprite";
+import { PetSprite, PET_EATING_MS, type PetMood } from "@/components/expenses/pet-sprite";
 import { PetShopModal } from "@/components/expenses/pet-shop";
 import { PetBagModal } from "@/components/expenses/pet-bag-modal";
 import { PetSigninModal } from "@/components/expenses/pet-signin-modal";
@@ -17,6 +17,7 @@ import {
   PET_ITEMS,
   SIGNIN_STEP_COINS,
   SIGNIN_STREAK_CAP,
+  effectiveOutfitId,
   levelFromXp,
   petBackground,
   petItemById,
@@ -192,7 +193,7 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
             正中央（50%）站會偏低、貼到下面那排餵食鍵，純置中則因為精靈圖四周留白
             看起來像浮在半空。 */}
         <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2">
-          <PetSprite stage={petStage(level.level)} mood={mood} outfitId={pet?.outfitId ?? ""} />
+          <PetSprite mood={mood} outfitId={effectiveOutfitId(pet?.outfitId ?? "", level.level)} />
         </div>
 
         {/* 下半部由下往上疊：入口列在最底、餵食鍵在它上面、動作提示再上面一層。
@@ -265,7 +266,7 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
       <PetShopModal
         open={shopOpen}
         onClose={() => setShopOpen(false)}
-        stage={petStage(level.level)}
+        level={level.level}
         pet={{
           coins: pet?.coins ?? 0,
           outfitId: pet?.outfitId ?? "",
@@ -281,7 +282,7 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
       <PetBagModal
         open={bagOpen}
         onClose={() => setBagOpen(false)}
-        stage={petStage(level.level)}
+        level={level.level}
         kind={bagKind}
         onKindChange={setBagKind}
         pet={{

@@ -15,7 +15,10 @@ import { isIconPath } from "@/lib/expenses/presets";
  *  獨立的設定，換成圖片之後顏色照樣要看得到。圖檔還沒放進 public/expenses 時會是空白，
  *  底色跟方塊仍在，不會破版。 */
 export function IconAvatar({ icon, size = "md", className }: { icon: string; size?: "sm" | "md"; className?: string }) {
-  const sizeClass = size === "sm" ? "size-10 rounded-xl text-lg" : "size-11 rounded-2xl text-xl";
+  // 兩種尺寸現在都是 36px（size-9）——圖本身是有造型的插畫，40／44px 的方塊在清單裡
+  // 比旁邊的文字還搶眼。size 保留下來的差別只剩圓角跟表情符號的字級（舊資料的分類
+  // 圖示還是表情符號），呼叫端不用全部跟著改。
+  const sizeClass = size === "sm" ? "size-9 rounded-xl text-base" : "size-9 rounded-2xl text-lg";
   const base = `grid shrink-0 place-items-center ${sizeClass} ${className ?? "bg-[#F3EFFC]"}`;
 
   if (isIconPath(icon)) {

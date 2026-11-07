@@ -6,9 +6,14 @@ import { listCategories } from "./categories.server";
 import { topLevelCategoryId } from "./categories";
 import {
   DEFAULT_BACKGROUND_ID,
+  DEFAULT_HATCHED_OUTFIT_ID,
   DEFAULT_OUTFIT_ID,
+  EGG_OUTFIT_ID,
   ENTRY_COINS,
+  PET_HATCH_LEVEL,
   PET_ITEMS,
+  levelFromXp,
+  outfitUnlocked,
   pendingRewards,
   petItemById,
   signinKey,
@@ -194,11 +199,36 @@ export async function settlePetRewards(userId: ObjectId, today: string): Promise
     );
     if (res.modifiedCount === 1) granted.push(reward);
   }
-  if (granted.length === 0) return toDTO(pet);
+  // ── 孵化 ──────────────────────────────────────────────────────────────────
+  // 第一次到 Lv.PET_HATCH_LEVEL 時，把身上的蛋換成預設造型——不換的話到了孵化等級
+  // 畫面上還是一顆蛋，使用者不會知道自己已經可以換裝了。只做這一次（用 claimedKeys
+  // 記，跟獎勵同一套冪等做法），所以之後想換回蛋，換了就會留著。
+  // 條件裡同時要求「身上還是蛋」：已經自己挑過造型的人不要被蓋掉。
+  const hatched = await maybeHatch(pet);
+
+  if (granted.length === 0 && !hatched) return toDTO(pet);
 
   // 重新讀一次，拿到真正寫進去的幣數（這次結算可能只發了其中幾筆）。
   const updated = await col.findOne({ _id: pet._id });
   return toDTO(updated ?? pet, granted);
+}
+
+/** 孵化那一次的自動換裝（見 settlePetRewards 裡的說明）。回傳有沒有真的換到。 */
+const HATCHED_KEY = "hatched";
+
+async function maybeHatch(pet: PetDoc): Promise<boolean> {
+  if (levelFromXp(pet.xp).level < PET_HATCH_LEVEL) return false;
+  if (pet.claimedKeys.includes(HATCHED_KEY)) return false;
+  const col = await collection();
+  // 身上還是蛋、或存著一個已經不存在的造型（改版前的 outfit-mint 之類）才換——
+  // 已經自己挑過造型的人不要被蓋掉。
+  const current = petItemById(pet.outfitId);
+  const takeDefault = current?.kind !== "服裝" || pet.outfitId === EGG_OUTFIT_ID;
+  const res = await col.updateOne(
+    { _id: pet._id, claimedKeys: { $ne: HATCHED_KEY } },
+    { $push: { claimedKeys: HATCHED_KEY }, ...(takeDefault ? { $set: { outfitId: DEFAULT_HATCHED_OUTFIT_ID } } : {}) },
+  );
+  return res.modifiedCount === 1;
 }
 
 // 買／餵／買服裝這三個都是「先讀出來檢查夠不夠，再 $inc 扣掉」。那個先讀後寫之間有
@@ -263,7 +293,11 @@ function ownedList(pet: PetDoc, kind: keyof typeof WEARABLES): string[] {
   return [...new Set([...free, ...(stored ?? [])])];
 }
 
-/** 買服裝或背景（已經有的不能重複買），買完直接換上。 */
+/** 買服裝或背景（已經有的不能重複買），買完直接換上。
+ *
+ *  還沒孵化就買的造型是例外：錢照扣、東西照進背包，但不會換上去（穿不上，見
+ *  equipWearable）。先買起來放是刻意允許的——星星幣是記帳賺來的，不該因為等級還沒到
+ *  就連買都不能買；等孵化了再去背包換上。 */
 export async function buyWearable(userId: ObjectId, itemId: string): Promise<PetStateDTO | { error: string }> {
   const item = petItemById(itemId);
   if (!item || (item.kind !== "服裝" && item.kind !== "背景")) return { error: "找不到這個商品" };
@@ -275,9 +309,14 @@ export async function buyWearable(userId: ObjectId, itemId: string): Promise<Pet
   const col = await collection();
   // 跟 buyFood 同一個道理：錢夠不夠、以及「還沒買過」都寫進 filter，連點兩下的第二下
   // 匹配不到（第一下已經把 itemId $push 進去了），不會扣兩次錢也不會在清單裡存兩筆。
+  const wearNow = item.kind !== "服裝" || outfitUnlocked(item, levelFromXp(pet.xp).level);
   const updated = await col.findOneAndUpdate(
     { _id: pet._id, coins: { $gte: item.price }, [fields.owned]: { $ne: itemId } },
-    { $inc: { coins: -item.price }, $push: { [fields.owned]: itemId }, $set: { [fields.current]: itemId } },
+    {
+      $inc: { coins: -item.price },
+      $push: { [fields.owned]: itemId },
+      ...(wearNow ? { $set: { [fields.current]: itemId } } : {}),
+    },
     { returnDocument: "after" },
   );
   if (!updated) return { error: pet.coins < item.price ? "星星幣不夠" : fields.duplicate };
@@ -292,6 +331,11 @@ export async function equipWearable(userId: ObjectId, itemId: string): Promise<P
 
   const pet = await ensurePet(userId);
   if (!ownedList(pet, item.kind).includes(itemId)) return { error: fields.missing };
+  // 等級不夠的造型穿不上。前端的格子已經點不動了，這裡再擋一次——API 是公開的，
+  // 而且畫面會依 effectiveOutfitId 退回蛋，存進去只會變成「資料說穿著、畫面是顆蛋」。
+  if (item.kind === "服裝" && !outfitUnlocked(item, levelFromXp(pet.xp).level)) {
+    return { error: `Lv.${PET_HATCH_LEVEL} 孵化之後才能換造型` };
+  }
 
   const col = await collection();
   await col.updateOne({ _id: pet._id }, { $set: { [fields.current]: itemId } });

@@ -87,12 +87,14 @@ export function GoalIconPicker({ value, onChange, required = false }: { value: s
   return <IconPicker options={EXPENSE_ICON_OPTIONS} value={value} onChange={onChange} required={required} />;
 }
 
-/** 分類顏色選擇器——六個色票圓點，選中的那顆外圈加色環。新增分類（批次）跟編輯分類
+/** 分類顏色選擇器——十二個色票圓點，選中的那顆外圈加色環。新增分類（批次）跟編輯分類
  *  兩個彈窗本來各自手刻一份一模一樣的，收斂成這一個。 */
 export function CategoryColorPicker({ value, onChange }: { value: CategoryColor; onChange: (color: CategoryColor) => void }) {
   return (
     <Field label="顏色">
-      <div className="flex gap-2">
+      {/* 六欄兩列的格狀排列，不是一排橫的：十二顆 32px 的圓點加間距有 470px 寬，
+          手機版（卡片寬 430px）排不下，flex 換行又會讓第二列靠左擠成一團。 */}
+      <div className="grid grid-cols-6 justify-items-center gap-2">
         {CATEGORY_COLORS.map((c) => (
           <button
             key={c}
@@ -107,7 +109,7 @@ export function CategoryColorPicker({ value, onChange }: { value: CategoryColor;
   );
 }
 
-export const CATEGORY_COLORS: CategoryColor[] = ["a", "b", "c", "d", "e", "f"];
+export const CATEGORY_COLORS: CategoryColor[] = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"];
 
 /** 新增分類／帳戶類型時的預設圖示——還沒選之前就先放共用的「其他」，不會有空白圖示。 */
 export const DEFAULT_PICKER_ICON = ICON_OTHER;
