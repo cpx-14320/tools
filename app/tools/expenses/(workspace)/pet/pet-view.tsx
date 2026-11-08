@@ -1,27 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Modal } from "@/components/expenses/modal";
-import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { ProgressBar } from "@/components/expenses/progress-bar";
-import { PetSprite, PET_EATING_MS, PET_HATCHING_MS, type PetMood } from "@/components/expenses/pet-sprite";
+import { PetSprite, PET_ANIMATION_MS, type PetMood } from "@/components/expenses/pet-sprite";
 import { PetShopModal } from "@/components/expenses/pet-shop";
 import { PetBagModal } from "@/components/expenses/pet-bag-modal";
 import { PetSigninModal } from "@/components/expenses/pet-signin-modal";
+import { PetHelpModal } from "@/components/expenses/pet-help-modal";
 import { IconImg } from "@/components/expenses/icon-img";
 import { ICON_PATHS } from "@/components/expenses/icon-paths";
-import { text } from "@/components/expenses/theme";
 import {
-  BUDGET_KEPT_COINS,
-  ENTRY_COINS,
   PET_ITEMS,
-  SIGNIN_STEP_COINS,
-  SIGNIN_STREAK_CAP,
   effectiveOutfitId,
   levelFromXp,
   petBackground,
   petItemById,
-  signinCoins,
   type PetItemKind,
 } from "@/lib/expenses/pet";
 
@@ -33,6 +26,9 @@ interface PetState {
   backgroundId: string;
   ownedBackgroundIds: string[];
   foodCounts: Record<string, number>;
+  /** 已經買到的動作狀態／目前勾起來的那幾個（狀態是複選的，見 pet-bag-modal.tsx）。 */
+  ownedStateIds: string[];
+  activeStateIds: string[];
   /** 今天是連續簽到的第幾天（0 ＝ 今天還沒簽到）。 */
   signinStreak: number;
   justEarned: { key: string; coins: number; label: string }[];
@@ -58,16 +54,8 @@ function StageNavButton({ label, icon, onClick }: { label: string; icon: string;
   );
 }
 
-/** 「星星圖＋數字」——說明彈窗裡那幾列獎勵金額都長這樣，收成一個元件才不會四個地方
- *  各寫一次 emoji 跟樣式。 */
-function CoinAmount({ value }: { value: number | string }) {
-  return (
-    <span className="flex items-center gap-1 text-xs font-semibold tabular-nums text-[#6F5FD6]">
-      <IconImg src={ICON_PATHS.petStar} alt="星星幣" size={14} background={false} />
-      {value}
-    </span>
-  );
-}
+/** 待機多久之後插播一次動作狀態。太短會讓角色一直在動、看起來很吵；太長又像沒生效。 */
+const ACTION_INTERVAL_MS = 12_000;
 
 /** 餵食列的食物。PET_ITEMS 裡本來就是由便宜到貴排好的，這個順序就是「手上一份都沒有」
  *  時的預設排序（見下面 sortedFoods 的說明）。 */
@@ -104,6 +92,8 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
   // 連續餵第二次時 mood 已經是 "eating"、setMood 等於沒變，下面那個計時器就不會重新
   // 計時，第二次的動畫會被第一次的計時器提早切掉。用這個每次遞增的數字當重新計時的依據。
   const [feedNonce, setFeedNonce] = useState(0);
+  // 現在正在演的那個動作狀態的精靈圖（只有 mood === "action" 時有意義）。
+  const [actionSprite, setActionSprite] = useState<string | undefined>(undefined);
   // 進頁面時剛結算到的獎勵先報一句。放在 state 初始值而不是 effect 裡：這是算得出來的
   // 初始畫面，不是副作用。
   const [message, setMessage] = useState<string | null>(() =>
@@ -112,8 +102,21 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
       : null,
   );
 
+  /** 今日簽到。跟餵食／購買不同，它沒有品項，而且日期要前端給——伺服器時區不一定跟
+   *  使用者同一個（跟 GET /api/expenses/pet 同一個理由）。 */
+  async function signIn() {
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" });
+    const res = await fetch("/api/expenses/pet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "signin", today }),
+    }).catch(() => null);
+    const data: { pet?: PetState; error?: string } = (await res?.json().catch(() => ({}))) ?? {};
+    if (data.pet) setPet(data.pet);
+  }
+
   /** count 只有「買食物」會用到，一次買好幾份（見 pet-shop.tsx 的數量選擇器）。 */
-  async function act(action: "feed" | "buy" | "equip", itemId: string, count = 1) {
+  async function act(action: "feed" | "buy" | "equip" | "toggle", itemId: string, count = 1) {
     const res = await fetch("/api/expenses/pet", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -133,7 +136,9 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
       }
       const item = petItemById(itemId);
       setMessage(
-        action === "feed"
+        action === "toggle"
+          ? `${data.pet.activeStateIds.includes(itemId) ? "勾選" : "取消"}${item?.name}`
+          : action === "feed"
           ? `餵了${item?.name}，經驗值 +${item?.xp}`
           : action === "buy"
             ? item?.kind === "食物"
@@ -148,13 +153,29 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
     }
   }
 
-  // 吃東西／孵化都是演一輪就回到待機。計時器掛在 mood 上而不是寫在 act() 裡：連續餵
+  // 吃東西／孵化／動作狀態都是演一輪就回到待機（長度一樣，見 PET_ANIMATION_MS）。計時器掛在 mood 上而不是寫在 act() 裡：連續餵
   // 好幾次時每次都會重新計時，不會被前一次的 setTimeout 提早切回待機。
   useEffect(() => {
     if (mood === "idle") return;
-    const timer = setTimeout(() => setMood("idle"), mood === "hatching" ? PET_HATCHING_MS : PET_EATING_MS);
+    const timer = setTimeout(() => setMood("idle"), PET_ANIMATION_MS);
     return () => clearTimeout(timer);
   }, [mood, feedNonce]);
+
+  // 背包裡勾起來的動作狀態。角色待機時每隔一段時間從裡面隨機挑一個演一次——勾了好幾個
+  // 就會輪流出現不同動作，一個都沒勾就只有待機。
+  const activeStates = (pet?.activeStateIds ?? []).map((id) => petItemById(id)).filter((i) => i?.kind === "狀態" && i.action);
+  useEffect(() => {
+    if (activeStates.length === 0 || mood !== "idle") return;
+    const timer = setTimeout(() => {
+      const pick = activeStates[Math.floor(Math.random() * activeStates.length)];
+      if (!pick) return;
+      setActionSprite(pick.image);
+      setMood("action");
+    }, ACTION_INTERVAL_MS);
+    return () => clearTimeout(timer);
+    // activeStates 每次 render 都是新陣列，所以相依看的是「勾了哪幾個」這個字串，不是陣列本身。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mood, (pet?.activeStateIds ?? []).join(",")]);
 
   const level = levelFromXp(pet?.xp ?? 0);
   // 簽到是進頁面就自動結算的，所以 signinStreak > 0 就代表今天已經簽到了（簽到彈窗
@@ -198,16 +219,19 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
           type="button"
           onClick={() => setHelpOpen(true)}
           aria-label="養成的說明"
-          className="absolute right-3 top-3 grid size-8 place-items-center rounded-full bg-white/85 text-sm font-bold text-[#6F5FD6] backdrop-blur transition-colors hover:bg-white"
+          // 畫好的圓鈕＋問號兩張圖疊起來，跟場地上其他按鈕（餵食框、入口圖示）同一套插畫
+          // 風格；原本是半透明白底的文字「?」，在房間圖上看起來像是網頁元件混進遊戲畫面。
+          className="absolute right-3 top-3 grid size-9 place-items-center bg-contain bg-center bg-no-repeat transition-transform active:scale-90"
+          style={{ backgroundImage: 'url("/expenses/pet-round_button.png")' }}
         >
-          ?
+          <span aria-hidden className="size-4 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: 'url("/expenses/pet-question_mark.png")' }} />
         </button>
 
         {/* 角色釘在場地 45% 高的位置：六張房間圖的地毯／地板中心都落在這附近，
             正中央（50%）站會偏低、貼到下面那排餵食鍵，純置中則因為精靈圖四周留白
             看起來像浮在半空。 */}
         <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2">
-          <PetSprite mood={mood} outfitId={effectiveOutfitId(pet?.outfitId ?? "", level.level)} />
+          <PetSprite mood={mood} actionSprite={actionSprite} outfitId={effectiveOutfitId(pet?.outfitId ?? "", level.level)} />
         </div>
 
         {/* 下半部由下往上疊：入口列在最底、餵食鍵在它上面、動作提示再上面一層。
@@ -262,26 +286,7 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
         </div>
       </div>
 
-      {/* 怎麼賺星星幣——右上角那顆問號開的說明。 */}
-      <Modal open={helpOpen} onClose={() => setHelpOpen(false)} title="養成">
-        <p className={`${text.muted} leading-relaxed`}>好好記帳就能賺星星幣，拿去餵角色、換衣服。</p>
-        <p className={text.sectionHeading}>怎麼賺星星幣</p>
-        <ListCard>
-          <ListRow name="每日簽到（打開記帳本就算）" right={<CoinAmount value={signinCoins(1)} />} />
-          <ListRow name={`連續簽到第 2～${SIGNIN_STREAK_CAP} 天`} right={<CoinAmount value={`${signinCoins(2)}～${signinCoins(SIGNIN_STREAK_CAP)}`} />} />
-          <ListRow name="每記一筆帳" right={<CoinAmount value={ENTRY_COINS} />} />
-          <ListRow name="上個月每個分類都沒超支" right={<CoinAmount value={BUDGET_KEPT_COINS} />} />
-        </ListCard>
-        <p className={`${text.faint} leading-relaxed`}>
-          連續簽到是累加的：第一天 {signinCoins(1)}、第二天再多 {SIGNIN_STEP_COINS * 2}、第三天再多 {SIGNIN_STEP_COINS * 3}
-          ……連到第 {SIGNIN_STREAK_CAP} 天那天一次拿 {signinCoins(SIGNIN_STREAK_CAP)}；斷掉就從頭算，第 {SIGNIN_STREAK_CAP + 1}{" "}
-          天之後維持在 {signinCoins(SIGNIN_STREAK_CAP)} 不再往上加。
-        </p>
-        <p className={`${text.faint} leading-relaxed`}>
-          星星幣只看記帳習慣，不看你有多少錢——一筆大額支出不會讓角色跟著「變窮」。
-          食物的價格跟經驗值是一比一，花掉多少就換回多少。
-        </p>
-      </Modal>
+      <PetHelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
 
       <PetShopModal
         open={shopOpen}
@@ -293,6 +298,7 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
           ownedOutfitIds: pet?.ownedOutfitIds ?? [],
           backgroundId: pet?.backgroundId ?? "",
           ownedBackgroundIds: pet?.ownedBackgroundIds ?? [],
+          ownedStateIds: pet?.ownedStateIds ?? [],
           foodCounts: pet?.foodCounts ?? {},
         }}
         message={message}
@@ -310,11 +316,14 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
           ownedOutfitIds: pet?.ownedOutfitIds ?? [],
           backgroundId: pet?.backgroundId ?? "",
           ownedBackgroundIds: pet?.ownedBackgroundIds ?? [],
+          ownedStateIds: pet?.ownedStateIds ?? [],
+          activeStateIds: pet?.activeStateIds ?? [],
         }}
         onEquip={(itemId) => act("equip", itemId)}
+        onToggleState={(itemId) => act("toggle", itemId)}
       />
 
-      <PetSigninModal open={signinOpen} onClose={() => setSigninOpen(false)} streak={streak} />
+      <PetSigninModal open={signinOpen} onClose={() => setSigninOpen(false)} streak={streak} onSignIn={signIn} />
 
     </div>
   );

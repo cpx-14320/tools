@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Modal } from "./modal";
 import { SegmentedControl } from "./button";
 import { IconImg } from "./icon-img";
-import { PetSprite, PET_HATCHING_MS, type PetMood } from "./pet-sprite";
+import { PetSprite, PET_ANIMATION_MS, type PetMood } from "./pet-sprite";
 import { text } from "./theme";
 import { PET_ITEMS, PET_HATCH_LEVEL, effectiveOutfitId, outfitUnlocked, petBackground, petItemThumb, type PetItem, type PetItemKind } from "@/lib/expenses/pet";
 
@@ -15,6 +15,9 @@ export interface BagPetState {
   ownedOutfitIds: string[];
   backgroundId: string;
   ownedBackgroundIds: string[];
+  /** 已經買到的動作狀態／目前勾起來的那幾個（狀態是複選的）。 */
+  ownedStateIds: string[];
+  activeStateIds: string[];
 }
 
 /** 已經擁有了嗎／正穿著嗎。價格 0 的是預設款，一開始就有。
@@ -26,8 +29,13 @@ function ownedState(item: PetItem, pet: BagPetState, currentOutfit: string): { o
   if (item.kind === "背景") {
     return { owned: item.price === 0 || pet.ownedBackgroundIds.includes(item.id), equipped: pet.backgroundId === item.id };
   }
-  // 狀態不用買也不會「正在使用」，它是點了重播一次的動畫，所以一律算擁有、永遠不標使用中。
-  if (item.kind === "狀態") return { owned: true, equipped: false };
+  // 狀態分兩種：動作狀態要買、而且可以同時勾很多個（勾起來的標「使用中」）；孵化那種
+  // 紀念狀態不用買、也不能勾，點了只是在預覽區重播一次。
+  if (item.kind === "狀態") {
+    return item.action
+      ? { owned: pet.ownedStateIds.includes(item.id), equipped: pet.activeStateIds.includes(item.id) }
+      : { owned: true, equipped: false };
+  }
   return { owned: item.price === 0 || pet.ownedOutfitIds.includes(item.id), equipped: currentOutfit === item.id };
 }
 
@@ -48,6 +56,7 @@ export function PetBagModal({
   kind,
   onKindChange,
   onEquip,
+  onToggleState,
 }: {
   open: boolean;
   onClose: () => void;
@@ -59,6 +68,8 @@ export function PetBagModal({
   kind: Exclude<PetItemKind, "食物">;
   onKindChange: (kind: Exclude<PetItemKind, "食物">) => void;
   onEquip: (itemId: string) => void;
+  /** 勾起／取消勾選一個動作狀態。 */
+  onToggleState: (itemId: string) => void;
 }) {
   const currentOutfit = effectiveOutfitId(pet.outfitId, level);
   const items = PET_ITEMS.filter((i) => i.kind === kind && ownedState(i, pet, currentOutfit).owned);
@@ -67,7 +78,7 @@ export function PetBagModal({
   const [mood, setMood] = useState<PetMood>("idle");
   useEffect(() => {
     if (mood === "idle") return;
-    const timer = setTimeout(() => setMood("idle"), PET_HATCHING_MS);
+    const timer = setTimeout(() => setMood("idle"), PET_ANIMATION_MS);
     return () => clearTimeout(timer);
   }, [mood]);
 
@@ -111,8 +122,14 @@ export function PetBagModal({
                 // 狀態不是換上去的東西，點了只是在上面的預覽區重播一次那段動畫。
                 onClick={() => {
                   if (locked) return;
-                  if (item.kind === "狀態") setMood("hatching");
-                  else if (!equipped) onEquip(item.id);
+                  // 動作狀態是複選：點一下勾起來、再點一下取消（所以已經「使用中」的也能點）。
+                  // 孵化那種紀念狀態不能勾，點了只是在上面的預覽區重播一次。
+                  if (item.kind === "狀態") {
+                    if (item.action) onToggleState(item.id);
+                    else setMood("hatching");
+                  } else if (!equipped) {
+                    onEquip(item.id);
+                  }
                 }}
                 disabled={locked}
                 className={`flex flex-col items-center gap-1.5 rounded-2xl border p-2.5 transition-colors ${

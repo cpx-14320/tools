@@ -16,6 +16,7 @@ import {
   outfitUnlocked,
   pendingRewards,
   petItemById,
+  signinCoins,
   signinKey,
   signinStreakDay,
   type PetReward,
@@ -37,6 +38,10 @@ interface PetDoc {
   /** 食物庫存：買了先進背包，要自己點了餵才會消耗、換成經驗值——不是買了就直接吃掉。
    *  舊文件可能沒有這個欄位（這個欄位加進來之前建的），讀出來時用 ?? {} 補齊。 */
   foodCounts?: Record<string, number>;
+  /** 已經買到的動作狀態／目前勾起來會隨機演出的那幾個。狀態可以同時勾很多個（跟服裝
+   *  背景只能擇一不同），所以 current 這一側也是陣列。舊文件沒有這兩個欄位。 */
+  ownedStateIds?: string[];
+  activeStateIds?: string[];
   /** 已經發過的獎勵 key——結算每次進記帳本都會跑，靠這個確保同一筆獎勵只發一次。 */
   claimedKeys: string[];
   /** 已經發過「每記一筆」獎勵的交易筆數。
@@ -57,6 +62,8 @@ export interface PetStateDTO {
   backgroundId: string;
   ownedBackgroundIds: string[];
   foodCounts: Record<string, number>;
+  ownedStateIds: string[];
+  activeStateIds: string[];
   /** 今天是連續簽到的第幾天（含今天）。簽到是進頁面就自動結算的，所以畫面上這個數字
    *  一定已經包含今天那一次。 */
   signinStreak: number;
@@ -86,6 +93,8 @@ function toDTO(doc: PetDoc, justEarned: PetReward[] = [], today = todayInTaipei(
     backgroundId: doc.backgroundId ?? DEFAULT_BACKGROUND_ID,
     ownedBackgroundIds: ownedList(doc, "背景"),
     foodCounts: doc.foodCounts ?? {},
+    ownedStateIds: ownedList(doc, "狀態"),
+    activeStateIds: doc.activeStateIds ?? [],
     signinStreak: claimed.has(signinKey(today)) ? signinStreakDay(claimed, today) : 0,
     justEarned,
     justHatched,
@@ -122,6 +131,8 @@ async function ensurePet(userId: ObjectId): Promise<PetDoc> {
     backgroundId: DEFAULT_BACKGROUND_ID,
     ownedBackgroundIds: [DEFAULT_BACKGROUND_ID],
     foodCounts: {},
+    ownedStateIds: [],
+    activeStateIds: [],
     claimedKeys: [],
     createdAt: new Date(),
   };
@@ -192,7 +203,6 @@ export async function settlePetRewards(userId: ObjectId, today: string): Promise
 
   // ── 簽到／預算 ────────────────────────────────────────────────────────────
   const rewards = pendingRewards({
-    today,
     budgetKeptMonth: await budgetKeptMonth(userId, today),
     claimedKeys: new Set(pet.claimedKeys),
   });
@@ -244,6 +254,30 @@ async function maybeHatch(pet: PetDoc): Promise<boolean> {
 // 就不會有任何一筆被改到，回傳的 matchedCount 是 0，那時才回報錯誤。findOneAndUpdate
 // 一併把更新後的文件拿回來，不用自己在記憶體裡算一份可能已經過期的狀態。
 
+/** 今日簽到——按鈕按下去才發，不是打開記帳本就自動算（見 pet.ts 的 pendingRewards）。
+ *
+ *  「還沒簽過」寫進 updateOne 的 filter 裡，由資料庫在同一個原子操作判斷：連點兩下的
+ *  第二下匹配不到（第一下已經把 key push 進去了），不會重複加幣。拿到的幣數看的是
+ *  「這是連續第幾天」，所以要先算 streak 再寫入。 */
+export async function signInToday(userId: ObjectId, today: string): Promise<PetStateDTO | { error: string }> {
+  const pet = await ensurePet(userId);
+  const key = signinKey(today);
+  if (pet.claimedKeys.includes(key)) return { error: "今天已經簽到過了" };
+
+  // signinStreakDay 吃的是「還沒簽到」的狀態，回傳的就是今天會算第幾天。
+  const streakDay = signinStreakDay(new Set(pet.claimedKeys), today);
+  const coins = signinCoins(streakDay);
+
+  const col = await collection();
+  const updated = await col.findOneAndUpdate(
+    { _id: pet._id, claimedKeys: { $ne: key } },
+    { $inc: { coins }, $push: { claimedKeys: key } },
+    { returnDocument: "after" },
+  );
+  if (!updated) return { error: "今天已經簽到過了" };
+  return toDTO(updated, [{ key, coins, label: streakDay > 1 ? `連續簽到第 ${streakDay} 天` : "今日簽到" }], today);
+}
+
 /** 買食物——先進背包，不會立刻吃掉，要另外呼叫 feedPet 才會消耗。 */
 export async function buyFood(userId: ObjectId, itemId: string): Promise<PetStateDTO | { error: string }> {
   const item = petItemById(itemId);
@@ -284,6 +318,9 @@ export async function feedPet(userId: ObjectId, itemId: string): Promise<PetStat
 const WEARABLES = {
   服裝: { owned: "ownedOutfitIds", current: "outfitId", missing: "還沒有這件服裝", duplicate: "這件已經有了" },
   背景: { owned: "ownedBackgroundIds", current: "backgroundId", missing: "還沒有這個背景", duplicate: "這個背景已經有了" },
+  // 狀態也是「買一次就永久擁有」，差別在它可以同時勾很多個，所以沒有 current 這個欄位
+  // ——要勾／取消勾用 toggleState，不是 equipWearable。
+  狀態: { owned: "ownedStateIds", current: null, missing: "還沒有這個狀態", duplicate: "這個狀態已經有了" },
 } as const;
 
 /** 服裝／背景目前擁有哪些。
@@ -292,7 +329,7 @@ const WEARABLES = {
  *  的起點，不該因為資料是舊格式、或 $push 在沒有這個欄位的文件上建了一個只有新東西的
  *  陣列，就變成「要再買一次」。 */
 function ownedList(pet: PetDoc, kind: keyof typeof WEARABLES): string[] {
-  const stored = kind === "服裝" ? pet.ownedOutfitIds : (pet.ownedBackgroundIds ?? []);
+  const stored = kind === "服裝" ? pet.ownedOutfitIds : kind === "背景" ? (pet.ownedBackgroundIds ?? []) : (pet.ownedStateIds ?? []);
   const free = PET_ITEMS.filter((i) => i.kind === kind && i.price === 0).map((i) => i.id);
   return [...new Set([...free, ...(stored ?? [])])];
 }
@@ -304,7 +341,7 @@ function ownedList(pet: PetDoc, kind: keyof typeof WEARABLES): string[] {
  *  就連買都不能買；等孵化了再去背包換上。 */
 export async function buyWearable(userId: ObjectId, itemId: string): Promise<PetStateDTO | { error: string }> {
   const item = petItemById(itemId);
-  if (!item || (item.kind !== "服裝" && item.kind !== "背景")) return { error: "找不到這個商品" };
+  if (item?.kind !== "服裝" && item?.kind !== "背景" && item?.kind !== "狀態") return { error: "找不到這個商品" };
   const fields = WEARABLES[item.kind];
 
   const pet = await ensurePet(userId);
@@ -313,13 +350,14 @@ export async function buyWearable(userId: ObjectId, itemId: string): Promise<Pet
   const col = await collection();
   // 跟 buyFood 同一個道理：錢夠不夠、以及「還沒買過」都寫進 filter，連點兩下的第二下
   // 匹配不到（第一下已經把 itemId $push 進去了），不會扣兩次錢也不會在清單裡存兩筆。
-  const wearNow = item.kind !== "服裝" || outfitUnlocked(item, levelFromXp(pet.xp).level);
+  // 狀態買完不會自己勾起來（它可以複選，替使用者決定勾哪個沒有道理）；服裝等級不夠也不換。
+  const wearNow = fields.current !== null && (item.kind !== "服裝" || outfitUnlocked(item, levelFromXp(pet.xp).level));
   const updated = await col.findOneAndUpdate(
     { _id: pet._id, coins: { $gte: item.price }, [fields.owned]: { $ne: itemId } },
     {
       $inc: { coins: -item.price },
       $push: { [fields.owned]: itemId },
-      ...(wearNow ? { $set: { [fields.current]: itemId } } : {}),
+      ...(wearNow && fields.current ? { $set: { [fields.current]: itemId } } : {}),
     },
     { returnDocument: "after" },
   );
@@ -327,9 +365,32 @@ export async function buyWearable(userId: ObjectId, itemId: string): Promise<Pet
   return toDTO(updated);
 }
 
+/** 勾起／取消勾選一個動作狀態。
+ *
+ *  跟服裝、背景不一樣：狀態可以同時勾很多個，養成頁的角色會從勾起來的那幾個裡隨機挑
+ *  一個演，所以這裡是 $addToSet／$pull 一個陣列，不是 $set 一個欄位。
+ *  $addToSet 本身就擋掉重複，連點兩下不會存兩筆。 */
+export async function toggleState(userId: ObjectId, itemId: string): Promise<PetStateDTO | { error: string }> {
+  const item = petItemById(itemId);
+  if (item?.kind !== "狀態" || !item.action) return { error: "找不到這個狀態" };
+
+  const pet = await ensurePet(userId);
+  if (!ownedList(pet, "狀態").includes(itemId)) return { error: "還沒有這個狀態" };
+
+  const col = await collection();
+  const active = pet.activeStateIds ?? [];
+  const updated = await col.findOneAndUpdate(
+    { _id: pet._id },
+    active.includes(itemId) ? { $pull: { activeStateIds: itemId } } : { $addToSet: { activeStateIds: itemId } },
+    { returnDocument: "after" },
+  );
+  return toDTO(updated ?? pet);
+}
+
 /** 換上已經擁有的服裝或背景。 */
 export async function equipWearable(userId: ObjectId, itemId: string): Promise<PetStateDTO | { error: string }> {
   const item = petItemById(itemId);
+  // 狀態不走這條（它是複選，見 toggleState）。
   if (!item || (item.kind !== "服裝" && item.kind !== "背景")) return { error: "找不到這個商品" };
   const fields = WEARABLES[item.kind];
 

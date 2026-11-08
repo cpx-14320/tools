@@ -34,15 +34,13 @@ const FRAMES = COLS * ROWS;
  *  發抖，待機的呼吸本來就該慢。 */
 const FRAME_MS = 140;
 
-/** 吃東西的動畫跑完一輪要多久——餵食後呼叫端用這個時間把心情切回 idle。 */
-export const PET_EATING_MS = FRAMES * FRAME_MS;
-
-/** 孵化動畫跑完一輪要多久。演完之後角色就是新造型的待機了（最後一格畫的正是那個姿勢）。 */
-export const PET_HATCHING_MS = FRAMES * FRAME_MS;
+/** 一輪動畫（21 格）要多久。吃東西、孵化、動作狀態都是「演一次就回到待機」，長度一樣
+ *  ——它們用的是同一套格數跟同一個換格速度，所以共用這一個常數，呼叫端拿它當計時器。 */
+export const PET_ANIMATION_MS = FRAMES * FRAME_MS;
 
 /** hatching 是「演一次就結束」的那段孵化動畫，不像 idle 會一直循環——呼叫端自己在
  *  PET_HATCHING_MS 之後把心情切回 idle（見 pet-view.tsx）。 */
-export type PetMood = "idle" | "eating" | "hatching";
+export type PetMood = "idle" | "eating" | "hatching" | "action";
 
 /** 背景位置：第 col 欄、第 row 列。N 欄的話每一欄落在 col/(N-1) 的百分比上。 */
 function framePosition(col: number, row: number): string {
@@ -61,6 +59,9 @@ function framePosition(col: number, row: number): string {
  */
 export function PetSprite({
   mood = "idle",
+  /** mood 是 "action" 時要播的那張精靈圖（動作狀態的圖）。其他心情用不到——那幾張是
+   *  由身上的造型決定的。 */
+  actionSprite,
   /** 身上那套造型（服裝的 item id）——決定要播哪張精靈圖。等級不夠時請先用
    *  effectiveOutfitId 換算成蛋再傳進來。 */
   outfitId = "",
@@ -68,6 +69,7 @@ export function PetSprite({
   size = 180,
 }: {
   mood?: PetMood;
+  actionSprite?: string;
   outfitId?: string;
   size?: number;
 }) {
@@ -79,7 +81,7 @@ export function PetSprite({
     setFrame(0);
     const timer = setInterval(() => setFrame((f) => (f + 1) % FRAMES), FRAME_MS);
     return () => clearInterval(timer);
-  }, [mood, outfitId]);
+  }, [mood, outfitId, actionSprite]);
 
   return (
     // 外層把角色置中在呼叫端給的場地裡；角色本身是固定尺寸，不跟著場地縮放。
@@ -88,7 +90,7 @@ export function PetSprite({
         style={{
           width: size,
           height: size,
-          backgroundImage: `url("${petOutfitSprite(outfitId, mood)}")`,
+          backgroundImage: `url("${mood === "action" && actionSprite ? actionSprite : petOutfitSprite(outfitId, mood === "action" ? "idle" : mood)}")`,
           backgroundSize: `${COLS * 100}% ${ROWS * 100}%`,
           backgroundPosition: framePosition(frame % COLS, Math.floor(frame / COLS)),
           backgroundRepeat: "no-repeat",

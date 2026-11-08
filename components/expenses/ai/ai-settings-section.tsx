@@ -67,7 +67,7 @@ export function AiSettingsSection({
           <IconAvatar icon={ICON_PATHS.settingAi} plain />
           <span className="min-w-0 flex-1">
             <span className={`block ${text.body}`}>顯示 AI 記帳入口</span>
-            <span className={`block ${text.muted}`}>打開後，明細與首頁右下角會多一顆按鈕，可以打一句話自動拆成好幾筆</span>
+            <span className={`block ${text.muted}`}>開啟 AI 按鈕，打一句話自動新增記帳</span>
           </span>
           <Switch checked={enabled} onChange={toggle} label="顯示 AI 記帳入口" />
         </label>
@@ -90,6 +90,7 @@ export function AiSettingsSection({
                 onClick={() => setDraftsOpen(true)}
                 className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-[#F3EFFC]"
               >
+                <IconAvatar icon={ICON_PATHS.aiDrafts} plain />
                 <span className={`min-w-0 flex-1 ${text.body}`}>待確認的解析結果</span>
                 <span className="shrink-0 rounded-full bg-[#F3EFFC] px-2 py-0.5 text-xs font-semibold tabular-nums text-[#6F5FD6]">
                   {pendingDrafts.length}

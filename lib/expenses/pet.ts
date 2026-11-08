@@ -36,6 +36,10 @@ const HATCHED_EATING_SPRITE = "/expenses/intj-eating.png";
  *  排法跟其他精靈圖一樣是 7 欄 × 3 列，但它是**演一次就結束**的，不像待機那樣循環。 */
 export const EGG_HATCH_SPRITE = "/expenses/egg-hatch.png";
 
+/** 動作狀態的精靈圖。排法跟其他精靈圖一樣（7 欄 × 3 列），放進 public/expenses 之後
+ *  在 PET_ITEMS 加一行就會出現在商店裡。 */
+export const petStateSprite = (slug: string) => `/expenses/pet-state-${slug}.png`;
+
 /** 幾級孵化：到這一級之前角色一律是蛋，其他造型穿不上（但可以先買）。 */
 export const PET_HATCH_LEVEL = 10;
 
@@ -49,6 +53,9 @@ export interface PetItem {
   /** 服裝「吃東西」那一輪要播的精靈圖。蛋有自己的一張，孵化後的造型目前共用
    *  intj-eating.png（還沒有各造型的吃東西圖）。 */
   eating?: string;
+  /** 「狀態」裡可以在背包複選、在養成頁隨機演出的那一種（例如跳舞、睡覺）。
+   *  沒標的狀態（孵化）是純紀念、點了只重播一次，不能選起來。 */
+  action?: boolean;
   /** 服裝要幾級才能穿。蛋沒有限制（它就是出生造型），其他造型要孵化（Lv.PET_HATCH_LEVEL）
    *  之後才穿得上——沒孵化前角色是一顆蛋，穿什麼都看不出來。
    *  可以先買起來放，只是換上去時會被擋（前後端都擋，見 pet.server.ts 的 buyWearable）。 */
@@ -88,7 +95,12 @@ export const PET_ITEMS: PetItem[] = [
   { id: "outfit-gamingroom", name: "電玩連帽衣", kind: "服裝", price: 140, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "手把握著就不想放下", image: petModelSprite("gamingroom") },
   { id: "outfit-dessertcafe", name: "甜點圍裙", kind: "服裝", price: 160, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "今天換你站在櫃檯裡", image: petModelSprite("dessertcafe") },
   { id: "outfit-beach", name: "海灘花襯衫", kind: "服裝", price: 200, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "存到一筆錢的獎勵", image: petModelSprite("beach") },
-  // 狀態：不賣、不穿，Lv.PET_HATCH_LEVEL 之後在背包裡解鎖，點了重播一次。
+  // 狀態分兩種：
+  //  ・紀念（price 0、沒有 action）：不賣、不選，Lv.PET_HATCH_LEVEL 之後在背包裡解鎖，
+  //    點了在預覽區重播一次。目前只有孵化。
+  //  ・動作（price > 0、action: true）：在商店買、在背包複選，養成頁的角色會從勾起來的
+  //    那幾個裡隨機挑一個演。圖還在畫，畫好之後在這裡加一行就會自己出現在商店跟背包
+  //    （命名照 petStateSprite：pet-state-<slug>.png，一樣是 7 欄 × 3 列）。
   { id: "state-hatch", name: "孵化", kind: "狀態", price: 0, minLevel: PET_HATCH_LEVEL, desc: "破殼而出的那一刻", image: EGG_HATCH_SPRITE },
   // 背景就是商店圖本身（pet-bg-*.png，900×1600 的直式房間圖），不再用 CSS 漸層代替，
   // 所以 id 要跟檔名對得起來：bg-laboratory → pet-bg-laboratory.png。角色是去背的 PNG，
@@ -133,6 +145,9 @@ export function petOutfitSprite(id: string, mood: "idle" | "eating" | "hatching"
   return mood === "eating" ? (item.eating ?? HATCHED_EATING_SPRITE) : item.image;
 }
 
+/** 商店賣的狀態（動作狀態）。孵化那種紀念狀態不賣，所以不在這裡。 */
+export const PET_ACTION_STATES = () => PET_ITEMS.filter((i) => i.kind === "狀態" && i.action);
+
 /** 這個品項這個等級解鎖了嗎（服裝能不能穿、狀態能不能看）。 */
 export function outfitUnlocked(item: PetItem, level: number): boolean {
   return level >= (item.minLevel ?? 1);
@@ -171,9 +186,9 @@ export function petBackground(id: string, position = "center"): string {
 export function petItemThumb(item: PetItem): string | null {
   if (item.kind === "背景") return petBackground(item.id);
   if (item.kind === "服裝") return spriteFrame(item.image, 0, 0);
-  // 狀態取第 2 列第 4 格——孵化動畫的第一格跟最後一格分別只是「一顆蛋」跟「站好的角色」，
-  // 跟服裝格子裡的圖長得一樣；中間那格正在破殼，一看就知道這格講的是孵化。
-  if (item.kind === "狀態") return spriteFrame(item.image, 3, 1);
+  // 孵化取第 2 列第 4 格（正在破殼那一格）——它的第一格跟最後一格分別只是一顆蛋跟站好的
+  // 角色，跟服裝格子裡的圖長得一樣。動作狀態就取第一格（動作從那一格開始）。
+  if (item.kind === "狀態") return item.action ? spriteFrame(item.image, 0, 0) : spriteFrame(item.image, 3, 1);
   return null;
 }
 
@@ -295,30 +310,25 @@ export function signinStreakDay(claimedKeys: Set<string>, today: string): number
 /**
  * 算出「這次結算應該發哪些還沒發過的獎勵」。
  *
- * 兩種來源（第三種「每記一筆」不走這裡——它要數的是筆數不是日期，用計數器處理，
- * 見 pet.server.ts 的 settlePetRewards）：
- *  - 每日簽到：每天打開記帳本就算簽到，連續天數愈長那天拿得愈多（見 signinCoins）
- *  - 上個月每個有編預算的分類都沒超支（每個月一次）
+ * 這裡只處理「打開記帳本就該自動結算」的那一種：上個月每個有編預算的分類都沒超支
+ * （每個月一次）。另外兩種各有自己的路——「每記一筆」要數筆數不是日期，用計數器處理
+ * （見 pet.server.ts 的 settlePetRewards）；「每日簽到」要使用者自己按按鈕
+ * （見 pet.server.ts 的 signInToday）。
  *
  * budgetKeptMonth 傳 null 代表「上個月沒有編任何預算」或「有超支」，就不發這筆。
  */
 export function pendingRewards({
-  today,
   budgetKeptMonth,
   claimedKeys,
 }: {
-  today: string;
   budgetKeptMonth: string | null;
   claimedKeys: Set<string>;
 }): PetReward[] {
   const rewards: PetReward[] = [];
 
-  const streakDay = signinStreakDay(claimedKeys, today);
-  rewards.push({
-    key: signinKey(today),
-    coins: signinCoins(streakDay),
-    label: streakDay > 1 ? `連續簽到第 ${streakDay} 天` : "今日簽到",
-  });
+  // 簽到不在這裡發：它改成要自己按「今日簽到」那顆按鈕（見 pet.server.ts 的 signInToday）。
+  // 本來是「打開記帳本就自動算你簽到」，但那樣簽到彈窗裡那顆按鈕永遠是已簽到的狀態，
+  // 使用者沒有「今天我來簽個到」這個動作可做，連續天數也只是被動長出來的數字。
 
   if (budgetKeptMonth) {
     rewards.push({ key: `budget:${budgetKeptMonth}`, coins: BUDGET_KEPT_COINS, label: `${budgetKeptMonth} 沒有超支` });

@@ -6,9 +6,8 @@ import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { IconButton } from "./icon-button";
 import { Button, SegmentedControl } from "./button";
 import { IconImg } from "./icon-img";
-import { PetSprite } from "./pet-sprite";
 import { text } from "./theme";
-import { PET_ITEMS, PET_HATCH_LEVEL, effectiveOutfitId, outfitUnlocked, petBackground, petItemById, petItemThumb, type PetItem, type PetItemKind } from "@/lib/expenses/pet";
+import { PET_ITEMS, PET_HATCH_LEVEL, effectiveOutfitId, outfitUnlocked, petItemById, petItemThumb, type PetItem, type PetItemKind } from "@/lib/expenses/pet";
 
 interface ShopPetState {
   coins: number;
@@ -16,6 +15,7 @@ interface ShopPetState {
   ownedOutfitIds: string[];
   backgroundId: string;
   ownedBackgroundIds: string[];
+  ownedStateIds: string[];
   foodCounts: Record<string, number>;
 }
 
@@ -25,6 +25,8 @@ interface ShopPetState {
  *  免費的那一件一律算已擁有，跟後端 ownedList() 同一套規則——兩邊判斷不一致的話，
  *  畫面會顯示「可購買」但送出去被擋下來。 */
 function wearableState(item: PetItem, pet: ShopPetState, level: number): { owned: boolean; equipped: boolean } | null {
+  // 狀態買一次就永久擁有，但它是複選的、沒有「正在使用」這回事（勾選在背包裡做）。
+  if (item.kind === "狀態") return { owned: pet.ownedStateIds.includes(item.id), equipped: false };
   if (item.kind === "服裝") {
     // equipped 比的是畫面上實際穿著的那套（等級不夠時是蛋），理由同 pet-bag-modal 的 ownedState。
     return { owned: item.price === 0 || pet.ownedOutfitIds.includes(item.id), equipped: effectiveOutfitId(pet.outfitId, level) === item.id };
@@ -70,7 +72,8 @@ export function PetShopModal({
   // 直接打數字用的小鍵盤彈窗——不用原生 <input type="number">：它在手機上會跳出系統鍵盤，
   // 跟記帳本其他輸入金額的地方（新增交易、存入、對帳）用的自製鍵盤長得完全不一樣。
   const [qtyKeypadOpen, setQtyKeypadOpen] = useState(false);
-  const items = PET_ITEMS.filter((i) => i.kind === kind);
+  // 狀態只賣「動作狀態」：孵化那種紀念狀態是等級解鎖的，不賣（見 lib/expenses/pet.ts）。
+  const items = PET_ITEMS.filter((i) => i.kind === kind && (i.kind !== "狀態" || i.action));
   const selectedItem = selected ? petItemById(selected) : undefined;
   const selectedThumb = selectedItem ? petItemThumb(selectedItem) : null;
   const isFood = selectedItem?.kind === "食物";
@@ -146,12 +149,6 @@ export function PetShopModal({
         )
       }
     >
-      {/* 跟養成頁的場地一樣是固定高度、角色置中，只是矮一點——彈窗裡還要放頁籤跟
-          商品格子，預覽佔太高的話下面就只剩一點點位置。 */}
-      <div className="grid h-36 w-full place-items-center rounded-2xl p-3" style={{ background: petBackground(pet.backgroundId) }}>
-        <PetSprite mood="idle" outfitId={effectiveOutfitId(pet.outfitId, level)} size={96} />
-      </div>
-
       {message && <div className="rounded-2xl bg-[#F3EFFC] px-4 py-2.5 text-center text-xs text-[#4A3B7C]">{message}</div>}
 
       <div className="flex items-center justify-between">
@@ -165,6 +162,7 @@ export function PetShopModal({
             { value: "食物", label: "食物" },
             { value: "服裝", label: "服裝" },
             { value: "背景", label: "背景" },
+            { value: "狀態", label: "狀態" },
           ]}
         />
         <span className="text-sm font-semibold tabular-nums text-[#6F5FD6]">⭐ {pet.coins}</span>
@@ -172,11 +170,16 @@ export function PetShopModal({
 
       {/* 食物三欄（圖小、只要看得出是哪一種），服裝跟背景兩欄——它們的縮圖是整張場景圖
           跟整個角色，裁進三欄的小格子裡看不出差別（跟背包同一個理由）。 */}
-      <div className={`grid gap-3 ${kind === "食物" ? "grid-cols-3" : "grid-cols-2"}`}>
-        {items.map((item) => (
-          <ShopTile key={item.id} item={item} pet={pet} level={level} selected={item.id === selected} onClick={() => handleTileClick(item)} />
-        ))}
-      </div>
+      {items.length === 0 ? (
+        // 目前只有狀態會是空的：圖還在畫，先讓這一頁存在，使用者知道之後會有東西。
+        <p className={text.muted}>新的{kind}還在畫，之後會出現在這裡。</p>
+      ) : (
+        <div className={`grid gap-3 ${kind === "食物" ? "grid-cols-3" : "grid-cols-2"}`}>
+          {items.map((item) => (
+            <ShopTile key={item.id} item={item} pet={pet} level={level} selected={item.id === selected} onClick={() => handleTileClick(item)} />
+          ))}
+        </div>
+      )}
 
       {/* key 綁目前數量：彈窗是常駐掛著、只靠 open 切換顯示的，不換 key 的話裡面的
           useState 只會在第一次掛載時初始化，第二次打開看到的還是上一次的數字。 */}
@@ -277,7 +280,9 @@ function ShopTile({
         {count > 0 && <span className="tabular-nums"> ×{count}</span>}
       </span>
       <span className="text-[11px] font-medium text-[#9C94C4]">
-        {owned && locked
+        {item.kind === "狀態" && owned
+          ? "可在背包勾選"
+          : owned && locked
           ? `Lv.${PET_HATCH_LEVEL} 解鎖`
           : equipped
             ? item.kind === "背景"

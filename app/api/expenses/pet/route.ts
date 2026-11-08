@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { requireTool } from "@/lib/auth";
-import { buyFood, buyWearable, equipWearable, feedPet, settlePetRewards } from "@/lib/expenses/pet.server";
+import { buyFood, buyWearable, equipWearable, feedPet, settlePetRewards, signInToday, toggleState } from "@/lib/expenses/pet.server";
 import { petItemById } from "@/lib/expenses/pet";
 
 /** GET 會順便結算一次獎勵——養成頁本身就是使用者會回來看「我賺到幾顆星星幣」的地方，
@@ -41,10 +41,21 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
   const action = body?.action;
+  const userId = new ObjectId(user.id);
+
+  // 簽到沒有品項，只有「今天」——日期由前端傳，伺服器時區不一定跟使用者同一個（跟 GET
+  // 同一個理由）。
+  if (action === "signin") {
+    const today = typeof body?.today === "string" ? body.today : "";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) return NextResponse.json({ error: "today 格式要是 YYYY-MM-DD" }, { status: 400 });
+    const result = await signInToday(userId, today);
+    if ("error" in result) return NextResponse.json(result, { status: 409 });
+    return NextResponse.json({ pet: result });
+  }
+
   const itemId = typeof body?.itemId === "string" ? body.itemId : "";
   if (!itemId) return NextResponse.json({ error: "缺少 itemId" }, { status: 400 });
 
-  const userId = new ObjectId(user.id);
   // 食物可以一次買好幾份（商店的數量選擇器）。上限 99 是防呆，不是遊戲規則——沒有上限的話
   // 一個打錯的數字就會把星星幣全部花光。服裝／背景本來就只能有一份，忽略 count。
   const count = Math.min(99, Math.max(1, Math.floor(Number(body?.count) || 1)));
@@ -60,7 +71,9 @@ export async function POST(request: Request) {
           : await buyWearable(userId, itemId)
         : action === "equip"
           ? await equipWearable(userId, itemId)
-          : { error: "action 只能是 feed、buy 或 equip" };
+          : action === "toggle"
+            ? await toggleState(userId, itemId)
+            : { error: "action 只能是 signin、feed、buy、equip 或 toggle" };
 
   if ("error" in result) return NextResponse.json(result, { status: 409 });
   return NextResponse.json({ pet: result });
