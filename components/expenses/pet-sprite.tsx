@@ -37,7 +37,12 @@ const FRAME_MS = 140;
 /** 吃東西的動畫跑完一輪要多久——餵食後呼叫端用這個時間把心情切回 idle。 */
 export const PET_EATING_MS = FRAMES * FRAME_MS;
 
-export type PetMood = "idle" | "eating";
+/** 孵化動畫跑完一輪要多久。演完之後角色就是新造型的待機了（最後一格畫的正是那個姿勢）。 */
+export const PET_HATCHING_MS = FRAMES * FRAME_MS;
+
+/** hatching 是「演一次就結束」的那段孵化動畫，不像 idle 會一直循環——呼叫端自己在
+ *  PET_HATCHING_MS 之後把心情切回 idle（見 pet-view.tsx）。 */
+export type PetMood = "idle" | "eating" | "hatching";
 
 /** 背景位置：第 col 欄、第 row 列。N 欄的話每一欄落在 col/(N-1) 的百分比上。 */
 function framePosition(col: number, row: number): string {

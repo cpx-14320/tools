@@ -1,6 +1,6 @@
 "use client";
 
-import { InlineIcon } from "./icon-avatar";
+import { PickerIcon } from "./icon-avatar";
 import { Field, RequiredMark } from "./modal";
 import { text, unselectedOption } from "./theme";
 import { ACCOUNT_ICON_OPTIONS, EXPENSE_ICON_OPTIONS, INCOME_ICON_OPTIONS, ICON_OTHER, type IconOption } from "@/lib/expenses/presets";
@@ -51,9 +51,9 @@ function IconPicker({
             aria-pressed={value === option.path}
             className={`flex justify-center transition-opacity ${value === option.path ? "" : unselectedOption}`}
           >
-            {/* 要 block：InlineIcon 是 <span>，行內元素吃不到寬高，不加的話整排會是空的。
-                w-full + aspect-square：圖跟著欄寬縮放，六欄在窄螢幕上才不會擠爆。 */}
-            <InlineIcon icon={option.path} className="block aspect-square w-full max-w-10" />
+            {/* 尺寸收在 PickerIcon 裡（跟著欄寬縮放的正方形，見 icon-avatar.tsx）——
+                彈窗挑圖跟清單列是兩組不同的尺寸規則，不共用同一個元件。 */}
+            <PickerIcon icon={option.path} />
           </button>
         ))}
       </div>

@@ -26,7 +26,7 @@ import { EmptyListCard, ListCard } from "./list-row";
  *  的話資料回來那一刻畫面會跳一下，比直接寫「載入中…」還糟。所以每個元件都要求呼叫端
  *  傳 `count`，而那個數字應該來自 skeleton-count.ts 記住的「上次實際筆數」。
  *
- *  尺寸刻意對齊 list-row.tsx：ListRow 是 `px-4 py-3.5` ＋ 36px 的 IconAvatar(sm)，
+ *  尺寸刻意對齊 list-row.tsx：ListRow 是 `px-4 py-3.5` ＋ 40px 的 IconAvatar，
  *  ListProgressRow 多一條進度條，所以骨架也照這個排。 */
 
 const SKELETON_BG = "bg-[#EDE6FB]";
@@ -39,7 +39,7 @@ export function SkeletonBar({ width, height = 12, className = "" }: { width: num
 /** ListCard 裡的一列：左邊圖示、中間名稱、右邊金額。
  *
  *  尺寸逐項對齊真的那一列，不是「差不多就好」——
- *  圖示 size-10（IconAvatar size="sm"，不是 size-9）、名稱那一行 h-5（text-sm 的行高
+ *  圖示 size-10（跟 IconAvatar 一樣，不是 size-9）、名稱那一行 h-5（text-sm 的行高
  *  20px）、進度條那一行 h-4（旁邊的百分比是 text-xs，行高 16px，決定這一行的高度的是
  *  文字不是那條 8px 的 bar）。差幾 px 乘上五六列就是肉眼看得到的一跳。 */
 function RowSkeleton({ progress }: { progress: boolean }) {

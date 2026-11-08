@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardBody } from "../card";
-import { IconImg } from "../icon-img";
+import { Switch } from "../button";
+import { IconAvatar } from "../icon-avatar";
 import { ICON_PATHS } from "../icon-paths";
 import { ListCard } from "../list-row";
 import { text } from "../theme";
@@ -59,21 +59,19 @@ export function AiSettingsSection({
   return (
     <div>
       <p className={`mb-2 px-1 ${text.label}`}>AI 記帳</p>
-      <Card>
-        <CardBody className="p-0">
-          <label className="flex items-center gap-3 px-4 py-3.5">
-            {/* 圖示的尺寸跟畫法比照上面那幾組功能入口（40px、不墊底色方塊，圖本身是去背的）。 */}
-            <IconImg src={ICON_PATHS.settingAi} alt="AI 記帳" size={36} background={false} />
-            <span className="min-w-0 flex-1">
-              <span className={`block ${text.body}`}>顯示 AI 記帳入口</span>
-              <span className={`block ${text.muted}`}>打開後，明細與首頁右下角會多一顆按鈕，可以打一句話自動拆成好幾筆</span>
-            </span>
-            {/* 原生 checkbox 而不是自製開關：這一列就一個是非題，自己刻一顆滑動開關只是
-                多一份要維護的互動，鍵盤與讀螢幕軟體還不一定吃得到。 */}
-            <input type="checkbox" checked={enabled} onChange={(e) => toggle(e.target.checked)} className="size-5 shrink-0 accent-[#6F5ED4]" />
-          </label>
-        </CardBody>
-      </Card>
+      {/* 整列的排版跟上面那幾組功能入口一模一樣（ListCard ＋ 36px 圖示＋標題／說明），
+          差別只在最右邊：那幾組是「點進去」的 ›，這一列是「開或關」的滑動開關。
+          整列都是 <label>，點文字也能切換。 */}
+      <ListCard>
+        <label className="flex items-center gap-3 px-4 py-3.5">
+          <IconAvatar icon={ICON_PATHS.settingAi} plain />
+          <span className="min-w-0 flex-1">
+            <span className={`block ${text.body}`}>顯示 AI 記帳入口</span>
+            <span className={`block ${text.muted}`}>打開後，明細與首頁右下角會多一顆按鈕，可以打一句話自動拆成好幾筆</span>
+          </span>
+          <Switch checked={enabled} onChange={toggle} label="顯示 AI 記帳入口" />
+        </label>
+      </ListCard>
 
       {enabled && (
         <div className="mt-2">

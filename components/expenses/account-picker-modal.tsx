@@ -74,7 +74,7 @@ export function AccountPickerModal({
           selected ? "border-[#6F5FD6] bg-[#F3EFFC]" : "border-[#ECE4FA] bg-white"
         }`}
       >
-        <IconAvatar icon={type?.icon ?? "❓"} size="sm" />
+        <IconAvatar icon={type?.icon ?? "❓"} />
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-medium text-[#4A3B7C]">{account.name}</span>
           {showBalance && (

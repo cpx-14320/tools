@@ -35,7 +35,7 @@ export function ListProgressRow({
   const clampedPct = Math.min(100, Math.max(pct, 0));
   return (
     <>
-      <IconAvatar icon={icon} size="sm" className={iconClassName} />
+      <IconAvatar icon={icon} className={iconClassName} />
       <div className="min-w-0 flex-1">
         {/* name 跟 amount 同一列並排——name 要有 min-w-0 才能在 flex 裡被截斷，不然名稱
             一長（例如帳戶名稱）就會把這一列撐開或擠成兩行，不會乖乖顯示「…」省略。 */}

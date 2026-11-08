@@ -20,7 +20,10 @@ export function ExpensesMobileShell({ children }: { children: ReactNode }) {
   const fullBleed = usePathname() === "/tools/expenses/pet";
 
   return (
-    <div className="flex justify-center bg-[#EFE9FB] px-0 py-0 sm:px-4 sm:py-6">
+    // min-h-dvh：這一層是整個視窗的底色。它原本的高度只等於裡面那張卡（手機框）的高度，
+    // 視窗比卡片高的時候（寬螢幕、或把瀏覽器拉高）卡片下方就露出 body 的白色，看起來像
+    // 淡紫色背景只鋪到一半。卡片本身仍然是 h-dvh／sm:h-[850px]，不受這個下限影響。
+    <div className="flex min-h-dvh justify-center bg-[#EFE9FB] px-0 py-0 sm:px-4 sm:py-6">
       <div
         // h-dvh（不是 min-h-screen）：卡片本身要有固定、確定的高度，main 才能用
         // overflow-y-auto 在卡片「內部」自己捲動，不會被內容撐到比螢幕還高、連帶讓

@@ -54,7 +54,7 @@ export function ListRow({
   chevron?: boolean;
   /** 上一層底下的子項目（資產總表「帳戶類型」底下的那幾個帳戶）：淡紫底＋往右縮排。
    *  子項目本來是裝在自己一張卡裡才看得出層級，整段併成一張卡之後靠這兩個記號區分。
-   *  68px ＝ px-4 的 16 ＋ IconAvatar size="sm" 的 40 ＋ gap-3 的 12，剛好讓子項目的
+   *  68px ＝ px-4 的 16 ＋ IconAvatar 的 40 ＋ gap-3 的 12，剛好讓子項目的
    *  名稱對齊上一層的名稱，而不是對齊上一層的圖示。 */
   nested?: boolean;
   href?: string;
@@ -68,7 +68,7 @@ export function ListRow({
   const content = (
     <>
       {leading}
-      {icon !== undefined && <IconAvatar icon={icon} size="sm" className={iconClassName} />}
+      {icon !== undefined && <IconAvatar icon={icon} className={iconClassName} />}
       <span className={`min-w-0 flex-1 truncate ${text.body}`}>{name}</span>
       {right !== undefined && <span className="shrink-0">{right}</span>}
       {chevron && (

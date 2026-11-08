@@ -25,7 +25,7 @@ export function TransactionRowLabel({
 }) {
   return (
     <>
-      <IconAvatar icon={icon} size="sm" className={iconClassName} />
+      <IconAvatar icon={icon} className={iconClassName} />
       <div className="min-w-0 flex-1">
         <p className={`truncate ${text.body}`}>{title}</p>
         <p className={`truncate ${text.muted}`}>{subtitle}</p>

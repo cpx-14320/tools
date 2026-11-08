@@ -7,7 +7,10 @@ import { TransitMobileNav } from "./transit-mobile-nav";
  *  寬度、圓角＋邊框，看起來像個小手機框，不會因為視窗變寬就整頁撐滿。 */
 export function TransitMobileShell({ children }: { children: ReactNode }) {
   return (
-    <div className="flex justify-center bg-[#EFE9FB] px-0 py-0 sm:px-4 sm:py-6">
+    // min-h-dvh：這一層是整個視窗的底色。它原本的高度只等於裡面那張卡（手機框）的高度，
+    // 視窗比卡片高的時候（寬螢幕、或把瀏覽器拉高）卡片下方就露出 body 的白色，看起來像
+    // 淡紫色背景只鋪到一半。卡片本身仍然是 h-dvh／sm:h-[850px]，不受這個下限影響。
+    <div className="flex min-h-dvh justify-center bg-[#EFE9FB] px-0 py-0 sm:px-4 sm:py-6">
       <div
         // h-dvh（不是 h-screen／100vh）是關鍵：手機瀏覽器網址列、Android 系統導覽列
         // 顯示或收起時，視窗可視高度會即時改變，100vh 在部分手機瀏覽器是用「UI 收起

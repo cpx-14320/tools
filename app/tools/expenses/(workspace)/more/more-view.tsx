@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
-import { IconImg } from "@/components/expenses/icon-img";
+import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ICON_PATHS } from "@/components/expenses/icon-paths";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { Badge } from "@/components/expenses/button";
@@ -119,9 +119,9 @@ export function MoreView({
             <ListCard>
               {group.items.map((item) => (
                 <Link key={item.href} href={item.href} className="flex items-center gap-3 px-4 py-3.5 active:bg-[#F3EFFC]">
-                  {/* 不帶底色方塊，跟搭乘車設定頁「其他小工具」那排一樣，圖直接放在白底上
-                      （圖本身是去背的）。圖檔還沒放進 public/expenses 之前這裡會是空白。 */}
-                  <IconImg src={item.icon} alt={item.label} size={36} background={false} />
+                  {/* 跟明細、存錢目標那些清單列用同一個元件（尺寸統一收在 IconAvatar 裡），
+                      只是 plain：不墊底色方塊，圖直接放在白底上（圖本身是去背的）。 */}
+                  <IconAvatar icon={item.icon} plain />
                   <span className="min-w-0 flex-1">
                     <span className={`block ${text.body}`}>{item.label}</span>
                     <span className={`block ${text.muted}`}>{item.desc}</span>
@@ -152,11 +152,8 @@ export function MoreView({
             <ListCard>
               {otherTools.map((tool) => (
                 <Link key={tool.toolId} href={tool.href} className="flex items-center gap-3 px-4 py-3.5 active:bg-[#F3EFFC]">
-                  {tool.iconImage ? (
-                    <IconImg src={tool.iconImage} alt={tool.name} size={36} background={false} />
-                  ) : (
-                    <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#F3EFFC] text-base">{tool.icon}</span>
-                  )}
+                  {/* 有真圖就不墊底色方塊，只有表情符號的工具才需要一塊底色撐住版面。 */}
+                  <IconAvatar icon={tool.iconImage || tool.icon} plain={!!tool.iconImage} />
                   <span className={`min-w-0 flex-1 ${text.body}`}>{tool.name}</span>
                   <span aria-hidden className="text-[#C7BFE6]">
                     ›

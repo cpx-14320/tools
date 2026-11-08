@@ -8,7 +8,9 @@
 //   淨資產 → 只拿來算「理財段位」，純展示、不能換東西
 // 這樣淨資產還是有參與感，但不會變成懲罰。
 
-export type PetItemKind = "食物" | "服裝" | "背景";
+/** 「狀態」是看的、不是穿的：目前只有孵化那一段動畫，Lv.10 之後自動解鎖（不用買），
+ *  在背包裡點了會在預覽區重播一次。 */
+export type PetItemKind = "食物" | "服裝" | "背景" | "狀態";
 
 /** 商店圖片路徑——跟 presets.ts 的 expenseCategoryIcon 同一套「用途前綴＋英文名」規則。
  *  id 本身已經是英文 slug（food-cake、bg-beach…），直接接在 `pet-` 後面就好：
@@ -29,6 +31,10 @@ const EGG_EATING_SPRITE = "/expenses/egg-eating.png";
 
 /** 孵化後的造型共用的「吃東西」圖——還沒有各造型自己的那一張。 */
 const HATCHED_EATING_SPRITE = "/expenses/intj-eating.png";
+
+/** 孵化那一段動畫：蛋裂開、角色鑽出來、最後站成 intj-model-laboratory 的待機姿勢。
+ *  排法跟其他精靈圖一樣是 7 欄 × 3 列，但它是**演一次就結束**的，不像待機那樣循環。 */
+export const EGG_HATCH_SPRITE = "/expenses/egg-hatch.png";
 
 /** 幾級孵化：到這一級之前角色一律是蛋，其他造型穿不上（但可以先買）。 */
 export const PET_HATCH_LEVEL = 10;
@@ -73,6 +79,8 @@ export const PET_ITEMS: PetItem[] = [
   { id: "outfit-gamingroom", name: "電玩連帽衣", kind: "服裝", price: 140, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "手把握著就不想放下", image: petModelSprite("gamingroom") },
   { id: "outfit-dessertcafe", name: "甜點圍裙", kind: "服裝", price: 160, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "今天換你站在櫃檯裡", image: petModelSprite("dessertcafe") },
   { id: "outfit-beach", name: "海灘花襯衫", kind: "服裝", price: 200, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "存到一筆錢的獎勵", image: petModelSprite("beach") },
+  // 狀態：不賣、不穿，Lv.PET_HATCH_LEVEL 之後在背包裡解鎖，點了重播一次。
+  { id: "state-hatch", name: "孵化", kind: "狀態", price: 0, minLevel: PET_HATCH_LEVEL, desc: "破殼而出的那一刻", image: EGG_HATCH_SPRITE },
   // 背景就是商店圖本身（pet-bg-*.png，900×1600 的直式房間圖），不再用 CSS 漸層代替，
   // 所以 id 要跟檔名對得起來：bg-laboratory → pet-bg-laboratory.png。角色是去背的 PNG，
   // 直接疊在圖上就好，背景深一點也不會把角色一起乘暗。
@@ -108,14 +116,15 @@ export const SPRITE_ROWS = 3;
  *  蛋是每個人都有的出生造型，退到它一定不會變成「穿著一件不該有的衣服」。 */
 export const FALLBACK_MODEL_SPRITE = EGG_IDLE_SPRITE;
 
-/** 角色身上那套造型的精靈圖（待機／吃東西各一張）。 */
-export function petOutfitSprite(id: string, mood: "idle" | "eating" = "idle"): string {
+/** 角色身上那套造型的精靈圖。孵化那一段不看造型——它本來就是「從蛋變成角色」的過程。 */
+export function petOutfitSprite(id: string, mood: "idle" | "eating" | "hatching" = "idle"): string {
+  if (mood === "hatching") return EGG_HATCH_SPRITE;
   const item = petItemById(id);
   if (item?.kind !== "服裝") return mood === "eating" ? HATCHED_EATING_SPRITE : FALLBACK_MODEL_SPRITE;
   return mood === "eating" ? (item.eating ?? HATCHED_EATING_SPRITE) : item.image;
 }
 
-/** 這套造型這個等級穿得上嗎。 */
+/** 這個品項這個等級解鎖了嗎（服裝能不能穿、狀態能不能看）。 */
 export function outfitUnlocked(item: PetItem, level: number): boolean {
   return level >= (item.minLevel ?? 1);
 }
@@ -132,12 +141,16 @@ export function effectiveOutfitId(id: string, level: number): string {
 
 /** 角色場地（跟商店／背包裡的背景縮圖）要用的 CSS background 值。
  *
- *  圖是 9:16 的直式圖、場地跟縮圖都比它矮，所以用 cover 置中裁切——contain 會在兩側
- *  留白，房間圖看起來就像一張貼紙而不是場景。 */
-export function petBackground(id: string): string {
+ *  圖是 9:16 的直式圖、場地跟縮圖都比它矮，所以用 cover 裁切——contain 會在兩側留白，
+ *  房間圖看起來就像一張貼紙而不是場景。
+ *
+ *  position 決定裁到圖的哪一段：預設 center（養成頁的場地本來就是 9:16，幾乎沒裁到）。
+ *  框愈扁、能看到的那條愈窄，置中會切在房間中間偏下的地板上，這時候呼叫端自己往上挪
+ *  一點（例如背包預覽的 "center 42%"）才看得到角色站的位置跟後面的場景。 */
+export function petBackground(id: string, position = "center"): string {
   const item = petItemById(id);
   const src = item?.kind === "背景" ? item.image : FALLBACK_BACKGROUND_IMAGE;
-  return `url("${src}") center / cover no-repeat`;
+  return `url("${src}") ${position} / cover no-repeat`;
 }
 
 /** 商店／背包格子裡的縮圖要用的 CSS background 值；食物回 null——食物有自己的去背小圖，
@@ -148,8 +161,18 @@ export function petBackground(id: string): string {
  *  位置與大小——服裝放大成 700% × 300% 再對齊左上角，看到的就只有第一格。 */
 export function petItemThumb(item: PetItem): string | null {
   if (item.kind === "背景") return petBackground(item.id);
-  if (item.kind === "服裝") return `url("${item.image}") 0% 0% / ${SPRITE_COLS * 100}% ${SPRITE_ROWS * 100}% no-repeat`;
+  if (item.kind === "服裝") return spriteFrame(item.image, 0, 0);
+  // 狀態取第 2 列第 4 格——孵化動畫的第一格跟最後一格分別只是「一顆蛋」跟「站好的角色」，
+  // 跟服裝格子裡的圖長得一樣；中間那格正在破殼，一看就知道這格講的是孵化。
+  if (item.kind === "狀態") return spriteFrame(item.image, 3, 1);
   return null;
+}
+
+/** 從 7 欄 × 3 列的精靈圖裡裁出第 col 欄、第 row 列那一格的 CSS background。 */
+function spriteFrame(src: string, col: number, row: number): string {
+  const x = (col / (SPRITE_COLS - 1)) * 100;
+  const y = (row / (SPRITE_ROWS - 1)) * 100;
+  return `url("${src}") ${x}% ${y}% / ${SPRITE_COLS * 100}% ${SPRITE_ROWS * 100}% no-repeat`;
 }
 
 // ── 等級 ─────────────────────────────────────────────────────────────────────

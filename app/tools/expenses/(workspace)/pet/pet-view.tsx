@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Modal } from "@/components/expenses/modal";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
 import { ProgressBar } from "@/components/expenses/progress-bar";
-import { PetSprite, PET_EATING_MS, type PetMood } from "@/components/expenses/pet-sprite";
+import { PetSprite, PET_EATING_MS, PET_HATCHING_MS, type PetMood } from "@/components/expenses/pet-sprite";
 import { PetShopModal } from "@/components/expenses/pet-shop";
 import { PetBagModal } from "@/components/expenses/pet-bag-modal";
 import { PetSigninModal } from "@/components/expenses/pet-signin-modal";
@@ -36,6 +36,8 @@ interface PetState {
   /** 今天是連續簽到的第幾天（0 ＝ 今天還沒簽到）。 */
   signinStreak: number;
   justEarned: { key: string; coins: number; label: string }[];
+  /** 這一次進頁面剛好跨過孵化等級——先播一次孵化動畫再回到待機。 */
+  justHatched: boolean;
 }
 
 /** 疊在場地下緣、餵食鍵底下那排入口（簽到／商店／衣服／背景）的其中一顆。
@@ -86,7 +88,9 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
     setBagKind(kind);
     setBagOpen(true);
   };
-  const [mood, setMood] = useState<PetMood>("idle");
+  // 剛孵化的那一次先演破殼動畫（結算時伺服器已經把造型換成孵化後的預設套裝了，動畫的
+  // 最後一格正好就是那個姿勢，所以演完接回待機不會跳）。
+  const [mood, setMood] = useState<PetMood>(initialPet?.justHatched ? "hatching" : "idle");
   // 連續餵第二次時 mood 已經是 "eating"、setMood 等於沒變，下面那個計時器就不會重新
   // 計時，第二次的動畫會被第一次的計時器提早切掉。用這個每次遞增的數字當重新計時的依據。
   const [feedNonce, setFeedNonce] = useState(0);
@@ -134,11 +138,11 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
     }
   }
 
-  // 吃東西的動畫跑完一輪就回到待機。計時器掛在 mood 上而不是寫在 act() 裡：連續餵
+  // 吃東西／孵化都是演一輪就回到待機。計時器掛在 mood 上而不是寫在 act() 裡：連續餵
   // 好幾次時每次都會重新計時，不會被前一次的 setTimeout 提早切回待機。
   useEffect(() => {
-    if (mood !== "eating") return;
-    const timer = setTimeout(() => setMood("idle"), PET_EATING_MS);
+    if (mood === "idle") return;
+    const timer = setTimeout(() => setMood("idle"), mood === "hatching" ? PET_HATCHING_MS : PET_EATING_MS);
     return () => clearTimeout(timer);
   }, [mood, feedNonce]);
 

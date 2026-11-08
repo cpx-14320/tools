@@ -62,6 +62,9 @@ export interface PetStateDTO {
   signinStreak: number;
   /** 這一次結算剛發出去的獎勵，給畫面上跳提示用。 */
   justEarned: PetReward[];
+  /** 這一次結算剛好跨過孵化等級——畫面要播一次孵化動畫再回到待機（見 pet-view.tsx）。
+   *  只有真的孵化的那一次是 true，重新整理之後就不會再是了。 */
+  justHatched: boolean;
 }
 
 function collection() {
@@ -73,7 +76,7 @@ export function todayInTaipei(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" });
 }
 
-function toDTO(doc: PetDoc, justEarned: PetReward[] = [], today = todayInTaipei()): PetStateDTO {
+function toDTO(doc: PetDoc, justEarned: PetReward[] = [], today = todayInTaipei(), justHatched = false): PetStateDTO {
   const claimed = new Set(doc.claimedKeys);
   return {
     coins: doc.coins,
@@ -85,6 +88,7 @@ function toDTO(doc: PetDoc, justEarned: PetReward[] = [], today = todayInTaipei(
     foodCounts: doc.foodCounts ?? {},
     signinStreak: claimed.has(signinKey(today)) ? signinStreakDay(claimed, today) : 0,
     justEarned,
+    justHatched,
   };
 }
 
@@ -208,9 +212,9 @@ export async function settlePetRewards(userId: ObjectId, today: string): Promise
 
   if (granted.length === 0 && !hatched) return toDTO(pet);
 
-  // 重新讀一次，拿到真正寫進去的幣數（這次結算可能只發了其中幾筆）。
+  // 重新讀一次，拿到真正寫進去的幣數（這次結算可能只發了其中幾筆）跟換好的造型。
   const updated = await col.findOne({ _id: pet._id });
-  return toDTO(updated ?? pet, granted);
+  return toDTO(updated ?? pet, granted, todayInTaipei(), hatched);
 }
 
 /** 孵化那一次的自動換裝（見 settlePetRewards 裡的說明）。回傳有沒有真的換到。 */

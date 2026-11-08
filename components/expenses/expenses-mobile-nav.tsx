@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconImg } from "./icon-img";
+import { NavIcon } from "./nav-icon";
 import { ICON_PATHS } from "./icon-paths";
 
 /** `owns` 是「這個頁籤要為哪些路徑亮起來」。
@@ -36,8 +36,9 @@ const tabs = [
  *  （兩邊故意不共用元件，只是刻意對齊視覺規格，色票各自獨立維護）。外殼
  *  （ExpensesMobileShell）的卡片容器本身有 transform，fixed 子孫會以卡片為定位基準，
  *  inset-x-0 直接貼齊卡片左右邊界，理由跟搭乘車那邊一樣。
- *  圖示改走 public/expenses/ 底下的圖檔（見 icon-paths.ts），圖還沒放上去之前 IconImg
- *  會用漸層佔位，不會壞版。 */
+ *  圖示改走 public/expenses/ 底下的圖檔（見 icon-paths.ts），圖還沒放上去之前會用漸層
+ *  佔位，不會壞版。尺寸收在 NavIcon 裡（nav-icon.tsx）——導覽列的圖跟清單列的圖是兩組
+ *  各自獨立的尺寸，不要互相牽動。 */
 export function ExpensesMobileNav() {
   const pathname = usePathname();
 
@@ -54,7 +55,7 @@ export function ExpensesMobileNav() {
           const active = self || tab.owns.some((p) => pathname.startsWith(p));
           return (
             <Link key={tab.href} href={tab.href} className="flex flex-1 flex-col items-center gap-0.5 py-1 text-[11px]">
-              <IconImg src={tab.icon} alt={tab.label} size={32} background={false} className={active ? "" : "opacity-50"} />
+              <NavIcon icon={tab.icon} label={tab.label} active={active} />
               <span className={active ? "font-semibold text-[#6F5FD6]" : "text-[#B3ABD4]"}>{tab.label}</span>
             </Link>
           );

@@ -297,7 +297,7 @@ export function RecurringView({
                 const isBusy = busy.has(key);
                 return (
                   <div key={key} className="flex items-center gap-3 px-4 py-3">
-                    <IconAvatar icon={category?.icon ?? ""} size="sm" className={category ? categoryColorClass[category.color] : undefined} />
+                    <IconAvatar icon={category?.icon ?? ""} className={category ? categoryColorClass[category.color] : undefined} />
                     <div className="min-w-0 flex-1">
                       <p className={`truncate ${text.body}`}>{p.note || category?.name || "（已刪除分類）"}</p>
                       <p className={text.muted}>{formatDate(p.date)}</p>

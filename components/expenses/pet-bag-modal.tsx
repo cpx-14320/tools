@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { Modal } from "./modal";
 import { SegmentedControl } from "./button";
 import { IconImg } from "./icon-img";
-import { PetSprite } from "./pet-sprite";
+import { PetSprite, PET_HATCHING_MS, type PetMood } from "./pet-sprite";
 import { text } from "./theme";
 import { PET_ITEMS, PET_HATCH_LEVEL, effectiveOutfitId, outfitUnlocked, petBackground, petItemThumb, type PetItem, type PetItemKind } from "@/lib/expenses/pet";
 
@@ -24,6 +26,8 @@ function ownedState(item: PetItem, pet: BagPetState, currentOutfit: string): { o
   if (item.kind === "背景") {
     return { owned: item.price === 0 || pet.ownedBackgroundIds.includes(item.id), equipped: pet.backgroundId === item.id };
   }
+  // 狀態不用買也不會「正在使用」，它是點了重播一次的動畫，所以一律算擁有、永遠不標使用中。
+  if (item.kind === "狀態") return { owned: true, equipped: false };
   return { owned: item.price === 0 || pet.ownedOutfitIds.includes(item.id), equipped: currentOutfit === item.id };
 }
 
@@ -59,12 +63,22 @@ export function PetBagModal({
   const currentOutfit = effectiveOutfitId(pet.outfitId, level);
   const items = PET_ITEMS.filter((i) => i.kind === kind && ownedState(i, pet, currentOutfit).owned);
 
+  // 預覽區的動畫：平常是待機，點了「狀態」裡的孵化就在這裡重播一次再回到待機。
+  const [mood, setMood] = useState<PetMood>("idle");
+  useEffect(() => {
+    if (mood === "idle") return;
+    const timer = setTimeout(() => setMood("idle"), PET_HATCHING_MS);
+    return () => clearTimeout(timer);
+  }, [mood]);
+
   return (
     <Modal open={open} onClose={onClose} title="背包" fullHeight>
-      {/* 預覽跟商店那張一樣是固定高度、角色置中——換裝的結果直接在上面看得到，不用
-          關掉彈窗才知道換起來長怎樣。 */}
-      <div className="grid h-36 w-full place-items-center rounded-2xl p-3" style={{ background: petBackground(pet.backgroundId) }}>
-        <PetSprite mood="idle" outfitId={currentOutfit} size={96} />
+      {/* 預覽：16:9 的橫幅，角色 180px 置中——換裝、換背景的結果直接在上面看得到，不用
+          關掉彈窗才知道換起來長怎樣。背景圖本身是 9:16 的直式房間圖，在這個扁框裡只看得到
+          其中一條；裁切位置往上挪到 42%（不是置中）——置中會切在地板那一段，往上一點才
+          帶到房間的陳設，角色也不會看起來像站在一片空地上。 */}
+      <div className="grid aspect-[16/9] w-full place-items-center rounded-2xl p-3" style={{ background: petBackground(pet.backgroundId, "center 42%") }}>
+        <PetSprite mood={mood} outfitId={currentOutfit} size={180} />
       </div>
 
       <SegmentedControl
@@ -74,6 +88,7 @@ export function PetBagModal({
         options={[
           { value: "服裝", label: "服裝" },
           { value: "背景", label: "背景" },
+          { value: "狀態", label: "狀態" },
         ]}
       />
 
@@ -86,13 +101,19 @@ export function PetBagModal({
           {items.map((item) => {
             const { equipped } = ownedState(item, pet, currentOutfit);
             const thumb = petItemThumb(item);
-            // 等級不夠的造型留在格子裡但點不動——藏起來的話使用者會以為自己買的東西不見了。
-            const locked = item.kind === "服裝" && !outfitUnlocked(item, level);
+            // 等級不夠的造型／狀態留在格子裡但點不動——藏起來的話使用者會以為自己買的
+            // 東西不見了，而且「有這個東西、只是還沒到等級」本身就是想讓人看到的資訊。
+            const locked = item.kind !== "背景" && !outfitUnlocked(item, level);
             return (
               <button
                 key={item.id}
                 type="button"
-                onClick={() => !equipped && !locked && onEquip(item.id)}
+                // 狀態不是換上去的東西，點了只是在上面的預覽區重播一次那段動畫。
+                onClick={() => {
+                  if (locked) return;
+                  if (item.kind === "狀態") setMood("hatching");
+                  else if (!equipped) onEquip(item.id);
+                }}
                 disabled={locked}
                 className={`flex flex-col items-center gap-1.5 rounded-2xl border p-2.5 transition-colors ${
                   equipped ? "border-[#6F5FD6] bg-[#F3EFFC]" : "border-[#ECE4FA] bg-white"

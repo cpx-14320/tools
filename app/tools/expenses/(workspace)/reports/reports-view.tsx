@@ -606,7 +606,7 @@ export function ReportsView({
                     <div className={DETAIL_LIST}>
                       {selectedAssetRows.map((r) => (
                         <div key={r.id} className="flex items-center gap-3">
-                          <IconAvatar icon={r.icon} size="sm" className={r.colorClass} />
+                          <IconAvatar icon={r.icon} className={r.colorClass} />
                           <span className={`min-w-0 flex-1 truncate ${text.body}`}>{r.name}</span>
                           <span className="shrink-0 tabular-nums text-sm font-medium text-[#4A3B7C]">{formatCurrency(r.amount)}</span>
                         </div>
@@ -812,7 +812,7 @@ export function ReportsView({
                   <div className={DETAIL_LIST}>
                     {categoryRows(selectedPoint).map((r) => (
                       <div key={r.id} className="flex items-center gap-3">
-                        <IconAvatar icon={r.icon} size="sm" className={r.colorClass} />
+                        <IconAvatar icon={r.icon} className={r.colorClass} />
                         <span className={`min-w-0 flex-1 truncate ${text.body}`}>{r.name}</span>
                         <span className="shrink-0 tabular-nums text-sm font-medium text-[#4A3B7C]">{formatCurrency(r.amount)}</span>
                       </div>
@@ -832,7 +832,7 @@ export function ReportsView({
                       <div className="flex flex-col gap-3">
                         {categoryRows(selectedIncomePoint).map((r) => (
                           <div key={r.id} className="flex items-center gap-3">
-                            <IconAvatar icon={r.icon} size="sm" className={r.colorClass} />
+                            <IconAvatar icon={r.icon} className={r.colorClass} />
                             <span className={`min-w-0 flex-1 truncate ${text.body}`}>{r.name}</span>
                             <span className="shrink-0 tabular-nums text-sm font-medium text-[#2FAE82]">{formatCurrency(r.amount)}</span>
                           </div>
@@ -846,7 +846,7 @@ export function ReportsView({
                       <div className="flex flex-col gap-3">
                         {categoryRows(selectedExpensePoint).map((r) => (
                           <div key={r.id} className="flex items-center gap-3">
-                            <IconAvatar icon={r.icon} size="sm" className={r.colorClass} />
+                            <IconAvatar icon={r.icon} className={r.colorClass} />
                             <span className={`min-w-0 flex-1 truncate ${text.body}`}>{r.name}</span>
                             <span className="shrink-0 tabular-nums text-sm font-medium text-[#D1517E]">{formatCurrency(r.amount)}</span>
                           </div>

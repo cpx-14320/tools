@@ -228,3 +228,40 @@ export function PillButton({
     </button>
   );
 }
+
+/** 滑動開關。
+ *
+ *  底下是一顆真的 `<input type="checkbox">`（sr-only，只是看不到），外觀用 peer- 的狀態
+ *  畫出來——所以鍵盤（Tab／空白鍵）、讀螢幕軟體、表單語意全部照原生的來，不是用 div
+ *  自己模擬一顆開關。呼叫端把它放在 <label> 裡，整列文字就都能點。 */
+export function Switch({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  /** 給讀螢幕軟體用的名稱——開關旁邊的那行字是另一個元素，不會自動變成它的名字。 */
+  label: string;
+}) {
+  return (
+    <span className="relative inline-flex shrink-0">
+      <input
+        type="checkbox"
+        role="switch"
+        aria-label={label}
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="peer size-0 appearance-none opacity-0"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none block h-6 w-11 rounded-full bg-[#DDD5F3] transition-colors peer-checked:bg-[#6F5ED4] peer-focus-visible:ring-2 peer-focus-visible:ring-[#6F5FD6] peer-focus-visible:ring-offset-2"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-0.5 top-0.5 size-5 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5"
+      />
+    </span>
+  );
+}

@@ -75,7 +75,7 @@ export function OptionGrid({
             onClick={lead.onClick}
             className={`flex w-full flex-col items-center gap-1 transition-opacity ${lead.active ? "" : unselectedOption}`}
           >
-            <IconAvatar icon={lead.icon} size="sm" className="bg-[#F3EFFC] text-[#6F5FD6]" />
+            <IconAvatar icon={lead.icon} className="bg-[#F3EFFC] text-[#6F5FD6]" />
             <span className="line-clamp-1 w-full text-center text-[11px] font-medium text-[#6F5FD6]">{lead.name}</span>
           </button>
         </div>
@@ -91,7 +91,7 @@ export function OptionGrid({
               // 不用再另外畫一圈色環去指它（跟圖示選擇器同一組 class，見 theme.ts）。
               className={`flex w-full flex-col items-center gap-1 transition-opacity ${active ? "" : unselectedOption}`}
             >
-              <IconAvatar icon={option.icon} size="sm" className={option.colorClass ?? "bg-[#F3EFFC]"} />
+              <IconAvatar icon={option.icon} className={option.colorClass ?? "bg-[#F3EFFC]"} />
               <span className={`line-clamp-1 w-full text-center text-[11px] ${active ? "font-semibold text-[#6F5FD6]" : "font-medium text-[#4A3B7C]"}`}>
                 {option.name}
               </span>
