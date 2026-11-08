@@ -9,7 +9,7 @@
  *  批次本身就是文件邊界，整批確認／捨棄是一次更新，原始輸入也只存一份。 */
 
 /** 這一批是怎麼來的。CSV 判讀之後會用到同一套待確認流程。 */
-export type AiDraftSource = "text" | "csv";
+export type AiDraftSource = "text" | "csv" | "invoice";
 
 export type AiDraftStatus = "pending" | "committed" | "discarded";
 

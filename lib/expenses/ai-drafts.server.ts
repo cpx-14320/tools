@@ -70,6 +70,17 @@ export async function findRecentAiDraft(userId: ObjectId, inputText: string, wit
   return doc ? toDTO(doc) : null;
 }
 
+/** 不看時間、也不看狀態，只問「這段輸入以前處理過沒有」。
+ *
+ *  發票專用：同一張發票的號碼是唯一的，掃第二次就該擋下來。上面那個 findRecentAiDraft
+ *  只擋十分鐘內、還沒處理完的，對「上禮拜就記過這張了」沒有用——而重複記帳是使用者
+ *  自己很難發現的錯誤（金額對、日期對，只是多了一筆）。 */
+export async function findAiDraftByInput(userId: ObjectId, inputText: string): Promise<AiDraftDTO | null> {
+  const col = await collection();
+  const doc = await col.findOne({ userId, inputText }, { sort: { createdAt: -1 } });
+  return doc ? toDTO(doc) : null;
+}
+
 export async function getAiDraft(userId: ObjectId, id: string): Promise<AiDraftDTO | null> {
   if (!ObjectId.isValid(id)) return null;
   const col = await collection();

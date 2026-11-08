@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Modal } from "../modal";
 import { Button } from "../button";
 import { TransactionModal, type TransactionModalDraft } from "../transaction-modal";
@@ -9,6 +9,7 @@ import { useToast } from "../toast";
 import { AiDraftList } from "./ai-draft-list";
 import { useAiKey } from "./use-ai-key";
 import { useSpeechInput } from "./use-speech-input";
+import { scanInvoiceQr } from "./scan-invoice-qr";
 import type { CategoryDTO } from "@/lib/expenses/categories";
 import { unclassifiedItems, type AiDraftDTO, type AiDraftItemDTO } from "@/lib/expenses/ai-drafts";
 import type { TransactionDTO } from "@/lib/expenses/transactions";
@@ -66,6 +67,34 @@ export function AiComposeModal({
     onResult: (spoken) => setInput((prev) => (prev.trim() ? `${prev.trim()}，${spoken}` : spoken)),
     onError: showToast,
   });
+
+  // 掃發票：選完檔就直接處理，不另外做預覽畫面——使用者要的是「記好這筆帳」，
+  // 不是看自己拍的照片。
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function scanInvoice(file: File) {
+    setBusy(true);
+    setError(null);
+    const invoice = await scanInvoiceQr(file).catch(() => null);
+    if (!invoice) {
+      setBusy(false);
+      setError("這張圖裡找不到統一發票的 QR code。拍的時候讓兩個方塊都清楚入鏡，或改用上面的文字／語音輸入。");
+      return;
+    }
+    const res = await fetch("/api/expenses/ai/parse", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ invoice }),
+    }).catch(() => null);
+    const data: { draft?: AiDraftDTO; error?: string; reused?: boolean } = (await res?.json().catch(() => ({}))) ?? {};
+    setBusy(false);
+    if (!data.draft) {
+      setError(data.error ?? "發票解析失敗，再試一次");
+      return;
+    }
+    setDraft(data.draft);
+    if (data.reused) showToast("這張發票剛剛掃過了，直接沿用上一批");
+  }
 
   const unclassified = draft ? unclassifiedItems(draft) : [];
   const pending = draft?.items.filter((i) => i.state === "pending") ?? [];
@@ -188,6 +217,34 @@ export function AiComposeModal({
           <p className={`${text.faint} leading-relaxed`}>
             一次最多 20 筆。用逗號或換行分開每一筆，日期可以講「昨天」「前天」，沒講就當作今天。收入或支出會看分類自己判斷。
           </p>
+
+          {/* 掃發票：走統一發票上的 QR code，不是對照片做文字辨識——QR 裡本來就有金額跟
+              日期，是讀出來的不是認出來的，而且整段解碼都在瀏覽器裡跑完，照片不會上傳。 */}
+          <div className="flex flex-col gap-1.5 rounded-2xl border border-[#ECE4FA] bg-[#FBF9FE] px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="min-w-0">
+                <span className={`block ${text.body}`}>掃統一發票</span>
+                <span className={`block ${text.muted}`}>金額跟日期直接從發票的 QR code 讀出來</span>
+              </span>
+              <Button variant="ghost" disabled={busy} onClick={() => fileRef.current?.click()}>
+                {busy ? "讀取中…" : "選照片"}
+              </Button>
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              // capture 讓手機直接開後鏡頭拍；電腦上瀏覽器會忽略它，變成一般的選檔。
+              capture="environment"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                // 清掉 value：同一張照片連選兩次時 onChange 不會再觸發（value 沒變）。
+                e.target.value = "";
+                if (file) void scanInvoice(file);
+              }}
+            />
+          </div>
           {/* 沒金鑰不擋著不讓用——目前本來就是模擬解析。但要讓人找得到設定的地方。 */}
           <button type="button" onClick={onOpenKeyModal} className="self-start text-xs font-medium text-[#6F5FD6]">
             {hasKey ? "已設定 API Key，點這裡更換" : "目前是模擬解析 · 設定 API Key"}
