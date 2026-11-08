@@ -27,7 +27,9 @@ export function PageHeader({
   const [helpOpen, setHelpOpen] = useState(false);
 
   return (
-    <div className={`flex flex-wrap items-start justify-between gap-3 ${flush ? "" : "mb-3"}`}>
+    // 左邊只有一行標題時跟右邊的控制項垂直置中（首頁、明細、報表那種「標題＋日期膠囊」
+    // 的排法）；有 description 時左邊是兩行，改成靠上對齊，不然膠囊會掉到兩行的中間。
+    <div className={`flex flex-wrap justify-between gap-3 ${description ? "items-start" : "items-center"} ${flush ? "" : "mb-3"}`}>
       <div>
         <div className="flex items-center gap-1.5">
           <h1 className={text.pageTitle}>{title}</h1>

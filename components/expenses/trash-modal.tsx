@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Modal } from "./modal";
 import { Button } from "./button";
-import { ListCard } from "./list-row";
-import { IconAvatar } from "./icon-avatar";
+import { ListCard, ListRow } from "./list-row";
+import { SelectionDot } from "./selection-bar";
 import { categoryColorClass } from "@/lib/expenses/categories";
 import { ConfirmModal } from "./confirm-modal";
 import { text } from "./theme";
@@ -47,8 +47,19 @@ export function TrashModal({
   onRestored?: () => void;
 }) {
   const showToast = useToast();
-  const [purgeTarget, setPurgeTarget] = useState<TrashItemDTO | null>(null);
-  const [emptyOpen, setEmptyOpen] = useState(false);
+  // 勾起來的那幾項。還原跟永久刪除都靠底下那兩顆，每一列不再各掛一組按鈕——一列兩顆
+  // 小按鈕在手機上很容易按錯，而且「永久刪除」被按錯的代價是資料真的沒了。
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [purgeOpen, setPurgeOpen] = useState(false);
+
+  const chosen = items.filter((i) => selected.has(i.id));
+  const toggle = (id: string) =>
+    setSelected((set) => {
+      const next = new Set(set);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   async function post(body: Record<string, unknown>) {
     const data: { items?: TrashItemDTO[]; error?: string; renamedTo?: string; droppedRefs?: number; deleted?: number } = await fetch(
@@ -68,16 +79,27 @@ export function TrashModal({
     groups.set(date, [...(groups.get(date) ?? []), item]);
   }
 
-  const restore = useAsyncAction(async (item: TrashItemDTO) => {
-    const data = await post({ action: "restore", id: item.id });
-    if (data.error) {
-      showToast(data.error);
-      return;
+  /** 批次還原。逐筆依序送出——還原是把原始文件插回去，同時插好幾筆時撞名改名的序號
+   *  會算錯（兩筆都看到「餐飲」還在，於是都改成「餐飲(2)」）。 */
+  const restore = useAsyncAction(async (targets: TrashItemDTO[]) => {
+    let renamed = 0;
+    let dropped = 0;
+    for (const item of targets) {
+      const data = await post({ action: "restore", id: item.id });
+      if (data.error) {
+        showToast(data.error);
+        return;
+      }
+      if (data.renamedTo) renamed += 1;
+      else if (data.droppedRefs) dropped += 1;
     }
+    setSelected(new Set());
     onRestored?.();
-    if (data.renamedTo) showToast(`已還原，因為名稱重複所以改成「${data.renamedTo}」`);
-    else if (data.droppedRefs) showToast("已還原，但原本掛的帳戶已經不在了");
-    else showToast("已還原");
+    // 撞名改名、原本掛的帳戶不在了——這兩種不是錯誤，但使用者需要知道東西回來之後
+    // 長得跟原本不太一樣。
+    if (renamed > 0) showToast(`已還原 ${targets.length} 項，其中 ${renamed} 項因為名稱重複而改了名`);
+    else if (dropped > 0) showToast(`已還原 ${targets.length} 項，其中 ${dropped} 項原本掛的帳戶已經不在了`);
+    else showToast(`已還原 ${targets.length} 項`);
   });
 
   return (
@@ -88,18 +110,26 @@ export function TrashModal({
         title="最近刪除"
         fullHeight
         footer={
+          // 左下角原本是「清空垃圾桶」：那是一顆按下去就把全部東西永久刪掉的按鈕，
+          // 擺在這裡太容易誤觸，而且想清空的人大可全選再按永久刪除。改成兩顆針對
+          // 勾選項目的動作，沒勾任何一項時都是停用狀態。
           <div className="flex w-full items-center justify-between gap-2">
             <button
               type="button"
-              disabled={items.length === 0}
-              onClick={() => setEmptyOpen(true)}
+              disabled={chosen.length === 0}
+              onClick={() => setPurgeOpen(true)}
               className="text-xs font-medium text-[#D1517E] disabled:opacity-40"
             >
-              清空垃圾桶
+              永久刪除{chosen.length > 0 ? ` ${chosen.length} 項` : ""}
             </button>
-            <Button variant="ghost" onClick={onClose}>
-              關閉
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" onClick={onClose}>
+                關閉
+              </Button>
+              <Button disabled={chosen.length === 0 || restore.busy} onClick={() => restore.run(chosen)}>
+                {restore.busy ? "還原中…" : `還原${chosen.length > 0 ? ` ${chosen.length} 項` : ""}`}
+              </Button>
+            </div>
           </div>
         }
       >
@@ -116,32 +146,25 @@ export function TrashModal({
                 <p className={`mb-1.5 px-1 font-medium ${text.muted}`}>{formatDateWithWeekday(date)}</p>
                 <ListCard>
                   {dayItems.map((item) => (
-                    <div key={item.id} className="flex items-center gap-3 px-4 py-3">
-                      {/* 圖示跟顏色是刪除當下存下來的快照（見 trash.ts），所以這一列看起來
-                          跟它被刪之前在原本清單上的樣子一樣——使用者不用重新辨認一次。
-                          舊資料沒有存圖示，退回依種類給的預設圖。 */}
-                      <IconAvatar icon={item.icon || KIND_ICON[item.kind]} className={item.color ? categoryColorClass[item.color] : undefined} />
-                      <div className="min-w-0 flex-1">
-                        <p className={`truncate ${text.body}`}>{item.label}</p>
-                        <p className={`truncate ${text.muted}`}>
-                          {TRASH_KIND_LABEL[item.kind]}
-                          {item.sublabel ? ` · ${item.sublabel}` : ""}
-                          {/* 一次刪除連帶移除好幾個文件時講明白（刪分類會連子分類一起）。 */}
-                          {item.docCount > 1 ? ` · 共 ${item.docCount} 項` : ""}
-                        </p>
-                      </div>
-                      <button type="button" onClick={() => setPurgeTarget(item)} className="shrink-0 text-xs font-medium text-[#9C94C4]">
-                        永久刪除
-                      </button>
-                      <button
-                        type="button"
-                        disabled={restore.busy}
-                        onClick={() => restore.run(item)}
-                        className="shrink-0 rounded-full bg-[#F3EFFC] px-3 py-1 text-xs font-medium text-[#6F5FD6] disabled:opacity-40"
-                      >
-                        還原
-                      </button>
-                    </div>
+                    // 整列就是勾選目標（跟明細頁的多選一樣），圓點只是指示器。
+                    <ListRow
+                      key={item.id}
+                      icon={item.icon || KIND_ICON[item.kind]}
+                      iconClassName={item.color ? categoryColorClass[item.color] : undefined}
+                      leading={<SelectionDot selected={selected.has(item.id)} />}
+                      name={
+                        <span className="block min-w-0">
+                          <span className={`block truncate ${text.body}`}>{item.label}</span>
+                          <span className={`block truncate ${text.muted}`}>
+                            {TRASH_KIND_LABEL[item.kind]}
+                            {item.sublabel ? ` · ${item.sublabel}` : ""}
+                            {/* 一次刪除連帶移除好幾個文件時講明白（刪分類會連子分類一起）。 */}
+                            {item.docCount > 1 ? ` · 共 ${item.docCount} 項` : ""}
+                          </span>
+                        </span>
+                      }
+                      onClick={() => toggle(item.id)}
+                    />
                   ))}
                 </ListCard>
               </div>
@@ -150,28 +173,34 @@ export function TrashModal({
         )}
       </Modal>
 
+      {/* 永久刪除是這個彈窗裡唯一不可逆的動作，所以要列出刪的是哪幾項、而且明講救不回來。
+          選到三項以上就不一一列出（名稱可能很長），只講數量。 */}
       <ConfirmModal
-        open={purgeTarget !== null}
+        open={purgeOpen}
         title="永久刪除"
-        message={`「${purgeTarget?.label ?? ""}」會從垃圾桶裡徹底移除，之後沒有辦法再還原。`}
+        message={
+          <>
+            {chosen.length === 1 ? `「${chosen[0]?.label ?? ""}」` : `勾選的 ${chosen.length} 項`}
+            會從垃圾桶裡徹底移除，之後沒有辦法再還原。
+            {chosen.length > 1 && chosen.length <= 3 && (
+              <span className="mt-2 block">
+                {chosen.map((i) => (
+                  <span key={i.id} className="block">
+                    {i.label}
+                  </span>
+                ))}
+              </span>
+            )}
+          </>
+        }
         confirmLabel="永久刪除"
         onConfirm={async () => {
-          if (purgeTarget) await post({ action: "purge", id: purgeTarget.id });
+          // 逐筆送出：purge 一次只收一個 id，而且每次都回傳最新的完整清單。
+          for (const item of chosen) await post({ action: "purge", id: item.id });
+          setSelected(new Set());
+          showToast(`已永久刪除 ${chosen.length} 項`);
         }}
-        onClose={() => setPurgeTarget(null)}
-      />
-
-      <ConfirmModal
-        open={emptyOpen}
-        title="清空垃圾桶"
-        message={`垃圾桶裡的 ${items.length} 項會全部徹底移除，之後沒有辦法再還原。`}
-        confirmLabel="全部清空"
-        requireText="清空垃圾桶"
-        onConfirm={async () => {
-          const data = await post({ action: "empty" });
-          if (data.deleted !== undefined) showToast(`已清空 ${data.deleted} 項`);
-        }}
-        onClose={() => setEmptyOpen(false)}
+        onClose={() => setPurgeOpen(false)}
       />
     </>
   );

@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import type { TransferDTO, TransferInput } from "./transfers";
 import { putInTrash } from "./trash.server";
+import { formatDate } from "../format";
 
 interface TransferDoc {
   _id: ObjectId;
@@ -80,7 +81,7 @@ export async function deleteTransfer(userId: ObjectId, id: string): Promise<{ tr
   const trashId = await putInTrash(userId, {
     kind: "transfer",
     label: doc.note?.trim() || "轉帳",
-    sublabel: `${doc.date} · ${doc.amount}`,
+    sublabel: `${formatDate(doc.date)} · ${doc.amount}`,
     entries: [{ collection: "expenses.transfers", doc }],
   });
   await col.deleteOne({ _id: doc._id, userId });

@@ -8,6 +8,7 @@ import { listTransfers } from "@/lib/expenses/transfers.server";
 import { listBudgetRules } from "@/lib/expenses/budgets.server";
 import { getExpensesSettings } from "@/lib/expenses/settings.server";
 import { newOsSeed } from "@/lib/expenses/pet-os";
+import { randomHeroImage } from "@/lib/expenses/hero-images.server";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,9 @@ export default async function ExpensesDashboardPage() {
       // （見 lib/expenses/pet-os.ts 的 seededShuffle）。每次請求都是新的數字，所以
       // 「每次重新整理換一批句子」還是成立。
       osSeed={newOsSeed()}
+      // 主視覺也在伺服器端抽（理由同 osSeed：client 自己抽會 hydration 對不起來）。
+      // 挑的範圍是 public/expenses 底下所有 main-kv-*，加減圖片不用改程式。
+      heroImage={randomHeroImage()}
       aiEnabled={settings.aiEnabled}
     />
   );

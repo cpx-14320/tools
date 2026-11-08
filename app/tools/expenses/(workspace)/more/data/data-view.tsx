@@ -124,7 +124,42 @@ export function DataView({
     <div>
       <PageHeader
         title="匯出／匯入資料"
-        help="換環境或還原備份時順序是：先匯入消費分類，再匯入預算設定跟消費紀錄——後兩種都要分類已經存在才掛得上去。帳戶類型不走 CSV，在「設定 › 帳戶類型」直接新增就好"
+        help={
+          <>
+            <p className={`${text.muted} leading-relaxed`}>
+              三種資料各自一份 CSV：消費紀錄、消費分類、預算設定。想備份就三種都匯出存起來，用 Excel 或任何試算表都打得開。
+            </p>
+
+            <p className={text.sectionHeading}>換手機、還原備份的順序</p>
+            <p className={`${text.muted} leading-relaxed`}>
+              1. 先到「設定 › 帳戶類型」把帳戶類型跟帳戶建好——這兩種不走 CSV，而消費紀錄的帳戶欄是用名稱對應的，對不到就會掛不上去。
+            </p>
+            <p className={`${text.muted} leading-relaxed`}>2. 匯入消費分類。</p>
+            <p className={`${text.muted} leading-relaxed`}>
+              3. 再匯入預算設定跟消費紀錄。這兩種都要分類已經存在才掛得上去，順序顛倒會整批失敗。
+            </p>
+
+            <p className={text.sectionHeading}>怎麼匯入</p>
+            <p className={`${text.muted} leading-relaxed`}>
+              切到「匯入」、選資料種類，然後選檔案或直接把 CSV 內容貼上。送出之前會先跑一次預覽，一列一列標出哪幾列有問題（分類找不到、日期格式不對…），確認沒問題再按匯入。預覽階段不會動到任何資料。
+            </p>
+
+            <p className={text.sectionHeading}>重複匯入會怎樣</p>
+            <p className={`${text.muted} leading-relaxed`}>
+              <span className="font-semibold text-[#4A3B7C]">消費紀錄</span>：日期、分類、金額、備註、明細、帳戶全都一樣的會被當成已經有了，自動略過，所以同一份檔案重匯兩次不會變成兩筆。
+            </p>
+            <p className={`${text.muted} leading-relaxed`}>
+              <span className="font-semibold text-[#4A3B7C]">消費分類</span>：同名的分類會跳過不建。
+            </p>
+            <p className={`${text.muted} leading-relaxed`}>
+              <span className="font-semibold text-[#4A3B7C]">預算設定</span>：同一個「分類＋生效月份」是覆蓋舊的，不會變成兩筆。
+            </p>
+
+            <p className={`${text.faint} leading-relaxed`}>
+              圖示不走 CSV（檔案裡沒有這一欄），匯入後的分類會先用預設圖，在「設定 › 收支分類」點進去挑一張就好。
+            </p>
+          </>
+        }
       />
 
       <SegmentedControl className="mb-3" fullWidth value={mode} onChange={setMode} options={MODES} />

@@ -36,7 +36,11 @@ export function defaultAccountForCategory(categories: CategoryDTO[], categoryId:
 }
 
 export function topLevelCategories(categories: CategoryDTO[], kind?: CategoryKind): CategoryDTO[] {
-  return categories.filter((c) => !c.parentId && (kind === undefined || c.kind === kind));
+  const tops = categories.filter((c) => !c.parentId && (kind === undefined || c.kind === kind));
+  // 「未分類」永遠排最後。它不是使用者自己開的分類，是刪掉別的分類時用來收容那些紀錄的
+  // 系統分類——夾在自訂分類中間會讓人以為那是自己建的，而且它的位置還會隨著 order 飄。
+  // 排在這裡而不是各頁自己排：分類清單、記帳時的分類格子、報表都該看到同一個順序。
+  return [...tops].sort((a, b) => Number(a.isUncategorized ?? false) - Number(b.isUncategorized ?? false));
 }
 
 export function subCategoriesOf(categories: CategoryDTO[], parentId: string): CategoryDTO[] {

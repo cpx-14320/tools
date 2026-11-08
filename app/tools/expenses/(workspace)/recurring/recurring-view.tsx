@@ -74,6 +74,17 @@ export function RecurringView({
   // 跟消費分類頁一樣用支出／收入分頁切換——固定收支兩種都會有（房租 vs 薪水），
   // 混在同一份清單裡要自己用金額顏色分辨，分頁之後一次只看一種。
   const [kind, setKind] = useState<CategoryKind>("支出");
+  // 待確認列表的勾選（跟底下規則清單的多選是兩回事，所以各自一份狀態）。
+  // key 是 `ruleId|date`——同一條規則會有好幾期待確認，光靠 ruleId 分不出是哪一期。
+  const [pendingSelected, setPendingSelected] = useState<Set<string>>(new Set());
+  const togglePending = (key: string) =>
+    setPendingSelected((set) => {
+      const next = new Set(set);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
   // 到期但還沒入帳的那幾期。以前是進記帳本就自動寫進交易紀錄，現在改成列在這裡等確認。
   const [pending, setPending] = useState<PendingOccurrence[]>(initialPending);
   // 正在送出的那幾期（"ruleId|date"），避免連點送出兩次、按鈕也變成不能按。
@@ -91,6 +102,8 @@ export function RecurringView({
       .catch(() => ({}));
     if (data.pending) setPending(data.pending);
     if (data.transactions) setTransactions(data.transactions);
+    // 處理完把勾選清掉：那幾期已經不在待確認清單裡了，留著只會讓上面的數字對不上。
+    setPendingSelected(new Set());
     showToast(action === "confirm" ? `已記帳 ${items.length} 筆` : `已略過 ${items.length} 筆`);
     setBusy((set) => {
       const next = new Set(set);
@@ -187,11 +200,18 @@ export function RecurringView({
   // 收合只影響「列出幾筆」，不影響上面的筆數跟「全部確認／全部略過」——那兩顆處理的
   // 一律是這個分頁底下全部的待確認，不是畫面上看得到的那幾筆。
   const shownPending = pendingExpanded ? visiblePending : visiblePending.slice(0, PREVIEW_COUNT);
+
+  /** 上面那兩顆按鈕要處理哪幾期：有勾就只處理勾起來的，沒勾就是這個分頁底下的全部
+   *  （不是畫面上看得到的那幾筆——收合只影響列出幾筆）。 */
+  function targetPending() {
+    const chosen = pendingSelected.size > 0 ? visiblePending.filter((p) => pendingSelected.has(`${p.ruleId}|${p.date}`)) : visiblePending;
+    return chosen.map(({ ruleId, date }) => ({ ruleId, date }));
+  }
   const selection = useSelection(visibleRules.map((r) => r.id));
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader flush title="固定收支" help="每月電話費、房租這種會重複出現的收支。到期不會自動入帳，會列在上面的「待確認」等你按確認——金額每個月不一樣時才有機會先改或略過" />
+      <PageHeader flush title="固定收支" help="房租、電話費這種每期重複的收支。到期不會自動入帳，而是列進「待確認」等你確認——金額每期不同時可以先改再確認，這期不想記就略過" />
 
       {/* 新增搬到右下角的浮動按鈕，跟首頁新增交易、消費分類頁同一招。 */}
       {/* 等資料回來才出現：它是 fixed、不佔版面，所以不需要骨架，但資料還沒回來就先浮在
@@ -266,29 +286,33 @@ export function RecurringView({
           <CardBody>
             <div className="flex items-center justify-between gap-2">
               <p className={text.sectionHeading}>待確認 {visiblePending.length} 筆</p>
-              {/* 兩顆都用小膠囊，不用 Button：這是「順手處理一下」的批次動作，跟底下每
-                  一列的「略過／確認」是同一組操作，尺寸要一致。略過在左邊、確認在右邊，
-                  順序也跟每一列一樣。 */}
+              {/* 上面這兩顆是唯一的操作入口：沒勾任何一列就處理全部，勾了就只處理勾起來
+                  的那幾筆（按鈕文字跟著變）。每一列原本各有一組「略過／確認」，一列兩顆
+                  小按鈕在手機上很容易按錯，而且十幾列就等於畫面上有二三十顆按鈕。 */}
               <span className="flex shrink-0 items-center gap-1">
                 <button
                   type="button"
                   disabled={busy.size > 0}
-                  onClick={() => resolvePending("skip", visiblePending.map(({ ruleId, date }) => ({ ruleId, date })))}
+                  onClick={() => resolvePending("skip", targetPending())}
                   className="rounded-full px-3 py-1 text-xs font-medium text-[#9C94C4] disabled:opacity-50"
                 >
-                  全部略過
+                  {pendingSelected.size > 0 ? `略過 ${pendingSelected.size} 筆` : "全部略過"}
                 </button>
                 <button
                   type="button"
                   disabled={busy.size > 0}
-                  onClick={() => resolvePending("confirm", visiblePending.map(({ ruleId, date }) => ({ ruleId, date })))}
+                  onClick={() => resolvePending("confirm", targetPending())}
                   className="rounded-full bg-[#F3EFFC] px-3 py-1 text-xs font-medium text-[#6F5FD6] disabled:opacity-50"
                 >
-                  全部確認
+                  {pendingSelected.size > 0 ? `確認 ${pendingSelected.size} 筆` : "全部確認"}
                 </button>
               </span>
             </div>
-            <p className={`mt-1 ${text.muted}`}>確認後才會寫進消費紀錄。金額跟實際不一樣的話，先略過再手動記一筆。</p>
+            <p className={`mt-1 ${text.muted}`}>
+              {pendingSelected.size > 0
+                ? "只會處理勾起來的那幾筆。"
+                : "確認後才會寫進消費紀錄；沒有勾選時，上面兩顆處理的是全部。"}
+            </p>
 
             <div className="mt-3 flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA]">
               {shownPending.map((p) => {
@@ -297,7 +321,18 @@ export function RecurringView({
                 const key = `${p.ruleId}|${p.date}`;
                 const isBusy = busy.has(key);
                 return (
-                  <div key={key} className="flex items-center gap-3 px-4 py-3">
+                  // 整列就是勾選目標（跟明細頁的多選同一種操作方式）：圓點只有 20px，
+                  // 做成唯一可點的區域在手機上很容易點歪。
+                  <button
+                    key={key}
+                    type="button"
+                    role="checkbox"
+                    aria-checked={pendingSelected.has(key)}
+                    disabled={isBusy}
+                    onClick={() => togglePending(key)}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left disabled:opacity-50 active:bg-[#F3EFFC]"
+                  >
+                    <SelectionDot selected={pendingSelected.has(key)} />
                     <IconAvatar icon={category?.icon ?? ""} className={category ? categoryColorClass[category.color] : undefined} />
                     <div className="min-w-0 flex-1">
                       <p className={`truncate ${text.body}`}>{p.note || category?.name || "（已刪除分類）"}</p>
@@ -307,25 +342,7 @@ export function RecurringView({
                       {isIncome ? "＋" : "－"}
                       {formatCurrency(p.amount)}
                     </span>
-                    <span className="flex shrink-0 items-center gap-1">
-                      <button
-                        type="button"
-                        disabled={isBusy}
-                        onClick={() => resolvePending("skip", [{ ruleId: p.ruleId, date: p.date }])}
-                        className="rounded-full px-2 py-1 text-xs font-medium text-[#9C94C4] disabled:opacity-50"
-                      >
-                        略過
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isBusy}
-                        onClick={() => resolvePending("confirm", [{ ruleId: p.ruleId, date: p.date }])}
-                        className="rounded-full bg-[#F3EFFC] px-3 py-1 text-xs font-medium text-[#6F5FD6] disabled:opacity-50"
-                      >
-                        確認
-                      </button>
-                    </span>
-                  </div>
+                  </button>
                 );
               })}
             </div>

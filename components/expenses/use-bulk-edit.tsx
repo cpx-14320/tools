@@ -14,7 +14,7 @@ import type { AccountTypeDTO } from "@/lib/expenses/account-types";
 import type { TransferDTO } from "@/lib/expenses/transfers";
 import { formatDate } from "@/lib/format";
 
-/** 多選之後「改帳戶／改分類」的那一整套：工具列上的兩顆按鈕、挑目標的彈窗、確認彈窗、
+/** 多選之後「修改帳戶／修改分類」的那一整套：工具列上的兩顆按鈕、挑目標的彈窗、確認彈窗、
  *  送出。明細頁跟帳戶明細頁共用同一份——兩邊列的都是交易，操作當然該一模一樣。
  *
  *  回傳 `actions` 給 SelectionBar、`element` 放在畫面任何地方（裡面是三個彈窗，用
@@ -106,9 +106,9 @@ export function useBulkEdit({
   }
 
   const actions: SelectionAction[] = [
-    { label: "改帳戶", onClick: () => setPicker("account") },
+    { label: "修改帳戶", onClick: () => setPicker("account") },
     {
-      label: "改分類",
+      label: "修改分類",
       onClick: () => {
         // 選到的同時有支出跟收入時擋在這裡講原因，而不是把按鈕藏起來：按鈕消失的話
         // 使用者只會以為這一頁不支援改分類，不知道是自己選的那批跨了收支。
@@ -130,7 +130,7 @@ export function useBulkEdit({
       {/* 挑帳戶用跟記帳時同一個彈窗（它本來就帶餘額、也本來就有「不指定」那一項）。 */}
       <AccountPickerModal
         open={picker === "account"}
-        title="調整帳戶"
+        title="修改帳戶"
         accounts={accounts}
         accountTypes={accountTypes}
         transactions={transactions}
@@ -146,7 +146,7 @@ export function useBulkEdit({
       {/* 只列目前這一邊的分類，所以不可能把一筆支出改成收入分類、把收支方向整個翻掉。
           子分類的規則也照舊（大分類底下有項目就要選到項目）。 */}
       {/* 不用 fullHeight：分類格子就那幾排，撐到滿版下面會空一大片。 */}
-      <Modal open={picker === "category" && kind !== null} onClose={() => setPicker(null)} title="調整分類">
+      <Modal open={picker === "category" && kind !== null} onClose={() => setPicker(null)} title="修改分類">
         <CategoryGridPicker
           categories={categories}
           kind={kind ?? "支出"}

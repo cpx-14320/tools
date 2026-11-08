@@ -24,10 +24,8 @@ export function AccountTypesView({
   /** 不是為了顯示筆數，而是為了知道「這個類型底下還有沒有帳戶」：有的話編輯彈窗裡的
    *  資產/負債要鎖住（見 account-type-modal.tsx）。帳戶是在別的頁面改的，這一頁不會動它，
    *  所以不用放進 state。 */
-  accounts,
 }: {
   initialAccountTypes: AccountTypeDTO[];
-  accounts: { accountTypeId: string }[];
 }) {
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>(initialAccountTypes);
   const showToast = useToast();
@@ -238,7 +236,6 @@ export function AccountTypesView({
         initial={modal ?? undefined}
         accountTypes={accountTypes}
         kind={modal?.kind ?? "asset"}
-        inUseCount={modal ? accounts.filter((a) => a.accountTypeId === modal.id).length : 0}
         excludeId={modal?.id}
         onClose={() => setModal(null)}
         onSave={handleSave}

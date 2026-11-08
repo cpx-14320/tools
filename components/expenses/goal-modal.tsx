@@ -124,12 +124,10 @@ export function ContributeModal({ open, onClose, onSave }: { open: boolean; onCl
       open={open}
       onClose={onClose}
       title="存入"
-      stickyBottom={<AmountKeypad expr={amount} onExprChange={setAmount} label="這次要存入多少" />}
+      stickyBottom={<AmountKeypad expr={amount} onExprChange={setAmount} label="存入金額" />}
       footer={<ModalFooter onClose={onClose} onConfirm={() => onSave(amountNum)} confirmDisabled={!canSave} />}
-    >
-      {/* 內容區刻意留空：金額直接在下方那個固定鍵盤上輸入，再寫一行「用下方的鍵盤輸入」
-          等於把看得到的東西再講一次。 */}
-      <></>
-    </Modal>
+      // 不傳 children：金額直接在下方那個固定鍵盤上輸入，再寫一行「用下方的鍵盤輸入」
+      // 等於把看得到的東西再講一次。Modal 沒有內容時會整塊不渲染，不會留下一段空白。
+    />
   );
 }

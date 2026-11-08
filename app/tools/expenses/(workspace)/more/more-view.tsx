@@ -35,14 +35,14 @@ const GROUPS: { heading: string; items: SettingItem[] }[] = [
     items: [
       { href: "/tools/expenses/categories", label: "收支分類", desc: "管理支出與收入的分類、子分類", icon: ICON_PATHS.settingCategories },
       { href: "/tools/expenses/budgets", label: "預算設定", desc: "依月份設定各分類的預算", icon: ICON_PATHS.settingBudgets },
-      { href: "/tools/expenses/account-types", label: "帳戶類型", desc: "自訂資產/負債的帳戶類型", icon: ICON_PATHS.settingAccountTypes },
+      { href: "/tools/expenses/account-types", label: "帳戶類型", desc: "管理資產、負債帳戶類型", icon: ICON_PATHS.settingAccountTypes },
     ],
   },
   {
     heading: "目標與排程",
     items: [
       { href: "/tools/expenses/goals", label: "存錢目標", desc: "設定目標、追蹤進度", icon: ICON_PATHS.settingGoals },
-      { href: "/tools/expenses/recurring", label: "固定收支", desc: "房租、電話費這種週期收支", icon: ICON_PATHS.settingRecurring },
+      { href: "/tools/expenses/recurring", label: "固定收支", desc: "房租、電話費這種週期性收支", icon: ICON_PATHS.settingRecurring },
     ],
   },
   {
@@ -142,30 +142,8 @@ export function MoreView({
             「記帳本的設定」是同一層；放到帳號／清除資料後面會像是系統層級的東西。 */}
         <AiSettingsSection initialEnabled={aiEnabled} initialDrafts={aiDrafts} categories={categories} />
 
-        {/* 其他小工具——比照搭乘車設定頁同名區塊：列出這個帳號有權限、而且不是現在這個
-            工具的項目，點了直接跳過去。清單是 TOOLS_REGISTRY（純靜態資料），不用另外打 API。
-            擺在 AI 記帳底下：上面全部都是「記帳本自己的設定」，這一塊是離開記帳本去別的
-            工具，夾在中間會把同一類的設定切成兩半。 */}
-        {otherTools.length > 0 && (
-          <div>
-            <p className={`mb-2 px-1 ${text.label}`}>其他小工具</p>
-            <ListCard>
-              {otherTools.map((tool) => (
-                <Link key={tool.toolId} href={tool.href} className="flex items-center gap-3 px-4 py-3.5 active:bg-[#F3EFFC]">
-                  {/* 有真圖就不墊底色方塊，只有表情符號的工具才需要一塊底色撐住版面。 */}
-                  <IconAvatar icon={tool.iconImage || tool.icon} plain={!!tool.iconImage} />
-                  <span className={`min-w-0 flex-1 ${text.body}`}>{tool.name}</span>
-                  <span aria-hidden className="text-[#C7BFE6]">
-                    ›
-                  </span>
-                </Link>
-              ))}
-            </ListCard>
-          </div>
-        )}
-
-        {/* 最近刪除擺在「清除資料」正上方：兩者講的是同一件事的兩端（刪掉的東西去哪了、
-            怎麼真的清掉），放在一起才讀得出關係。垃圾桶是空的時候整區不顯示，不要讓一個
+        {/* 最近刪除接在記帳本自己的設定後面、「其他小工具」之前：它講的還是這個工具裡的
+            資料，跟「跳去別的工具」不是同一件事。垃圾桶是空的時候整區不顯示，不要讓一個
             平常用不到的東西天天佔版面。 */}
         {trashItems.length > 0 && (
           <div>
@@ -183,6 +161,28 @@ export function MoreView({
                 </span>
                 <span className={text.faint}>›</span>
               </button>
+            </ListCard>
+          </div>
+        )}
+
+        {/* 其他小工具——比照搭乘車設定頁同名區塊：列出這個帳號有權限、而且不是現在這個
+            工具的項目，點了直接跳過去。清單是 TOOLS_REGISTRY（純靜態資料），不用另外打 API。
+            擺在整頁最後面那幾區之前：上面全部都是「記帳本自己的設定」，這一塊是離開
+            記帳本去別的工具，夾在中間會把同一類的設定切成兩半。 */}
+        {otherTools.length > 0 && (
+          <div>
+            <p className={`mb-2 px-1 ${text.label}`}>其他小工具</p>
+            <ListCard>
+              {otherTools.map((tool) => (
+                <Link key={tool.toolId} href={tool.href} className="flex items-center gap-3 px-4 py-3.5 active:bg-[#F3EFFC]">
+                  {/* 有真圖就不墊底色方塊，只有表情符號的工具才需要一塊底色撐住版面。 */}
+                  <IconAvatar icon={tool.iconImage || tool.icon} plain={!!tool.iconImage} />
+                  <span className={`min-w-0 flex-1 ${text.body}`}>{tool.name}</span>
+                  <span aria-hidden className="text-[#C7BFE6]">
+                    ›
+                  </span>
+                </Link>
+              ))}
             </ListCard>
           </div>
         )}

@@ -13,7 +13,7 @@ import { ComparePicker } from "@/components/expenses/compare-picker";
 import { text } from "@/components/expenses/theme";
 import { DonutChart, type DonutSlice } from "@/components/expenses/donut-chart";
 import { TrendBarChart, NetTrendChart, AssetTrendChart, type TrendSeries } from "@/components/expenses/trend-bar-chart";
-import { KpiCard, KPI_NEGATIVE, KPI_POSITIVE } from "@/components/expenses/kpi-card";
+import { KpiCard, KPI_NEGATIVE } from "@/components/expenses/kpi-card";
 import { accountBalance, accountsByKind, balanceDelta, netWorth, netWorthAt, sumByAccountType, totalByKind, type AccountDTO } from "@/lib/expenses/accounts";
 import { accountTypeById, accountTypeColorClass, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
@@ -665,13 +665,17 @@ export function ReportsView({
                 ))}
               </div>
             </div>
-            {/* 圓餅只看得出收支的比例，底下補一行把「所以結餘是多少」講完。 */}
-            <div className="mt-5 flex items-center justify-between border-t border-[#F2EEFA] pt-4 text-sm">
-              <span className={text.body}>結餘</span>
-              <span className="tabular-nums font-semibold" style={{ color: balance < 0 ? KPI_NEGATIVE : KPI_POSITIVE }}>
-                {balance < 0 ? "－" : ""}
-                {formatCurrency(Math.abs(balance))}
-              </span>
+            {/* 底下列收入／支出的實際金額，不再重複寫一次「結餘」——結餘在這一頁最上面的
+                KPI 已經有了，同一個數字在同一屏出現兩次只是佔位置。
+                版面也跟支出／收入兩個分頁一致：圓餅 → 比例圖例 → 金額清單，三個分頁
+                看起來才是同一種卡片。 */}
+            <div className="mt-5 flex flex-col gap-3 border-t border-[#F2EEFA] pt-4">
+              {netDonutData.map((d) => (
+                <div key={d.id} className="flex items-center justify-between text-sm">
+                  <span className={text.body}>{d.label}</span>
+                  <span className="tabular-nums font-semibold text-[#4A3B7C]">{formatCurrency(d.amount)}</span>
+                </div>
+              ))}
             </div>
           </CardBody>
         </Card>

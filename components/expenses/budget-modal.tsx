@@ -5,6 +5,7 @@ import { Modal, Field, ModalFooter } from "./modal";
 import { DateField } from "./date-field";
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { text } from "./theme";
+import { formatYearMonth } from "@/lib/format";
 import type { CategoryDTO } from "@/lib/expenses/categories";
 
 /** 設定某個分類「從某個月起」的預算。
@@ -39,7 +40,7 @@ export function BudgetModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={category ? `${category.name} 的預算` : "設定預算"}
+      title={category ? `編輯預算－${category.name}` : "設定預算"}
       stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} label="每月預算" />}
       footer={
         <ModalFooter
@@ -56,8 +57,7 @@ export function BudgetModal({
       </Field>
 
       <p className={`${text.muted} leading-relaxed`}>
-        這筆金額會從 <span className="font-semibold text-[#4A3B7C]">{yearMonth}</span> 開始生效，之後每個月都沿用，直到你在更後面的月份再設一筆新的為止。
-        填 0 代表從這個月起這個分類不編預算。
+        從 <span className="font-semibold text-[#4A3B7C]">{formatYearMonth(yearMonth)}</span> 起每個月都用這個金額，直到你設下一筆新的為止。填 0 表示不編預算。
       </p>
     </Modal>
   );

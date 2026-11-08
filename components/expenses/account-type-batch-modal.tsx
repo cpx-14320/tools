@@ -107,10 +107,7 @@ export function AccountTypeBatchModal({
             {lockedKind ? (
               i === 0 && (
                 <Field label="類型">
-                  <p className="text-sm font-medium text-[#4A3B7C]">
-                    {lockedKind === "asset" ? "資產" : "負債"}
-                    <span className="ml-2 text-xs font-normal text-[#9C94C4]">跟著上一層選的分頁，這裡不能改</span>
-                  </p>
+                  <p className="text-sm font-medium text-[#4A3B7C]">{lockedKind === "asset" ? "資產" : "負債"}</p>
                 </Field>
               )
             ) : (

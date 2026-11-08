@@ -40,14 +40,18 @@ import { formatCurrency, formatDateWithWeekday } from "@/lib/format";
  *  外層的負邊距是為了掙脫外殼給每一頁的留白（ExpensesMobileShell 的 px-5 pt-6 pb-6）——
  *  主視覺要滿版出血，不能縮在左右各 20px 的內容欄裡。白色面板的 -mt-16 讓它往上蓋住
  *  主視覺的下緣，圓角才會壓在圖片上；pb 留到導覽列以下，不然捲到底會露出外殼的紫色漸層。 */
-function HeroShell({ children, overlay }: { children: ReactNode; overlay: ReactNode }) {
+function HeroShell({ children, overlay, image }: { children: ReactNode; overlay: ReactNode; image: string }) {
   return (
     <div className="-mx-5 -mb-24 -mt-6 flex flex-1 flex-col">
       <div className="relative h-80 w-full shrink-0 overflow-hidden bg-[#EDE6FB]">
-        {/* 固定一張本地插畫、尺寸也固定，不需要 next/image 的動態最佳化（搭乘車的
-            ImageSlot 同樣是直接用 <img>）。底色先鋪著，圖還沒載完時不會是一片白。 */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/expenses/main-work.png" alt="記帳插畫" className="h-full w-full object-cover" />
+        {/* 本地插畫、尺寸固定，不需要 next/image 的動態最佳化（搭乘車的 ImageSlot 同樣是
+            直接用 <img>）。底色先鋪著，圖還沒載完時不會是一片白。
+            哪一張由伺服器隨機挑（見 lib/expenses/hero-images.server.ts）；一張都沒掃到
+            就只留底色，不要畫一個破圖出來。 */}
+        {image && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={image} alt="記帳插畫" className="h-full w-full object-cover" />
+        )}
         {/* 選日期跟比較基準疊在圖上（絕對定位），不佔內容面板的高度——這兩個控制項一年
             到頭都在那裡，擺進白色面板裡等於每次進首頁都先看到兩列控制項才看到數字。 */}
         {overlay}
@@ -74,6 +78,7 @@ export function DashboardView({
   transfers,
   budgetRules,
   osSeed,
+  heroImage,
   aiEnabled,
 }: {
   initialCategories: CategoryDTO[];
@@ -84,6 +89,8 @@ export function DashboardView({
   budgetRules: BudgetRuleDTO[];
   /** 主視覺對話框抽句子用的亂數種子，由 page.tsx 在伺服器產生（見 pet-os.ts）。 */
   osSeed: number;
+  /** 伺服器挑好的主視覺圖路徑（見 lib/expenses/hero-images.server.ts）。 */
+  heroImage: string;
   /** 要不要顯示 AI 記帳的入口。伺服器決定（見 lib/expenses/settings.server.ts），
    *  關著的話那顆鈕跟它底下的彈窗完全不會出現，手動記帳不受影響。 */
   aiEnabled: boolean;
@@ -211,7 +218,7 @@ export function DashboardView({
   );
 
   return (
-    <HeroShell overlay={heroOverlay}>
+    <HeroShell overlay={heroOverlay} image={heroImage}>
       <div className="flex flex-col gap-5">
 
       {/* key 跟著開關變動＝每次打開都重新掛載一個乾淨的彈窗：不這樣做的話，上一筆填過的
@@ -271,11 +278,14 @@ export function DashboardView({
 
           排法跟報表／資產／明細三頁的 PageHeader 一致（標題左、日期右），切換頁面時
           日期永遠在同一個位置。首頁本來沒有標題，右對齊會讓這一列左半邊空一大片、
-          膠囊像個漂浮的按鈕，補上「本月收支」正好把標題也一起補齊。
+          膠囊像個漂浮的按鈕，補上標題正好把這一列補齊。
+
+          標題不講月份：旁邊那顆膠囊已經寫著是哪一期，而且期間可以切到上個月、近三個月，
+          固定寫「本月」只會跟膠囊互相矛盾。
 
           這一列只放日期，不放那兩顆眼睛：眼睛遮的是各自那一欄的數字，跟期間不是同一
           種東西，混在一起會讓人以為眼睛是全域開關。 */}
-      <PageHeader flush title="本月收支" actions={<MonthFilterPicker filter={filter} onChange={setFilter} />} />
+      <PageHeader flush title="收支總覽" actions={<MonthFilterPicker filter={filter} onChange={setFilter} />} />
 
       <Card>
         <CardBody className="grid grid-cols-2 gap-3 p-3">

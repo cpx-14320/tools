@@ -339,8 +339,9 @@ export function TransactionsView({
           <ModalFooter
             onClose={() => setFilterOpen(false)}
             onConfirm={() => setFilterOpen(false)}
-            onDelete={filterCount > 0 ? clearFilters : undefined}
-            deleteLabel="清除條件"
+            // 清除條件是「把勾選的取消掉」，不是刪資料：走 secondary 而不是 onDelete，
+            // 才不會變成紅字、也不會跳「刪掉的東西會進最近刪除」那個二次確認。
+            secondary={filterCount > 0 ? { label: "清除條件", onClick: clearFilters } : undefined}
           />
         }
       >

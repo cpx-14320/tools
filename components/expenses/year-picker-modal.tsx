@@ -69,7 +69,9 @@ export function YearPickerModal({
             拿來做決定的數字；「多了 38%」則是在基數差很多的年份之間才看得出意義（今年
             才開始記帳的分類，金額差不大但比例會很誇張）。兩個都留著讓使用者自己選，
             比替他決定一個好。 */}
-        <p className={`mb-2 ${text.label}`}>增減顯示方式</p>
+        {/* 標題講「單位」不講「顯示方式」：底下兩個選項（金額／百分比）本來就是兩種單位，
+            「顯示方式」聽起來像在挑顏色或圖表樣式。 */}
+        <p className={`mb-2 ${text.label}`}>增減單位</p>
         <SegmentedControl
           className="self-start"
           value={mode}

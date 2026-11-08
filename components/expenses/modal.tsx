@@ -69,7 +69,7 @@ export function Modal({
   open: boolean;
   onClose: () => void;
   title: string;
-  children: ReactNode;
+  children?: ReactNode;
   footer?: ReactNode;
   fullHeight?: boolean;
   stickyBottom?: ReactNode;
@@ -119,7 +119,10 @@ export function Modal({
                 一樣，overflow-y-auto 判定「沒有東西溢出、不用捲」，可是超出去的那幾列
                 早就被外層的 overflow-hidden 切掉了。畫面上就是：最後幾個選項看不到，
                 而且怎麼滑都滑不出來。禁止子項目被壓縮，內容才會真的溢出、捲軸才會生效。 */}
-            <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-5 [&>*]:shrink-0">{children}</div>
+            {/* 沒有內容時整塊不渲染：它有 py-5 的留白，空著的話標題跟底下那條（鍵盤或
+                按鈕列）中間會多出一段沒有東西的空白，看起來像少載了什麼。存入金額那個
+                彈窗就是這種——輸入完全在底下的數字鍵盤上完成。 */}
+            {children ? <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-5 [&>*]:shrink-0">{children}</div> : null}
 
             {stickyBottom && <div className="shrink-0 border-t border-[#ECE4FA] px-5 py-3">{stickyBottom}</div>}
 
@@ -150,6 +153,7 @@ export function ModalFooter({
   onDelete,
   deleteLabel = "刪除",
   deleteConfirm,
+  secondary,
 }: {
   onClose: () => void;
   /** 回傳 Promise 的話（呼叫端的 onSave 是 async function 就會是），送出期間儲存鍵會
@@ -173,6 +177,11 @@ export function ModalFooter({
    *  傳 false 代表呼叫端自己已經有一套更清楚的確認（例如刪分類要先講「底下五個子分類
    *  會一起不見」），不要再疊第二層。 */
   deleteConfirm?: false | { title?: string; message?: ReactNode };
+  /** 左下角那個位置的**非破壞性**動作（篩選彈窗的「清除條件」這種）。
+   *
+   *  不要為了借位置而改用 onDelete：那顆是紅字、而且預設會跳一次「確定要刪除嗎、東西會
+   *  先進最近刪除」的二次確認——把「取消勾選」講成刪除資料，使用者會不敢按。 */
+  secondary?: { label: string; onClick: () => void };
 }) {
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
@@ -204,6 +213,10 @@ export function ModalFooter({
           onClick={() => (deleteConfirm === false ? onDelete() : setConfirmingDelete(true))}
         >
           {deleteLabel}
+        </Button>
+      ) : secondary ? (
+        <Button variant="ghost" onClick={secondary.onClick}>
+          {secondary.label}
         </Button>
       ) : confirmDisabled && disabledHint ? (
         <p className={`min-w-0 flex-1 pr-2 ${text.muted}`}>{disabledHint}</p>

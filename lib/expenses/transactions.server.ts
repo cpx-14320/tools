@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import { breakdownNet, type BreakdownItem, type TransactionDTO, type TransactionInput } from "./transactions";
 import { putInTrash } from "./trash.server";
+import { formatDate } from "../format";
 import type { CategoryColor } from "./categories";
 
 interface TransactionDoc {
@@ -104,7 +105,7 @@ export async function deleteTransaction(userId: ObjectId, id: string): Promise<{
     kind: "transaction",
     // 標籤在刪除當下就算好存起來：分類之後可能也被刪掉，到時候反查不到名字。
     label: doc.note?.trim() || "（沒有備註）",
-    sublabel: `${doc.date} · ${doc.amount}`,
+    sublabel: `${formatDate(doc.date)} · ${doc.amount}`,
     icon: category?.icon,
     color: category?.color,
     entries: [{ collection: "expenses.transactions", doc }],
