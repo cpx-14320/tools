@@ -53,6 +53,26 @@ function StageNavButton({ label, icon, onClick }: { label: string; icon: string;
   );
 }
 
+/** 狀態列那幾塊的共同高度（px）。等級框、星星框、說明鈕三個一樣高，排成一列才齊。 */
+const HUD_H = 36;
+
+/** 左右兩端固定、中間橫向拉伸的膠囊底圖（等級框 pet-level-*、星星框 pet-starcount-*）。
+ *
+ *  三張切片用同一個元素的三層 background 畫出來，不另外切三個 div：左端貼左、右端貼右、
+ *  中間那張補滿剩下的寬度。只有中間會被拉伸，所以膠囊兩頭的圓弧跟亮面不管框多寬都不變形。
+ *  端點寬度跟著高度等比算（等級圖 30×60、星星圖 36×72，縮到 HUD_H 高之後都是 18px）。 */
+function pillBackground(name: string, capRatio: number) {
+  const cap = Math.round(HUD_H * capRatio);
+  return {
+    backgroundImage: `url("/expenses/${name}-left.png"), url("/expenses/${name}-right.png"), url("/expenses/${name}-${name === "pet-level" ? "leftcenter" : "center"}.png")`,
+    backgroundPosition: `left center, right center, ${cap}px center`,
+    backgroundSize: `${cap}px 100%, ${cap}px 100%, calc(100% - ${cap * 2}px) 100%`,
+    backgroundRepeat: "no-repeat",
+    paddingLeft: cap - 4,
+    paddingRight: cap - 4,
+  } as const;
+}
+
 /** 待機多久之後插播一次動作狀態。太短會讓角色一直在動、看起來很吵；太長又像沒生效。 */
 const ACTION_INTERVAL_MS = 12_000;
 
@@ -194,48 +214,53 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
         className="relative w-full flex-1"
         style={{ background: petBackground(pet?.backgroundId ?? "") }}
       >
-        {/* 上方狀態列：等級徽章、星星幣、說明鈕排成一列，底下接經驗條。
-            沒有外框底板——每個元素自己就是一張畫好的圖（pet-level_badge／pet-star-count／
-            pet-round_button），再墊一塊半透明白底會讓三張圖各自被框一次、反而更雜。
-            經驗條自己是深色描邊的膠囊，數字壓在條上，所以不靠底板也讀得到。 */}
-        <div className="absolute inset-x-3 top-3 flex flex-col gap-1.5">
-          <div className="flex items-center gap-2">
-            {/* 徽章圖是 192×60，用 100% 100% 拉滿這個固定尺寸的格子——它是左右對稱的膠囊，
-                比例固定住就不會變形。 */}
-            <span
-              className="grid h-7 w-[86px] place-items-center bg-no-repeat text-[13px] font-extrabold tracking-wide text-white"
-              style={{ backgroundImage: 'url("/expenses/pet-level_badge.png")', backgroundSize: "100% 100%" }}
-            >
+        {/* 上方狀態列：等級框（裡面接著經驗條）、星星幣、說明鈕排成一列，三個等高。
+            沒有外框底板——每個元素自己就是一張畫好的圖，再墊一塊半透明白底會讓三張圖
+            各自被框一次、反而更雜。 */}
+        <div className="absolute inset-x-3 top-3 flex items-center gap-2">
+          {/* 等級框吃掉剩下的寬度：經驗條就放在 LV 後面，兩個講的是同一件事（現在幾級、
+              離下一級多遠），分成兩塊反而要看兩個地方。 */}
+          <div
+            className="flex min-w-0 flex-1 items-center gap-2 text-sm font-extrabold tracking-wide text-white"
+            style={{ ...pillBackground("pet-level", 0.5), height: HUD_H }}
+          >
+            {/* 加一層深色陰影：白字壓在粉紅框上對比不夠，陰影一推字就跳出來。 */}
+            <span className="shrink-0" style={{ textShadow: "0 1px 2px rgba(138,30,80,0.55)" }}>
               LV.{level.level}
             </span>
-            <span
-              className="flex h-8 w-[104px] items-center justify-center gap-1 bg-no-repeat text-sm font-bold tabular-nums text-[#8A5A2B]"
-              style={{ backgroundImage: 'url("/expenses/pet-star-count.png")', backgroundSize: "100% 100%" }}
-            >
-              <IconImg src={ICON_PATHS.petStar} alt="星星幣" size={18} background={false} />
-              {pet?.coins ?? 0}
+            {/* 經驗條的軌道壓在粉紅色框上，所以用半透明白當底、實心白當進度；數字疊在
+                條上面（框裡放不下第二行字）。 */}
+            <span className="relative h-3.5 min-w-0 flex-1 overflow-hidden rounded-full bg-white/35">
+              <span className="block h-full rounded-full bg-white/90" style={{ width: `${level.pct}%` }} />
+              <span className="absolute inset-0 grid place-items-center text-[9px] font-bold tabular-nums text-[#B23A6F]">
+                {level.xpInLevel} / {level.xpNeeded}
+              </span>
             </span>
-            <button
-              type="button"
-              onClick={() => setHelpOpen(true)}
-              aria-label="養成的說明"
-              // 畫好的圓鈕＋問號兩張圖疊起來，跟場地上其他按鈕（餵食框、入口圖示）同一套插畫
-              // 風格；原本是半透明白底的文字「?」，在房間圖上看起來像是網頁元件混進遊戲畫面。
-              className="ml-auto grid size-9 shrink-0 place-items-center bg-contain bg-center bg-no-repeat transition-transform active:scale-90"
-              style={{ backgroundImage: 'url("/expenses/pet-round_button.png")' }}
-            >
-              <span aria-hidden className="size-4 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: 'url("/expenses/pet-question_mark.png")' }} />
-            </button>
           </div>
 
-          {/* 經驗條：數字壓在條上，不另外掛一行「經驗值 450 / 1100」——那一行字直接貼在
-              房間圖上會看不清楚，而且這裡要回答的只是「離下一級還有多遠」。 */}
-          <div className="relative h-4 w-full overflow-hidden rounded-full border border-white/70 bg-white/85 backdrop-blur">
-            <div className="h-full rounded-full bg-[#A9A5FF] transition-[width]" style={{ width: `${level.pct}%` }} />
-            <span className="absolute inset-0 grid place-items-center text-[10px] font-bold tabular-nums text-[#5B3B8C]">
-              {level.xpInLevel} / {level.xpNeeded}
-            </span>
+          {/* 星星固定貼左邊的圓端、數字靠右邊的圓端：數字變長時整個框往左長，星星跟數字
+              各自待在原位，不會因為多一位數就整排跟著位移。 */}
+          <div
+            className="flex shrink-0 items-center gap-1.5 text-sm font-bold tabular-nums text-[#8A5A2B]"
+            // minWidth 放寬一點：星星幣是會累積的數字，十萬～百萬位（七位數）才是常態的
+            // 上限。框太窄的話每多一位就要往左長一截，整排跟著抖；先留到放得下七位數。
+            style={{ ...pillBackground("pet-starcount", 0.5), height: HUD_H, minWidth: 124 }}
+          >
+            <IconImg src={ICON_PATHS.petStar} alt="星星幣" size={20} background={false} />
+            <span className="ml-auto text-right">{pet?.coins ?? 0}</span>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setHelpOpen(true)}
+            aria-label="養成的說明"
+            // 畫好的圓鈕＋問號兩張圖疊起來，跟場地上其他按鈕（餵食框、入口圖示）同一套插畫
+            // 風格；原本是半透明白底的文字「?」，在房間圖上看起來像是網頁元件混進遊戲畫面。
+            className="grid shrink-0 place-items-center bg-contain bg-center bg-no-repeat transition-transform active:scale-90"
+            style={{ backgroundImage: 'url("/expenses/pet-round_button.png")', width: HUD_H, height: HUD_H }}
+          >
+            <span aria-hidden className="size-4 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: 'url("/expenses/pet-question_mark.png")' }} />
+          </button>
         </div>
 
         {/* 角色釘在場地 45% 高的位置：六張房間圖的地毯／地板中心都落在這附近，
