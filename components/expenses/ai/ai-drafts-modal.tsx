@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Modal } from "../modal";
 import { Button } from "../button";
+import { IconAvatar } from "../icon-avatar";
+import { ICON_PATHS } from "../icon-paths";
 import { ListCard } from "../list-row";
 import { ConfirmModal } from "../confirm-modal";
 import { TransactionModal, type TransactionModalDraft } from "../transaction-modal";
@@ -102,12 +104,10 @@ export function AiDraftsModal({
             </div>
           }
         >
-          <div>
-            <p className={text.sectionHeading}>「{current.inputSummary}」</p>
-            <p className={`mt-0.5 ${text.faint}`}>
-              {formatDate(current.createdAt.slice(0, 10))} · {current.model === "mock" ? "模擬解析" : current.model} · {draftSummaryLine(current)}
-            </p>
-          </div>
+          {/* 標題就是當初打進去的那句話——使用者認得的是自己寫的字，不是日期或模型名稱。
+              本來底下還有一行「日期 · 模擬解析 · N 筆待確認 · N 筆未分類」，那些數字在
+              下面的清單裡一筆一筆都看得到，重複寫一次只是把開頭墊高。 */}
+          <p className={text.sectionHeading}>「{current.inputSummary}」</p>
 
           <AiDraftList
             draft={current}
@@ -186,31 +186,16 @@ export function AiDraftsModal({
       open={open}
       onClose={onClose}
       title="待確認的解析結果"
-      footer={
-        <div className="flex w-full items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={async () => {
-              const data = await post({ action: "clearClosed" });
-              if (data.drafts) showToast(`已清掉 ${data.count ?? 0} 批`);
-            }}
-            className="text-xs font-medium text-[#9C94C4]"
-          >
-            清掉已處理的
-          </button>
-          <Button variant="ghost" onClick={onClose}>
-            關閉
-          </Button>
-        </div>
-      }
+      // 本來左邊還有一顆「清掉已處理的」：這份清單只列還沒處理完的，那顆按鈕動到的是
+      // 畫面上根本看不到的東西，按下去唯一的回饋是一句「已清掉 N 批」——使用者無從判斷
+      // 清掉了什麼。已經寫進消費紀錄的批次留在資料庫裡也不影響任何畫面，所以整顆移除。
+      footer={<Button variant="ghost" onClick={onClose}>關閉</Button>}
     >
       {pendingDrafts.length === 0 ? (
         <p className={`px-1 ${text.faint}`}>目前沒有待確認的解析結果。</p>
       ) : (
         <>
-          <p className={`${text.muted} leading-relaxed`}>
-            每一批是一次解析的結果。點進去補分類、略過不要的，再一次寫進消費紀錄。
-          </p>
+          <p className={`${text.muted} leading-relaxed`}>每一筆是一次解析的結果，點進去可以調整。</p>
           <ListCard>
             {pendingDrafts.map((d) => (
               <button
@@ -219,7 +204,10 @@ export function AiDraftsModal({
                 onClick={() => setOpenId(d.id)}
                 className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-[#F3EFFC]"
               >
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#F3EFFC] text-sm">{d.source === "csv" ? "📄" : "💬"}</span>
+                {/* 本來是 📄／💬 兩個 emoji 分 CSV 跟打字輸入，但使用者在這一頁要挑的是
+                    「哪一批還沒確認」，不是「它當初從哪裡來」——來源在點進去的詳情裡看得到。
+                    統一換成帳單圖，跟清單其他列的圖示同一套畫風。 */}
+                <IconAvatar icon={ICON_PATHS.aiDraftItem} plain />
                 <span className="min-w-0 flex-1">
                   <span className={`block truncate ${text.body}`}>{d.inputSummary}</span>
                   <span className={`block ${text.muted}`}>

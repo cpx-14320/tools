@@ -9,6 +9,15 @@
  *  還原就是把原始文件（連同原本的 `_id`）插回去，所以指向它的 categoryId／accountId
  *  全部自動接回來，不用修補任何參照。 */
 
+/** 刪除確認彈窗統一用這一句。
+ *
+ *  垃圾桶做出來之前，那些彈窗寫的是「刪掉之後沒辦法復原」——現在已經不是事實了，
+ *  而且那句話會讓人在該刪的時候不敢刪。真正不可逆的是垃圾桶裡的「永久刪除」跟
+ *  「清空垃圾桶」，那兩個地方才該強調沒有退路。 */
+export const TRASH_RESTORE_NOTE = "刪掉的東西會先進「設定 › 最近刪除」，之後還可以還原。";
+
+import type { CategoryColor } from "./categories";
+
 export type TrashKind = "transaction" | "transfer" | "goal" | "recurringRule" | "account" | "accountType" | "category";
 
 export const TRASH_KIND_LABEL: Record<TrashKind, string> = {
@@ -30,6 +39,11 @@ export interface TrashItemDTO {
   label: string;
   /** 次要說明：分類路徑、金額、日期之類。 */
   sublabel?: string;
+  /** 刪除當下那一列長什麼樣子——圖示路徑（或舊資料的表情符號）跟分類色。跟 label 一樣是
+   *  **當下存起來**的快照：分類可能在這之後也被刪掉，到時候反查不到圖示。有了這兩個，
+   *  垃圾桶裡的每一列就能畫成跟它被刪之前一模一樣，使用者不用重新辨認。 */
+  icon?: string;
+  color?: CategoryColor;
   /** 這一次刪除連帶移除了幾個文件（刪一個分類會連子分類跟預算規則一起）。 */
   docCount: number;
 }

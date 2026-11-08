@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import { breakdownNet, type BreakdownItem, type TransactionDTO, type TransactionInput } from "./transactions";
 import { putInTrash } from "./trash.server";
+import type { CategoryColor } from "./categories";
 
 interface TransactionDoc {
   _id: ObjectId;
@@ -95,11 +96,17 @@ export async function deleteTransaction(userId: ObjectId, id: string): Promise<{
   const doc = await col.findOne({ _id: new ObjectId(id), userId });
   if (!doc) return { transactions: await listTransactions(userId) };
 
+  // 圖示跟顏色也在這裡抓起來存——理由同 label：垃圾桶那一列要畫得跟它被刪之前一樣，
+  // 但分類之後可能也被刪掉，到時候就反查不到了。
+  const db = await getDb();
+  const category = await db.collection<{ icon?: string; color?: CategoryColor }>("expenses.categories").findOne({ _id: doc.categoryId, userId });
   const trashId = await putInTrash(userId, {
     kind: "transaction",
     // 標籤在刪除當下就算好存起來：分類之後可能也被刪掉，到時候反查不到名字。
     label: doc.note?.trim() || "（沒有備註）",
     sublabel: `${doc.date} · ${doc.amount}`,
+    icon: category?.icon,
+    color: category?.color,
     entries: [{ collection: "expenses.transactions", doc }],
   });
   await col.deleteOne({ _id: doc._id, userId });

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ProgressBar } from "@/components/expenses/progress-bar";
 import { PetSprite, PET_ANIMATION_MS, type PetMood } from "@/components/expenses/pet-sprite";
 import { PetShopModal } from "@/components/expenses/pet-shop";
 import { PetBagModal } from "@/components/expenses/pet-bag-modal";
@@ -195,37 +194,49 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
         className="relative w-full flex-1"
         style={{ background: petBackground(pet?.backgroundId ?? "") }}
       >
-        {/* 左上角的狀態：星星幣在上、等級經驗接在底下。兩塊都墊半透明白底——背景換成
-            實景圖之後，純文字直接壓在圖上有的地方看得到、有的地方（深色窗戶、地毯花紋）
-            整個糊掉。 */}
-        <div className="absolute left-3 top-3 flex w-[48%] flex-col items-start gap-1.5">
-          <span className="flex items-center gap-1 rounded-full bg-white/85 px-2.5 py-1 text-sm font-semibold tabular-nums text-[#6F5FD6] backdrop-blur">
-            <IconImg src={ICON_PATHS.petStar} alt="星星幣" size={16} background={false} />
-            {pet?.coins ?? 0}
-          </span>
-          <div className="w-full rounded-2xl bg-white/85 px-2.5 py-1.5 backdrop-blur">
-            <div className="mb-1 flex items-center justify-between text-[11px] font-semibold text-[#6F5FD6]">
-              <span>Lv.{level.level}</span>
-              <span className="tabular-nums">
-                {level.xpInLevel} / {level.xpNeeded}
-              </span>
-            </div>
-            <ProgressBar pct={level.pct} tone="brand" />
+        {/* 上方狀態列：等級徽章、星星幣、說明鈕排成一列，底下接經驗條。
+            沒有外框底板——每個元素自己就是一張畫好的圖（pet-level_badge／pet-star-count／
+            pet-round_button），再墊一塊半透明白底會讓三張圖各自被框一次、反而更雜。
+            經驗條自己是深色描邊的膠囊，數字壓在條上，所以不靠底板也讀得到。 */}
+        <div className="absolute inset-x-3 top-3 flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            {/* 徽章圖是 192×60，用 100% 100% 拉滿這個固定尺寸的格子——它是左右對稱的膠囊，
+                比例固定住就不會變形。 */}
+            <span
+              className="grid h-7 w-[86px] place-items-center bg-no-repeat text-[13px] font-extrabold tracking-wide text-white"
+              style={{ backgroundImage: 'url("/expenses/pet-level_badge.png")', backgroundSize: "100% 100%" }}
+            >
+              LV.{level.level}
+            </span>
+            <span
+              className="flex h-8 w-[104px] items-center justify-center gap-1 bg-no-repeat text-sm font-bold tabular-nums text-[#8A5A2B]"
+              style={{ backgroundImage: 'url("/expenses/pet-star-count.png")', backgroundSize: "100% 100%" }}
+            >
+              <IconImg src={ICON_PATHS.petStar} alt="星星幣" size={18} background={false} />
+              {pet?.coins ?? 0}
+            </span>
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              aria-label="養成的說明"
+              // 畫好的圓鈕＋問號兩張圖疊起來，跟場地上其他按鈕（餵食框、入口圖示）同一套插畫
+              // 風格；原本是半透明白底的文字「?」，在房間圖上看起來像是網頁元件混進遊戲畫面。
+              className="ml-auto grid size-9 shrink-0 place-items-center bg-contain bg-center bg-no-repeat transition-transform active:scale-90"
+              style={{ backgroundImage: 'url("/expenses/pet-round_button.png")' }}
+            >
+              <span aria-hidden className="size-4 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: 'url("/expenses/pet-question_mark.png")' }} />
+            </button>
+          </div>
+
+          {/* 經驗條：數字壓在條上，不另外掛一行「經驗值 450 / 1100」——那一行字直接貼在
+              房間圖上會看不清楚，而且這裡要回答的只是「離下一級還有多遠」。 */}
+          <div className="relative h-4 w-full overflow-hidden rounded-full border border-white/70 bg-white/85 backdrop-blur">
+            <div className="h-full rounded-full bg-[#A9A5FF] transition-[width]" style={{ width: `${level.pct}%` }} />
+            <span className="absolute inset-0 grid place-items-center text-[10px] font-bold tabular-nums text-[#5B3B8C]">
+              {level.xpInLevel} / {level.xpNeeded}
+            </span>
           </div>
         </div>
-
-        {/* 說明收在右上角那顆問號裡（本來掛在「養成」標題旁邊，標題整個拿掉了）。 */}
-        <button
-          type="button"
-          onClick={() => setHelpOpen(true)}
-          aria-label="養成的說明"
-          // 畫好的圓鈕＋問號兩張圖疊起來，跟場地上其他按鈕（餵食框、入口圖示）同一套插畫
-          // 風格；原本是半透明白底的文字「?」，在房間圖上看起來像是網頁元件混進遊戲畫面。
-          className="absolute right-3 top-3 grid size-9 place-items-center bg-contain bg-center bg-no-repeat transition-transform active:scale-90"
-          style={{ backgroundImage: 'url("/expenses/pet-round_button.png")' }}
-        >
-          <span aria-hidden className="size-4 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: 'url("/expenses/pet-question_mark.png")' }} />
-        </button>
 
         {/* 角色釘在場地 45% 高的位置：六張房間圖的地毯／地板中心都落在這附近，
             正中央（50%）站會偏低、貼到下面那排餵食鍵，純置中則因為精靈圖四周留白
@@ -246,7 +257,16 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
               的排法每加一種就要重算版面。
               pt-1：持有數量的徽章凸出按鈕上緣 2px，overflow-x-auto 會連垂直方向一起裁，
               不留這點上緣留白的話徽章會被切掉。 */}
-          <div className="no-scrollbar flex snap-x items-end gap-2 overflow-x-auto pt-1">
+          <div
+            className="no-scrollbar flex snap-x items-end gap-2 overflow-x-auto pt-1"
+            // 滑鼠滾輪轉成橫向捲動：手機是直接用手指滑，但在寬螢幕上滾輪只會捲垂直方向，
+            // 而這一頁沒有垂直捲軸（場地正好塞滿），結果就是「怎麼轉都不會動」。捲軸本身
+            // 是藏起來的（no-scrollbar），所以也沒有可以拖的東西。
+            onWheel={(e) => {
+              if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+              e.currentTarget.scrollLeft += e.deltaY;
+            }}
+          >
             {sortedFoods(pet?.foodCounts ?? {}).map((item) => {
               const count = pet?.foodCounts?.[item.id] ?? 0;
               return (

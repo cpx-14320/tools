@@ -149,6 +149,8 @@ export async function deleteAccountType(
     kind: "accountType",
     label: doc.name,
     sublabel: doc.kind === "liability" ? "負債" : "資產",
+    icon: doc.icon,
+    color: doc.color,
     entries: [{ collection: "expenses.accountTypes", doc }],
   });
   await col.deleteOne({ _id: doc._id, userId });

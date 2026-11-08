@@ -171,8 +171,13 @@ export function MoreView({
           <div>
             <p className={`mb-2 px-1 ${text.label}`}>最近刪除</p>
             <ListCard>
+              {/* 排版跟上面那幾組功能入口一樣（圖示＋標題／說明＋›），只是右邊多一個件數。 */}
               <button type="button" onClick={() => setTrashOpen(true)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-[#F3EFFC]">
-                <span className={`min-w-0 flex-1 ${text.body}`}>已刪除的項目</span>
+                <IconAvatar icon={ICON_PATHS.settingTrash} plain />
+                <span className="min-w-0 flex-1">
+                  <span className={`block ${text.body}`}>已刪除的項目</span>
+                  <span className={`block ${text.muted}`}>還原誤刪的紀錄，或永久清掉</span>
+                </span>
                 <span className="shrink-0 rounded-full bg-[#F3EFFC] px-2 py-0.5 text-xs font-semibold tabular-nums text-[#6F5FD6]">
                   {trashItems.length}
                 </span>

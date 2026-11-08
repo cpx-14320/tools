@@ -35,8 +35,12 @@ export const ICON_PATHS = {
   // AI 記帳那一區的開關列。命名跟上面那幾個設定項一致（setting-<功能>.png），
   // 圖還沒放進 public/expenses 之前 IconImg 會用漸層佔位，不會壞版。
   settingAi: "/expenses/setting-ai.png",
-  // AI 解析完、還沒確認的那一批——借用帳單那張圖（那一列講的就是「一疊等著對的單據」）。
-  aiDrafts: "/expenses/expenses-category-bill.png",
+  // AI 相關的三張：金鑰那一列用鑰匙、設定頁「待確認」那一列用未分類（那批就是還沒歸位
+  // 的紀錄）、彈窗裡每一筆解析結果用帳單。
+  aiKey: "/expenses/setting-key.png",
+  aiDrafts: "/expenses/setting-uncategorized.png",
+  aiDraftItem: "/expenses/expenses-category-bill.png",
+  settingTrash: "/expenses/setting-delete.png",
   settingExport: "/expenses/setting-export.png",
   settingImport: "/expenses/setting-import.png",
 } as const;

@@ -1,6 +1,7 @@
 import { ObjectId, type Document } from "mongodb";
 import { getDb } from "../mongodb";
 import type { TrashItemDTO, TrashKind } from "./trash";
+import type { CategoryColor } from "./categories";
 
 /** 垃圾桶裡的一筆「刪除動作」。一次使用者操作 ＝ 一個項目 ＝ 一次還原。
  *
@@ -13,6 +14,10 @@ interface TrashDoc {
   kind: TrashKind;
   label: string;
   sublabel?: string;
+  /** 刪除當下那一列的圖示與顏色（見 trash.ts 的 TrashItemDTO）。舊資料沒有這兩個欄位，
+   *  畫面上會退回「依種類給一張預設圖」。 */
+  icon?: string;
+  color?: CategoryColor;
   entries: { collection: string; doc: Document }[];
   /** 刪分類時被改掛到「未分類」的那幾筆交易／固定收支。
    *
@@ -33,6 +38,8 @@ function toDTO(doc: TrashDoc): TrashItemDTO {
     kind: doc.kind,
     label: doc.label,
     sublabel: doc.sublabel,
+    icon: doc.icon,
+    color: doc.color,
     docCount: doc.entries.length,
   };
 }
@@ -59,6 +66,8 @@ export async function putInTrash(
     kind: TrashKind;
     label: string;
     sublabel?: string;
+    icon?: string;
+    color?: CategoryColor;
     entries: { collection: string; doc: Document }[];
     reassigned?: { collection: string; ids: ObjectId[]; fromCategoryId: ObjectId }[];
   },
@@ -72,6 +81,8 @@ export async function putInTrash(
     kind: input.kind,
     label: input.label,
     sublabel: input.sublabel,
+    icon: input.icon,
+    color: input.color,
     entries: input.entries,
     reassigned: input.reassigned,
   });

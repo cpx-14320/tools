@@ -97,6 +97,7 @@ export async function deleteGoal(userId: ObjectId, id: string): Promise<{ goals:
     kind: "goal",
     label: doc.name,
     sublabel: `目標 ${doc.targetAmount}`,
+    icon: doc.icon,
     entries: [{ collection: "expenses.goals", doc }],
   });
   await col.deleteOne({ _id: goalId, userId });

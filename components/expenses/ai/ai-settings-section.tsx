@@ -59,9 +59,13 @@ export function AiSettingsSection({
   return (
     <div>
       <p className={`mb-2 px-1 ${text.label}`}>AI 記帳</p>
-      {/* 整列的排版跟上面那幾組功能入口一模一樣（ListCard ＋ 36px 圖示＋標題／說明），
-          差別只在最右邊：那幾組是「點進去」的 ›，這一列是「開或關」的滑動開關。
-          整列都是 <label>，點文字也能切換。 */}
+      {/* 三列收在同一張卡裡（跟首頁「預算支出」那張一樣：同一塊卡片裡是同一件事的幾個
+          面向）。本來開關是一張卡、金鑰跟待確認另外一張，中間隔一段距離，看起來像兩個
+          不相干的設定。
+          第一列的排版跟上面那幾組功能入口一模一樣（36px 圖示＋標題／說明），差別只在
+          最右邊：那幾組是「點進去」的 ›，這一列是「開或關」的滑動開關。整列都是
+          <label>，點文字也能切換。
+          關掉的時候後面兩列不顯示——沒開這個功能的人，金鑰跟待確認都用不到。 */}
       <ListCard>
         <label className="flex items-center gap-3 px-4 py-3.5">
           <IconAvatar icon={ICON_PATHS.settingAi} plain />
@@ -71,36 +75,29 @@ export function AiSettingsSection({
           </span>
           <Switch checked={enabled} onChange={toggle} label="顯示 AI 記帳入口" />
         </label>
+
+        {enabled && (
+          <button type="button" onClick={() => setKeyOpen(true)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-[#F3EFFC]">
+            {/* 只留標題跟右邊的狀態，下面不再掛一行小字：解釋「金鑰存在哪、怎麼用」
+                的地方是點進去的彈窗，在清單上重複一次只是把這一區變長。 */}
+            <IconAvatar icon={ICON_PATHS.aiKey} plain />
+            <span className={`min-w-0 flex-1 ${text.body}`}>OpenAI API Key</span>
+            <span className={`shrink-0 ${text.muted}`}>{hasKey ? maskKey(key) : "尚未設定"}</span>
+            <span className={text.faint}>›</span>
+          </button>
+        )}
+
+        {enabled && pendingDrafts.length > 0 && (
+          <button type="button" onClick={() => setDraftsOpen(true)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-[#F3EFFC]">
+            <IconAvatar icon={ICON_PATHS.aiDrafts} plain />
+            <span className={`min-w-0 flex-1 ${text.body}`}>待確認的解析結果</span>
+            <span className="shrink-0 rounded-full bg-[#F3EFFC] px-2 py-0.5 text-xs font-semibold tabular-nums text-[#6F5FD6]">
+              {pendingDrafts.length}
+            </span>
+            <span className={text.faint}>›</span>
+          </button>
+        )}
       </ListCard>
-
-      {enabled && (
-        <div className="mt-2">
-          <ListCard>
-            <button type="button" onClick={() => setKeyOpen(true)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-[#F3EFFC]">
-              {/* 只留標題跟右邊的狀態，下面不再掛一行小字：解釋「金鑰存在哪、怎麼用」
-                  的地方是點進去的彈窗，在清單上重複一次只是把這一區變長。 */}
-              <span className={`min-w-0 flex-1 ${text.body}`}>OpenAI API Key</span>
-              <span className={`shrink-0 ${text.muted}`}>{hasKey ? maskKey(key) : "尚未設定"}</span>
-              <span className={text.faint}>›</span>
-            </button>
-
-            {pendingDrafts.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setDraftsOpen(true)}
-                className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-[#F3EFFC]"
-              >
-                <IconAvatar icon={ICON_PATHS.aiDrafts} plain />
-                <span className={`min-w-0 flex-1 ${text.body}`}>待確認的解析結果</span>
-                <span className="shrink-0 rounded-full bg-[#F3EFFC] px-2 py-0.5 text-xs font-semibold tabular-nums text-[#6F5FD6]">
-                  {pendingDrafts.length}
-                </span>
-                <span className={text.faint}>›</span>
-              </button>
-            )}
-          </ListCard>
-        </div>
-      )}
 
       <AiKeyModal open={keyOpen} onClose={() => setKeyOpen(false)} />
       <AiDraftsModal open={draftsOpen} drafts={drafts} categories={categories} onClose={() => setDraftsOpen(false)} onDraftsChange={setDrafts} />

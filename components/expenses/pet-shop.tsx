@@ -172,7 +172,7 @@ export function PetShopModal({
           跟整個角色，裁進三欄的小格子裡看不出差別（跟背包同一個理由）。 */}
       {items.length === 0 ? (
         // 目前只有狀態會是空的：圖還在畫，先讓這一頁存在，使用者知道之後會有東西。
-        <p className={text.muted}>新的{kind}還在畫，之後會出現在這裡。</p>
+        <p className={text.muted}>{kind}準備中。</p>
       ) : (
         <div className={`grid gap-3 ${kind === "食物" ? "grid-cols-3" : "grid-cols-2"}`}>
           {items.map((item) => (

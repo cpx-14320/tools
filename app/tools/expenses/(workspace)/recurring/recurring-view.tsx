@@ -14,6 +14,7 @@ import { ProgressBar } from "@/components/expenses/progress-bar";
 import { text } from "@/components/expenses/theme";
 import { RecurringRuleModal, type RecurringRuleModalDraft } from "@/components/expenses/recurring-rule-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
+import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { categoryById, categoryColorClass, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 import type { TransactionDTO } from "@/lib/expenses/transactions";
@@ -241,7 +242,7 @@ export function RecurringView({
       <ConfirmModal
         open={deleteConfirm !== null}
         title="確定要刪除固定收支嗎？"
-        message={`刪除後這${(deleteConfirm?.length ?? 0) > 1 ? ` ${deleteConfirm?.length} 條` : "條"}規則不會再自動入帳，但已經入帳過的交易紀錄不會被刪除，會繼續留著。`}
+        message={`刪除後這${(deleteConfirm?.length ?? 0) > 1 ? ` ${deleteConfirm?.length} 條` : "條"}規則不會再自動入帳，但已經入帳過的交易紀錄不會被刪除，會繼續留著。${TRASH_RESTORE_NOTE}`}
         onConfirm={handleConfirmedDelete}
         onClose={() => setDeleteConfirm(null)}
       />

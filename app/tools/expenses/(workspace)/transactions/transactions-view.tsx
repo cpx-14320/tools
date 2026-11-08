@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FaIcon } from "@/components/expenses/fa-icon";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
+import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { useSearchParams } from "next/navigation";
 import { SegmentedControl } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
@@ -462,7 +463,7 @@ export function TransactionsView({
       <ConfirmModal
         open={deleteConfirm !== null}
         title={`刪除 ${deleteConfirm?.length ?? 0} 筆紀錄`}
-        message="刪除的紀錄會先進「設定 › 最近刪除」，之後還可以還原。確定要刪除選取的紀錄嗎？"
+        message={`確定要刪除選取的紀錄嗎？${TRASH_RESTORE_NOTE}`}
         confirmLabel="刪除"
         onClose={() => setDeleteConfirm(null)}
         onConfirm={handleBulkDelete}

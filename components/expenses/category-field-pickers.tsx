@@ -87,7 +87,7 @@ export function GoalIconPicker({ value, onChange, required = false }: { value: s
   return <IconPicker options={EXPENSE_ICON_OPTIONS} value={value} onChange={onChange} required={required} />;
 }
 
-/** 分類顏色選擇器——十二個色票圓點，選中的那顆外圈加色環。新增分類（批次）跟編輯分類
+/** 分類顏色選擇器——十八個色票圓點，選中的那顆外圈加色環。新增分類（批次）跟編輯分類
  *  兩個彈窗本來各自手刻一份一模一樣的，收斂成這一個。 */
 export function CategoryColorPicker({ value, onChange }: { value: CategoryColor; onChange: (color: CategoryColor) => void }) {
   return (
@@ -109,7 +109,14 @@ export function CategoryColorPicker({ value, onChange }: { value: CategoryColor;
   );
 }
 
-export const CATEGORY_COLORS: CategoryColor[] = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"];
+/** 色票的排列順序——照色相排成紅橙黃綠藍靛紫一圈，不是照字母 a→r。使用者在挑的是
+ *  「我想要哪個顏色」，照色環排才找得到；字母順序在畫面上看起來就是一盤打翻的顏色。
+ *  （字母只是存進資料庫的代號，跟顯示順序無關。） */
+export const CATEGORY_COLORS: CategoryColor[] = [
+  "m", "l", "n", "e", "b", "g",
+  "o", "h", "f", "i", "d", "p",
+  "a", "q", "j", "k", "r", "c",
+];
 
 /** 新增分類／帳戶類型時的預設圖示——還沒選之前就先放共用的「其他」，不會有空白圖示。 */
 export const DEFAULT_PICKER_ICON = ICON_OTHER;

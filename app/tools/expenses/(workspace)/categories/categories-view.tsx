@@ -10,6 +10,7 @@ import { text } from "@/components/expenses/theme";
 import { CategoryModal, type CategoryModalDraft } from "@/components/expenses/category-modal";
 import { CategoryBatchModal, type CategoryBatchItem } from "@/components/expenses/category-batch-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
+import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
@@ -280,7 +281,7 @@ export function CategoriesView({
           (deleteConfirm?.inUseCount ?? 0) > 0
             ? `還有共 ${deleteConfirm?.inUseCount} 筆交易或固定收支規則在用，刪除後這些紀錄會自動歸類到「未分類」，不會被刪除也不會變成孤兒資料。`
             : "已經記過的交易如果有掛到這些分類，會自動歸類到「未分類」，不會被刪除。",
-          "確定要刪除嗎？",
+          TRASH_RESTORE_NOTE,
         ]
           .filter(Boolean)
           .join("")}

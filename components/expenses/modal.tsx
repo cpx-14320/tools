@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "./button";
 import { text } from "./theme";
+import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { useAsyncAction } from "./use-async-action";
 
 // placeholder 的顏色寫在這裡，不要讓瀏覽器自己配灰色：同一列裡常常一邊是真 input、
@@ -164,9 +165,10 @@ export function ModalFooter({
   deleteLabel?: string;
   /** 刪除前的二次確認。
    *
-   *  **預設一定會問**。這顆按鈕就在「儲存」的同一排、離輸入欄位很近，而且刪掉的是使用者
-   *  自己一筆一筆記了好幾年的資料，沒有復原機制——實際發生過：編輯一筆交易時手滑點到
-   *  刪除，那筆就沒了，連刪了什麼都不知道。
+   *  **預設一定會問**。這顆按鈕就在「儲存」的同一排、離輸入欄位很近，刪掉的又是使用者
+   *  自己一筆一筆記的資料——實際發生過：編輯一筆交易時手滑點到刪除，當下根本不知道刪了
+   *  什麼。現在刪掉的東西會進垃圾桶（還救得回來），所以這一關的作用是「讓人看清楚自己
+   *  要刪什麼」，不是嚇阻。
    *
    *  傳 false 代表呼叫端自己已經有一套更清楚的確認（例如刪分類要先講「底下五個子分類
    *  會一起不見」），不要再疊第二層。 */
@@ -240,7 +242,7 @@ export function ModalFooter({
             </div>
           }
         >
-          <p className={`${text.body} leading-relaxed`}>{deleteConfirm?.message ?? "刪掉之後沒辦法復原。"}</p>
+          <p className={`${text.body} leading-relaxed`}>{deleteConfirm?.message ?? TRASH_RESTORE_NOTE}</p>
         </Modal>
       )}
     </>

@@ -296,6 +296,8 @@ export async function deleteCategory(
     trashId = await putInTrash(userId, {
       kind: "category",
       label: mainDoc.name,
+      icon: mainDoc.icon,
+      color: mainDoc.color,
       sublabel: [mainDoc.kind, subCount > 0 ? `含 ${subCount} 個子分類` : null, budgetDocs.length > 0 ? `含 ${budgetDocs.length} 筆預算` : null]
         .filter(Boolean)
         .join(" · "),

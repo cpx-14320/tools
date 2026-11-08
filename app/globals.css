@@ -24,7 +24,7 @@
      「隨便六色」。這次再往馬卡龍糖果色調一輪（亮度拉高、彩度收斂），驗證過拉亮之後
      色盲可辨識度仍然全部通過，不是單純用眼睛猜的。 */
   --cat-a-bg: #E8E9FF; --cat-a-fg: #A9A5FF;
-  --cat-b-bg: #EBEED6; --cat-b-fg: #B2B950;
+  --cat-b-bg: #F4F4DC; --cat-b-fg: #CFD055;
   --cat-c-bg: #FFE3EB; --cat-c-fg: #F38CAF;
   --cat-d-bg: #DEEDFF; --cat-d-fg: #79B4FF;
   --cat-e-bg: #F4EBD4; --cat-e-fg: #D3AC41;
@@ -39,6 +39,16 @@
   --cat-j-bg: #F0E6FB; --cat-j-fg: #C193E8;
   --cat-k-bg: #FCE8F8; --cat-k-fg: #EE97E2;
   --cat-l-bg: #FFE7E1; --cat-l-fg: #FC9480;
+  /* 最後六色（2026-11 補到 18 色）：原本的十二色在紅、橘、靛、紫那幾段留了很大的空檔，
+     綠色那段反而擠了四個（其中 b 是混濁的橄欖 #B2B950，跟 g 的草綠黏在一起）。這次把
+     b 換成檸檬黃、另外補上草莓紅、南瓜橘、森綠、靛藍、紫羅蘭、桃紅，整組攤開來就是
+     紅橙黃綠藍靛紫一圈，相鄰兩色的色相至少差 15°。彩度亮度照前面那組馬卡龍色調。 */
+  --cat-m-bg: #FFE0DE; --cat-m-fg: #F2706B;
+  --cat-n-bg: #FFEEDB; --cat-n-fg: #F6A24C;
+  --cat-o-bg: #E2F4E6; --cat-o-fg: #5FC173;
+  --cat-p-bg: #E4E8FD; --cat-p-fg: #7C93F0;
+  --cat-q-bg: #EFE4FD; --cat-q-fg: #B585F0;
+  --cat-r-bg: #FDE3F0; --cat-r-fg: #EC7BB5;
 }
 
 @theme inline {
@@ -72,6 +82,12 @@
   --color-cat-j-bg: var(--cat-j-bg); --color-cat-j-fg: var(--cat-j-fg);
   --color-cat-k-bg: var(--cat-k-bg); --color-cat-k-fg: var(--cat-k-fg);
   --color-cat-l-bg: var(--cat-l-bg); --color-cat-l-fg: var(--cat-l-fg);
+  --color-cat-m-bg: var(--cat-m-bg); --color-cat-m-fg: var(--cat-m-fg);
+  --color-cat-n-bg: var(--cat-n-bg); --color-cat-n-fg: var(--cat-n-fg);
+  --color-cat-o-bg: var(--cat-o-bg); --color-cat-o-fg: var(--cat-o-fg);
+  --color-cat-p-bg: var(--cat-p-bg); --color-cat-p-fg: var(--cat-p-fg);
+  --color-cat-q-bg: var(--cat-q-bg); --color-cat-q-fg: var(--cat-q-fg);
+  --color-cat-r-bg: var(--cat-r-bg); --color-cat-r-fg: var(--cat-r-fg);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

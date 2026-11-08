@@ -24,6 +24,7 @@ import { SelectField } from "@/components/expenses/select-field";
 import { Field } from "@/components/expenses/modal";
 import { AccountPickerModal } from "@/components/expenses/account-picker-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
+import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { ReconcileModal } from "@/components/expenses/reconcile-modal";
 import { BreakdownToggle, TransactionBreakdown } from "@/components/expenses/transaction-breakdown";
 import { dateFilterRange } from "@/lib/expenses/date-filter";
@@ -372,7 +373,7 @@ export function AccountDetailView({
       <ConfirmModal
         open={bulkDeleteConfirm !== null}
         title={`刪除 ${bulkDeleteConfirm?.length ?? 0} 筆紀錄`}
-        message="刪除的紀錄會先進「設定 › 最近刪除」，之後還可以還原。確定要刪除選取的紀錄嗎？"
+        message={`確定要刪除選取的紀錄嗎？${TRASH_RESTORE_NOTE}`}
         confirmLabel="刪除"
         onClose={() => setBulkDeleteConfirm(null)}
         onConfirm={handleBulkDelete}
@@ -381,7 +382,7 @@ export function AccountDetailView({
       <ConfirmModal
         open={deleteConfirm !== null}
         title="這個帳戶還有紀錄"
-        message={`這個帳戶還有 ${deleteConfirm?.inUseCount ?? 0} 筆交易或轉帳紀錄，刪除後這些紀錄會變成「不指定帳戶」，但不會被刪除。確定要刪除這個帳戶嗎？`}
+        message={`這個帳戶還有 ${deleteConfirm?.inUseCount ?? 0} 筆交易或轉帳紀錄，刪除後這些紀錄會變成「不指定帳戶」，但不會被刪除。${TRASH_RESTORE_NOTE}`}
         onConfirm={handleForceDeleteAccount}
         onClose={() => setDeleteConfirm(null)}
       />

@@ -4,12 +4,26 @@ import { useState } from "react";
 import { Modal } from "./modal";
 import { Button } from "./button";
 import { ListCard } from "./list-row";
+import { IconAvatar } from "./icon-avatar";
+import { categoryColorClass } from "@/lib/expenses/categories";
 import { ConfirmModal } from "./confirm-modal";
 import { text } from "./theme";
 import { useToast } from "./toast";
 import { useAsyncAction } from "./use-async-action";
-import { TRASH_KIND_LABEL, type TrashItemDTO } from "@/lib/expenses/trash";
-import { formatDate } from "@/lib/format";
+import { ICON_PATHS } from "./icon-paths";
+import { TRASH_KIND_LABEL, type TrashItemDTO, type TrashKind } from "@/lib/expenses/trash";
+import { formatDateWithWeekday } from "@/lib/format";
+
+/** 舊資料沒有存圖示時依種類退回的預設圖（2026-11 之前刪掉的東西）。 */
+const KIND_ICON: Record<TrashKind, string> = {
+  transaction: ICON_PATHS.settingCategories,
+  transfer: ICON_PATHS.accountTransfer,
+  goal: ICON_PATHS.settingGoals,
+  recurringRule: ICON_PATHS.settingRecurring,
+  account: ICON_PATHS.settingAssets,
+  accountType: ICON_PATHS.settingAccountTypes,
+  category: ICON_PATHS.settingCategories,
+};
 
 /** 設定頁的「最近刪除」。
  *
@@ -45,6 +59,13 @@ export function TrashModal({
       .catch(() => ({ error: "操作失敗，再試一次" }));
     if (data.items) onItemsChange(data.items);
     return data;
+  }
+
+  // 依刪除日期分組（新的在前，listTrash 已經排好序，所以照順序塞就是對的）。
+  const groups = new Map<string, TrashItemDTO[]>();
+  for (const item of items) {
+    const date = item.deletedAt.slice(0, 10);
+    groups.set(date, [...(groups.get(date) ?? []), item]);
   }
 
   const restore = useAsyncAction(async (item: TrashItemDTO) => {
@@ -87,37 +108,44 @@ export function TrashModal({
         ) : (
           <>
             <p className={`${text.muted} leading-relaxed`}>刪掉的項目會一直留在這裡，直到你自己清掉為止，不會自動消失。</p>
-            <ListCard>
-              {items.map((item) => (
-                <div key={item.id} className="flex items-center gap-3 px-4 py-3">
-                  <div className="min-w-0 flex-1">
-                    <p className={`truncate ${text.body}`}>{item.label}</p>
-                    <p className={text.muted}>
-                      {TRASH_KIND_LABEL[item.kind]}
-                      {item.sublabel ? ` · ${item.sublabel}` : ""}
-                      {/* 一次刪除連帶移除好幾個文件時講明白（刪分類會連子分類一起）。 */}
-                      {item.docCount > 1 ? ` · 共 ${item.docCount} 項` : ""}
-                    </p>
-                    <p className={text.faint}>{formatDate(item.deletedAt.slice(0, 10))} 刪除</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setPurgeTarget(item)}
-                    className="shrink-0 text-xs font-medium text-[#9C94C4]"
-                  >
-                    永久刪除
-                  </button>
-                  <button
-                    type="button"
-                    disabled={restore.busy}
-                    onClick={() => restore.run(item)}
-                    className="shrink-0 rounded-full bg-[#F3EFFC] px-3 py-1 text-xs font-medium text-[#6F5FD6] disabled:opacity-40"
-                  >
-                    還原
-                  </button>
-                </div>
-              ))}
-            </ListCard>
+            {/* 依「刪除日期」分組，日期當小標題——跟明細頁的消費清單同一種排法。
+                一天刪好幾次是常有的事，沒有分組的話整串看起來就是一長條，要找「我昨天
+                刪掉的那筆」只能一列一列看日期。 */}
+            {[...groups.entries()].map(([date, dayItems]) => (
+              <div key={date}>
+                <p className={`mb-1.5 px-1 font-medium ${text.muted}`}>{formatDateWithWeekday(date)}</p>
+                <ListCard>
+                  {dayItems.map((item) => (
+                    <div key={item.id} className="flex items-center gap-3 px-4 py-3">
+                      {/* 圖示跟顏色是刪除當下存下來的快照（見 trash.ts），所以這一列看起來
+                          跟它被刪之前在原本清單上的樣子一樣——使用者不用重新辨認一次。
+                          舊資料沒有存圖示，退回依種類給的預設圖。 */}
+                      <IconAvatar icon={item.icon || KIND_ICON[item.kind]} className={item.color ? categoryColorClass[item.color] : undefined} />
+                      <div className="min-w-0 flex-1">
+                        <p className={`truncate ${text.body}`}>{item.label}</p>
+                        <p className={`truncate ${text.muted}`}>
+                          {TRASH_KIND_LABEL[item.kind]}
+                          {item.sublabel ? ` · ${item.sublabel}` : ""}
+                          {/* 一次刪除連帶移除好幾個文件時講明白（刪分類會連子分類一起）。 */}
+                          {item.docCount > 1 ? ` · 共 ${item.docCount} 項` : ""}
+                        </p>
+                      </div>
+                      <button type="button" onClick={() => setPurgeTarget(item)} className="shrink-0 text-xs font-medium text-[#9C94C4]">
+                        永久刪除
+                      </button>
+                      <button
+                        type="button"
+                        disabled={restore.busy}
+                        onClick={() => restore.run(item)}
+                        className="shrink-0 rounded-full bg-[#F3EFFC] px-3 py-1 text-xs font-medium text-[#6F5FD6] disabled:opacity-40"
+                      >
+                        還原
+                      </button>
+                    </div>
+                  ))}
+                </ListCard>
+              </div>
+            ))}
           </>
         )}
       </Modal>

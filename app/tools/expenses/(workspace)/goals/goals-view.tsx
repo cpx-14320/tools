@@ -10,6 +10,7 @@ import { Card, CardBody } from "@/components/expenses/card";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ProgressBar } from "@/components/expenses/progress-bar";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
+import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { text } from "@/components/expenses/theme";
@@ -136,7 +137,7 @@ export function GoalsView({ initialGoals }: { initialGoals: SavingsGoalDTO[] }) 
       <ConfirmModal
         open={deleteConfirm !== null}
         title="確定要刪除目標嗎？"
-        message={`刪除後這${(deleteConfirm?.length ?? 0) > 1 ? ` ${deleteConfirm?.length} 個` : "個"}目標跟累積進度都會不見，無法復原。還有固定收支連著的話，連動也會一併解除。`}
+        message={`刪除後這${(deleteConfirm?.length ?? 0) > 1 ? ` ${deleteConfirm?.length} 個` : "個"}目標跟累積進度就不會再出現在清單上。還有固定收支連著的話，連動也會一併解除。${TRASH_RESTORE_NOTE}`}
         onConfirm={handleConfirmedDelete}
         onClose={() => setDeleteConfirm(null)}
       />
