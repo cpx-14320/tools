@@ -65,19 +65,17 @@ export function YearPickerModal({
       footer={<ModalFooter onClose={onClose} onConfirm={() => onSave({ baseYear: base, compareYears: compare, deltaMode: mode })} />}
     >
       <div>
-        {/* 金額跟百分比回答的不是同一種問題：「三月比去年多花了 NT$ 1,200」是可以直接
+        {/* 數字（差額）跟百分比回答的不是同一種問題：「三月比去年多花了 NT$ 1,200」是可以直接
             拿來做決定的數字；「多了 38%」則是在基數差很多的年份之間才看得出意義（今年
             才開始記帳的分類，金額差不大但比例會很誇張）。兩個都留著讓使用者自己選，
             比替他決定一個好。 */}
-        {/* 標題講「單位」不講「顯示方式」：底下兩個選項（金額／百分比）本來就是兩種單位，
-            「顯示方式」聽起來像在挑顏色或圖表樣式。 */}
-        <p className={`mb-2 ${text.label}`}>增減單位</p>
+        <p className={`mb-2 ${text.label}`}>顯示方式</p>
         <SegmentedControl
           className="self-start"
           value={mode}
           onChange={setMode}
           options={[
-            { value: "amount", label: "金額" },
+            { value: "amount", label: "數字" },
             { value: "percent", label: "百分比" },
           ]}
         />

@@ -18,6 +18,7 @@ import { accountBalance, accountsByKind, balanceDelta, netWorth, netWorthAt, sum
 import { accountTypeById, accountTypeColorClass, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
 import { categoryById, categoryColorHex, categoryColorClass, type CategoryDTO } from "@/lib/expenses/categories";
+import { expenseCategoryIcon, incomeCategoryIcon } from "@/lib/expenses/presets";
 import {
   totalsForRange,
   rangeDelta,
@@ -304,13 +305,30 @@ export function ReportsView({
   // 結餘沒有「分類佔比」可以畫——它是收入減支出的差，不是一堆分類加起來。能畫的是
   // 「這段期間的錢從哪裡來、又去了哪裡」：收入跟支出兩片，中間的缺口就是結餘。版面
   // 跟支出／收入分頁的圓餅完全一樣，四個分頁看起來才是同一種東西。
-  const netDonutData: DonutSlice[] = [
+  // icon／iconClass 是給底下那份清單用的（ListProgressRow）：收入借薪水那張圖、支出借
+  // 帳單那張，兩者都是「一整類收入／支出」最好認的代表圖——這兩列不是真的分類，沒有
+  // 自己的圖可用。顏色跟圓餅同一組，上下對得起來。
+  const netDonutData: (DonutSlice & { icon: string; iconClass: string })[] = [
     // 收支兩塊用分類色票的紫跟粉（NET_INCOME_COLOR／NET_EXPENSE_COLOR），不是 KPI 的
     // 綠／紅：綠紅在這個 App 裡講的是「變好／變壞」（漲跌徽章、結餘正負），但圓餅這兩塊
     // 只是「這段期間進來多少、出去多少」的組成，沒有好壞可言，借用綠紅會讓人以為支出
-    // 那塊本身是個警訊。底下的「結餘」那一行才是真的有好壞，所以仍然維持綠／紅。
-    { id: "income", label: "收入", amount: totalIncome, colorHex: NET_INCOME_COLOR },
-    { id: "expense", label: "支出", amount: totalExpense, colorHex: NET_EXPENSE_COLOR },
+    // 那塊本身是個警訊。
+    {
+      id: "income",
+      label: "收入",
+      amount: totalIncome,
+      colorHex: NET_INCOME_COLOR,
+      icon: incomeCategoryIcon("salary"),
+      iconClass: categoryColorClass.a,
+    },
+    {
+      id: "expense",
+      label: "支出",
+      amount: totalExpense,
+      colorHex: NET_EXPENSE_COLOR,
+      icon: expenseCategoryIcon("bill"),
+      iconClass: categoryColorClass.c,
+    },
   ].filter((d) => d.amount > 0);
   const netDonutTotal = totalIncome + totalExpense;
 
@@ -665,15 +683,21 @@ export function ReportsView({
                 ))}
               </div>
             </div>
-            {/* 底下列收入／支出的實際金額，不再重複寫一次「結餘」——結餘在這一頁最上面的
-                KPI 已經有了，同一個數字在同一屏出現兩次只是佔位置。
-                版面也跟支出／收入兩個分頁一致：圓餅 → 比例圖例 → 金額清單，三個分頁
-                看起來才是同一種卡片。 */}
+            {/* 底下用跟支出／收入兩個分頁一模一樣的那種列（ListProgressRow：圖示＋金額＋
+                進度條），不再重複寫一次「結餘」——結餘在這一頁最上面的 KPI 已經有了，
+                同一個數字在同一屏出現兩次只是佔位置。三個分頁的這張卡因此長得一樣：
+                圓餅 → 比例圖例 → 帶進度條的金額清單。 */}
             <div className="mt-5 flex flex-col gap-3 border-t border-[#F2EEFA] pt-4">
               {netDonutData.map((d) => (
-                <div key={d.id} className="flex items-center justify-between text-sm">
-                  <span className={text.body}>{d.label}</span>
-                  <span className="tabular-nums font-semibold text-[#4A3B7C]">{formatCurrency(d.amount)}</span>
+                <div key={d.id} className="flex items-center gap-3">
+                  <ListProgressRow
+                    icon={d.icon}
+                    iconClassName={d.iconClass}
+                    name={d.label}
+                    amount={formatCurrency(d.amount)}
+                    pct={netDonutTotal > 0 ? Math.round((d.amount / netDonutTotal) * 100) : 0}
+                    barColorHex={d.colorHex}
+                  />
                 </div>
               ))}
             </div>
