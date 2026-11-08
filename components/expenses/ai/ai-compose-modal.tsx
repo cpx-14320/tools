@@ -8,6 +8,7 @@ import { text } from "../theme";
 import { useToast } from "../toast";
 import { AiDraftList } from "./ai-draft-list";
 import { useAiKey } from "./use-ai-key";
+import { useSpeechInput } from "./use-speech-input";
 import type { CategoryDTO } from "@/lib/expenses/categories";
 import { unclassifiedItems, type AiDraftDTO, type AiDraftItemDTO } from "@/lib/expenses/ai-drafts";
 import type { TransactionDTO } from "@/lib/expenses/transactions";
@@ -58,6 +59,13 @@ export function AiComposeModal({
   const [draft, setDraft] = useState<AiDraftDTO | null>(null);
   /** 正在編輯的那一筆（null ＝ 沒有在編）。 */
   const [editing, setEditing] = useState<AiDraftItemDTO | null>(null);
+
+  // 語音輸入：收完音把整段話接到輸入框後面（不是蓋掉）——使用者可能先打了幾筆、再用講的
+  // 補後面那幾筆。接的時候補一個逗號，解析那邊本來就用逗號斷句。
+  const speech = useSpeechInput({
+    onResult: (spoken) => setInput((prev) => (prev.trim() ? `${prev.trim()}，${spoken}` : spoken)),
+    onError: showToast,
+  });
 
   const unclassified = draft ? unclassifiedItems(draft) : [];
   const pending = draft?.items.filter((i) => i.state === "pending") ?? [];
@@ -150,13 +158,33 @@ export function AiComposeModal({
     >
       {!draft && (
         <>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            rows={4}
-            placeholder="午餐全家便當 120，晚上跟朋友看電影 350"
-            className="w-full resize-none rounded-2xl border border-[#ECE4FA] bg-white px-4 py-3 text-sm text-[#4A3B7C] outline-none placeholder:text-[#B3ABD4] focus:border-[#6F5FD6]"
-          />
+          <div className="relative">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              rows={4}
+              placeholder="午餐全家便當 120，晚上跟朋友看電影 350"
+              // 右邊留出麥克風那顆按鈕的位置（pr-14），不然打字會跑到按鈕底下。
+              className="w-full resize-none rounded-2xl border border-[#ECE4FA] bg-white py-3 pl-4 pr-14 text-sm text-[#4A3B7C] outline-none placeholder:text-[#B3ABD4] focus:border-[#6F5FD6]"
+            />
+            {/* 瀏覽器不支援語音辨識時整顆不顯示（見 useSpeechInput 的說明）——留一顆按了
+                沒反應的按鈕比沒有更糟。 */}
+            {speech.supported && (
+              <button
+                type="button"
+                onClick={speech.listening ? speech.stop : speech.start}
+                aria-label={speech.listening ? "停止收音" : "用說的輸入"}
+                title={speech.listening ? "停止收音" : "用說的輸入"}
+                className={`absolute right-3 top-3 grid size-9 place-items-center rounded-full text-base transition-colors ${
+                  // 收音中換成紅色方塊＋呼吸效果：麥克風開著是會讓人介意的狀態，要一眼看得出來。
+                  speech.listening ? "animate-pulse bg-[#D1517E] text-white" : "bg-[#F3EFFC] text-[#6F5FD6]"
+                }`}
+              >
+                {speech.listening ? "■" : "🎤"}
+              </button>
+            )}
+          </div>
+          {speech.listening && <p className={`-mt-1 ${text.muted}`}>聆聽中…講完按一下紅色按鈕，辨識結果會自動填進上面的框。</p>}
           <p className={`${text.faint} leading-relaxed`}>
             一次最多 20 筆。用逗號或換行分開每一筆，日期可以講「昨天」「前天」，沒講就當作今天。收入或支出會看分類自己判斷。
           </p>
