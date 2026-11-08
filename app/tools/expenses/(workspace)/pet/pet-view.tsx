@@ -69,8 +69,18 @@ function CoinAmount({ value }: { value: number | string }) {
   );
 }
 
-/** 餵食鍵那一排的食物（固定四種，見 lib/expenses/pet.ts 的說明）。 */
+/** 餵食列的食物。PET_ITEMS 裡本來就是由便宜到貴排好的，這個順序就是「手上一份都沒有」
+ *  時的預設排序（見下面 sortedFoods 的說明）。 */
 const FOOD_ITEMS = PET_ITEMS.filter((i) => i.kind === "食物");
+
+/** 餵食列的排序：手上有的排前面（多的更前面），同樣數量的再照價格由便宜到貴。
+ *
+ *  「有幾份」才是這一列要回答的問題——使用者滑到這裡是要餵東西，不是逛商店，手上有的
+ *  東西不該被一堆買不起的擋在後面。都是 0 的時候就退回價格順序（也就是 PET_ITEMS 原本
+ *  的順序），最便宜、最可能買得起的排在最前面。 */
+function sortedFoods(counts: Record<string, number>) {
+  return [...FOOD_ITEMS].sort((a, b) => (counts[b.id] ?? 0) - (counts[a.id] ?? 0) || a.price - b.price);
+}
 
 /** 養成頁。
  *
@@ -204,10 +214,16 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
             bottom-24 是讓開底部導覽列的高度——場地圖本身鋪到卡片最底下（外殼那層的
             pb-24 在這一頁關掉了），但按鈕不能被導覽列蓋住。 */}
         <div className="absolute inset-x-3 bottom-24 flex flex-col gap-2">
-          {/* 餵食鍵：一排四顆，按鈕框是 pet-buttonbox.png、食物圖疊在框中間。
-              沒有的食物整顆淡掉（不是藏起來）：格數固定四格，少一格會讓剩下的跳位置。 */}
-          <div className="flex items-end gap-2">
-            {FOOD_ITEMS.map((item) => {
+          {/* 餵食鍵：可以左右滑的一列，按鈕框是 pet-buttonbox.png、食物圖疊在框中間。
+              沒有的食物整顆淡掉（不是藏起來）：它同時也是「商店有這個、去買」的提示。
+
+              一次露出 4.5 格（寬度 = (可視寬 − 4 個間距) ÷ 4.5）：第五格露出一半，讓人
+              一眼看出右邊還有東西可以滑，不用另外畫箭頭或圓點。食物會愈加愈多，固定幾格
+              的排法每加一種就要重算版面。
+              pt-1：持有數量的徽章凸出按鈕上緣 2px，overflow-x-auto 會連垂直方向一起裁，
+              不留這點上緣留白的話徽章會被切掉。 */}
+          <div className="no-scrollbar flex snap-x items-end gap-2 overflow-x-auto pt-1">
+            {sortedFoods(pet?.foodCounts ?? {}).map((item) => {
               const count = pet?.foodCounts?.[item.id] ?? 0;
               return (
                 <button
@@ -219,12 +235,12 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
                   // 字會把框本身的插畫擠掉，而食物圖本身已經夠好認了。
                   aria-label={`餵${item.name}（還有 ${count} 份）`}
                   title={`${item.name} ×${count}`}
-                  className={`relative grid aspect-[249/230] flex-1 place-items-center bg-contain bg-center bg-no-repeat transition-transform active:scale-95 ${
+                  className={`relative grid aspect-[249/230] w-[calc((100%-2rem)/4.5)] shrink-0 snap-start place-items-center bg-contain bg-center bg-no-repeat transition-transform active:scale-95 ${
                     count === 0 ? "opacity-40" : ""
                   }`}
                   style={{ backgroundImage: `url("${ICON_PATHS.petButtonBox}")` }}
                 >
-                  <IconImg src={item.image} alt={item.name} size={60} background={false} />
+                  <IconImg src={item.image} alt={item.name} size={52} background={false} />
                   {/* 持有數量釘在框的右上角——框裡本來就只有食物圖，數字壓在圖上會糊成一團。 */}
                   <span className="absolute -right-0.5 -top-0.5 min-w-[18px] rounded-full bg-[#6F5ED4] px-1 text-[10px] font-semibold leading-[18px] text-white tabular-nums">
                     {count}

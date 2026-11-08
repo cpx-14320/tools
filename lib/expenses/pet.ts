@@ -60,15 +60,24 @@ export interface PetItem {
 /** 商店品項。食物是消耗品（買了直接餵、換經驗值），服裝是一次性購買、可以重複換穿。 */
 export const PET_ITEMS: PetItem[] = [
   // 由便宜到貴排。價格＝經驗值，一比一：買的時候花掉多少星星幣，餵下去就換回多少
-  // 經驗值，不用在腦袋裡算匯率。（同經驗值的自然就同價格，蛋糕跟串燒都是 80
-  // 星星幣），不要出現「同樣經驗值但比較貴」這種永遠不該選的選項。
+  // 經驗值，不用在腦袋裡算匯率（同經驗值的自然就同價格，拉麵跟蛋糕都是 150 星星幣），
+  // 不要出現「同樣經驗值但比較貴」這種永遠不該選的選項。
   //
-  // 固定四種：養成頁的餵食鍵是疊在場地上的一排按鈕框（見 pet-view.tsx），一排剛好四格，
-  // 要加第五種食物就得先決定那排怎麼排。
-  { id: "food-noodle", name: "拉麵", kind: "食物", price: 30, xp: 30, desc: "吃飽一點，心情也好", image: petItemImage("food-noodle") },
-  { id: "food-cake", name: "蛋糕", kind: "食物", price: 80, xp: 80, desc: "慶祝一下這個月守住預算", image: petItemImage("food-cake") },
-  { id: "food-skewer", name: "串燒", kind: "食物", price: 80, xp: 80, desc: "下班後的宵夜場", image: petItemImage("food-skewer") },
-  { id: "food-yuzu", name: "柚子酒", kind: "食物", price: 100, xp: 100, desc: "給自己的大獎勵", image: petItemImage("food-yuzu") },
+  // 價格一律是 50 的倍數，由便宜到貴排——這個順序就是養成頁餵食列「手上一份都沒有時」
+  // 的預設排序（見 pet-view.tsx），所以不要隨便插隊。
+  // 食物多到一排放不下了，養成頁那排改成可以左右滑的輪播，加第十三種不用再改版面。
+  { id: "food-cookies", name: "餅乾", kind: "食物", price: 50, xp: 50, desc: "配茶剛剛好", image: petItemImage("food-cookies") },
+  { id: "food-candiedhawthorn", name: "糖葫蘆", kind: "食物", price: 50, xp: 50, desc: "路邊攤的小確幸", image: petItemImage("food-candiedhawthorn") },
+  { id: "food-icecream", name: "冰淇淋", kind: "食物", price: 100, xp: 100, desc: "天氣熱就是要這個", image: petItemImage("food-icecream") },
+  { id: "food-salad", name: "沙拉", kind: "食物", price: 100, xp: 100, desc: "偶爾也要吃點菜", image: petItemImage("food-salad") },
+  { id: "food-noodle", name: "拉麵", kind: "食物", price: 150, xp: 150, desc: "吃飽一點，心情也好", image: petItemImage("food-noodle") },
+  { id: "food-cake", name: "蛋糕", kind: "食物", price: 150, xp: 150, desc: "慶祝一下這個月守住預算", image: petItemImage("food-cake") },
+  { id: "food-skewer", name: "串燒", kind: "食物", price: 200, xp: 200, desc: "下班後的宵夜場", image: petItemImage("food-skewer") },
+  { id: "food-frieddrumstick", name: "炸雞腿", kind: "食物", price: 200, xp: 200, desc: "偶爾放縱一下", image: petItemImage("food-frieddrumstick") },
+  { id: "food-sushi", name: "壽司", kind: "食物", price: 250, xp: 250, desc: "小小奢侈一下", image: petItemImage("food-sushi") },
+  { id: "food-shrimp", name: "鮮蝦", kind: "食物", price: 300, xp: 300, desc: "今天想吃好一點", image: petItemImage("food-shrimp") },
+  { id: "food-crab", name: "螃蟹", kind: "食物", price: 400, xp: 400, desc: "守住預算的犒賞", image: petItemImage("food-crab") },
+  { id: "food-yuzu", name: "柚子酒", kind: "食物", price: 500, xp: 500, desc: "給自己的大獎勵", image: petItemImage("food-yuzu") },
   // 服裝＝一整套角色造型（換的是那張精靈圖，不是色相旋轉），所以 id 的後半要對得上
   // 檔名：outfit-plushroom → intj-model-plushroom-idle.png。目前只有待機那一組圖，
   // 吃東西還是共用 intj-eating.png（見 pet-sprite.tsx）。
