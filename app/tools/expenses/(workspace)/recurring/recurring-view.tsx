@@ -427,7 +427,6 @@ export function RecurringView({
             const confirmedCount = statuses.filter((s) => s.confirmed).length;
             const endDate = ruleEndDate(rule);
             const finished = isRuleFinished(rule, today);
-            const isIncome = row.income;
 
             return (
               <Card key={rule.id}>
@@ -480,9 +479,16 @@ export function RecurringView({
 
                   <div className="mt-2 flex items-end justify-between">
                     <p className={text.statValue}>
-                      {isIncome ? "＋" : "－"}
+                      {/* 轉帳規則不帶正負號（describeRow 的 sign 是空字串）：錢只是從
+                          一個戶頭搬到另一個，標上「－」會讓人以為那個月多花了這筆。 */}
+                      {row.sign}
                       {formatCurrency(rule.amount)}
                       <span className="ml-1 text-sm font-normal text-[#9C94C4]">／期</span>
+                      {/* 手續費才是真的花掉的錢，補在金額後面——卡片上看不到的話，使用者
+                          會以為這條規則每期只動 5,000。 */}
+                      {rule.transfer?.fee ? (
+                        <span className="ml-1 text-sm font-normal text-[#9C94C4]">＋手續費 {formatCurrency(rule.transfer.fee)}</span>
+                      ) : null}
                     </p>
                     {/* 期數後面補上頻率單位（期（月）／期（2 週）），原本那行獨立的
                         「每月・循環 24 期・起～訖」就不用了——同樣的資訊攤成一整行、
