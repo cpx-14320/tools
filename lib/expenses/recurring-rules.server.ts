@@ -1,13 +1,24 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
-import { occurrencesUpTo, type RecurringRuleDTO, type RecurringRuleInput } from "./recurring-rules";
+import { occurrencesUpTo, type RecurringRuleDTO, type RecurringRuleInput, type RecurringTransfer } from "./recurring-rules";
 import { contributeToGoal } from "./goals.server";
 import { putInTrash } from "./trash.server";
+import { ensureFeeCategory } from "./categories.server";
+
+/** 轉帳規則在資料庫裡的樣子。帳戶存 ObjectId（跟 expenses.transfers 一致），手續費存數字。 */
+interface RecurringTransferDoc {
+  fromAccountId: ObjectId;
+  toAccountId: ObjectId;
+  fee?: number;
+}
 
 interface RecurringRuleDoc {
   _id: ObjectId;
   userId: ObjectId;
-  categoryId: ObjectId;
+  /** 轉帳規則沒有分類；那種規則這個欄位不存在。 */
+  categoryId?: ObjectId;
+  /** 有值＝轉帳規則（見 recurring-rules.ts 的 RecurringTransfer）。 */
+  transfer?: RecurringTransferDoc;
   amount: number;
   note?: string;
   frequencyUnit: RecurringRuleDTO["frequencyUnit"];
@@ -26,7 +37,14 @@ interface RecurringRuleDoc {
 function toDTO(doc: RecurringRuleDoc): RecurringRuleDTO {
   return {
     id: doc._id.toHexString(),
-    categoryId: doc.categoryId.toHexString(),
+    // 轉帳規則沒有分類，給空字串——DTO 的消費端（分類路徑、圖示）本來就要處理「查不到
+    // 分類」這種情況，多一個 undefined 的分支只是讓每個呼叫點都得多判斷一次。
+    categoryId: doc.categoryId?.toHexString() ?? "",
+    transfer: doc.transfer && {
+      fromAccountId: doc.transfer.fromAccountId.toHexString(),
+      toAccountId: doc.transfer.toAccountId.toHexString(),
+      fee: doc.transfer.fee,
+    },
     amount: doc.amount,
     note: doc.note,
     frequencyUnit: doc.frequencyUnit,
@@ -35,6 +53,14 @@ function toDTO(doc: RecurringRuleDoc): RecurringRuleDTO {
     cycleCount: doc.cycleCount,
     active: doc.active,
     linkedGoalId: doc.linkedGoalId?.toHexString(),
+  };
+}
+
+function toTransferDoc(input: RecurringTransfer): RecurringTransferDoc {
+  return {
+    fromAccountId: new ObjectId(input.fromAccountId),
+    toAccountId: new ObjectId(input.toAccountId),
+    fee: input.fee && input.fee > 0 ? input.fee : undefined,
   };
 }
 
@@ -60,7 +86,8 @@ export async function createRecurringRule(
   const doc: RecurringRuleDoc = {
     _id: new ObjectId(),
     userId,
-    categoryId: new ObjectId(input.categoryId),
+    // 兩種規則互斥：轉帳的沒有 categoryId，收支的沒有 transfer。
+    ...(input.transfer ? { transfer: toTransferDoc(input.transfer) } : { categoryId: new ObjectId(input.categoryId) }),
     amount: input.amount,
     note: input.note,
     frequencyUnit: input.frequencyUnit,
@@ -82,7 +109,7 @@ export async function updateRecurringRule(userId: ObjectId, id: string, input: R
     { _id: new ObjectId(id), userId },
     {
       $set: {
-        categoryId: new ObjectId(input.categoryId),
+        ...(input.transfer ? { transfer: toTransferDoc(input.transfer) } : { categoryId: new ObjectId(input.categoryId) }),
         amount: input.amount,
         note: input.note,
         frequencyUnit: input.frequencyUnit,
@@ -91,6 +118,9 @@ export async function updateRecurringRule(userId: ObjectId, id: string, input: R
         cycleCount: input.cycleCount,
         linkedGoalId: input.linkedGoalId ? new ObjectId(input.linkedGoalId) : undefined,
       },
+      // 在兩種類型之間改來改去時，另一邊的欄位要拿掉——留著的話一條規則同時有
+      // categoryId 跟 transfer，confirmOneOccurrence 就分不出該寫出交易還是轉帳。
+      $unset: input.transfer ? { categoryId: "" } : { transfer: "" },
     },
   );
   return listRecurringRules(userId);
@@ -127,11 +157,13 @@ export async function deleteRecurringRule(userId: ObjectId, id: string): Promise
  *  比對出「已入帳 vs 還沒入帳」。 */
 async function listConfirmedOccurrences(userId: ObjectId, ruleId: string): Promise<Map<string, string>> {
   const db = await getDb();
-  const docs = await db
-    .collection("expenses.transactions")
-    .find({ userId, sourceRuleId: new ObjectId(ruleId) }, { projection: { date: 1 } })
-    .toArray();
-  return new Map(docs.map((d) => [d.date as string, (d._id as ObjectId).toHexString()]));
+  // 兩個 collection 都要查：收支規則入帳成交易，轉帳規則入帳成轉帳。只查 transactions
+  // 的話，轉帳規則的每一期永遠都算「還沒入帳」，待確認清單會無限重複同一期。
+  const [txs, transfers] = await Promise.all([
+    db.collection("expenses.transactions").find({ userId, sourceRuleId: new ObjectId(ruleId) }, { projection: { date: 1 } }).toArray(),
+    db.collection("expenses.transfers").find({ userId, sourceRuleId: new ObjectId(ruleId) }, { projection: { date: 1 } }).toArray(),
+  ]);
+  return new Map([...txs, ...transfers].map((d) => [d.date as string, (d._id as ObjectId).toHexString()]));
 }
 
 /** 把一期固定收支變成一筆獨立的 expenses.transactions 紀錄——複製規則目前的金額／分類／
@@ -140,6 +172,48 @@ async function listConfirmedOccurrences(userId: ObjectId, ruleId: string): Promi
  *  唯一索引（ensureIndexes），這裡吞掉 duplicate key 錯誤，呼叫端不用自己擋重複。 */
 async function confirmOneOccurrence(userId: ObjectId, rule: RecurringRuleDoc, occurrenceDate: string): Promise<void> {
   const db = await getDb();
+
+  // 轉帳規則寫出的是一筆轉帳，不是交易——轉帳不是支出也不是收入，走 transactions 那條路
+  // 會讓每個月的房租轉存被算進支出統計裡。擋重複靠 expenses.transfers 上的唯一索引
+  // （userId + sourceRuleId + date，見 lib/mongodb.ts），跟交易那邊同一招。
+  if (rule.transfer) {
+    const transferId = new ObjectId();
+    try {
+      await db.collection("expenses.transfers").insertOne({
+        _id: transferId,
+        userId,
+        fromAccountId: rule.transfer.fromAccountId,
+        toAccountId: rule.transfer.toAccountId,
+        amount: rule.amount,
+        date: occurrenceDate,
+        note: rule.note,
+        fee: rule.transfer.fee,
+        sourceRuleId: rule._id,
+        createdAt: new Date(),
+      });
+    } catch (err) {
+      if ((err as { code?: number }).code === 11000) return; // 已經入帳過，當作沒事發生
+      throw err;
+    }
+    // 手續費那一筆支出：跟手動記一筆轉帳走同一套（掛「手續費」分類、從轉出帳戶扣），
+    // 不然每期被扣掉的錢會憑空蒸發。
+    if (rule.transfer.fee && rule.transfer.fee > 0) {
+      const categoryId = await ensureFeeCategory(userId);
+      await db.collection("expenses.transactions").insertOne({
+        _id: new ObjectId(),
+        userId,
+        categoryId,
+        amount: rule.transfer.fee,
+        date: occurrenceDate,
+        accountId: rule.transfer.fromAccountId,
+        note: "轉帳手續費",
+        sourceTransferId: transferId,
+        createdAt: new Date(),
+      });
+    }
+    return;
+  }
+
   try {
     await db.collection("expenses.transactions").insertOne({
       _id: new ObjectId(),
@@ -160,6 +234,17 @@ async function confirmOneOccurrence(userId: ObjectId, rule: RecurringRuleDoc, oc
   }
 }
 
+export interface PendingOccurrence {
+  ruleId: string;
+  /** 轉帳規則是空字串。 */
+  categoryId: string;
+  /** 有值＝這一期要寫出的是一筆轉帳。 */
+  transfer?: RecurringTransfer;
+  amount: number;
+  note?: string;
+  date: string;
+}
+
 /** 已經到期、但還沒入帳也還沒被略過的那幾期。
  *
  *  以前這些是在使用者每次打開記帳本時自動寫進交易紀錄的（autoConfirmDueOccurrences，
@@ -168,13 +253,13 @@ async function confirmOneOccurrence(userId: ObjectId, rule: RecurringRuleDoc, oc
  *  改成列出來等使用者按確認，才有機會在入帳前改金額或直接略過。 */
 export async function listPendingOccurrences(
   userId: ObjectId,
-): Promise<{ ruleId: string; categoryId: string; amount: number; note?: string; date: string }[]> {
+): Promise<PendingOccurrence[]> {
   const col = await collection();
   const rules = await col.find({ userId, active: true }).toArray();
   if (rules.length === 0) return [];
 
   const today = todayInTaipei();
-  const out: { ruleId: string; categoryId: string; amount: number; note?: string; date: string }[] = [];
+  const out: PendingOccurrence[] = [];
   for (const rule of rules) {
     const confirmed = await listConfirmedOccurrences(userId, rule._id.toHexString());
     const skipped = new Set(rule.skippedDates ?? []);
@@ -185,7 +270,12 @@ export async function listPendingOccurrences(
       if (confirmed.has(occ.date) || skipped.has(occ.date)) continue;
       out.push({
         ruleId: rule._id.toHexString(),
-        categoryId: rule.categoryId.toHexString(),
+        categoryId: rule.categoryId?.toHexString() ?? "",
+        transfer: rule.transfer && {
+          fromAccountId: rule.transfer.fromAccountId.toHexString(),
+          toAccountId: rule.transfer.toAccountId.toHexString(),
+          fee: rule.transfer.fee,
+        },
         amount: rule.amount,
         note: rule.note,
         date: occ.date,

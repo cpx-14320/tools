@@ -177,6 +177,10 @@ export function AccountDetailView({
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transfers) setTransfers(data.transfers);
+    // 手續費會另外生出／刪掉一筆支出交易（見 transfers.server.ts），而這一頁的
+    // transactions 是 page.tsx 傳進來的，setTransfers 更新不到——不重抓的話餘額會少算
+    // 那筆手續費。有填過手續費（改之前或改之後）才重抓。
+    if (draft.fee || transferModal.fee) router.refresh();
     showToast(TOAST.saved);
     setTransferModal(null);
   }

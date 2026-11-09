@@ -4,15 +4,18 @@ import { requireTool } from "@/lib/auth";
 import { listTransfers, createTransfer, updateTransfer, deleteTransfer } from "@/lib/expenses/transfers.server";
 
 function parseInput(
-  body: { fromAccountId?: unknown; toAccountId?: unknown; amount?: unknown; date?: unknown; note?: unknown } | null,
+  body: { fromAccountId?: unknown; toAccountId?: unknown; amount?: unknown; date?: unknown; note?: unknown; fee?: unknown } | null,
 ) {
   const fromAccountId = typeof body?.fromAccountId === "string" ? body.fromAccountId : "";
   const toAccountId = typeof body?.toAccountId === "string" ? body.toAccountId : "";
   const amount = Number(body?.amount);
   const date = typeof body?.date === "string" ? body.date : "";
   const note = typeof body?.note === "string" && body.note.trim() ? body.note.trim() : undefined;
+  // 手續費可不填；填了負數或 0 都當成沒有（沒有「負的手續費」這種東西）。
+  const rawFee = Number(body?.fee);
+  const fee = Number.isFinite(rawFee) && rawFee > 0 ? rawFee : undefined;
   if (!fromAccountId || !toAccountId || fromAccountId === toAccountId || !Number.isFinite(amount) || amount <= 0 || !date) return null;
-  return { fromAccountId, toAccountId, amount, date, note };
+  return { fromAccountId, toAccountId, amount, date, note, fee };
 }
 
 export async function GET() {

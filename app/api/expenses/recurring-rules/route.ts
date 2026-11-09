@@ -35,8 +35,20 @@ function parseRuleInput(body: unknown) {
   const cycleCount = Number.isFinite(cycleCountRaw) && cycleCountRaw > 0 ? Math.floor(cycleCountRaw) : undefined;
   const linkedGoalId = typeof b?.linkedGoalId === "string" && b.linkedGoalId ? b.linkedGoalId : undefined;
 
+  // 轉帳規則：有 transfer 就不需要 categoryId（轉帳不是支出也不是收入），但兩個帳戶
+  // 一定要有、而且不能是同一個——轉給自己等於什麼都沒發生，每期還會生出一筆看不懂的
+  // 紀錄。手續費跟手動轉帳同一個規則：0 或負數當成沒填。
+  const rawTransfer = b?.transfer as Record<string, unknown> | undefined;
+  const fromAccountId = typeof rawTransfer?.fromAccountId === "string" ? rawTransfer.fromAccountId : "";
+  const toAccountId = typeof rawTransfer?.toAccountId === "string" ? rawTransfer.toAccountId : "";
+  const rawFee = Number(rawTransfer?.fee);
+  const transfer = rawTransfer
+    ? { fromAccountId, toAccountId, fee: Number.isFinite(rawFee) && rawFee > 0 ? rawFee : undefined }
+    : undefined;
+  if (transfer && (!transfer.fromAccountId || !transfer.toAccountId || transfer.fromAccountId === transfer.toAccountId)) return null;
+
   if (
-    !categoryId ||
+    (!categoryId && !transfer) ||
     !Number.isFinite(amount) ||
     amount <= 0 ||
     !frequencyUnit ||
@@ -47,7 +59,7 @@ function parseRuleInput(body: unknown) {
   ) {
     return null;
   }
-  return { categoryId, amount, note, frequencyUnit, interval: Math.floor(interval), startDate, cycleCount, linkedGoalId };
+  return { categoryId, transfer, amount, note, frequencyUnit, interval: Math.floor(interval), startDate, cycleCount, linkedGoalId };
 }
 
 export async function POST(request: Request) {

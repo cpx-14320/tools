@@ -15,6 +15,10 @@ interface TransactionDoc {
   // 只有固定收支規則確認存入時才會寫入（見 recurring-rules.server.ts 的 confirmOccurrence），
   // 一般的新增／編輯／CSV 匯入路徑都不會碰這個欄位。
   sourceRuleId?: ObjectId;
+  /** 只有「轉帳手續費」那種附屬交易才會寫入（見 transfers.server.ts 的
+   *  syncFeeTransaction）。一般的新增／編輯／CSV 匯入路徑都不會碰這個欄位，手續費也
+   *  因此不會在使用者改轉帳金額之後變成一筆對不起來的孤兒支出。 */
+  sourceTransferId?: ObjectId;
   breakdown?: BreakdownItem[];
   accountId?: ObjectId;
   createdAt: Date;

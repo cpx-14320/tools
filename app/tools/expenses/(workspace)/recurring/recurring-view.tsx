@@ -12,13 +12,17 @@ import { Card, CardBody } from "@/components/expenses/card";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ProgressBar } from "@/components/expenses/progress-bar";
 import { text } from "@/components/expenses/theme";
-import { RecurringRuleModal, type RecurringRuleModalDraft } from "@/components/expenses/recurring-rule-modal";
+import { RecurringRuleModal, type RecurringRuleModalDraft, type RecurringRuleKind } from "@/components/expenses/recurring-rule-modal";
+import { ICON_PATHS } from "@/components/expenses/icon-paths";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
-import { categoryById, categoryColorClass, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
+import { categoryById, categoryColorClass, type CategoryDTO } from "@/lib/expenses/categories";
 import type { TransactionDTO } from "@/lib/expenses/transactions";
 import type { SavingsGoalDTO } from "@/lib/expenses/goals";
+import type { AccountDTO } from "@/lib/expenses/accounts";
+import type { TransferDTO } from "@/lib/expenses/transfers";
+import type { AccountTypeDTO } from "@/lib/expenses/account-types";
 import {
   occurrenceStatuses,
   ruleEndDate,
@@ -38,7 +42,10 @@ type ModalState = { mode: "create" } | { mode: "edit"; rule: RecurringRuleDTO };
  *  的 listPendingOccurrences）。 */
 interface PendingOccurrence {
   ruleId: string;
+  /** 轉帳類型的規則是空字串（轉帳沒有分類）。 */
   categoryId: string;
+  /** 有值＝這一期確認之後會寫出一筆轉帳，不是交易。 */
+  transfer?: { fromAccountId: string; toAccountId: string; fee?: number };
   amount: number;
   note?: string;
   date: string;
@@ -50,6 +57,11 @@ export function RecurringView({
   initialCategories,
   initialTransactions,
   initialRules,
+  /** 轉帳類型的規則要選轉出／轉入帳戶，列表上也要顯示帳戶名稱。 */
+  accounts,
+  accountTypes,
+  /** 算「轉帳類型的規則已經入帳幾期」要用（那種規則入帳成的是轉帳，不是交易）。 */
+  transfers: initialTransfers,
   /** 規則可以綁一個存錢目標，只拿來顯示目標名稱。目標是在存錢目標那一頁改的，這一頁
    *  只讀，所以不用放進 state。 */
   goals,
@@ -58,6 +70,9 @@ export function RecurringView({
   initialCategories: CategoryDTO[];
   initialTransactions: TransactionDTO[];
   initialRules: RecurringRuleDTO[];
+  accounts: AccountDTO[];
+  accountTypes: AccountTypeDTO[];
+  transfers: TransferDTO[];
   goals: SavingsGoalDTO[];
   initialPending: PendingOccurrence[];
 }) {
@@ -65,6 +80,8 @@ export function RecurringView({
   const showToast = useToast();
   const showDeleteToast = useUndoDelete();
   const [transactions, setTransactions] = useState<TransactionDTO[]>(initialTransactions);
+  // 轉帳類型的規則入帳成的是轉帳，確認之後要跟著更新才算得出新的「已入帳幾期」。
+  const [transfers, setTransfers] = useState<TransferDTO[]>(initialTransfers);
   const [rules, setRules] = useState<RecurringRuleDTO[]>(initialRules);
   const [modal, setModal] = useState<ModalState | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
@@ -73,7 +90,7 @@ export function RecurringView({
   const [pendingExpanded, setPendingExpanded] = useState(false);
   // 跟消費分類頁一樣用支出／收入分頁切換——固定收支兩種都會有（房租 vs 薪水），
   // 混在同一份清單裡要自己用金額顏色分辨，分頁之後一次只看一種。
-  const [kind, setKind] = useState<CategoryKind>("支出");
+  const [kind, setKind] = useState<RecurringRuleKind>("支出");
   // 待確認列表的勾選（跟底下規則清單的多選是兩回事，所以各自一份狀態）。
   // key 是 `ruleId|date`——同一條規則會有好幾期待確認，光靠 ruleId 分不出是哪一期。
   const [pendingSelected, setPendingSelected] = useState<Set<string>>(new Set());
@@ -94,7 +111,7 @@ export function RecurringView({
   async function resolvePending(action: "confirm" | "skip", items: { ruleId: string; date: string }[]) {
     const keys = items.map((it) => `${it.ruleId}|${it.date}`);
     setBusy((set) => new Set([...set, ...keys]));
-    const data: { pending?: PendingOccurrence[]; transactions?: TransactionDTO[] } = await fetch(
+    const data: { pending?: PendingOccurrence[]; transactions?: TransactionDTO[]; transfers?: TransferDTO[] } = await fetch(
       "/api/expenses/recurring-rules/pending",
       { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, items }) },
     )
@@ -102,6 +119,7 @@ export function RecurringView({
       .catch(() => ({}));
     if (data.pending) setPending(data.pending);
     if (data.transactions) setTransactions(data.transactions);
+    if (data.transfers) setTransfers(data.transfers);
     // 處理完把勾選清掉：那幾期已經不在待確認清單裡了，留著只會讓上面的數字對不上。
     setPendingSelected(new Set());
     showToast(action === "confirm" ? `已記帳 ${items.length} 筆` : `已略過 ${items.length} 筆`);
@@ -194,9 +212,12 @@ export function RecurringView({
 
   const today = todayISO();
   // 分類被刪掉的孤兒規則當成支出，跟 totalsForRange 對查無分類的處理方式一致。
-  const visibleRules = rules.filter((r) => (categoryById(categories, r.categoryId)?.kind ?? "支出") === kind);
+  // 轉帳規則沒有分類，所以不能靠分類的收支方向分頁——它們只出現在「轉帳」那一頁。
+  const ruleKind = (r: { categoryId: string; transfer?: unknown }): RecurringRuleKind =>
+    r.transfer ? "轉帳" : (categoryById(categories, r.categoryId)?.kind ?? "支出");
+  const visibleRules = rules.filter((r) => ruleKind(r) === kind);
   // 待確認也跟著分頁篩，判斷方式跟上面一致（查無分類一律當支出）。
-  const visiblePending = pending.filter((p) => (categoryById(categories, p.categoryId)?.kind ?? "支出") === kind);
+  const visiblePending = pending.filter((p) => ruleKind(p) === kind);
   // 收合只影響「列出幾筆」，不影響上面的筆數跟「全部確認／全部略過」——那兩顆處理的
   // 一律是這個分頁底下全部的待確認，不是畫面上看得到的那幾筆。
   const shownPending = pendingExpanded ? visiblePending : visiblePending.slice(0, PREVIEW_COUNT);
@@ -207,6 +228,29 @@ export function RecurringView({
     const chosen = pendingSelected.size > 0 ? visiblePending.filter((p) => pendingSelected.has(`${p.ruleId}|${p.date}`)) : visiblePending;
     return chosen.map(({ ruleId, date }) => ({ ruleId, date }));
   }
+  /** 一條規則（或一期待確認）在清單上長什麼樣。
+   *
+   *  轉帳沒有分類，所以圖示、名稱、金額的正負號都不能從分類來：圖示用轉帳那張圖，
+   *  名稱沒寫備註時退回「玉山銀行 → 台新銀行」這種方向描述（比單寫「轉帳」有用得多，
+   *  一次設好幾條轉帳規則時才分得出哪條是哪條），金額不帶正負號——轉帳不是支出也不是
+   *  收入，標上「－」會讓人以為那個月多花了這筆錢。 */
+  function describeRow(row: { categoryId: string; transfer?: { fromAccountId: string; toAccountId: string } }) {
+    if (row.transfer) {
+      const from = accounts.find((a) => a.id === row.transfer!.fromAccountId)?.name ?? "（已刪除帳戶）";
+      const to = accounts.find((a) => a.id === row.transfer!.toAccountId)?.name ?? "（已刪除帳戶）";
+      return { icon: ICON_PATHS.accountTransfer, colorClass: undefined, name: `${from} → ${to}`, sign: "" as const, income: false };
+    }
+    const category = categoryById(categories, row.categoryId);
+    const income = category?.kind === "收入";
+    return {
+      icon: category?.icon ?? "",
+      colorClass: category ? categoryColorClass[category.color] : undefined,
+      name: category?.name ?? "（已刪除分類）",
+      sign: income ? ("＋" as const) : ("－" as const),
+      income,
+    };
+  }
+
   const selection = useSelection(visibleRules.map((r) => r.id));
 
   return (
@@ -225,6 +269,7 @@ export function RecurringView({
           options={[
             { value: "支出", label: "支出" },
             { value: "收入", label: "收入" },
+            { value: "轉帳", label: "轉帳" },
           ]}
         />
         <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />
@@ -234,12 +279,15 @@ export function RecurringView({
         key={modal ? JSON.stringify(modal) : "closed"}
         open={modal !== null}
         categories={categories}
+        accounts={accounts}
+        accountTypes={accountTypes}
         goals={goals}
         defaultKind={kind}
         initial={
           modal?.mode === "edit"
             ? {
                 categoryId: modal.rule.categoryId,
+                transfer: modal.rule.transfer,
                 amount: modal.rule.amount,
                 note: modal.rule.note,
                 frequencyUnit: modal.rule.frequencyUnit,
@@ -316,8 +364,7 @@ export function RecurringView({
 
             <div className="mt-3 flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA]">
               {shownPending.map((p) => {
-                const category = categoryById(categories, p.categoryId);
-                const isIncome = category?.kind === "收入";
+                const row = describeRow(p);
                 const key = `${p.ruleId}|${p.date}`;
                 const isBusy = busy.has(key);
                 return (
@@ -333,13 +380,19 @@ export function RecurringView({
                     className="flex w-full items-center gap-3 px-4 py-3 text-left disabled:opacity-50 active:bg-[#F3EFFC]"
                   >
                     <SelectionDot selected={pendingSelected.has(key)} />
-                    <IconAvatar icon={category?.icon ?? ""} className={category ? categoryColorClass[category.color] : undefined} />
+                    <IconAvatar icon={row.icon} className={row.colorClass} />
                     <div className="min-w-0 flex-1">
-                      <p className={`truncate ${text.body}`}>{p.note || category?.name || "（已刪除分類）"}</p>
-                      <p className={text.muted}>{formatDate(p.date)}</p>
+                      <p className={`truncate ${text.body}`}>{p.note || row.name}</p>
+                      <p className={text.muted}>
+                        {formatDate(p.date)}
+                        {/* 有備註時方向會被備註蓋掉，補在日期旁邊——不然看不出這期要從哪個
+                            戶頭轉到哪個戶頭。手續費也一起講，那是會被扣掉的錢。 */}
+                        {p.transfer && p.note ? ` · ${row.name}` : ""}
+                        {p.transfer?.fee ? ` · 手續費 ${formatCurrency(p.transfer.fee)}` : ""}
+                      </p>
                     </div>
-                    <span className={`shrink-0 tabular-nums text-sm font-semibold ${isIncome ? "text-[#2FAE82]" : "text-[#4A3B7C]"}`}>
-                      {isIncome ? "＋" : "－"}
+                    <span className={`shrink-0 tabular-nums text-sm font-semibold ${row.income ? "text-[#2FAE82]" : "text-[#4A3B7C]"}`}>
+                      {row.sign}
                       {formatCurrency(p.amount)}
                     </span>
                   </button>
@@ -363,16 +416,18 @@ export function RecurringView({
       ) : (
         <div className="flex flex-col gap-4">
           {visibleRules.map((rule) => {
-            const category = categoryById(categories, rule.categoryId);
+            const row = describeRow(rule);
             const linkedGoal = rule.linkedGoalId ? goals.find((g) => g.id === rule.linkedGoalId) : undefined;
-            const confirmedByDate = new Map(
-              transactions.filter((t) => t.sourceRuleId === rule.id).map((t) => [t.date, t.id] as const),
-            );
+            // 轉帳規則入帳成的是轉帳、不是交易，所以要從 transfers 那邊比對已入帳的期數
+            // （不然每一條轉帳規則的進度都會停在 0）。
+            const confirmedByDate = rule.transfer
+              ? new Map(transfers.filter((t) => t.sourceRuleId === rule.id).map((t) => [t.date, t.id] as const))
+              : new Map(transactions.filter((t) => t.sourceRuleId === rule.id).map((t) => [t.date, t.id] as const));
             const statuses = occurrenceStatuses(rule, confirmedByDate, today);
             const confirmedCount = statuses.filter((s) => s.confirmed).length;
             const endDate = ruleEndDate(rule);
             const finished = isRuleFinished(rule, today);
-            const isIncome = category?.kind === "收入";
+            const isIncome = row.income;
 
             return (
               <Card key={rule.id}>
@@ -390,12 +445,12 @@ export function RecurringView({
                         <SelectionDot selected={selection.selectedIds.has(rule.id)} />
                       </button>
                     ) : (
-                      <IconAvatar icon={category?.icon ?? ""} className={category ? categoryColorClass[category.color] : undefined} />
+                      <IconAvatar icon={row.icon} className={row.colorClass} />
                     )}
 
                     <div className="min-w-0 flex-1">
                       <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        <span className={text.sectionHeading}>{category?.name ?? "（已刪除分類）"}</span>
+                        <span className={text.sectionHeading}>{row.name}</span>
                         {!rule.active && <Badge>已暫停</Badge>}
                         {rule.active && finished && <Badge tone="positive">已完成</Badge>}
                       </div>
@@ -411,12 +466,12 @@ export function RecurringView({
                             卡片右上角比卡片本身還搶眼。 */}
                         <LineIconButton
                           icon="pen"
-                          aria-label={`編輯${category?.name ?? "固定收支"}`}
+                          aria-label={`編輯${row.name}`}
                           onClick={() => setModal({ mode: "edit", rule })}
                         />
                         <LineIconButton
                           icon={rule.active ? "pause" : "play"}
-                          aria-label={rule.active ? `暫停${category?.name ?? "固定收支"}` : `恢復${category?.name ?? "固定收支"}`}
+                          aria-label={rule.active ? `暫停${row.name}` : `恢復${row.name}`}
                           onClick={() => handleToggleActive(rule)}
                         />
                       </span>

@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import { requireTool } from "@/lib/auth";
 import { confirmOccurrences, listPendingOccurrences, skipOccurrences } from "@/lib/expenses/recurring-rules.server";
 import { listTransactions } from "@/lib/expenses/transactions.server";
+import { listTransfers } from "@/lib/expenses/transfers.server";
 
 /** 已經到期、等使用者確認的那幾期固定收支。 */
 export async function GET() {
@@ -15,8 +16,9 @@ export async function GET() {
 
 /** 確認或略過。body：`{ action: "confirm" | "skip", items: [{ ruleId, date, amount? }] }`
  *
- *  一次送一批（整批確認那顆按鈕會把全部送進來），回傳更新後的待確認清單跟交易紀錄，
- *  呼叫端不用再多打兩支 API 重抓。 */
+ *  一次送一批（整批確認那顆按鈕會把全部送進來），回傳更新後的待確認清單、交易紀錄跟
+ *  轉帳紀錄，呼叫端不用再多打幾支 API 重抓。轉帳那一份是因為「轉帳」類型的規則入帳成的
+ *  是轉帳而不是交易，固定收支頁要靠它算「已入帳幾期」。 */
 export async function POST(request: Request) {
   const user = await requireTool("expenses");
   if (user instanceof NextResponse) return user;
@@ -42,6 +44,10 @@ export async function POST(request: Request) {
   if (action === "confirm") await confirmOccurrences(userId, items);
   else await skipOccurrences(userId, items);
 
-  const [pending, transactions] = await Promise.all([listPendingOccurrences(userId), listTransactions(userId)]);
-  return NextResponse.json({ pending, transactions });
+  const [pending, transactions, transfers] = await Promise.all([
+    listPendingOccurrences(userId),
+    listTransactions(userId),
+    listTransfers(userId),
+  ]);
+  return NextResponse.json({ pending, transactions, transfers });
 }

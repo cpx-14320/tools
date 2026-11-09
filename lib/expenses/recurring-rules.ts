@@ -8,9 +8,25 @@
 
 export type RecurrenceFrequencyUnit = "day" | "week" | "month";
 
+/** 轉帳規則的額外資料。
+ *
+ *  **為什麼不是另外一張表**：排程那一整套（occurrenceDate、occurrencesUpTo、待確認清單、
+ *  略過）跟收支規則完全一樣，只有「確認之後寫出什麼」不同。複製一份排程邏輯去伺候轉帳，
+ *  兩邊之後一定會走鐘。 */
+export interface RecurringTransfer {
+  fromAccountId: string;
+  toAccountId: string;
+  /** 跨行轉帳手續費，可不填。確認入帳時會跟著產生一筆掛在「手續費」分類的支出
+   *  （跟手動記一筆轉帳同一套，見 transfers.server.ts）。 */
+  fee?: number;
+}
+
 export interface RecurringRuleDTO {
   id: string;
+  /** 轉帳規則沒有分類（轉帳不是支出也不是收入），這個欄位會是空字串。 */
   categoryId: string;
+  /** 有值＝這是一條轉帳規則。 */
+  transfer?: RecurringTransfer;
   amount: number;
   note?: string;
   frequencyUnit: RecurrenceFrequencyUnit;
@@ -28,6 +44,7 @@ export interface RecurringRuleDTO {
 
 export interface RecurringRuleInput {
   categoryId: string;
+  transfer?: RecurringTransfer;
   amount: number;
   note?: string;
   frequencyUnit: RecurrenceFrequencyUnit;
@@ -35,6 +52,12 @@ export interface RecurringRuleInput {
   startDate: string;
   cycleCount?: number;
   linkedGoalId?: string;
+}
+
+/** 這條規則是轉帳還是收支。畫面上要用的地方很多（圖示、標題、要不要顯示分類），
+ *  到處寫 `rule.transfer ? ... : ...` 不如有個名字。 */
+export function isTransferRule(rule: Pick<RecurringRuleDTO, "transfer">): boolean {
+  return !!rule.transfer;
 }
 
 const pad2 = (n: number) => String(n).padStart(2, "0");

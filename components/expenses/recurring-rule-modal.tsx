@@ -5,11 +5,15 @@ import { OptionChip, SegmentedControl } from "./button";
 import { Modal, Field, RequiredMark, fieldInputClass, ModalFooter } from "./modal";
 import { DateField } from "./date-field";
 import { CategoryGridPicker } from "./category-grid-picker";
-import { AmountKeypad, evaluateExpr } from "./amount-keypad";
+import { AmountField, AmountKeypad, evaluateExpr } from "./amount-keypad";
+import { AccountPickerModal } from "./account-picker-modal";
+import { SelectField } from "./select-field";
 import { CategoryBatchModal, type CategoryBatchItem } from "./category-batch-modal";
 import { text } from "./theme";
 import { categoryPath, needsSubcategory, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
-import { occurrencesUpTo, type RecurrenceFrequencyUnit } from "@/lib/expenses/recurring-rules";
+import { occurrencesUpTo, type RecurrenceFrequencyUnit, type RecurringTransfer } from "@/lib/expenses/recurring-rules";
+import type { AccountDTO } from "@/lib/expenses/accounts";
+import type { AccountTypeDTO } from "@/lib/expenses/account-types";
 import type { SavingsGoalDTO } from "@/lib/expenses/goals";
 import { InlineIcon } from "./icon-avatar";
 
@@ -17,8 +21,14 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** 這條規則記的是收支還是轉帳。轉帳不是支出也不是收入（錢只是從一個戶頭搬到另一個），
+ *  所以它沒有分類，換成「從哪個帳戶、到哪個帳戶、手續費多少」。 */
+export type RecurringRuleKind = CategoryKind | "轉帳";
+
 export interface RecurringRuleModalDraft {
   categoryId: string;
+  /** 有值＝轉帳規則。 */
+  transfer?: RecurringTransfer;
   amount: number;
   note?: string;
   frequencyUnit: RecurrenceFrequencyUnit;
@@ -40,6 +50,8 @@ const FREQUENCY_OPTIONS: { value: RecurrenceFrequencyUnit; label: string }[] = [
 export function RecurringRuleModal({
   open,
   categories,
+  accounts,
+  accountTypes,
   goals,
   defaultKind,
   initial,
@@ -51,9 +63,12 @@ export function RecurringRuleModal({
 }: {
   open: boolean;
   categories: CategoryDTO[];
+  /** 轉帳類型要選「從哪個帳戶、到哪個帳戶」。 */
+  accounts: AccountDTO[];
+  accountTypes: AccountTypeDTO[];
   /** 只有分類是「收入」時才會顯示「同時存入目標」選項，所以需要目標清單。 */
   goals: SavingsGoalDTO[];
-  defaultKind: CategoryKind;
+  defaultKind: RecurringRuleKind;
   initial?: RecurringRuleModalDraft;
   onClose: () => void;
   onSave: (draft: RecurringRuleModalDraft) => void;
@@ -70,8 +85,15 @@ export function RecurringRuleModal({
   onCategoriesChange: (categories: CategoryDTO[]) => void;
 }) {
   const initialCategory = initial ? categories.find((c) => c.id === initial.categoryId) : undefined;
-  const [kind, setKind] = useState<CategoryKind>(initialCategory?.kind ?? defaultKind);
+  const [kind, setKind] = useState<RecurringRuleKind>(initial?.transfer ? "轉帳" : (initialCategory?.kind ?? defaultKind));
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
+  const [fromAccountId, setFromAccountId] = useState(initial?.transfer?.fromAccountId ?? "");
+  const [toAccountId, setToAccountId] = useState(initial?.transfer?.toAccountId ?? "");
+  const [fee, setFee] = useState(initial?.transfer?.fee ? String(initial.transfer.fee) : "");
+  // 轉帳類型有兩個金額欄位（每次金額、手續費），下方那個固定小鍵盤跟著點到的那一欄走
+  // ——跟新增轉帳彈窗同一套做法。收支類型只有一個金額，永遠是 amount。
+  const [amountTarget, setAmountTarget] = useState<"amount" | "fee">("amount");
+  const [picking, setPicking] = useState<"from" | "to" | null>(null);
   const [amount, setAmount] = useState(initial ? String(initial.amount) : "");
   const [note, setNote] = useState(initial?.note ?? "");
   const [frequencyUnit, setFrequencyUnit] = useState<RecurrenceFrequencyUnit>(initial?.frequencyUnit ?? "month");
@@ -83,6 +105,8 @@ export function RecurringRuleModal({
 
 
   const amountNum = evaluateExpr(amount);
+  const feeNum = evaluateExpr(fee);
+  const isTransfer = kind === "轉帳";
   const intervalNum = Number(interval);
   const cycleCountNum = cycleCount.trim() ? Number(cycleCount) : undefined;
 
@@ -104,9 +128,11 @@ export function RecurringRuleModal({
     return confirmedDates.filter((d) => !scheduled.has(d)).length;
   })();
   const canSave =
-    categoryId &&
-    // 跟新增交易同一條規則：有子分類的大分類要挑到底下的項目（見 needsSubcategory）。
-    !needsSubcategory(categories, categoryId) &&
+    (isTransfer
+      ? // 轉給自己等於什麼都沒發生，每期還會生出一筆看不懂的紀錄，所以兩個帳戶不能相同。
+        !!fromAccountId && !!toAccountId && fromAccountId !== toAccountId
+      : // 跟新增交易同一條規則：有子分類的大分類要挑到底下的項目（見 needsSubcategory）。
+        !!categoryId && !needsSubcategory(categories, categoryId)) &&
     Number.isFinite(amountNum) &&
     amountNum > 0 &&
     Number.isFinite(intervalNum) &&
@@ -143,13 +169,25 @@ export function RecurringRuleModal({
       onClose={onClose}
       title={initial ? "編輯固定收支" : "新增固定收支"}
       fullHeight
-      stickyBottom={<AmountKeypad expr={amount} onExprChange={setAmount} label="每次金額" required />}
+      stickyBottom={
+        <AmountKeypad
+          expr={isTransfer && amountTarget === "fee" ? fee : amount}
+          onExprChange={isTransfer && amountTarget === "fee" ? setFee : setAmount}
+          label={isTransfer && amountTarget === "fee" ? "手續費" : "每次金額"}
+          // 手續費留空就是沒有手續費，是合理答案。
+          required={!(isTransfer && amountTarget === "fee")}
+        />
+      }
       footer={
         <ModalFooter
           onClose={onClose}
           onConfirm={() =>
             onSave({
-              categoryId,
+              // 兩種類型互斥：轉帳沒有分類，收支沒有 transfer。
+              categoryId: isTransfer ? "" : categoryId,
+              transfer: isTransfer
+                ? { fromAccountId, toAccountId, fee: Number.isFinite(feeNum) && feeNum > 0 ? feeNum : undefined }
+                : undefined,
               amount: amountNum,
               note: note.trim() || undefined,
               frequencyUnit,
@@ -167,36 +205,73 @@ export function RecurringRuleModal({
         />
       }
     >
+      {/* 多了「轉帳」這一格：每個月固定從薪轉戶轉一筆去儲蓄帳戶、固定還房貸，這些都是
+          排程性的轉帳，本來只能硬記成支出，記了之後那筆錢會被算進每個月的支出統計裡。 */}
       <SegmentedControl
         className="self-start"
         value={kind}
         onChange={(k) => {
           setKind(k);
+          // 換類型就把另一種類型的選擇清掉，不要留著上一個類型挑到一半的分類／帳戶。
           setCategoryId("");
+          setAmountTarget("amount");
         }}
         options={[
           { value: "支出", label: "支出" },
           { value: "收入", label: "收入" },
+          { value: "轉帳", label: "轉帳" },
         ]}
       />
 
-      <div>
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-xs font-medium text-[#9C94C4]">
-            分類
-            <RequiredMark />
-          </span>
-          {categoryId && <span className="text-xs font-medium text-[#4A3B7C]">{categoryPath(categories, categoryId)}</span>}
+      {isTransfer ? (
+        <>
+          {/* 轉出／轉入並排，跟新增轉帳彈窗一樣：這兩欄是一組「從哪裡到哪裡」，上下排
+              要掃兩次才看得出方向。 */}
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="從（轉出帳戶）" required>
+              <SelectField
+                value={accounts.find((a) => a.id === fromAccountId)?.name}
+                placeholder="選擇帳戶"
+                onClick={() => setPicking("from")}
+              />
+            </Field>
+            <Field label="到（轉入帳戶）" required>
+              <SelectField value={accounts.find((a) => a.id === toAccountId)?.name} placeholder="選擇帳戶" onClick={() => setPicking("to")} />
+            </Field>
+          </div>
+
+          <AmountField
+            label="每次金額"
+            required
+            value={amountNum}
+            active={amountTarget === "amount"}
+            onFocus={() => setAmountTarget("amount")}
+            placeholder=""
+          />
+          <AmountField label="手續費" value={feeNum} active={amountTarget === "fee"} onFocus={() => setAmountTarget("fee")} placeholder="沒有就留空" />
+          <p className={`-mt-1 ${text.faint}`}>
+            每一期入帳時會記成一筆轉帳，不算進支出或收入統計。有填手續費的話會另外記一筆掛在「手續費」分類的支出，從轉出帳戶扣——那是真的花掉的錢。
+          </p>
+        </>
+      ) : (
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-medium text-[#9C94C4]">
+              分類
+              <RequiredMark />
+            </span>
+            {categoryId && <span className="text-xs font-medium text-[#4A3B7C]">{categoryPath(categories, categoryId)}</span>}
+          </div>
+          <CategoryGridPicker
+            categories={categories}
+            kind={kind}
+            value={categoryId}
+            onChange={setCategoryId}
+            onAddClick={() => setCategoryBatchOpen(true)}
+            maxHeightClass="max-h-[200px]"
+          />
         </div>
-        <CategoryGridPicker
-          categories={categories}
-          kind={kind}
-          value={categoryId}
-          onChange={setCategoryId}
-          onAddClick={() => setCategoryBatchOpen(true)}
-          maxHeightClass="max-h-[200px]"
-        />
-      </div>
+      )}
 
 
       <Field label="頻率">
@@ -249,11 +324,36 @@ export function RecurringRuleModal({
         </Field>
       )}
 
+      {/* 不顯示餘額：這裡設定的是一條往後每個月都會跑的規則，當下餘額跟「要從哪個戶頭
+          固定轉出」這個決定沒有關係。選到跟對面同一個帳戶時直接對調，那正好是使用者
+          想做的事（方向填反了）。 */}
+      <AccountPickerModal
+        open={picking !== null}
+        title={picking === "to" ? "選擇轉入帳戶" : "選擇轉出帳戶"}
+        accounts={accounts}
+        accountTypes={accountTypes}
+        showBalance={false}
+        allowUnset={false}
+        value={(picking === "to" ? toAccountId : fromAccountId) || undefined}
+        onClose={() => setPicking(null)}
+        onSelect={(id) => {
+          const picked = id ?? "";
+          if (picking === "to") {
+            if (picked && picked === fromAccountId) setFromAccountId(toAccountId);
+            setToAccountId(picked);
+          } else {
+            if (picked && picked === toAccountId) setToAccountId(fromAccountId);
+            setFromAccountId(picked);
+          }
+          setPicking(null);
+        }}
+      />
+
       <CategoryBatchModal
         open={categoryBatchOpen}
         isSubcategory={false}
         categories={categories}
-        lockedKind={kind}
+        lockedKind={isTransfer ? "支出" : kind}
         onClose={() => setCategoryBatchOpen(false)}
         onSave={handleCreateCategories}
       />

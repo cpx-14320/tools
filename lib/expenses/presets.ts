@@ -31,6 +31,11 @@ export const ICON_OTHER = "/expenses/category-other.png";
  *  在那之前 IconAvatar 會顯示漸層佔位，不會壞版。 */
 export const ICON_UNCATEGORIZED = "/expenses/category-uncategorized.png";
 
+/** 轉帳手續費記成支出時掛的分類（找不到就自動建，見 categories.server.ts 的
+ *  ensureFeeCategory）。名稱是比對用的鍵，所以寫成常數而不是散在各處的字串。 */
+export const FEE_CATEGORY_NAME = "手續費";
+export const ICON_FEE = "/expenses/expenses-category-bill.png";
+
 export const expenseCategoryIcon = (slug: string) => `/expenses/expenses-category-${slug}.png`;
 export const incomeCategoryIcon = (slug: string) => `/expenses/income-category-${slug}.png`;
 export const accountIcon = (slug: string) => `/expenses/account-${slug}.png`;

@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import { categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "./categories";
 import { deleteBudgetRulesForCategories } from "./budgets.server";
-import { ICON_UNCATEGORIZED } from "./presets";
+import { FEE_CATEGORY_NAME, ICON_FEE, ICON_UNCATEGORIZED } from "./presets";
 import { putInTrash } from "./trash.server";
 
 interface CategoryDoc {
@@ -222,6 +222,35 @@ async function ensureUncategorized(userId: ObjectId, kind: CategoryKind): Promis
     order,
     createdAt: new Date(),
     isUncategorized: true,
+  };
+  await col.insertOne(doc);
+  return doc._id;
+}
+
+/** 找不到就建一個支出分類「手續費」回傳 id——轉帳的手續費會記成一筆掛在這裡的支出。
+ *
+ *  **為什麼手續費要變成一筆支出**：轉帳本身不影響淨資產（錢只是從一個戶頭搬到另一個），
+ *  但手續費是真的消失的錢。不記成支出的話，轉出 1000、轉入 985 那 15 元會變成憑空蒸發，
+ *  帳戶餘額對不上、報表也看不到這筆開銷。
+ *
+ *  **為什麼自動建而不是讓使用者選分類**：記一筆轉帳的時候要求順便挑一個手續費分類，
+ *  是把實作細節丟給使用者。名稱固定「手續費」，使用者之後要改名、換圖示、搬動排序都
+ *  可以（這裡只在「找不到同名的」時候才建），跟「未分類」同一個做法。 */
+export async function ensureFeeCategory(userId: ObjectId): Promise<ObjectId> {
+  const col = await collection();
+  const existing = await col.findOne({ userId, kind: "支出", parentId: null, name: FEE_CATEGORY_NAME });
+  if (existing) return existing._id;
+  const order = await col.countDocuments({ userId, parentId: null, kind: "支出" });
+  const doc: CategoryDoc = {
+    _id: new ObjectId(),
+    userId,
+    name: FEE_CATEGORY_NAME,
+    icon: ICON_FEE,
+    color: "b",
+    kind: "支出",
+    parentId: null,
+    order,
+    createdAt: new Date(),
   };
   await col.insertOne(doc);
   return doc._id;

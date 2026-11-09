@@ -5,7 +5,6 @@ import { TOAST, useToast } from "@/components/expenses/toast";
 import { useUndoDelete } from "@/components/expenses/use-undo-delete";
 import { PageHeader } from "@/components/expenses/page-header";
 import { Badge } from "@/components/expenses/button";
-import { LineIconButton } from "@/components/expenses/line-icon-button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ProgressBar } from "@/components/expenses/progress-bar";
@@ -14,24 +13,37 @@ import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { text } from "@/components/expenses/theme";
-import { GoalModal, ContributeModal, type GoalModalDraft } from "@/components/expenses/goal-modal";
+import { GoalModal, type GoalModalDraft } from "@/components/expenses/goal-modal";
+import { BusyOverlay } from "@/components/expenses/busy-overlay";
 import { goalProgress, goalPace, type SavingsGoalDTO } from "@/lib/expenses/goals";
+import type { AccountDTO } from "@/lib/expenses/accounts";
+import type { AccountTypeDTO } from "@/lib/expenses/account-types";
 import { formatCurrency, formatDateRange } from "@/lib/format";
 
 type ModalState = { mode: "create" } | { mode: "edit"; goal: SavingsGoalDTO };
 
 /** 目標清單由 page.tsx 在伺服器端讀好傳進來（見那支的說明）。之後的新增／編輯／刪除
  *  照舊走 API，handler 拿回傳的完整清單 setState，所以這份 state 一直是最新的。 */
-export function GoalsView({ initialGoals }: { initialGoals: SavingsGoalDTO[] }) {
+export function GoalsView({
+  initialGoals,
+  /** 給編輯彈窗的「綁定帳戶」用；列表上顯示綁的是哪個帳戶也要查名稱。 */
+  accounts,
+  accountTypes,
+}: {
+  initialGoals: SavingsGoalDTO[];
+  accounts: AccountDTO[];
+  accountTypes: AccountTypeDTO[];
+}) {
   const [goals, setGoals] = useState(initialGoals);
   const showToast = useToast();
   const showDeleteToast = useUndoDelete();
   const [modal, setModal] = useState<ModalState | null>(null);
-  const [contributeId, setContributeId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
+  const [busy, setBusy] = useState(false);
 
   async function handleSave(draft: GoalModalDraft) {
     if (!modal) return;
+    setBusy(true);
     if (modal.mode === "edit") {
       const data: { goals?: SavingsGoalDTO[] } = await fetch("/api/expenses/goals", {
         method: "PUT",
@@ -41,6 +53,10 @@ export function GoalsView({ initialGoals }: { initialGoals: SavingsGoalDTO[] }) 
           name: draft.name,
           icon: draft.icon,
           targetAmount: draft.targetAmount,
+          // 綁定帳戶時不送 currentAmount：那種目標的進度是帳戶餘額算出來的，送一個
+          // 數字過去只會在資料庫裡留下一個誤導人的殘留值。
+          ...(draft.accountId ? {} : { currentAmount: draft.currentAmount }),
+          accountId: draft.accountId,
           startDate: draft.startDate,
           targetDate: draft.targetDate,
         }),
@@ -58,6 +74,7 @@ export function GoalsView({ initialGoals }: { initialGoals: SavingsGoalDTO[] }) 
         .catch(() => ({}));
       if (data.goals) setGoals(data.goals);
     }
+    setBusy(false);
     showToast(modal.mode === "edit" ? TOAST.saved : TOAST.created);
     setModal(null);
   }
@@ -96,21 +113,6 @@ export function GoalsView({ initialGoals }: { initialGoals: SavingsGoalDTO[] }) 
     selection.exit();
   }
 
-  async function handleContribute(amount: number) {
-    if (!contributeId) return;
-    const data: { goals?: SavingsGoalDTO[] } = await fetch("/api/expenses/goals", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: contributeId, amount }),
-    })
-      .then((res) => res.json())
-      .catch(() => ({}));
-    if (data.goals) setGoals(data.goals);
-    // 存入不是「新增一筆目標」，講的是這次存了多少進去。
-    showToast(`已存入 ${formatCurrency(amount)}`);
-    setContributeId(null);
-  }
-
   const selection = useSelection(goals.map((g) => g.id));
 
   return (
@@ -127,12 +129,16 @@ export function GoalsView({ initialGoals }: { initialGoals: SavingsGoalDTO[] }) 
       <GoalModal
         key={modal ? JSON.stringify(modal) : "closed"}
         open={modal !== null}
-        initial={modal?.mode === "edit" ? modal.goal : undefined}
+        // DTO 的 accountId 是「沒綁定就不存在」，彈窗的 draft 用 null 表示同一件事
+        // （它要能表達「這次要解除綁定」，undefined 在 PUT 那邊代表「不動」）。
+        initial={modal?.mode === "edit" ? { ...modal.goal, accountId: modal.goal.accountId ?? null } : undefined}
+        accounts={accounts}
+        accountTypes={accountTypes}
         onClose={() => setModal(null)}
         onSave={handleSave}
         onDelete={modal?.mode === "edit" ? requestDelete : undefined}
       />
-      <ContributeModal open={contributeId !== null} onClose={() => setContributeId(null)} onSave={handleContribute} />
+      <BusyOverlay open={busy} label="儲存中…" />
 
       <ConfirmModal
         open={deleteConfirm !== null}
@@ -159,71 +165,64 @@ export function GoalsView({ initialGoals }: { initialGoals: SavingsGoalDTO[] }) 
           {goals.map((goal) => {
             const { pct, remaining, achieved } = goalProgress(goal);
             const pace = goalPace(goal);
+            const boundAccount = goal.accountId ? accounts.find((a) => a.id === goal.accountId) : undefined;
             return (
               <Card key={goal.id}>
+                {/* 整張卡就是進編輯彈窗的入口（選取模式下改成勾選）。
+                    本來是「點名稱進編輯、點右上角的鉛筆開存入」：同一張卡上兩個不同的
+                    點擊目標，而且鉛筆這個圖示看起來就是「編輯」，點下去卻是存入。存入
+                    已經併進編輯彈窗了，所以這裡只剩一種行為，整張卡都可以點。 */}
                 <CardBody>
-                  {/* 圖示跟文字垂直置中（items-center）；鉛筆用 self-start 吊在區塊右上角，
-                      不要跟著一起置中——它是這張卡的操作入口，釘在角落才不會隨文字行數浮動。 */}
-                  <div className="flex items-center gap-3">
-                    {/* 選取模式下打勾圓點排在圖示左邊，圖示不要換掉——少了圖只剩文字，
+                  {/* button 包住整張卡的內容而不是換掉 CardBody：CardBody 只管內距，
+                      讓它變成按鈕會讓每一個用到它的頁面都多一個不該有的 as 參數。 */}
+                  <button
+                    type="button"
+                    className="block w-full text-left"
+                    onClick={() => (selection.selecting ? selection.toggle(goal.id) : setModal({ mode: "edit", goal }))}
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* 選取模式下打勾圓點排在圖示左邊，圖示不要換掉——少了圖只剩文字，
                         一整排目標長得一模一樣，很難確認自己勾的是哪一個。 */}
-                    {selection.selecting && (
-                      <button type="button" onClick={() => selection.toggle(goal.id)} className="shrink-0">
-                        <SelectionDot selected={selection.selectedIds.has(goal.id)} />
-                      </button>
-                    )}
-                    <IconAvatar icon={goal.icon} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        {selection.selecting ? (
+                      {selection.selecting && <SelectionDot selected={selection.selectedIds.has(goal.id)} />}
+                      <IconAvatar icon={goal.icon} />
+                      <div className="min-w-0 flex-1 text-left">
+                        <div className="flex items-center gap-2">
                           <span className={text.sectionHeading}>{goal.name}</span>
-                        ) : (
-                          // 目標本身（名稱、目標金額、期限）還是點名稱進去改。
-                          <button
-                            type="button"
-                            onClick={() => setModal({ mode: "edit", goal })}
-                            className={`${text.sectionHeading} hover:underline`}
-                          >
-                            {goal.name}
-                          </button>
-                        )}
-                        {achieved && <Badge tone="positive">已達成</Badge>}
+                          {achieved && <Badge tone="positive">已達成</Badge>}
+                        </div>
+                        <p className={`mt-0.5 ${text.muted}`}>
+                          {/* 綁定帳戶的目標要講清楚進度是從哪裡來的，不然使用者會想「我沒
+                            按過存入，為什麼它自己在動」。 */}
+                          {boundAccount
+                            ? `跟著「${boundAccount.name}」的餘額`
+                            : formatDateRange(goal.startDate, goal.targetDate) || "沒有設定期限"}
+                        </p>
                       </div>
-                      <p className={`mt-0.5 ${text.muted}`}>
-                        {formatDateRange(goal.startDate, goal.targetDate) || "沒有設定期限"}
-                      </p>
                     </div>
-                    {/* 一顆鉛筆取代原本的「＋ 存入」文字鈕——點了開存入彈窗，改這次要存多少。
-                        已達成的目標不用再存，就不顯示。 */}
-                    {!selection.selecting && !achieved && (
-                      <LineIconButton
-                        icon="pen"
-                        className="self-start"
-                        aria-label={`存入${goal.name}`}
-                        onClick={() => setContributeId(goal.id)}
-                      />
+
+                    <div className="mt-2 flex items-end justify-between">
+                      <p className={text.statValue}>
+                        {formatCurrency(goal.currentAmount)}
+                        <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {formatCurrency(goal.targetAmount)}</span>
+                      </p>
+                      <p className={text.muted}>{achieved ? "🎉 目標達成" : `還差 ${formatCurrency(remaining)}`}</p>
+                    </div>
+                    <div className="mt-2">
+                      <ProgressBar pct={pct} tone={achieved ? "positive" : "brand"} />
+                    </div>
+                    <p className={`mt-1 text-right ${text.muted}`}>{pct}%</p>
+                    {boundAccount && (formatDateRange(goal.startDate, goal.targetDate) || "") && (
+                      <p className={`mt-1 text-left ${text.faint}`}>{formatDateRange(goal.startDate, goal.targetDate)}</p>
                     )}
-                  </div>
 
-                  <div className="mt-2 flex items-end justify-between">
-                    <p className={text.statValue}>
-                      {formatCurrency(goal.currentAmount)}
-                      <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {formatCurrency(goal.targetAmount)}</span>
-                    </p>
-                    <p className={text.muted}>{achieved ? "🎉 目標達成" : `還差 ${formatCurrency(remaining)}`}</p>
-                  </div>
-                  <div className="mt-2">
-                    <ProgressBar pct={pct} tone={achieved ? "positive" : "brand"} />
-                  </div>
-                  <p className={`mt-1 text-right ${text.muted}`}>{pct}%</p>
-
-                  {pace && (
-                    <p className="mt-2 rounded-xl bg-[#F9F7FE] px-3 py-2 text-xs text-[#9C94C4]">
-                      距離目標還有 {pace.weeksLeft} 週（約 {pace.monthsLeft} 個月）——平均每週要存{" "}
-                      <span className="font-medium text-[#4A3B7C]">{formatCurrency(pace.perWeek)}</span>，或每月存{" "}
-                      <span className="font-medium text-[#4A3B7C]">{formatCurrency(pace.perMonth)}</span>
-                    </p>
-                  )}
+                    {pace && (
+                      <p className="mt-2 rounded-xl bg-[#F9F7FE] px-3 py-2 text-left text-xs text-[#9C94C4]">
+                        距離目標還有 {pace.weeksLeft} 週（約 {pace.monthsLeft} 個月）——平均每週要存{" "}
+                        <span className="font-medium text-[#4A3B7C]">{formatCurrency(pace.perWeek)}</span>
+                        ，或每月存 <span className="font-medium text-[#4A3B7C]">{formatCurrency(pace.perMonth)}</span>
+                      </p>
+                    )}
+                  </button>
                 </CardBody>
               </Card>
             );

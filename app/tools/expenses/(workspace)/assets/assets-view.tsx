@@ -2,6 +2,7 @@
 
 import { Fragment, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton, FloatingSecondaryButton } from "@/components/expenses/floating-add-button";
 import { EmptyListCard, ListCard, ListRow } from "@/components/expenses/list-row";
@@ -51,6 +52,7 @@ export function AssetsView({
   // 是 state，不能直接用 prop。
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>(initialAccountTypes);
   const [transfers, setTransfers] = useState<TransferDTO[]>(initialTransfers);
+  const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   // 轉帳明細那一區：點某一列會開同一個轉帳彈窗來改／刪那一筆（轉帳沒有自己的明細頁，
@@ -78,6 +80,14 @@ export function AssetsView({
     setCreateOpen(false);
   }
 
+  /** 轉帳填了手續費的話會順便生出一筆支出交易（見 transfers.server.ts），而這一頁的
+   *  transactions 是 page.tsx 傳進來的 prop、不是 state，setTransfers 更新不到它——
+   *  帳戶餘額就會少算那筆手續費。只有填了手續費才重抓整頁，沒填的維持原本「只換
+   *  transfers」的輕量路徑。 */
+  function refreshIfFee(draft: TransferModalDraft) {
+    if (draft.fee) router.refresh();
+  }
+
   async function handleCreateTransfer(draft: TransferModalDraft) {
     const data: { transfers?: TransferDTO[] } = await fetch("/api/expenses/transfers", {
       method: "POST",
@@ -87,6 +97,7 @@ export function AssetsView({
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transfers) setTransfers(data.transfers);
+    refreshIfFee(draft);
     showToast(TOAST.created);
     setTransferOpen(false);
   }
@@ -101,6 +112,9 @@ export function AssetsView({
       .then((res) => res.json())
       .catch(() => ({}));
     if (data.transfers) setTransfers(data.transfers);
+    // 編輯時手續費從有變成沒有也要重抓（那筆支出被刪掉了），所以判斷的是「舊的或新的
+    // 有填過手續費」。
+    if (draft.fee || transferEdit?.fee) router.refresh();
     showToast(TOAST.saved);
     setTransferEdit(null);
   }

@@ -53,6 +53,13 @@ async function ensureIndexes(db: Db): Promise<void> {
       { unique: true, partialFilterExpression: { sourceRuleId: { $exists: true } } },
     ),
     db.collection("expenses.goals").createIndex({ userId: 1, createdAt: 1 }),
+    // 轉帳類型的固定收支規則入帳時寫進來的 sourceRuleId——跟交易那邊同一個約定：同一條
+    // 規則同一天最多入帳一次，擋重複按確認生出兩筆一樣的轉帳。partialFilterExpression
+    // 只管有 sourceRuleId 的文件，手動記的轉帳（沒有這個欄位）不受影響。
+    db.collection("expenses.transfers").createIndex(
+      { userId: 1, sourceRuleId: 1, date: 1 },
+      { unique: true, partialFilterExpression: { sourceRuleId: { $exists: true } } },
+    ),
     db.collection("expenses.recurringRules").createIndex({ userId: 1, active: 1, createdAt: 1 }),
     db.collection("expenses.accounts").createIndex({ userId: 1, createdAt: 1 }),
     db.collection("expenses.accountTypes").createIndex({ userId: 1, kind: 1, order: 1 }),

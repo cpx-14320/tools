@@ -12,6 +12,16 @@ export interface TransferDTO {
   amount: number;
   date: string;
   note?: string;
+  /** 跨行手續費這種「轉一次錢被扣掉的錢」。
+   *
+   *  **它不是轉帳金額的一部分**：amount 講的是兩個戶頭之間搬了多少（淨資產不變），
+   *  手續費是真的消失的錢。所以手續費會另外產生一筆掛在「手續費」分類、從轉出帳戶
+   *  出去的支出交易（見 transfers.server.ts），淨資產才對得起來。 */
+  fee?: number;
+  /** 由「轉帳」類型的固定收支規則確認入帳時才有值（見 recurring-rules.server.ts）；
+   *  手動記的轉帳不會有這個欄位，也不能透過一般的新增／編輯 API 設定它。固定收支頁
+   *  靠它算出「已入帳幾期」。 */
+  sourceRuleId?: string;
 }
 
 export interface TransferInput {
@@ -20,6 +30,7 @@ export interface TransferInput {
   amount: number;
   date: string;
   note?: string;
+  fee?: number;
 }
 
 /** 跟指定帳戶有關的轉帳（不管是轉出還是轉入）——帳戶明細頁把這份跟一般交易合併顯示用。 */
