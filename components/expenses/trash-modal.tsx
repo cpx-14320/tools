@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Modal } from "./modal";
-import { Button } from "./button";
+import { Button, PillButton } from "./button";
 import { ListCard, ListRow } from "./list-row";
 import { SelectionDot } from "./selection-bar";
 import { categoryColorClass } from "@/lib/expenses/categories";
@@ -51,8 +51,21 @@ export function TrashModal({
   // 小按鈕在手機上很容易按錯，而且「永久刪除」被按錯的代價是資料真的沒了。
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [purgeOpen, setPurgeOpen] = useState(false);
+  // 種類篩選。做成膠囊而不是分頁：垃圾桶平常是空的，一進來先看到七個分頁很笨重，而且
+  // 多數情況要找的是「我剛剛刪掉的那一筆」，照日期往下看就到了。只有在一次刪了很多種
+  // 東西、要挑其中一類還原的時候才需要篩，所以它是可選的收斂手段，不是主要的瀏覽方式。
+  // 只列「垃圾桶裡真的有的種類」——列出七個固定選項，其中五個按了都是空的沒有意義。
+  const [kindFilter, setKindFilter] = useState<TrashKind | null>(null);
 
-  const chosen = items.filter((i) => selected.has(i.id));
+  const kinds = [...new Set(items.map((i) => i.kind))];
+  // 篩選條件如果指到一個已經沒有東西的種類（最後一筆被還原或永久刪除了），當作沒篩——
+  // 不然畫面會停在一個空清單上，而且那個膠囊已經不在了，使用者按不掉它。
+  const activeKind = kindFilter && kinds.includes(kindFilter) ? kindFilter : null;
+  const visible = activeKind ? items.filter((i) => i.kind === activeKind) : items;
+
+  // 勾選的項目只算「現在看得到的」：篩選切換後，之前勾到、現在被篩掉的那幾項要跟著
+  // 失效，不然底下的「還原 N 項」會把看不見的東西算進去（跟 useSelection 同一個理由）。
+  const chosen = visible.filter((i) => selected.has(i.id));
   const toggle = (id: string) =>
     setSelected((set) => {
       const next = new Set(set);
@@ -74,7 +87,7 @@ export function TrashModal({
 
   // 依刪除日期分組（新的在前，listTrash 已經排好序，所以照順序塞就是對的）。
   const groups = new Map<string, TrashItemDTO[]>();
-  for (const item of items) {
+  for (const item of visible) {
     const date = item.deletedAt.slice(0, 10);
     groups.set(date, [...(groups.get(date) ?? []), item]);
   }
@@ -138,6 +151,20 @@ export function TrashModal({
         ) : (
           <>
             <p className={`${text.muted} leading-relaxed`}>刪掉的項目會一直留在這裡，直到你自己清掉為止，不會自動消失。</p>
+            {/* 只有兩種以上才顯示：垃圾桶裡只有交易的時候，一排「全部／交易」兩顆膠囊
+                等於沒有篩選功能，只是多佔一行。 */}
+            {kinds.length > 1 && (
+              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5">
+                <PillButton active={activeKind === null} onClick={() => setKindFilter(null)}>
+                  全部 {items.length}
+                </PillButton>
+                {kinds.map((kind) => (
+                  <PillButton key={kind} active={activeKind === kind} onClick={() => setKindFilter(kind)}>
+                    {TRASH_KIND_LABEL[kind]} {items.filter((i) => i.kind === kind).length}
+                  </PillButton>
+                ))}
+              </div>
+            )}
             {/* 依「刪除日期」分組，日期當小標題——跟明細頁的消費清單同一種排法。
                 一天刪好幾次是常有的事，沒有分組的話整串看起來就是一長條，要找「我昨天
                 刪掉的那筆」只能一列一列看日期。 */}

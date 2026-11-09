@@ -12,6 +12,8 @@ import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { SortArrows, SortToggle } from "@/components/expenses/sort-controls";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
+import { BusyOverlay } from "@/components/expenses/busy-overlay";
+import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { accountTypesByKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { categoryColorClass } from "@/lib/expenses/categories";
 
@@ -21,9 +23,6 @@ import { categoryColorClass } from "@/lib/expenses/categories";
  *  也不需要骨架：第一次畫出來就是有資料的畫面。 */
 export function AccountTypesView({
   initialAccountTypes,
-  /** 不是為了顯示筆數，而是為了知道「這個類型底下還有沒有帳戶」：有的話編輯彈窗裡的
-   *  資產/負債要鎖住（見 account-type-modal.tsx）。帳戶是在別的頁面改的，這一頁不會動它，
-   *  所以不用放進 state。 */
 }: {
   initialAccountTypes: AccountTypeDTO[];
 }) {
@@ -35,6 +34,10 @@ export function AccountTypesView({
   // 擋下來的理由（刪不掉、或資產/負債換不了）直接存成一句話——兩種情況的說明不一樣，
   // 存 inUseCount 再在畫面上拼字串的話只能講刪除那一種。
   const [blockedInfo, setBlockedInfo] = useState<{ message: string } | null>(null);
+  // 批次刪除的確認。單筆刪除走編輯彈窗的 ModalFooter，它本來就會問一次；批次以前是
+  // 按下去就直接刪，兩條路一問一不問，所以這裡補上同一道關卡。
+  const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   // 排序模式：每一列右邊長出 ↑↓。跟多選模式互斥（理由同收支分類頁）。
   const [sorting, setSorting] = useState(false);
 
@@ -100,8 +103,17 @@ export function AccountTypesView({
     if (blockedCount > 0) setBlockedInfo({ message: `還有 ${totalInUse} 個帳戶掛著選取的類型，無法刪除。請先把這些帳戶改成別的類型，再回來刪除。` });
   }
 
-  async function handleBulkDelete() {
-    const { blockedCount, totalInUse } = await tryDeleteTypes([...selection.selectedIds]);
+  function handleBulkDelete() {
+    if (selection.selectedIds.size === 0) return;
+    setDeleteConfirm([...selection.selectedIds]);
+  }
+
+  async function confirmBulkDelete() {
+    if (!deleteConfirm) return;
+    setDeleteBusy(true);
+    const { blockedCount, totalInUse } = await tryDeleteTypes(deleteConfirm);
+    setDeleteBusy(false);
+    setDeleteConfirm(null);
     selection.exit();
     if (blockedCount > 0) setBlockedInfo({ message: `還有 ${totalInUse} 個帳戶掛著選取的類型，無法刪除。請先把這些帳戶改成別的類型，再回來刪除。` });
   }
@@ -242,6 +254,18 @@ export function AccountTypesView({
         onDelete={handleDelete}
       />
       <AccountTypeBatchModal open={batchOpen} onClose={() => setBatchOpen(false)} onSave={handleBatchSave} accountTypes={accountTypes} />
+
+      {/* 批次刪除的確認。底下還有帳戶在用的類型刪不掉（API 會擋），所以這裡講的是
+          「刪得掉的那些會進垃圾桶」，擋下來的理由由後面那個 blockedInfo 彈窗接手。 */}
+      <ConfirmModal
+        open={deleteConfirm !== null}
+        title={(deleteConfirm?.length ?? 0) > 1 ? `刪除 ${deleteConfirm?.length} 個帳戶類型` : "刪除帳戶類型"}
+        message={`底下還有帳戶在用的類型不會被刪除。${TRASH_RESTORE_NOTE}`}
+        confirmLabel={deleteBusy ? "刪除中…" : "刪除"}
+        onConfirm={confirmBulkDelete}
+        onClose={() => setDeleteConfirm(null)}
+      />
+      <BusyOverlay open={deleteBusy} label="刪除中…" />
 
       <ConfirmModal
         open={blockedInfo !== null}

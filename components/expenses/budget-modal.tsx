@@ -40,7 +40,7 @@ export function BudgetModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={category ? `編輯預算－${category.name}` : "設定預算"}
+      title={category ? `編輯預算 ${category.name}` : "設定預算"}
       stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} label="每月預算" />}
       footer={
         <ModalFooter

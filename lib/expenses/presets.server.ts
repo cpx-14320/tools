@@ -1,4 +1,4 @@
-import { ObjectId } from "mongodb";
+import { MongoServerError, ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import { PRESET_ACCOUNTS, PRESET_EXPENSE_CATEGORIES, PRESET_INCOME_CATEGORIES, type PresetCategorySeed } from "./presets";
 import type { CategoryKind } from "./categories";
@@ -26,13 +26,23 @@ function metaCollection() {
  *  「清除全部資料」略過它們。 */
 export async function seedExpensesPresets(userId: ObjectId): Promise<void> {
   const meta = await metaCollection();
-  // upsert 當成「只做一次」的閘門：第一個進來的請求才會拿到 upsertedId，同一個使用者
-  // 連續開兩個分頁同時觸發時，第二個會因為文件已存在而拿到 null，不會建出兩份預設資料。
-  const result = await meta.updateOne(
-    { userId },
-    { $setOnInsert: { userId, presetsSeededAt: new Date() } },
-    { upsert: true },
-  );
+  // upsert 當成「只做一次」的閘門：第一個進來的請求才會拿到 upsertedId，第二個會因為
+  // 文件已存在而拿到 null，不會建出兩份預設資料。
+  //
+  // **這道閘門靠的是 expenses.meta 上 userId 的 unique index**（見 lib/mongodb.ts）。
+  // 沒有那個索引的話 upsert 擋不住併發：兩個請求可以都判定「找不到」然後各插一筆、
+  // 各自拿到 upsertedId，整份預設資料就建兩遍。新帳號第一次進記帳本剛好最容易併發
+  // （layout 與 page 平行算繪，底部導覽列五個連結又各自被 prefetch）。
+  //
+  // 有索引之後，輸掉的那一邊會收到 E11000（重複鍵）。那不是錯誤，是「別人已經建過了」，
+  // 所以吞掉直接 return——往上拋會讓那個平行的請求整個 500。
+  let result;
+  try {
+    result = await meta.updateOne({ userId }, { $setOnInsert: { userId, presetsSeededAt: new Date() } }, { upsert: true });
+  } catch (error) {
+    if (error instanceof MongoServerError && error.code === 11000) return;
+    throw error;
+  }
   if (!result.upsertedId) return;
 
   const db = await getDb();

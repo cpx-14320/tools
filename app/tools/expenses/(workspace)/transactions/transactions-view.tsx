@@ -453,6 +453,7 @@ export function TransactionsView({
           // 只有列交易的頁面有批次改資料的動作：分類、帳戶類型那幾頁管的是「定義」，
           // 一批一批改的需求不存在。
           actions={bulkEdit.actions}
+          pending={bulkEdit.pending}
           onToggleAll={selection.toggleAll}
           onCancel={selection.exit}
           onDelete={() => setDeleteConfirm([...selection.selectedIds])}

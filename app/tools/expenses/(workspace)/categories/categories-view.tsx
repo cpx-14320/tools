@@ -13,6 +13,7 @@ import { AccountPickerModal } from "@/components/expenses/account-picker-modal";
 import { LineIconButton } from "@/components/expenses/line-icon-button";
 import { Modal, ModalFooter } from "@/components/expenses/modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
+import { BusyOverlay } from "@/components/expenses/busy-overlay";
 import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
@@ -49,6 +50,7 @@ export function CategoriesView({
   const [batchTarget, setBatchTarget] = useState<BatchTarget | null>(null);
   const [kind, setKind] = useState<CategoryKind>("支出");
   const [deleteConfirm, setDeleteConfirm] = useState<{ ids: string[]; inUseCount: number; subCount: number } | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   // 排序模式：每一列右邊長出 ↑↓。跟多選模式互斥——兩個都開的話一列右邊會擠進打勾、
   // 筆數跟兩顆箭頭，而且點一下到底是要選取還是要移動也說不清楚。
   const [sorting, setSorting] = useState(false);
@@ -70,9 +72,11 @@ export function CategoriesView({
     setModal(null);
   }
 
-  // 刪除分類（單筆或多選批次共用）：先不帶 force 試刪，查無使用中紀錄的會直接刪掉、
-  // 立刻反映在畫面上；有紀錄在用的會被擋下，彙總成一個總筆數，讓呼叫端跳一次確認彈窗
-  // 問要不要強制刪除（確認後這些紀錄會被歸類到「未分類」，不會變成孤兒資料）。
+  /** 真的刪（單筆或多選批次共用）。一律帶 force——確認彈窗已經把「有幾筆交易會被改掛到
+   *  未分類」講過了，進到這裡就是使用者已經同意的意思，再被 409 擋一次只會變成要按兩次。
+   *
+   *  還是保留 force 參數跟 409 的處理：API 的約定是「沒帶 force 又有紀錄在用就擋」，
+   *  擋下來的那幾筆不能算進「已刪除 N 筆」的提示裡。 */
   async function tryDeleteCategories(ids: string[], force: boolean) {
     let latest = categories;
     const blocked: string[] = [];
@@ -115,38 +119,43 @@ export function CategoriesView({
     return categories.filter((c) => c.parentId && ids.includes(c.parentId)).length;
   }
 
-  async function handleDelete() {
-    if (!modal) return;
-    const ids = [modal.id];
-    // 有子分類就先問一次，就算完全沒有紀錄在用也一樣——「刪一個主分類結果底下五個
-    // 子分類一起不見」不該是按下去之後才發現的事。
-    if (subCount(ids) > 0) {
-      setModal(null);
-      setDeleteConfirm({ ids, inUseCount: 0, subCount: subCount(ids) });
-      return;
-    }
-    const { blocked, totalInUse } = await tryDeleteCategories(ids, false);
-    setModal(null);
-    if (blocked.length > 0) setDeleteConfirm({ ids: blocked, inUseCount: totalInUse, subCount: subCount(blocked) });
+  /** 這批分類（含底下的子分類）身上總共掛了幾筆交易。
+   *
+   *  用的是 page.tsx 傳進來的 counts，所以確認彈窗不必先打一次 API 去問——以前是「先
+   *  試刪、被擋下來才知道有幾筆」，所以沒被擋的那種（乾淨的分類）根本不會跳確認。 */
+  function inUseCount(ids: string[]): number {
+    const all = new Set(ids);
+    for (const c of categories) if (c.parentId && ids.includes(c.parentId)) all.add(c.id);
+    return [...all].reduce((sum, id) => sum + (counts[id] ?? 0), 0);
   }
 
-  async function handleBulkDelete() {
-    const ids = [...selection.selectedIds];
-    if (subCount(ids) > 0) {
-      setDeleteConfirm({ ids, inUseCount: 0, subCount: subCount(ids) });
-      return;
-    }
-    const { blocked, totalInUse } = await tryDeleteCategories(ids, false);
-    if (blocked.length > 0) {
-      setDeleteConfirm({ ids: blocked, inUseCount: totalInUse, subCount: subCount(blocked) });
-    } else {
-      selection.exit();
-    }
+  /** 刪除分類一律先問。
+   *
+   *  **為什麼不分情況**：本來是「有子分類或有紀錄在用才問，乾淨的直接刪」，結果變成
+   *  「刪得掉的不問、刪不掉的才問」，剛好跟直覺相反——使用者在列表上勾了幾個分類按刪除，
+   *  什麼都沒跳就少了幾列。刪分類的副作用（連帶子分類、交易被改掛到未分類）正是最需要
+   *  先講一聲的那種，所以不管乾不乾淨都走同一道確認，差別只在彈窗裡多講幾句。 */
+  function askDelete(ids: string[]) {
+    if (ids.length === 0) return;
+    setDeleteConfirm({ ids, inUseCount: inUseCount(ids), subCount: subCount(ids) });
+  }
+
+  function handleDelete() {
+    if (!modal) return;
+    const ids = [modal.id];
+    setModal(null);
+    askDelete(ids);
+  }
+
+  function handleBulkDelete() {
+    askDelete([...selection.selectedIds]);
   }
 
   async function handleForceDelete() {
     if (!deleteConfirm) return;
+    setDeleteBusy(true);
     await tryDeleteCategories(deleteConfirm.ids, true);
+    setDeleteBusy(false);
     setDeleteConfirm(null);
     selection.exit();
   }
@@ -184,10 +193,14 @@ export function CategoriesView({
   const [accountFilter, setAccountFilter] = useState("");
   const [unassignedOnly, setUnassignedOnly] = useState(false);
 
-  // 批次改預設帳戶：先挑帳戶（accountPicker），挑完如果會蓋掉別人已經設好的，再跳一次
-  // 確認（pendingAccount 存著「挑好但還沒套用」的那個帳戶）。
+  // 批次改預設帳戶分三步：勾選分類 → 挑帳戶（accountPicker）→ 工具列顯示「修改帳戶 →
+  // 玉山銀行」，按「完成」才送出。pendingAccount 存的就是「挑好但還沒套用」的那個帳戶。
+  //
+  // **為什麼不挑完就送**：挑帳戶的彈窗一關，手指還在原地，幾十個分類的預設帳戶就已經
+  // 被改掉了，而且使用者沒有任何機會複查自己剛剛點到哪一個。
   const [accountPickerOpen, setAccountPickerOpen] = useState(false);
-  const [pendingAccount, setPendingAccount] = useState<{ accountId: string | undefined; overwrite: CategoryDTO[] } | null>(null);
+  const [pendingAccount, setPendingAccount] = useState<{ accountId: string | undefined } | null>(null);
+  const [accountBusy, setAccountBusy] = useState(false);
 
   // 篩的是主分類——預設帳戶只設在主分類上，子分類跟著它的主分類一起出現或消失。
   const allParents = topLevelCategories(categories, kind);
@@ -224,43 +237,61 @@ export function CategoriesView({
     return accounts.find((a) => a.id === accountId)?.name ?? "（已刪除帳戶）";
   }
 
-  /** 真的送出批次改帳戶。逐筆 PATCH——這一頁其他批次操作（新增、刪除）也是逐筆依序打，
-   *  併發送出會拿到彼此覆蓋的 categories 快照。 */
-  async function applyDefaultAccount(accountId: string | undefined) {
+  /** 真的送出批次改帳戶。整批 id 一次 PATCH 給後端跑——本來是前端迴圈一筆一個請求，
+   *  勾二三十個分類就是二三十個來回，而且每個回應都帶一份完整 categories，前端還得自己
+   *  決定哪一份才是最新的。 */
+  async function applyDefaultAccount() {
+    const accountId = pendingAccount?.accountId;
     const targets = selectedTopLevel();
-    let latest = categories;
-    for (const c of targets) {
-      const data: { categories?: CategoryDTO[] } = await fetch("/api/expenses/categories", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: c.id, defaultAccountId: accountId ?? null }),
-      })
-        .then((res) => res.json())
-        .catch(() => ({}));
-      if (data.categories) latest = data.categories;
+    if (targets.length === 0) return;
+    setAccountBusy(true);
+    const data: { updated?: number; categories?: CategoryDTO[]; error?: string } = await fetch("/api/expenses/categories", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: targets.map((c) => c.id), defaultAccountId: accountId ?? null }),
+    })
+      .then((res) => res.json())
+      .catch(() => ({}));
+    setAccountBusy(false);
+    // 失敗要講出來。本來不管結果都報「改好了」，所以這個功能壞掉（打到不存在的 PATCH、
+    // 回 405）整整一版都沒人發現——畫面上看起來成功，重新整理才知道沒變。
+    if (!data.categories) {
+      showToast(data.error ?? "改不動，再試一次");
+      return;
     }
-    setCategories(latest);
+    setCategories(data.categories);
     // 勾到的子分類不會被改到（預設帳戶只設在主分類上），所以直接把「改了幾個」講出來，
     // 不要讓使用者拿「已選 8 項」去對「改好了」然後以為有幾個漏掉。
     const skipped = selection.selectedIds.size - targets.length;
     const what = accountId ? `改成「${accountName(accountId)}」` : "改成不指定帳戶";
-    showToast(skipped > 0 ? `${targets.length} 個主分類${what}（子分類沿用主分類，不另外設）` : `${targets.length} 個分類${what}`);
+    const n = data.updated ?? targets.length;
+    showToast(skipped > 0 ? `${n} 個主分類${what}（子分類沿用主分類，不另外設）` : `${n} 個分類${what}`);
     setPendingAccount(null);
     selection.exit();
   }
 
-  /** 挑完帳戶之後的分流：會蓋掉別人已經設好的帳戶才需要再問一次。
-   *
-   *  本來沒設過的直接填上去——那是補資料，不是改資料，停下來問只是多一次點擊。 */
+  /** 挑完帳戶只記下來，不送出：工具列會換成待確認狀態，等「完成」。 */
   function handleAccountPicked(accountId: string | undefined) {
     setAccountPickerOpen(false);
-    const overwrite = selectedTopLevel().filter((c) => c.defaultAccountId && c.defaultAccountId !== accountId);
-    if (overwrite.length === 0) {
-      void applyDefaultAccount(accountId);
-      return;
-    }
-    setPendingAccount({ accountId, overwrite });
+    setPendingAccount({ accountId });
   }
+
+  // 待確認時工具列要補的那行細節：有幾個原本已經設過帳戶、會被蓋掉。使用者這一刻要判斷
+  // 的是「我是不是不小心勾到了」，光一個數字判斷不了，所以把名稱也列出來（多了就收尾）。
+  const overwriteTargets = pendingAccount
+    ? selectedTopLevel().filter((c) => c.defaultAccountId && c.defaultAccountId !== pendingAccount.accountId)
+    : [];
+  const pendingDetail = (() => {
+    if (!pendingAccount) return "";
+    const parts: string[] = [];
+    const subs = selection.selectedIds.size - selectedTopLevel().length;
+    if (overwriteTargets.length > 0) {
+      const names = overwriteTargets.slice(0, 3).map((c) => `${c.name}（${accountName(c.defaultAccountId)}）`).join("、");
+      parts.push(`${overwriteTargets.length} 個原本已設定會被蓋掉：${names}${overwriteTargets.length > 3 ? "…" : ""}`);
+    }
+    if (subs > 0) parts.push(`勾到的 ${subs} 個子分類沿用主分類，不會改`);
+    return parts.join("・");
+  })();
 
   /** 一個主分類右邊要顯示的筆數＝它自己的 ＋ 底下所有子項目的。
    *
@@ -443,44 +474,31 @@ export function CategoriesView({
         onSelect={handleAccountPicked}
       />
 
-      {/* 只有「會蓋掉已經設好的帳戶」才會走到這裡。把是哪幾個、原本掛在哪列出來——
-          使用者要判斷的是「我是不是不小心勾到了」，只給一個數字判斷不了。 */}
-      <ConfirmModal
-        open={pendingAccount !== null}
-        title="已設定帳戶"
-        danger={false}
-        confirmLabel="確認"
-        message={
-          <>
-            {pendingAccount?.overwrite.length} 個分類原本就有預設帳戶，會被改成
-            {pendingAccount?.accountId ? `「${accountName(pendingAccount.accountId)}」` : "不指定"}：
-            {/* 一行一個，不用頓號串成一長串：串起來的時候名稱跟「（目前：…）」會混在一起，
-                三四個以上就得一個一個用眼睛切開。 */}
-            <span className="mt-2 block">
-              {pendingAccount?.overwrite.map((c) => (
-                <span key={c.id} className="block">
-                  {c.name}（目前：{accountName(c.defaultAccountId)}）
-                </span>
-              ))}
-            </span>
-          </>
-        }
-        onConfirm={() => applyDefaultAccount(pendingAccount?.accountId)}
-        onClose={() => setPendingAccount(null)}
-      />
+      {/* 批次改帳戶送出期間蓋住畫面：勾了幾十個分類時後端要跑一會兒，沒有這塊的話
+          使用者會以為「完成」沒反應，再按一次。 */}
+      <BusyOverlay open={accountBusy} label="修改中…" />
+      <BusyOverlay open={deleteBusy} label="刪除中…" />
 
       <ConfirmModal
         open={deleteConfirm !== null}
-        title={(deleteConfirm?.subCount ?? 0) > 0 ? "會連子分類一起刪除" : "這些分類還有紀錄"}
+        // 標題講「刪什麼、幾個」；會連帶刪掉子分類是最需要先看到的那件事，所以它優先。
+        title={
+          (deleteConfirm?.subCount ?? 0) > 0
+            ? "會連子分類一起刪除"
+            : (deleteConfirm?.ids.length ?? 0) > 1
+              ? `刪除 ${deleteConfirm?.ids.length} 個分類`
+              : "刪除分類"
+        }
         message={[
           (deleteConfirm?.subCount ?? 0) > 0 ? `底下的 ${deleteConfirm?.subCount} 個子分類也會一起刪除。` : "",
           (deleteConfirm?.inUseCount ?? 0) > 0
-            ? `還有共 ${deleteConfirm?.inUseCount} 筆交易或固定收支規則在用，刪除後這些紀錄會自動歸類到「未分類」，不會被刪除也不會變成孤兒資料。`
+            ? `共 ${deleteConfirm?.inUseCount} 筆交易掛在上面，刪除後會自動歸類到「未分類」，紀錄本身不會被刪掉。`
             : "已經記過的交易如果有掛到這些分類，會自動歸類到「未分類」，不會被刪除。",
           TRASH_RESTORE_NOTE,
         ]
           .filter(Boolean)
           .join("")}
+        confirmLabel={deleteBusy ? "刪除中…" : "刪除"}
         onConfirm={handleForceDelete}
         onClose={() => setDeleteConfirm(null)}
       />
@@ -530,6 +548,18 @@ export function CategoriesView({
               },
             },
           ]}
+          pending={
+            pendingAccount
+              ? {
+                  summary: `修改帳戶 → ${pendingAccount.accountId ? accountName(pendingAccount.accountId) : "不設預設帳戶"}`,
+                  detail: pendingDetail,
+                  confirmLabel: `完成（${selectedTopLevel().length} 個）`,
+                  busy: accountBusy,
+                  onConfirm: () => void applyDefaultAccount(),
+                  onCancel: () => setPendingAccount(null),
+                }
+              : undefined
+          }
           onToggleAll={selection.toggleAll}
           onCancel={selection.exit}
           onDelete={handleBulkDelete}

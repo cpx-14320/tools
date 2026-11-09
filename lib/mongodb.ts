@@ -56,6 +56,23 @@ async function ensureIndexes(db: Db): Promise<void> {
     db.collection("expenses.recurringRules").createIndex({ userId: 1, active: 1, createdAt: 1 }),
     db.collection("expenses.accounts").createIndex({ userId: 1, createdAt: 1 }),
     db.collection("expenses.accountTypes").createIndex({ userId: 1, kind: 1, order: 1 }),
+    // expenses.meta 一個使用者只該有一筆。這個 unique 不只是防呆，**它是預設資料只建一次
+    // 的那道鎖**：seedExpensesPresets 用 `updateOne(..., { upsert: true })` 有沒有插進去
+    // 當閘門，而 upsert 在沒有唯一索引時，兩個同時進來的請求可以都判定「找不到」然後各插
+    // 一筆、各自拿到 upsertedId，於是預設分類／帳戶類型／帳戶整份建兩遍。新帳號第一次
+    // 進記帳本剛好就會併發（layout 跟 page 平行算繪，底部導覽列那五個連結又各自被
+    // prefetch，每個都是獨立請求），實際踩過：一個帳號 108 個預設分類、2 筆 meta。
+    //
+    // 單獨 catch：這個 unique 是後來才加的，資料庫裡可能還留著以前漏出來的重複 meta，
+    // 那時候建索引會失敗。失敗了就讓它失敗——這一個索引建不起來不該讓 getDb 整個 reject，
+    // 不然每一支 API 都跟著 500。真正的修法是把重複的 meta 清掉（scripts/ 底下有腳本），
+    // 清完下一次啟動就會建起來。
+    db
+      .collection("expenses.meta")
+      .createIndex({ userId: 1 }, { unique: true })
+      .catch((error: unknown) => {
+        console.warn("[mongodb] expenses.meta 的 userId unique index 建不起來，可能有重複的 meta 文件要先清掉：", error);
+      }),
   ]);
 
   // toolsRegistry 是目前工具清單的真實來源，用 upsert 寫入 lib/tools-registry.ts 裡

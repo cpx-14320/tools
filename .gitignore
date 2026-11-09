@@ -42,3 +42,6 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# 一次性腳本的輸出報告（終端機是 cp950，中文直接印會亂碼，所以寫成檔案再看）
+scripts/.dedupe-report.txt

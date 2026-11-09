@@ -487,6 +487,7 @@ export function AccountDetailView({
                 count={selection.selectedIds.size}
                 total={selection.total}
                 actions={bulkEdit.actions}
+                pending={bulkEdit.pending}
                 onToggleAll={selection.toggleAll}
                 onCancel={selection.exit}
                 onDelete={() => setBulkDeleteConfirm([...selection.selectedIds])}

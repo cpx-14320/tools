@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { PillButton } from "./button";
 
 /** 多選模式的狀態——分類、帳戶類型、存錢目標、固定收支、明細這幾個清單頁本來各自寫一份
@@ -63,6 +63,27 @@ export interface SelectionAction {
   onClick: () => void;
 }
 
+/** 「已經選好要套用什麼，但還沒送出」的待確認狀態。
+ *
+ *  **為什麼要有這一段**：批次修改帳戶／分類原本是「在彈窗裡點到哪個帳戶就立刻送出」，
+ *  點錯就是直接改掉幾十筆資料，而且使用者對自己剛剛點了什麼沒有任何複查的機會。改成
+ *  選完只是記在這裡、工具列顯示「修改帳戶 → 玉山銀行」，要再按一次「完成」才真的動資料。
+ *
+ *  想換成別的目標就按「取消」重選——沒有做成「點摘要再開彈窗」，因為那顆摘要同時是
+ *  狀態顯示又是按鈕，看不出來可以點。 */
+export interface SelectionPending {
+  /** 工具列上顯示的待套用內容，例如「修改帳戶 → 玉山銀行」。 */
+  summary: ReactNode;
+  /** 送出前要讓人看到的細節（原本掛在哪幾個帳戶、這批橫跨哪段日期）。本來這些話是另外
+   *  跳一個確認彈窗講的，現在「完成」就是最後一關了，話要留在看得到的地方。 */
+  detail?: ReactNode;
+  confirmLabel?: string;
+  onConfirm: () => void;
+  /** 放掉這次選的目標值，回到原本那排動作按鈕（不會離開選取模式、不會清掉勾選的項目）。 */
+  onCancel: () => void;
+  busy?: boolean;
+}
+
 /** 多選共用的工具列——分類、帳戶類型、存錢目標、固定收支、明細這幾個頁面都用同一套：
  *  點「選取」進入選取模式，列表的列會換成可以打勾；這條工具列負責全選、顯示已選幾項、
  *  退出選取模式，以及對選到的那批做事。
@@ -80,6 +101,7 @@ export function SelectionBar({
   count,
   total,
   actions = [],
+  pending,
   onToggleAll,
   onCancel,
   onDelete,
@@ -87,6 +109,8 @@ export function SelectionBar({
   count: number;
   total: number;
   actions?: SelectionAction[];
+  /** 給了就切換成待確認樣式：第一行變成「要套用什麼＋完成」，動作跟刪除都先收起來。 */
+  pending?: SelectionPending;
   onToggleAll: () => void;
   onCancel: () => void;
   onDelete: () => void;
@@ -98,9 +122,27 @@ export function SelectionBar({
     // 的頁面背景上看起來像一塊暈開的色塊，而且它壓在白色清單卡上方時又變成第三種底色。
     <div className="flex flex-col gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-4 py-2.5">
       <div className="flex items-center justify-between gap-2">
-        <button type="button" onClick={onToggleAll} className="shrink-0 text-xs font-medium text-[#6F5FD6]">
-          {allSelected ? "取消全選" : "全選"}
-        </button>
+        {/* 待確認狀態下左邊換成「要套用什麼」，全選先收起來——這一刻該做的是確認或取消，
+            再讓人去改選了哪些項目，等於邀請使用者在送出前一刻又動一次範圍。 */}
+        {pending ? (
+          <span className="min-w-0 flex-1 truncate text-xs font-medium text-[#4A3B7C]">{pending.summary}</span>
+        ) : (
+          <button type="button" onClick={onToggleAll} className="shrink-0 text-xs font-medium text-[#6F5FD6]">
+            {allSelected ? "取消全選" : "全選"}
+          </button>
+        )}
+        {pending ? (
+          <button
+            type="button"
+            disabled={disabled || pending.busy}
+            onClick={pending.onConfirm}
+            // 唯一會動到資料的那一顆，所以是整條列上最實心的樣式（實心紫底）——跟旁邊
+            // 那些淡紫膠囊（只會開彈窗）分得開。
+            className="shrink-0 rounded-full bg-[#6F5FD6] px-3.5 py-1 text-xs font-semibold text-white disabled:opacity-40"
+          >
+            {pending.busy ? "處理中…" : (pending.confirmLabel ?? "完成")}
+          </button>
+        ) : (
         <div className="flex items-center gap-2">
           {actions.map((action) => (
             <button
@@ -120,10 +162,19 @@ export function SelectionBar({
             刪除
           </button>
         </div>
+        )}
       </div>
+      {pending?.detail && <p className="text-[11px] leading-snug text-[#9C94C4]">{pending.detail}</p>}
       <div className="flex items-center justify-end gap-3">
         <span className="text-xs font-medium text-[#4A3B7C]">已選 {count} 項</span>
-        <button type="button" onClick={onCancel} className="text-xs font-medium text-[#9C94C4]">
+        {/* 待確認狀態的「取消」只放掉剛選的目標值，不會整個退出選取模式——勾了半天的
+            項目因為想換一個帳戶就全部清掉，使用者得從頭再勾一次。 */}
+        <button
+          type="button"
+          disabled={pending?.busy}
+          onClick={pending ? pending.onCancel : onCancel}
+          className="text-xs font-medium text-[#9C94C4] disabled:opacity-40"
+        >
           取消
         </button>
       </div>
