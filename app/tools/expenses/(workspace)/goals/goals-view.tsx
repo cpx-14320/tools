@@ -205,7 +205,7 @@ export function GoalsView({
                         {formatCurrency(goal.currentAmount)}
                         <span className="ml-1 text-sm font-normal text-[#9C94C4]">/ {formatCurrency(goal.targetAmount)}</span>
                       </p>
-                      <p className={text.muted}>{achieved ? "🎉 目標達成" : `還差 ${formatCurrency(remaining)}`}</p>
+                      <p className={text.muted}>{achieved ? "目標達成" : `還差 ${formatCurrency(remaining)}`}</p>
                     </div>
                     <div className="mt-2">
                       <ProgressBar pct={pct} tone={achieved ? "positive" : "brand"} />

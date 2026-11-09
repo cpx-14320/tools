@@ -86,11 +86,15 @@ export async function createGoal(
   input: CreateGoalInput,
 ): Promise<{ goal: SavingsGoalDTO; goals: SavingsGoalDTO[] }> {
   const col = await collection();
-  const { accountId, ...rest } = input;
+  const { accountId, startDate, targetDate, ...rest } = input;
   const doc: SavingsGoalDoc = {
     _id: new ObjectId(),
     userId,
     ...rest,
+    // 日期沒填就整個欄位不要寫（undefined 進 insertOne 會存成 null，之後讀回來是一個
+    // 「有值但值是 null」的欄位，跟「沒設期限」不是同一件事）。
+    ...(startDate ? { startDate } : {}),
+    ...(targetDate ? { targetDate } : {}),
     // 沒綁定就整個欄位不要寫進去（而不是寫 null）——「沒有這個欄位」才是手動記錄模式的
     // 表示法，跟 toDTO 的 `doc.accountId?.toHexString()` 對齊。
     ...(accountId ? { accountId: new ObjectId(accountId) } : {}),
@@ -117,12 +121,25 @@ export interface UpdateGoalInput {
 export async function updateGoal(userId: ObjectId, id: string, input: UpdateGoalInput): Promise<SavingsGoalDTO[]> {
   const col = await collection();
   const { accountId, ...rest } = input;
+
+  // **一定要濾掉 undefined**：MongoDB driver 預設會把 `{ currentAmount: undefined }` 寫成
+  // `null`，不是「不要動這個欄位」。綁定帳戶的目標不送 currentAmount（進度來自餘額），
+  // 結果資料庫裡那個欄位被寫成 null，之後解除綁定就變成「null ÷ 目標金額」——進度條算
+  // 不出來，編輯彈窗的金額欄還會顯示 "null"。startDate／targetDate 留空時同理。
+  const $set: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(rest)) if (value !== undefined) $set[key] = value;
+  if (accountId) $set.accountId = new ObjectId(accountId);
+
   await col.updateOne(
     { _id: new ObjectId(id), userId },
     {
-      $set: { ...rest, ...(accountId ? { accountId: new ObjectId(accountId) } : {}) },
-      // 解除綁定是把欄位拿掉，不是設成 null（見 createGoal 的註解）。
-      ...(accountId === null ? { $unset: { accountId: "" } } : {}),
+      $set,
+      // 日期清空要真的拿掉欄位，不是留一個 null；解除綁定也是（見 createGoal 的註解）。
+      $unset: {
+        ...(accountId === null ? { accountId: "" } : {}),
+        ...(rest.startDate === undefined ? { startDate: "" } : {}),
+        ...(rest.targetDate === undefined ? { targetDate: "" } : {}),
+      },
     },
   );
   return listGoalsWithProgress(userId);

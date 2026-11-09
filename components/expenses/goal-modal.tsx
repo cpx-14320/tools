@@ -27,7 +27,7 @@ export interface GoalModalDraft {
  *
  *  **進度有兩種來源，由使用者選**（舊版只有手動記錄）：
  *
- *  - 自己記：自己填「目前已存多少」。想存多少、放在哪個戶頭都不管，彈性最大，代價是
+ *  - 自行記錄：自己填「目前已存多少」。想存多少、放在哪個戶頭都不管，彈性最大，代價是
  *    要記得回來更新，久了很容易跟實際存款對不起來。
  *  - 綁定帳戶：進度直接看那個帳戶的餘額。錢本來就放在某個戶頭裡，這樣永遠不會對不起來，
  *    也不用每次存錢都回來點一次；代價是一個帳戶配一個目標才準（兩個目標綁同一個帳戶，
@@ -136,7 +136,7 @@ export function GoalModal({
           placeholder=""
         />
 
-        <Field label="進度怎麼算" required>
+        <Field label="進度如何計算" required>
           <SegmentedControl
             value={bound ? "account" : "manual"}
             onChange={(v) => {
@@ -146,7 +146,7 @@ export function GoalModal({
               else setPickerOpen(true);
             }}
             options={[
-              { value: "manual", label: "自己記" },
+              { value: "manual", label: "自行記錄" },
               { value: "account", label: "綁定帳戶" },
             ]}
           />
@@ -177,7 +177,9 @@ export function GoalModal({
               value={currentAmountNum}
               active={target === "current"}
               onFocus={() => setTarget("current")}
-              placeholder=""
+              // 0 元的時候要看得到「NT$ 0」。AmountField 對 0 是當成「沒有值」顯示
+              // placeholder，留空的話這一欄會變成一個空框，看起來像壞掉。
+              placeholder="NT$ 0"
             />
             <p className={`-mt-1 ${text.faint}`}>
               又存了一筆就把這個數字改成新的總額。下面的鍵盤吃算式，所以直接打「現在的金額＋這次存的」也可以。
@@ -208,10 +210,13 @@ export function GoalModal({
         accounts={accounts}
         accountTypes={accountTypes}
         showBalance={false}
-        unsetLabel="改成自己記"
+        unsetLabel="改成自行記錄"
         onClose={() => {
           setPickerOpen(false);
-          if (!account) setAccountId(null);
+          // 用函式型更新讀**當下**的值，不是這個 closure 裡的 accountId：選擇彈窗按下
+          // 某個帳戶時會先 onSelect 再 onClose，拿 closure 裡的舊值（還是 null）去判斷
+          // 的話，剛選好的帳戶會立刻被這一行清掉，畫面彈回「自己記」。
+          setAccountId((current) => (current && accounts.some((a) => a.id === current) ? current : null));
         }}
         onSelect={(picked) => {
           setPickerOpen(false);
