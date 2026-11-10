@@ -13,7 +13,7 @@ import { AccountPickerModal } from "@/components/expenses/account-picker-modal";
 import { LineIconButton } from "@/components/expenses/line-icon-button";
 import { Modal, ModalFooter } from "@/components/expenses/modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
-import { BusyOverlay } from "@/components/expenses/busy-overlay";
+import { useBusy } from "@/components/expenses/busy";
 import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
@@ -45,12 +45,12 @@ export function CategoriesView({
 }) {
   const [categories, setCategories] = useState<CategoryDTO[]>(initialCategories);
   const showToast = useToast();
+  const runBusy = useBusy();
   const showDeleteToast = useUndoDelete();
   const [modal, setModal] = useState<CategoryDTO | null>(null);
   const [batchTarget, setBatchTarget] = useState<BatchTarget | null>(null);
   const [kind, setKind] = useState<CategoryKind>("支出");
   const [deleteConfirm, setDeleteConfirm] = useState<{ ids: string[]; inUseCount: number; subCount: number } | null>(null);
-  const [deleteBusy, setDeleteBusy] = useState(false);
   // 排序模式：每一列右邊長出 ↑↓。跟多選模式互斥——兩個都開的話一列右邊會擠進打勾、
   // 筆數跟兩顆箭頭，而且點一下到底是要選取還是要移動也說不清楚。
   const [sorting, setSorting] = useState(false);
@@ -153,9 +153,7 @@ export function CategoriesView({
 
   async function handleForceDelete() {
     if (!deleteConfirm) return;
-    setDeleteBusy(true);
-    await tryDeleteCategories(deleteConfirm.ids, true);
-    setDeleteBusy(false);
+    await runBusy("刪除中…", () => tryDeleteCategories(deleteConfirm.ids, true));
     setDeleteConfirm(null);
     selection.exit();
   }
@@ -200,7 +198,7 @@ export function CategoriesView({
   // 被改掉了，而且使用者沒有任何機會複查自己剛剛點到哪一個。
   const [accountPickerOpen, setAccountPickerOpen] = useState(false);
   const [pendingAccount, setPendingAccount] = useState<{ accountId: string | undefined } | null>(null);
-  const [accountBusy, setAccountBusy] = useState(false);
+
 
   // 篩的是主分類——預設帳戶只設在主分類上，子分類跟著它的主分類一起出現或消失。
   const allParents = topLevelCategories(categories, kind);
@@ -244,15 +242,15 @@ export function CategoriesView({
     const accountId = pendingAccount?.accountId;
     const targets = selectedTopLevel();
     if (targets.length === 0) return;
-    setAccountBusy(true);
-    const data: { updated?: number; categories?: CategoryDTO[]; error?: string } = await fetch("/api/expenses/categories", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: targets.map((c) => c.id), defaultAccountId: accountId ?? null }),
-    })
-      .then((res) => res.json())
-      .catch(() => ({}));
-    setAccountBusy(false);
+    const data: { updated?: number; categories?: CategoryDTO[]; error?: string } = await runBusy("修改中…", () =>
+      fetch("/api/expenses/categories", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: targets.map((c) => c.id), defaultAccountId: accountId ?? null }),
+      })
+        .then((res) => res.json())
+        .catch(() => ({})),
+    );
     // 失敗要講出來。本來不管結果都報「改好了」，所以這個功能壞掉（打到不存在的 PATCH、
     // 回 405）整整一版都沒人發現——畫面上看起來成功，重新整理才知道沒變。
     if (!data.categories) {
@@ -474,11 +472,6 @@ export function CategoriesView({
         onSelect={handleAccountPicked}
       />
 
-      {/* 批次改帳戶送出期間蓋住畫面：勾了幾十個分類時後端要跑一會兒，沒有這塊的話
-          使用者會以為「完成」沒反應，再按一次。 */}
-      <BusyOverlay open={accountBusy} label="修改中…" />
-      <BusyOverlay open={deleteBusy} label="刪除中…" />
-
       <ConfirmModal
         open={deleteConfirm !== null}
         // 標題講「刪什麼、幾個」；會連帶刪掉子分類是最需要先看到的那件事，所以它優先。
@@ -498,7 +491,6 @@ export function CategoriesView({
         ]
           .filter(Boolean)
           .join("")}
-        confirmLabel={deleteBusy ? "刪除中…" : "刪除"}
         onConfirm={handleForceDelete}
         onClose={() => setDeleteConfirm(null)}
       />
@@ -527,6 +519,8 @@ export function CategoriesView({
               if (!selection.selecting) setSorting(false);
               selection.toggleMode();
             }}
+            // 挑好帳戶還沒送出時，這顆跟工具列那顆「完成」做同一件事（見 SelectionToggle）。
+            pendingConfirm={pendingAccount ? () => void applyDefaultAccount() : undefined}
           />
         </div>
       </div>
@@ -554,7 +548,6 @@ export function CategoriesView({
                   summary: `修改帳戶 → ${pendingAccount.accountId ? accountName(pendingAccount.accountId) : "不設預設帳戶"}`,
                   detail: pendingDetail,
                   confirmLabel: `完成（${selectedTopLevel().length} 個）`,
-                  busy: accountBusy,
                   onConfirm: () => void applyDefaultAccount(),
                   onCancel: () => setPendingAccount(null),
                 }

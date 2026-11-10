@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { Modal } from "./modal";
 import { AccountPickerModal } from "./account-picker-modal";
 import { CategoryGridPicker } from "./category-grid-picker";
-import { BusyOverlay } from "./busy-overlay";
+import { useBusy } from "./busy";
 import { useToast } from "./toast";
 import type { SelectionAction, SelectionPending } from "./selection-bar";
 import { categoryPath, needsSubcategory, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
@@ -55,6 +55,7 @@ export function useBulkEdit({
   onDone: () => void;
 }): { actions: SelectionAction[]; pending?: SelectionPending; element: ReactNode } {
   const showToast = useToast();
+  const runBusy = useBusy();
   // 先開選擇彈窗挑目標，挑完存進 target——這時候還沒送出，工具列會變成待確認狀態，
   // 等使用者按「完成」才呼叫 apply。「改 23 筆」按錯了要一筆一筆救回來，所以挑完跟
   // 送出一定要是兩個分開的動作。
@@ -101,13 +102,15 @@ export function useBulkEdit({
     setBusy(true);
     const body =
       target.kind === "account" ? { ids: [...selectedIds], accountId: target.accountId } : { ids: [...selectedIds], categoryId: target.categoryId };
-    const data: { updated?: number; transactions?: TransactionDTO[] } = await fetch("/api/expenses/transactions/bulk", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    })
-      .then((res) => res.json())
-      .catch(() => ({}));
+    const data: { updated?: number; transactions?: TransactionDTO[] } = await runBusy("修改中…", () =>
+      fetch("/api/expenses/transactions/bulk", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+        .then((res) => res.json())
+        .catch(() => ({})),
+    );
     setBusy(false);
     if (!data.transactions) {
       showToast("改不動，再試一次");
@@ -176,9 +179,6 @@ export function useBulkEdit({
         />
       </Modal>
 
-      {/* 送出期間蓋住整張卡片：bulk 一次改幾十筆要跑一會兒，沒有這塊的話畫面完全沒有
-          反應，使用者只能猜是不是當掉然後再按一次「完成」。 */}
-      <BusyOverlay open={busy} label="修改中…" />
     </>
   );
 

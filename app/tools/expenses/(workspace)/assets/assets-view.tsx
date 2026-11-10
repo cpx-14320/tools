@@ -3,6 +3,7 @@
 import { Fragment, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useBusy } from "@/components/expenses/busy";
 import { PageHeader } from "@/components/expenses/page-header";
 import { FloatingAddButton, FloatingSecondaryButton } from "@/components/expenses/floating-add-button";
 import { EmptyListCard, ListCard, ListRow } from "@/components/expenses/list-row";
@@ -53,6 +54,7 @@ export function AssetsView({
   const [accountTypes, setAccountTypes] = useState<AccountTypeDTO[]>(initialAccountTypes);
   const [transfers, setTransfers] = useState<TransferDTO[]>(initialTransfers);
   const router = useRouter();
+  const runBusy = useBusy();
   const [createOpen, setCreateOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   // 轉帳明細那一區：點某一列會開同一個轉帳彈窗來改／刪那一筆（轉帳沒有自己的明細頁，
@@ -121,9 +123,11 @@ export function AssetsView({
 
   async function handleDeleteTransfer() {
     if (!transferEdit) return;
-    const data: { transfers?: TransferDTO[]; trashId?: string } = await fetch(`/api/expenses/transfers?id=${transferEdit.id}`, { method: "DELETE" })
-      .then((res) => res.json())
-      .catch(() => ({}));
+    const data: { transfers?: TransferDTO[]; trashId?: string } = await runBusy("刪除中…", () =>
+      fetch(`/api/expenses/transfers?id=${transferEdit.id}`, { method: "DELETE" })
+        .then((res) => res.json())
+        .catch(() => ({})),
+    );
     if (data.transfers) setTransfers(data.transfers);
     showDeleteToast(data.trashId, async () => {
       const fresh: { transfers?: TransferDTO[] } = await fetch("/api/expenses/transfers").then((r) => r.json());

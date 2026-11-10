@@ -15,6 +15,7 @@ import { text } from "@/components/expenses/theme";
 import { RecurringRuleModal, type RecurringRuleModalDraft, type RecurringRuleKind } from "@/components/expenses/recurring-rule-modal";
 import { ICON_PATHS } from "@/components/expenses/icon-paths";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
+import { useBusy } from "@/components/expenses/busy";
 import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { categoryById, categoryColorClass, type CategoryDTO } from "@/lib/expenses/categories";
@@ -78,6 +79,7 @@ export function RecurringView({
 }) {
   const [categories, setCategories] = useState<CategoryDTO[]>(initialCategories);
   const showToast = useToast();
+  const runBusy = useBusy();
   const showDeleteToast = useUndoDelete();
   const [transactions, setTransactions] = useState<TransactionDTO[]>(initialTransactions);
   // 轉帳類型的規則入帳成的是轉帳，確認之後要跟著更新才算得出新的「已入帳幾期」。
@@ -191,7 +193,7 @@ export function RecurringView({
 
   async function handleConfirmedDelete() {
     if (!deleteConfirm) return;
-    await performDelete(deleteConfirm);
+    await runBusy("刪除中…", () => performDelete(deleteConfirm));
     setDeleteConfirm(null);
     selection.exit();
   }

@@ -24,6 +24,7 @@ import { SelectField } from "@/components/expenses/select-field";
 import { Field } from "@/components/expenses/modal";
 import { AccountPickerModal } from "@/components/expenses/account-picker-modal";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
+import { useBusy } from "@/components/expenses/busy";
 import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { ReconcileModal } from "@/components/expenses/reconcile-modal";
 import { BreakdownToggle, TransactionBreakdown } from "@/components/expenses/transaction-breakdown";
@@ -57,6 +58,7 @@ export function AccountDetailView({
   initialTransfers: TransferDTO[];
 }) {
   const router = useRouter();
+  const runBusy = useBusy();
   const { filter } = useDateFilter();
   const showToast = useToast();
   const showDeleteToast = useUndoDelete();
@@ -154,11 +156,11 @@ export function AccountDetailView({
 
   async function handleTxDelete() {
     if (txModal?.mode !== "edit") return;
-    const data: { transactions?: TransactionDTO[]; trashId?: string } = await fetch(`/api/expenses/transactions?id=${txModal.transaction.id}`, {
-      method: "DELETE",
-    })
-      .then((res) => res.json())
-      .catch(() => ({}));
+    const data: { transactions?: TransactionDTO[]; trashId?: string } = await runBusy("刪除中…", () =>
+      fetch(`/api/expenses/transactions?id=${txModal.transaction.id}`, { method: "DELETE" })
+        .then((res) => res.json())
+        .catch(() => ({})),
+    );
     if (data.transactions) setTransactions(data.transactions);
     showDeleteToast(data.trashId, async () => {
       const fresh: { transactions?: TransactionDTO[] } = await fetch("/api/expenses/transactions").then((r) => r.json());
@@ -196,9 +198,11 @@ export function AccountDetailView({
 
   async function handleTransferDelete() {
     if (!transferModal) return;
-    const data: { transfers?: TransferDTO[]; trashId?: string } = await fetch(`/api/expenses/transfers?id=${transferModal.id}`, { method: "DELETE" })
-      .then((res) => res.json())
-      .catch(() => ({}));
+    const data: { transfers?: TransferDTO[]; trashId?: string } = await runBusy("刪除中…", () =>
+      fetch(`/api/expenses/transfers?id=${transferModal.id}`, { method: "DELETE" })
+        .then((res) => res.json())
+        .catch(() => ({})),
+    );
     if (data.transfers) setTransfers(data.transfers);
     showDeleteToast(data.trashId, async () => {
       const fresh: { transfers?: TransferDTO[] } = await fetch("/api/expenses/transfers").then((r) => r.json());
@@ -248,6 +252,10 @@ export function AccountDetailView({
   // 逐筆依序 DELETE：API 一次只收一個 id，每次都回傳最新的完整清單，照順序打完最後
   // 那一份就是對的（併發送出的話回傳順序不保證，可能拿到中間狀態）。
   async function handleBulkDelete() {
+    await runBusy("刪除中…", () => bulkDelete());
+  }
+
+  async function bulkDelete() {
     let latest = transactions;
     const trashIds: (string | undefined)[] = [];
     for (const id of selection.selectedIds) {
@@ -481,7 +489,7 @@ export function AccountDetailView({
               />
               {/* 只看轉帳的時候一筆都選不到，按鈕就不出現——擺一顆按了只會得到空工具列
                   的按鈕，比沒有更讓人困惑。 */}
-              {!transfersOnly && <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />}
+              {!transfersOnly && <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} pendingConfirm={bulkEdit.pending?.onConfirm} />}
             </div>
           </div>
 

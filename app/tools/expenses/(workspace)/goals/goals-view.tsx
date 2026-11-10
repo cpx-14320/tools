@@ -14,7 +14,7 @@ import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/com
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { text } from "@/components/expenses/theme";
 import { GoalModal, type GoalModalDraft } from "@/components/expenses/goal-modal";
-import { BusyOverlay } from "@/components/expenses/busy-overlay";
+import { useBusy } from "@/components/expenses/busy";
 import { goalProgress, goalPace, type SavingsGoalDTO } from "@/lib/expenses/goals";
 import type { AccountDTO } from "@/lib/expenses/accounts";
 import type { AccountTypeDTO } from "@/lib/expenses/account-types";
@@ -39,11 +39,11 @@ export function GoalsView({
   const showDeleteToast = useUndoDelete();
   const [modal, setModal] = useState<ModalState | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
-  const [busy, setBusy] = useState(false);
+  const runBusy = useBusy();
 
   async function handleSave(draft: GoalModalDraft) {
     if (!modal) return;
-    setBusy(true);
+    await runBusy("儲存中…", async () => {
     if (modal.mode === "edit") {
       const data: { goals?: SavingsGoalDTO[] } = await fetch("/api/expenses/goals", {
         method: "PUT",
@@ -74,7 +74,7 @@ export function GoalsView({
         .catch(() => ({}));
       if (data.goals) setGoals(data.goals);
     }
-    setBusy(false);
+    });
     showToast(modal.mode === "edit" ? TOAST.saved : TOAST.created);
     setModal(null);
   }
@@ -108,7 +108,7 @@ export function GoalsView({
 
   async function handleConfirmedDelete() {
     if (!deleteConfirm) return;
-    await performDelete(deleteConfirm);
+    await runBusy("刪除中…", () => performDelete(deleteConfirm));
     setDeleteConfirm(null);
     selection.exit();
   }
@@ -138,7 +138,6 @@ export function GoalsView({
         onSave={handleSave}
         onDelete={modal?.mode === "edit" ? requestDelete : undefined}
       />
-      <BusyOverlay open={busy} label="儲存中…" />
 
       <ConfirmModal
         open={deleteConfirm !== null}

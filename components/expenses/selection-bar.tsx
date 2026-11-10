@@ -48,10 +48,23 @@ export function useSelection(ids: string[]) {
   };
 }
 
-/** 進入／離開多選模式的那顆按鈕——跟分頁切換（SegmentedControl）等高，可以並排在同一列。 */
-export function SelectionToggle({ selecting, onToggle }: { selecting: boolean; onToggle: () => void }) {
+/** 進入／離開多選模式的那顆按鈕——跟分頁切換（SegmentedControl）等高，可以並排在同一列。
+ *
+ *  **有待套用的變更時，這顆要改成「送出」而不是「離開選取模式」**：工具列上那顆也叫
+ *  「完成」，兩顆同名卻做不同的事，按到這一顆會把剛挑好的帳戶／分類靜默丟掉——選了
+ *  二十筆資料、挑好分類、按下完成，然後什麼都沒發生。呼叫端有待套用狀態時就把
+ *  `pendingConfirm` 傳進來，兩顆按鈕的行為才會一致。 */
+export function SelectionToggle({
+  selecting,
+  onToggle,
+  pendingConfirm,
+}: {
+  selecting: boolean;
+  onToggle: () => void;
+  pendingConfirm?: () => void;
+}) {
   return (
-    <PillButton onClick={onToggle} active={selecting}>
+    <PillButton onClick={pendingConfirm ?? onToggle} active={selecting}>
       {selecting ? "完成" : "選取"}
     </PillButton>
   );

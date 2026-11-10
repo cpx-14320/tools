@@ -1,4 +1,4 @@
-import { ObjectId } from "mongodb";
+import { ObjectId, type Collection, type Filter } from "mongodb";
 import { getDb } from "../mongodb";
 import { categoryNameTaken, type CategoryColor, type CategoryDTO, type CategoryKind } from "./categories";
 import { deleteBudgetRulesForCategories } from "./budgets.server";
@@ -62,6 +62,17 @@ export interface CreateCategoryInput {
   parentId?: string;
 }
 
+/** 新項目要排在最後面，order 給「目前最大的 order ＋ 1」。
+ *
+ *  **不能用「目前有幾筆」當 order**：刪掉中間某一筆之後，剩下的 order 不會重新編號，
+ *  於是出現 0,1,2,4,5… 這種有洞的序列——筆數變成 5，但最大的 order 是 5，新的那筆拿到
+ *  5 就跟既有的那筆撞在一起，排序時並列，看起來就是「新增的分類跑回它被刪掉之前的位置」。
+ *  實際踩過：刪掉「飲料」再新增，它沒有排到最後，而是卡在清單中間。 */
+async function nextOrder(col: Collection<CategoryDoc>, filter: Filter<CategoryDoc>): Promise<number> {
+  const last = await col.find(filter).sort({ order: -1 }).limit(1).next();
+  return last ? Number(last.order) + 1 : 0;
+}
+
 export async function createCategory(
   userId: ObjectId,
   input: CreateCategoryInput,
@@ -89,7 +100,7 @@ export async function createCategory(
     return { error: "已經有同樣名稱的分類了，換一個名稱吧。" };
   }
 
-  const order = await col.countDocuments({ userId, parentId, kind });
+  const order = await nextOrder(col, { userId, parentId, kind });
   const doc: CategoryDoc = {
     _id: new ObjectId(),
     userId,
@@ -210,7 +221,7 @@ async function ensureUncategorized(userId: ObjectId, kind: CategoryKind): Promis
   const col = await collection();
   const existing = await col.findOne({ userId, kind, parentId: null, name: "未分類" });
   if (existing) return existing._id;
-  const order = await col.countDocuments({ userId, parentId: null, kind });
+  const order = await nextOrder(col, { userId, parentId: null, kind });
   const doc: CategoryDoc = {
     _id: new ObjectId(),
     userId,
@@ -240,7 +251,7 @@ export async function ensureFeeCategory(userId: ObjectId): Promise<ObjectId> {
   const col = await collection();
   const existing = await col.findOne({ userId, kind: "支出", parentId: null, name: FEE_CATEGORY_NAME });
   if (existing) return existing._id;
-  const order = await col.countDocuments({ userId, parentId: null, kind: "支出" });
+  const order = await nextOrder(col, { userId, parentId: null, kind: "支出" });
   const doc: CategoryDoc = {
     _id: new ObjectId(),
     userId,

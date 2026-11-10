@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FaIcon } from "@/components/expenses/fa-icon";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
+import { useBusy } from "@/components/expenses/busy";
 import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { useSearchParams } from "next/navigation";
 import { SegmentedControl } from "@/components/expenses/button";
@@ -78,6 +79,7 @@ export function TransactionsView({
   // ?month=YYYY-MM 不在這裡處理——它要在伺服器算繪的那一輪就生效，所以讀的地方是
   // DateFilterProvider 的 useState 初始值（見 date-filter-context.tsx）。
   const showToast = useToast();
+  const runBusy = useBusy();
   const showDeleteToast = useUndoDelete();
   // 編輯交易的彈窗裡可以順手建一個新分類（onCategoriesChange），所以分類要是 state。
   const [categories, setCategories] = useState<CategoryDTO[]>(initialCategories);
@@ -217,11 +219,11 @@ export function TransactionsView({
 
   async function handleDelete() {
     if (!modal) return;
-    const data: { transactions?: TransactionDTO[]; trashId?: string } = await fetch(`/api/expenses/transactions?id=${modal.id}`, {
-      method: "DELETE",
-    })
-      .then((res) => res.json())
-      .catch(() => ({}));
+    const data: { transactions?: TransactionDTO[]; trashId?: string } = await runBusy("刪除中…", () =>
+      fetch(`/api/expenses/transactions?id=${modal.id}`, { method: "DELETE" })
+        .then((res) => res.json())
+        .catch(() => ({})),
+    );
     if (data.transactions) setTransactions(data.transactions);
     // 提示上帶一顆「復原」。錯過了也沒關係，東西在「設定 › 最近刪除」裡。
     showDeleteToast(data.trashId, async () => {
@@ -234,6 +236,11 @@ export function TransactionsView({
   // 逐筆依序 DELETE：API 一次只收一個 id，而且每次都回傳最新的完整清單，照順序打完
   // 最後那一份就是正確的結果（併發送出的話回傳順序不保證，可能拿到中間狀態）。
   async function handleBulkDelete() {
+    await runBusy("刪除中…", () => bulkDelete());
+  }
+
+  /** 逐筆依序 DELETE——API 一次只收一個 id，而且每次都回傳最新的完整清單。 */
+  async function bulkDelete() {
     let latest = transactions;
     const trashIds: (string | undefined)[] = [];
     for (const id of selection.selectedIds) {
@@ -427,7 +434,7 @@ export function TransactionsView({
           ]}
         />
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-          <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />
+          <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} pendingConfirm={bulkEdit.pending?.onConfirm} />
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import { AiKeyScopeProvider } from "@/components/expenses/ai/use-ai-key";
 import { DateFilterProvider } from "@/components/expenses/date-filter-context";
 import { ExpensesMobileShell } from "@/components/expenses/expenses-mobile-shell";
 import { ToastProvider } from "@/components/expenses/toast";
+import { BusyProvider } from "@/components/expenses/busy";
 
 /** 記帳本工具的外殼。只有手機版版面——記帳本整套畫面（底部導覽列、浮動新增按鈕、
  *  底部彈出的彈窗）都是照手機操作設計的，原本那個切到電腦版的按鈕只會把同一批元件
@@ -19,7 +20,11 @@ export function ExpensesShell({ userId, children }: { userId: string; children: 
     <AiKeyScopeProvider userId={userId}>
       <DateFilterProvider>
         <ToastProvider>
-          <ExpensesMobileShell>{children}</ExpensesMobileShell>
+          {/* 「處理中」遮罩擺在外殼這一層，每一頁才不用各自配一份 busy state（見 busy.tsx）。
+              包在 ToastProvider 裡面：遮罩收掉時常常緊接著跳一個提示，提示要蓋在遮罩之上。 */}
+          <BusyProvider>
+            <ExpensesMobileShell>{children}</ExpensesMobileShell>
+          </BusyProvider>
         </ToastProvider>
       </DateFilterProvider>
     </AiKeyScopeProvider>

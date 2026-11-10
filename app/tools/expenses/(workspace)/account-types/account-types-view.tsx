@@ -12,7 +12,7 @@ import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { SortArrows, SortToggle } from "@/components/expenses/sort-controls";
 import { ListCard, ListRow } from "@/components/expenses/list-row";
-import { BusyOverlay } from "@/components/expenses/busy-overlay";
+import { useBusy } from "@/components/expenses/busy";
 import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { accountTypesByKind, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { categoryColorClass } from "@/lib/expenses/categories";
@@ -37,7 +37,7 @@ export function AccountTypesView({
   // 批次刪除的確認。單筆刪除走編輯彈窗的 ModalFooter，它本來就會問一次；批次以前是
   // 按下去就直接刪，兩條路一問一不問，所以這裡補上同一道關卡。
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
-  const [deleteBusy, setDeleteBusy] = useState(false);
+  const runBusy = useBusy();
   // 排序模式：每一列右邊長出 ↑↓。跟多選模式互斥（理由同收支分類頁）。
   const [sorting, setSorting] = useState(false);
 
@@ -98,7 +98,8 @@ export function AccountTypesView({
 
   async function handleDelete() {
     if (!modal) return;
-    const { blockedCount, totalInUse } = await tryDeleteTypes([modal.id]);
+    // 單筆刪除也要有「處理中」：以前只有批次那條路有，單筆按下去畫面完全沒反應。
+    const { blockedCount, totalInUse } = await runBusy("刪除中…", () => tryDeleteTypes([modal.id]));
     setModal(null);
     if (blockedCount > 0) setBlockedInfo({ message: `還有 ${totalInUse} 個帳戶掛著選取的類型，無法刪除。請先把這些帳戶改成別的類型，再回來刪除。` });
   }
@@ -110,9 +111,7 @@ export function AccountTypesView({
 
   async function confirmBulkDelete() {
     if (!deleteConfirm) return;
-    setDeleteBusy(true);
-    const { blockedCount, totalInUse } = await tryDeleteTypes(deleteConfirm);
-    setDeleteBusy(false);
+    const { blockedCount, totalInUse } = await runBusy("刪除中…", () => tryDeleteTypes(deleteConfirm));
     setDeleteConfirm(null);
     selection.exit();
     if (blockedCount > 0) setBlockedInfo({ message: `還有 ${totalInUse} 個帳戶掛著選取的類型，無法刪除。請先把這些帳戶改成別的類型，再回來刪除。` });
@@ -261,11 +260,9 @@ export function AccountTypesView({
         open={deleteConfirm !== null}
         title={(deleteConfirm?.length ?? 0) > 1 ? `刪除 ${deleteConfirm?.length} 個帳戶類型` : "刪除帳戶類型"}
         message={`底下還有帳戶在用的類型不會被刪除。${TRASH_RESTORE_NOTE}`}
-        confirmLabel={deleteBusy ? "刪除中…" : "刪除"}
         onConfirm={confirmBulkDelete}
         onClose={() => setDeleteConfirm(null)}
       />
-      <BusyOverlay open={deleteBusy} label="刪除中…" />
 
       <ConfirmModal
         open={blockedInfo !== null}

@@ -54,7 +54,10 @@ export async function createAccountType(
   if (accountTypeNameTaken(existing, input.kind, input.name)) return { error: "已經有同樣名稱的類型了，換一個名稱吧。" };
 
   const col = await collection();
-  const order = await col.countDocuments({ userId, kind: input.kind });
+  // order 取「目前最大的 ＋ 1」，不是筆數——刪過之後 order 會有洞，用筆數會跟既有的撞在
+  // 一起，新增的類型就不會排到最後（理由同 categories.server.ts 的 nextOrder）。
+  const last = await col.find({ userId, kind: input.kind }).sort({ order: -1 }).limit(1).next();
+  const order = last ? Number(last.order) + 1 : 0;
   const doc: AccountTypeDoc = {
     _id: new ObjectId(),
     userId,
