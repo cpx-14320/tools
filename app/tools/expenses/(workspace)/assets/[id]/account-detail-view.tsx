@@ -32,7 +32,7 @@ import { dateFilterRange } from "@/lib/expenses/date-filter";
 import { categoryById, categoryColorClass, categoryPath, type CategoryDTO } from "@/lib/expenses/categories";
 import { totalsForRange, transactionDisplayName, type TransactionDTO } from "@/lib/expenses/transactions";
 import { inDateRange } from "@/lib/expenses/date-filter";
-import { accountBalance, transactionBalancesByAccount, type AccountDTO } from "@/lib/expenses/accounts";
+import { accountBalance, transactionBalancesByAccount, type AccountDTO, type AccountUsage } from "@/lib/expenses/accounts";
 import { accountTypeById, type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { transfersForAccount, type TransferDTO } from "@/lib/expenses/transfers";
 import { formatCurrency, formatDateWithWeekday } from "@/lib/format";
@@ -81,7 +81,7 @@ export function AccountDetailView({
   });
   const [txModal, setTxModal] = useState<TxModalState | null>(null);
   const [transferModal, setTransferModal] = useState<TransferDTO | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ inUseCount: number } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ inUseCount: number; usage?: AccountUsage } | null>(null);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState<string[] | null>(null);
   // 哪幾筆的明細是展開的——預設全部收起來，只有有明細的那幾筆才看得到展開箭頭。
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -104,9 +104,9 @@ export function AccountDetailView({
   async function handleEditDelete() {
     const res = await fetch(`/api/expenses/accounts?id=${accountId}`, { method: "DELETE" }).catch(() => null);
     if (res?.status === 409) {
-      const data: { inUseCount?: number } = await res.json().catch(() => ({}));
+      const data: { inUseCount?: number; usage?: AccountUsage } = await res.json().catch(() => ({}));
       setEditOpen(false);
-      setDeleteConfirm({ inUseCount: data.inUseCount ?? 0 });
+      setDeleteConfirm({ inUseCount: data.inUseCount ?? 0, usage: data.usage });
       return;
     }
     const data: { trashId?: string } = (await res?.json().catch(() => ({}))) ?? {};
@@ -393,8 +393,32 @@ export function AccountDetailView({
 
       <ConfirmModal
         open={deleteConfirm !== null}
-        title="這個帳戶還有紀錄"
-        message={`這個帳戶還有 ${deleteConfirm?.inUseCount ?? 0} 筆交易或轉帳紀錄，刪除後這些紀錄會變成「不指定帳戶」，但不會被刪除。${TRASH_RESTORE_NOTE}`}
+        title="這個帳戶還有東西掛著"
+        // 一行一種，各自講自己的後果——全部混成一句「還有 N 筆紀錄」的話，使用者判斷
+        // 不了該不該刪（被暫停的固定收支跟一筆會變成「不指定」的交易，嚴重程度差很多）。
+        message={
+          <>
+            刪除之後：
+            <span className="mt-2 block">
+              {[
+                deleteConfirm?.usage?.transactions ? `${deleteConfirm.usage.transactions} 筆交易會變成「不指定帳戶」，紀錄本身不會被刪掉` : "",
+                deleteConfirm?.usage?.transfers ? `${deleteConfirm.usage.transfers} 筆轉帳會留著，但其中一端會顯示「已刪除帳戶」` : "",
+                deleteConfirm?.usage?.categories ? `${deleteConfirm.usage.categories} 個分類的預設帳戶會失效` : "",
+                deleteConfirm?.usage?.goals ? `${deleteConfirm.usage.goals} 個綁著這個帳戶的存錢目標，進度會變成 0` : "",
+                deleteConfirm?.usage?.transferRules
+                  ? `${deleteConfirm.usage.transferRules} 條轉帳型的固定收支會被暫停（不然每一期都會轉到一個不存在的帳戶）`
+                  : "",
+              ]
+                .filter(Boolean)
+                .map((line) => (
+                  <span key={line} className="block">
+                    ・{line}
+                  </span>
+                ))}
+            </span>
+            <span className="mt-2 block">{TRASH_RESTORE_NOTE}還原帳戶之後，上面這些會自動接回去（被暫停的固定收支要自己按恢復）。</span>
+          </>
+        }
         onConfirm={handleForceDeleteAccount}
         onClose={() => setDeleteConfirm(null)}
       />

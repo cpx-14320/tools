@@ -58,6 +58,18 @@ function signedTransferDelta(transfer: TransferDTO, accountId: string, kind: Acc
   return isReceiving ? -transfer.amount : transfer.amount;
 }
 
+export interface AccountUsage {
+  transactions: number;
+  transfers: number;
+  /** 把它設成預設帳戶的分類。 */
+  categories: number;
+  /** 綁著它算進度的存錢目標。 */
+  goals: number;
+  /** 轉出或轉入是它的固定收支規則。 */
+  transferRules: number;
+  total: number;
+}
+
 export function accountBalance(
   account: AccountDTO,
   types: AccountTypeDTO[],

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { requireTool } from "@/lib/auth";
-import { listAccounts, createAccount, updateAccount, deleteAccount, countAccountUsage } from "@/lib/expenses/accounts.server";
+import { listAccounts, createAccount, updateAccount, deleteAccount, accountUsage } from "@/lib/expenses/accounts.server";
 
 function parseInput(body: { name?: unknown; accountTypeId?: unknown; openingBalance?: unknown } | null) {
   const name = typeof body?.name === "string" ? body.name.trim() : "";
@@ -57,8 +57,10 @@ export async function DELETE(request: Request) {
 
   const userId = new ObjectId(user.id);
   if (!force) {
-    const inUseCount = await countAccountUsage(userId, id);
-    if (inUseCount > 0) return NextResponse.json({ error: "帳戶仍有使用中的紀錄", inUseCount }, { status: 409 });
+    // 回傳分項（usage）而不是只有總數：每一種的後果不一樣，確認彈窗要講得出來。
+    // inUseCount 保留著，呼叫端還在用它判斷「有沒有東西掛在上面」。
+    const usage = await accountUsage(userId, id);
+    if (usage.total > 0) return NextResponse.json({ error: "帳戶仍有使用中的紀錄", inUseCount: usage.total, usage }, { status: 409 });
   }
 
   const { accounts, trashId } = await deleteAccount(userId, id);
