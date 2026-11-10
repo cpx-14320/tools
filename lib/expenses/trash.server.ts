@@ -130,6 +130,32 @@ const NAME_SCOPED: Record<string, (doc: Document, userId: ObjectId) => Document>
   "expenses.accountTypes": (doc, userId) => ({ userId, kind: doc.kind }),
 };
 
+/** 每個集合裡「指向別的東西」的欄位，還原時要確認那個東西還在。
+ *
+ *  `drop`＝選填欄位，指向的東西不在就把欄位拿掉；`uncategorized`＝必填欄位，清掉會變成
+ *  壞資料，改掛到「未分類」。
+ *
+ *  **為什麼只列這幾個**：斷掉的參照分兩種。一種只是顯示不出名字（轉帳的轉出／轉入帳戶
+ *  被刪掉，畫面上就是「（已刪除帳戶）」，帳戶還原回來它又正常了），那種留著反而對——
+ *  硬清掉的話帳戶救回來也接不回去。另一種會把壞資料往前傳：分類的預設帳戶指向一個不
+ *  存在的帳戶，之後每次用這個分類記帳都會預選那個死帳戶；固定收支的 linkedGoalId 指向
+ *  不存在的目標，每期入帳都會對它做一次沒有作用的加總，而且**完全沒有任何徵兆**。
+ *  這張表只收第二種。 */
+const REF_FIELDS: Record<string, { field: string; collection: string; onMissing: "drop" | "uncategorized" }[]> = {
+  "expenses.transactions": [
+    { field: "accountId", collection: "expenses.accounts", onMissing: "drop" },
+    { field: "categoryId", collection: "expenses.categories", onMissing: "uncategorized" },
+  ],
+  "expenses.recurringRules": [
+    { field: "accountId", collection: "expenses.accounts", onMissing: "drop" },
+    { field: "categoryId", collection: "expenses.categories", onMissing: "uncategorized" },
+    { field: "linkedGoalId", collection: "expenses.goals", onMissing: "drop" },
+  ],
+  "expenses.categories": [{ field: "defaultAccountId", collection: "expenses.accounts", onMissing: "drop" }],
+  "expenses.goals": [{ field: "accountId", collection: "expenses.accounts", onMissing: "drop" }],
+  "expenses.budgets": [{ field: "categoryId", collection: "expenses.categories", onMissing: "uncategorized" }],
+};
+
 /** 有「order」欄位、而且 order 只在同一層裡才有意義的集合——還原時要確認那個位置還空著。 */
 const ORDER_SCOPED: Record<string, (doc: Document, userId: ObjectId) => Document> = {
   "expenses.categories": (doc, userId) => ({ userId, kind: doc.kind, parentId: doc.parentId ?? null }),
@@ -212,25 +238,23 @@ export async function restoreFromTrash(userId: ObjectId, trashId: string): Promi
     const order = await restoreOrder(db, entry.collection, doc, userId);
     if (order !== undefined) doc.order = order;
 
-    // 參照的東西已經不在了就把那個欄位清掉，不要插一筆指向不存在帳戶的紀錄。
-    for (const [field, refCollection] of [
-      ["accountId", "expenses.accounts"],
-      ["categoryId", "expenses.categories"],
-    ] as const) {
-      const ref = doc[field];
-      if (!(ref instanceof ObjectId)) continue;
-      const exists = await db.collection(refCollection).countDocuments({ _id: ref, userId }, { limit: 1 });
-      if (exists === 0) {
-        // 分類是必填欄位，清掉會變成壞資料——這種情況改掛到「未分類」。帳戶是選填，
-        // 直接拿掉就好。
-        if (field === "categoryId") {
-          const uncategorized = await db.collection("expenses.categories").findOne({ userId, isUncategorized: true });
-          if (uncategorized) doc.categoryId = uncategorized._id;
-        } else {
-          delete doc[field];
-        }
-        droppedRefs++;
+    // 參照的東西已經不在了（刪掉分類之後又把它的預設帳戶也刪了，諸如此類）就處理掉，
+    // 不要插一筆指向不存在資料的紀錄。走 REF_FIELDS 這張表而不是在這裡逐一判斷：
+    // 「刪了什麼又還原什麼」的組合會隨著欄位變多而爆炸，集中成一張表才不會每加一個
+    // 參照欄位就要重想一次所有組合。
+    for (const ref of REF_FIELDS[entry.collection] ?? []) {
+      const value = doc[ref.field];
+      if (!(value instanceof ObjectId)) continue;
+      const exists = await db.collection(ref.collection).countDocuments({ _id: value, userId }, { limit: 1 });
+      if (exists > 0) continue;
+      if (ref.onMissing === "uncategorized") {
+        // 分類是必填欄位，清掉會變成壞資料——改掛到「未分類」。
+        const uncategorized = await db.collection("expenses.categories").findOne({ userId, isUncategorized: true });
+        if (uncategorized) doc[ref.field] = uncategorized._id;
+      } else {
+        delete doc[ref.field];
       }
+      droppedRefs++;
     }
 
     // 用原本的 _id 插回去。重複還原會在這裡撞 duplicate key，是天然的防護。
