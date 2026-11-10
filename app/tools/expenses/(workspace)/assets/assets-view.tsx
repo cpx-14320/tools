@@ -61,6 +61,9 @@ export function AssetsView({
   // 一筆轉帳就只有「從哪到哪、多少錢、哪一天」這幾個欄位，開一整頁去放四個欄位不划算）。
   const [transferEdit, setTransferEdit] = useState<TransferDTO | null>(null);
   const [transfersExpanded, setTransfersExpanded] = useState(false);
+  // 「只看對不到帳戶的轉帳」。平常是 false、而且根本不會顯示這顆——正常情況下一筆都
+  // 沒有，一直擺一個永遠空的篩選只是噪音。
+  const [orphanOnly, setOrphanOnly] = useState(false);
   // 看的是「哪一個月月底當時」的數字——從設定頁的帳戶類型搬過來的（那一頁現在只管
   // 類型的名稱／圖示／顏色，金額一律在這一頁看，見該檔案開頭的說明）。
   // 「今天」掛載時算一次固定住——render 當中讀時鐘是不純的。
@@ -160,13 +163,26 @@ export function AssetsView({
   // 翻到過去時這一區又會整個空掉（跟首頁「最近消費」同一招，那邊是往回推七天）。
   const sortedTransfers = [...transfersUntil].sort((a, b) => (a.date < b.date ? 1 : -1));
   const transferCutoff = sortedTransfers.length > 0 ? shiftMonths(sortedTransfers[0].date, -1) : "";
-  const transferGroups = groupByDate(sortedTransfers.filter((t) => t.date >= transferCutoff));
+
+  /** 轉出或轉入指到一個已經不存在的帳戶。
+   *
+   *  刪帳戶不會動到轉帳（那樣帳戶從垃圾桶還原回來才接得回去），所以會留下這種一端
+   *  對不到的轉帳。它們不影響任何帳戶的餘額，但帳面上那筆錢就這樣消失了，使用者
+   *  需要找得到它們去改掉或刪掉。
+   *
+   *  **本來很難找**：這一區只看近一個月，更舊的要從「還活著的那一端」的帳戶明細頁翻；
+   *  兩端都被刪掉的話哪裡都看不到。所以這個篩選不吃日期範圍，是整份轉帳一起找。 */
+  const orphanTransfers = transfers.filter((t) => !accounts.some((a) => a.id === t.fromAccountId) || !accounts.some((a) => a.id === t.toAccountId));
+  const listedTransfers = orphanOnly
+    ? [...orphanTransfers].sort((a, b) => (a.date < b.date ? 1 : -1))
+    : sortedTransfers.filter((t) => t.date >= transferCutoff);
+  const transferGroups = groupByDate(listedTransfers);
   const transferCount = transferGroups.reduce((sum, [, items]) => sum + items.length, 0);
   // 每一天的小計照「那一天全部的轉帳」算，不是照收合後看得到的那幾筆——不然展開前後
   // 同一天會出現兩個不同的金額（理由同首頁 recentDayTotals）。
   const transferDayTotals = new Map(transferGroups.map(([date, items]) => [date, items.reduce((sum, t) => sum + t.amount, 0)]));
   const visibleTransferGroups = transfersExpanded ? transferGroups : limitDateGroups(transferGroups, PREVIEW_COUNT);
-  const accountNameOf = (id: string) => accounts.find((a) => a.id === id)?.name ?? "（未知帳戶）";
+  const accountNameOf = (id: string) => accounts.find((a) => a.id === id)?.name ?? "（已刪除帳戶）";
 
   /** 一種資產／負債底下：每個類型一組（類型自己一列帶佔比進度條，它的帳戶列在下面）。 */
   function typeGroups(kind: AccountKind) {
@@ -357,11 +373,23 @@ export function AssetsView({
                 再舊的轉帳目前只能進個別帳戶的明細慢慢翻，去處還沒決定。但灰字看起來
                 就是一個連結，使用者會一直點、一直沒反應。既然還沒有去處，就先整顆拿掉
                 ——之後真的做了再加回來。 */}
-            <div className="mb-2 px-1">
+            <div className="mb-2 flex items-center justify-between gap-2 px-1">
               <p className={text.sectionHeading}>轉帳明細</p>
+              {/* 只有真的存在對不到帳戶的轉帳時才長出來。點了就不看日期範圍、整份找。 */}
+              {orphanTransfers.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setOrphanOnly((v) => !v)}
+                  className={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                    orphanOnly ? "border-[#D1517E] bg-[#FDEEF0] text-[#D1517E]" : "border-[#ECE4FA] bg-white text-[#9C94C4]"
+                  }`}
+                >
+                  對不到帳戶 {orphanTransfers.length}
+                </button>
+              )}
             </div>
             {transferGroups.length === 0 ? (
-              <EmptyListCard>還沒有任何轉帳紀錄，點右上角的圖示新增</EmptyListCard>
+              <EmptyListCard>{orphanOnly ? "沒有對不到帳戶的轉帳。" : "還沒有任何轉帳紀錄，點右上角的圖示新增"}</EmptyListCard>
             ) : (
               <>
                 <div className="flex flex-col gap-5">

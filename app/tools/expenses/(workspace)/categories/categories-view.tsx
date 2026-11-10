@@ -21,7 +21,7 @@ import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/com
 import { SortArrows, SortToggle } from "@/components/expenses/sort-controls";
 import { StickyToolbar } from "@/components/expenses/sticky-toolbar";
 import { ListRow } from "@/components/expenses/list-row";
-import { topLevelCategories, subCategoriesOf, categoryColorClass, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
+import { topLevelCategories, subCategoriesOf, categoryColorClass, isSystemCategory, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 
 /** 編輯既有分類／子分類用（點清單裡的一列開啟）；新增（不管頂層還是子分類）都走下面的
  *  batchTarget／CategoryBatchModal，兩種彈窗各自管各自的狀態。 */
@@ -211,7 +211,9 @@ export function CategoriesView({
   const filterCount = (accountFilter ? 1 : 0) + (unassignedOnly ? 1 : 0);
   // 排序時「未分類」不參與：它固定在最後一個（見 topLevelCategories），給它上下箭頭
   // 等於給一個按了會被打回原位的按鈕。它前面那一個的「往下」也要跟著收掉。
-  const sortable = parents.filter((c) => !c.isUncategorized);
+  // 系統分類（手續費、未分類）不參與排序：它們的位置是固定的，給上下箭頭等於給一個
+  // 按了會被打回原位的按鈕。
+  const sortable = parents.filter((c) => !isSystemCategory(c));
 
   // 多選可以連子分類一起選——選取清單包含目前畫面上的主分類跟它們底下的子分類，
   // 「全選」才不會漏掉子分類，刪除時也能一次把挑好的子分類清掉。
@@ -219,7 +221,7 @@ export function CategoriesView({
   // 「修改帳戶」只動得到主分類（預設帳戶照設計只設在主分類上，見 categories.ts 的
   // defaultAccountForCategory），勾到的子分類會被略過——那個動作自己會講清楚。
   const selectableIds = parents
-    .filter((c) => !c.isUncategorized)
+    .filter((c) => !isSystemCategory(c))
     .flatMap((c) => [c.id, ...subCategoriesOf(categories, c.id).map((sub) => sub.id)]);
   const selection = useSelection(selectableIds);
 
@@ -386,7 +388,7 @@ export function CategoriesView({
         onClose={() => setModal(null)}
         onSave={handleSave}
         // 「未分類」不給刪（見 categories.server.ts 的守門），所以連刪除鈕都不顯示。
-        onDelete={modal?.isUncategorized ? undefined : handleDelete}
+        onDelete={modal && isSystemCategory(modal) ? undefined : handleDelete}
       />
 
       <CategoryBatchModal
@@ -578,13 +580,13 @@ export function CategoriesView({
               // 一眼看出「這張不用管」，而不是讓他去找為什麼那一列沒有箭頭。
               <div
                 key={c.id}
-                className={`overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white ${sorting && c.isUncategorized ? "opacity-50" : ""}`}
+                className={`overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white ${sorting && isSystemCategory(c) ? "opacity-50" : ""}`}
               >
                 <ListRow
                   icon={c.icon}
                   iconClassName={categoryColorClass[c.color]}
                   name={
-                    c.isUncategorized ? (
+                    isSystemCategory(c) ? (
                       <span className="flex items-center gap-1.5">
                         {c.name}
                         <Badge>系統</Badge>
@@ -596,10 +598,10 @@ export function CategoriesView({
                   // 排序模式下右邊換成 ↑↓：筆數跟箭頭擠在一起會太滿，而且排序時在意的
                   // 是順序不是筆數。主分類只在同一個收支分頁裡面移動（parents 已經篩過 kind）。
                   right={
-                    // 排序模式：能動的顯示 ↑↓，未分類什麼都不顯示——那個「0 筆紀錄」在
+                    // 排序模式：能動的顯示 ↑↓，系統分類什麼都不顯示——那個「0 筆紀錄」在
                     // 這個模式下既不能按也不是重點，留著只是噪音。
                     sorting ? (
-                      c.isUncategorized ? undefined : (
+                      isSystemCategory(c) ? undefined : (
                         <SortArrows
                           onUp={() => move(sortable, sortableIndex, -1)}
                           onDown={() => move(sortable, sortableIndex, 1)}
@@ -611,9 +613,9 @@ export function CategoriesView({
                       <span className={text.muted}>{totalCount(c.id)} 筆紀錄</span>
                     )
                   }
-                  leading={selection.selecting && !c.isUncategorized ? <SelectionDot selected={selection.selectedIds.has(c.id)} /> : undefined}
+                  leading={selection.selecting && !isSystemCategory(c) ? <SelectionDot selected={selection.selectedIds.has(c.id)} /> : undefined}
                   onClick={
-                    sorting ? undefined : () => (selection.selecting ? (c.isUncategorized ? undefined : selection.toggle(c.id)) : setModal(c))
+                    sorting ? undefined : () => (selection.selecting ? (isSystemCategory(c) ? undefined : selection.toggle(c.id)) : setModal(c))
                   }
                 />
 

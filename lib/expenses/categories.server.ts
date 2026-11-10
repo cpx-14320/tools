@@ -27,6 +27,7 @@ interface CategoryDoc {
   /** 刪除分類時，既有紀錄被強制歸類到「未分類」留下的標記——純粹讓畫面知道這是系統
    *  自動生成的歸宿分類，不是使用者自己建的，目前還沒有特殊 UI 處理，先記著備用。 */
   isUncategorized?: boolean;
+  isFee?: boolean;
 }
 
 function toDTO(doc: CategoryDoc): CategoryDTO {
@@ -41,6 +42,7 @@ function toDTO(doc: CategoryDoc): CategoryDTO {
     defaultAccountId: doc.defaultAccountId?.toHexString(),
     isPreset: doc.isPreset,
     isUncategorized: doc.isUncategorized,
+    isFee: doc.isFee,
   };
 }
 
@@ -249,8 +251,15 @@ async function ensureUncategorized(userId: ObjectId, kind: CategoryKind): Promis
  *  可以（這裡只在「找不到同名的」時候才建），跟「未分類」同一個做法。 */
 export async function ensureFeeCategory(userId: ObjectId): Promise<ObjectId> {
   const col = await collection();
-  const existing = await col.findOne({ userId, kind: "支出", parentId: null, name: FEE_CATEGORY_NAME });
-  if (existing) return existing._id;
+  // 先用旗標找。改名之後還是找得到同一個，不會再建一個新的。
+  const flagged = await col.findOne({ userId, isFee: true });
+  if (flagged) return flagged._id;
+  // 旗標是後來才加的，舊資料只有名字——找到就補上旗標，之後就走上面那條路。
+  const legacy = await col.findOne({ userId, kind: "支出", parentId: null, name: FEE_CATEGORY_NAME });
+  if (legacy) {
+    await col.updateOne({ _id: legacy._id }, { $set: { isFee: true } });
+    return legacy._id;
+  }
   const order = await nextOrder(col, { userId, parentId: null, kind: "支出" });
   const doc: CategoryDoc = {
     _id: new ObjectId(),
@@ -262,6 +271,7 @@ export async function ensureFeeCategory(userId: ObjectId): Promise<ObjectId> {
     parentId: null,
     order,
     createdAt: new Date(),
+    isFee: true,
   };
   await col.insertOne(doc);
   return doc._id;
@@ -283,6 +293,11 @@ export async function deleteCategory(
   const targetDocForGuard = await col.findOne({ _id: target, userId });
   if (targetDocForGuard?.isUncategorized) {
     return { error: "「未分類」是系統用來收容已刪除分類紀錄的地方，不能刪除", inUseCount: 0 };
+  }
+  // 手續費同理：轉帳只要填了手續費就會往這裡記一筆，刪掉之後下次記帳又會自動建一個，
+  // 而舊的那些手續費紀錄會被丟到「未分類」，等於白白把帳弄亂。
+  if (targetDocForGuard?.isFee) {
+    return { error: "「手續費」是轉帳手續費要記的地方，不能刪除", inUseCount: 0 };
   }
 
   const db = await getDb();

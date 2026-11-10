@@ -18,6 +18,12 @@ export interface CategoryDTO {
   /** 刪除別的分類時，那些紀錄被強制歸類到這裡留下的標記。這個分類是系統自動建的，
    *  不是使用者自己開的，畫面上要標示出來，也不給刪除（刪了那些紀錄又會變孤兒）。 */
   isUncategorized?: boolean;
+  /** 「手續費」——轉帳的手續費會記成一筆掛在這裡的支出（見 transfers.server.ts）。
+   *  跟「未分類」一樣是系統分類：使用者不能刪、不能排序，位置固定。
+   *
+   *  **用旗標而不是比對名稱**：ensureFeeCategory 要找得到它，如果靠名稱比對，使用者
+   *  把它改名之後下次記手續費就會再建一個新的。 */
+  isFee?: boolean;
   /** 每月預算，只對頂層「支出」分類有意義——子分類跟收入分類沒有自己的預算，花費算進
    *  它們的頂層大分類裡一起比對。沒填代表這個分類沒設預算。 */
   budgetAmount?: number;
@@ -35,12 +41,30 @@ export function defaultAccountForCategory(categories: CategoryDTO[], categoryId:
   return top?.defaultAccountId || undefined;
 }
 
+/** 系統分類：使用者不能刪、不能參與排序、位置固定。
+ *
+ *  收斂成一個函式而不是到處寫 `c.isUncategorized`：系統分類從一種變成兩種的時候，
+ *  散在十幾處的判斷只要漏掉一處，那裡就會出現一顆刪得掉的「手續費」。 */
+export function isSystemCategory(c: Pick<CategoryDTO, "isUncategorized" | "isFee">): boolean {
+  return !!c.isUncategorized || !!c.isFee;
+}
+
+/** 排序時的分組：一般分類 0、手續費 1、未分類 2。
+ *
+ *  手續費排在未分類前面：它是真的會被記帳的分類（只是由系統代記），未分類則是「查無
+ *  歸屬」的收容所，放在最後才符合它的角色。 */
+function categoryRank(c: CategoryDTO): number {
+  if (c.isUncategorized) return 2;
+  if (c.isFee) return 1;
+  return 0;
+}
+
 export function topLevelCategories(categories: CategoryDTO[], kind?: CategoryKind): CategoryDTO[] {
   const tops = categories.filter((c) => !c.parentId && (kind === undefined || c.kind === kind));
-  // 「未分類」永遠排最後。它不是使用者自己開的分類，是刪掉別的分類時用來收容那些紀錄的
-  // 系統分類——夾在自訂分類中間會讓人以為那是自己建的，而且它的位置還會隨著 order 飄。
+  // 系統分類（手續費、未分類）永遠排在自訂分類後面。它們不是使用者自己開的，夾在中間
+  // 會讓人以為是自己建的，而且位置還會隨著 order 飄。
   // 排在這裡而不是各頁自己排：分類清單、記帳時的分類格子、報表都該看到同一個順序。
-  return [...tops].sort((a, b) => Number(a.isUncategorized ?? false) - Number(b.isUncategorized ?? false));
+  return [...tops].sort((a, b) => categoryRank(a) - categoryRank(b));
 }
 
 export function subCategoriesOf(categories: CategoryDTO[], parentId: string): CategoryDTO[] {
