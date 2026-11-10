@@ -215,6 +215,8 @@ export function AccountTypesView({
           記帳本時就自動建好的（見 lib/expenses/presets.server.ts），不再需要套用按鈕。 */}
       <PageHeader
         flush
+        // 排序／選取的「完成」就在這一列，清單又會捲——釘住才不用滑回最上面。
+        sticky
         title="帳戶類型"
         // 這一頁現在是從「設定」進來的，標題列不再掛「返回資產總表」那顆箭頭——
         // 指回一個不是上一頁的地方只會讓人迷路，要回去按瀏覽器/系統的返回就好。

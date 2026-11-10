@@ -19,6 +19,7 @@ import { type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { SortArrows, SortToggle } from "@/components/expenses/sort-controls";
+import { StickyToolbar } from "@/components/expenses/sticky-toolbar";
 import { ListRow } from "@/components/expenses/list-row";
 import { topLevelCategories, subCategoriesOf, categoryColorClass, type CategoryDTO, type CategoryKind } from "@/lib/expenses/categories";
 
@@ -495,7 +496,9 @@ export function CategoriesView({
         onClose={() => setDeleteConfirm(null)}
       />
 
-      <div className="flex items-center justify-between gap-2">
+      {/* 這一列捲動時釘在卡片頂端：清單很長，排序／選取模式的「完成」在最上面，不釘住
+          的話滑到底調整完要整頁滑回去才按得到（見 StickyToolbar）。 */}
+      <StickyToolbar className="flex items-center justify-between gap-2">
         <SegmentedControl
           value={kind}
           onChange={setKind}
@@ -523,7 +526,7 @@ export function CategoriesView({
             pendingConfirm={pendingAccount ? () => void applyDefaultAccount() : undefined}
           />
         </div>
-      </div>
+      </StickyToolbar>
 
       {selection.selecting && (
         <SelectionBar
