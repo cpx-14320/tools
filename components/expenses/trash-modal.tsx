@@ -51,6 +51,9 @@ export function TrashModal({
   // 小按鈕在手機上很容易按錯，而且「永久刪除」被按錯的代價是資料真的沒了。
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [purgeOpen, setPurgeOpen] = useState(false);
+  // 按下還原之後、真的還原之前：先問伺服器這批會不會撞名（見 trash.server.ts 的
+  // previewRestore）。有撞名才把這個彈窗打開，沒有的話直接還原，不多擋一步。
+  const [renameConfirm, setRenameConfirm] = useState<{ label: string; renamedTo: string }[] | null>(null);
   // 種類篩選。做成膠囊而不是分頁：垃圾桶平常是空的，一進來先看到七個分頁很笨重，而且
   // 多數情況要找的是「我剛剛刪掉的那一筆」，照日期往下看就到了。只有在一次刪了很多種
   // 東西、要挑其中一類還原的時候才需要篩，所以它是可選的收斂手段，不是主要的瀏覽方式。
@@ -75,7 +78,14 @@ export function TrashModal({
     });
 
   async function post(body: Record<string, unknown>) {
-    const data: { items?: TrashItemDTO[]; error?: string; renamedTo?: string; droppedRefs?: number; deleted?: number } = await fetch(
+    const data: {
+      items?: TrashItemDTO[];
+      error?: string;
+      renamedTo?: string;
+      droppedRefs?: number;
+      deleted?: number;
+      renames?: { label: string; renamedTo: string }[];
+    } = await fetch(
       "/api/expenses/trash",
       { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
     )
@@ -115,6 +125,16 @@ export function TrashModal({
     else showToast(`已還原 ${targets.length} 項`);
   });
 
+  /** 按下「還原」先走這裡：撞名的話先問過，沒撞名就直接還原。 */
+  const askRestore = useAsyncAction(async (targets: TrashItemDTO[]) => {
+    const data: { renames?: { label: string; renamedTo: string }[] } = await post({ action: "preview", ids: targets.map((t) => t.id) });
+    if (data.renames && data.renames.length > 0) {
+      setRenameConfirm(data.renames);
+      return;
+    }
+    await restore.run(targets);
+  });
+
   return (
     <>
       <Modal
@@ -139,8 +159,8 @@ export function TrashModal({
               <Button variant="ghost" onClick={onClose}>
                 關閉
               </Button>
-              <Button disabled={chosen.length === 0 || restore.busy} onClick={() => restore.run(chosen)}>
-                {restore.busy ? "還原中…" : `還原${chosen.length > 0 ? ` ${chosen.length} 項` : ""}`}
+              <Button disabled={chosen.length === 0 || restore.busy || askRestore.busy} onClick={() => askRestore.run(chosen)}>
+                {restore.busy || askRestore.busy ? "還原中…" : `還原${chosen.length > 0 ? ` ${chosen.length} 項` : ""}`}
               </Button>
             </div>
           </div>
@@ -199,6 +219,34 @@ export function TrashModal({
           </>
         )}
       </Modal>
+
+      {/* 撞名確認：現有的清單裡已經有同名的東西，還原回來的那幾項會被自動加序號。
+          一次列出全部會改名的，不是一項跳一次——批次還原十項、其中三項撞名的話，
+          連跳三個長得一樣的彈窗只會讓人直接亂按。 */}
+      <ConfirmModal
+        open={renameConfirm !== null}
+        title="有同名的分類還在"
+        danger={false}
+        confirmLabel="還原並改名"
+        message={
+          <>
+            還原之後這{(renameConfirm?.length ?? 0) > 1 ? ` ${renameConfirm?.length} 項` : "一項"}會自動加上序號，因為目前的清單裡已經有同名的：
+            <span className="mt-2 block">
+              {renameConfirm?.map((r) => (
+                <span key={`${r.label}-${r.renamedTo}`} className="block">
+                  {r.label} → {r.renamedTo}
+                </span>
+              ))}
+            </span>
+            <span className="mt-2 block">不想改名的話先取消，去把現有的那個改名或刪掉，再回來還原。</span>
+          </>
+        }
+        onConfirm={async () => {
+          setRenameConfirm(null);
+          await restore.run(chosen);
+        }}
+        onClose={() => setRenameConfirm(null)}
+      />
 
       {/* 永久刪除是這個彈窗裡唯一不可逆的動作，所以要列出刪的是哪幾項、而且明講救不回來。
           選到三項以上就不一一列出（名稱可能很長），只講數量。 */}

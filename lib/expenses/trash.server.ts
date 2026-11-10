@@ -102,7 +102,7 @@ export interface RestoreResult {
  *
  *  **為什麼是自動改名而不是擋下來**：還原的目的是把東西拿回來，因為撞名就不給還原等於
  *  讓使用者卡住。而帶著 `(2)` 的名字本身就是線索——使用者看得出「這是還原回來的那個」，
- *  可以去明細頁篩出它底下的紀錄、批次改到正確的分類，再把 `(2)` 這個刪掉。
+ *  可以去明細頁篩出它底下的紀錄、批次改到正確的分類，再把 `(1)` 這個刪掉。
  *  掛到「未分類」就做不到這件事：那裡面混著各種來源，人工分不出哪筆是哪個分類的。 */
 async function uniqueName(
   col: Awaited<ReturnType<typeof getDb>>,
@@ -115,7 +115,8 @@ async function uniqueName(
     .find({ ...filter, name: { $regex: `^${base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(\\(\\d+\\))?$` } })
     .toArray();
   if (!existing.some((d) => d.name === base)) return base;
-  for (let n = 2; n < 1000; n++) {
+  // 從 (1) 開始：原本那個沒有數字，加上去的這些就是「第幾個重複的」。
+  for (let n = 1; n < 1000; n++) {
     const candidate = `${base}(${n})`;
     if (!existing.some((d) => d.name === candidate)) return candidate;
   }
@@ -155,6 +156,33 @@ async function restoreOrder(db: Db, collection: string, doc: Document, userId: O
   if (taken === 0) return doc.order;
   const last = await db.collection(collection).find(filter).sort({ order: -1 }).limit(1).next();
   return last ? Number(last.order) + 1 : 0;
+}
+
+/** 還原之前先問「這幾項還原的話會變成什麼樣子」。
+ *
+ *  **為什麼要有這支**：撞名時還原會自動加序號，但那是做完才知道的事——使用者按下還原
+ *  是期待「東西回到原本的樣子」，結果回來的叫「飲食(1)」。先問一次，他才有機會取消、
+ *  去把現有的那個改名或刪掉，再回來還原。
+ *
+ *  只回報會改名的那幾項；名稱沒衝突的不用講，講了只是噪音。 */
+export async function previewRestore(userId: ObjectId, trashIds: string[]): Promise<{ id: string; label: string; renamedTo: string }[]> {
+  const col = await collection();
+  const db = await getDb();
+  const out: { id: string; label: string; renamedTo: string }[] = [];
+
+  for (const trashId of trashIds) {
+    if (!ObjectId.isValid(trashId)) continue;
+    const item = await col.findOne({ _id: new ObjectId(trashId), userId });
+    if (!item) continue;
+    for (const entry of item.entries) {
+      const doc = entry.doc as Document;
+      const scope = NAME_SCOPED[entry.collection];
+      if (!scope || typeof doc.name !== "string") continue;
+      const next = await uniqueName(db, entry.collection, scope(doc, userId), doc.name);
+      if (next !== doc.name) out.push({ id: trashId, label: doc.name, renamedTo: next });
+    }
+  }
+  return out;
 }
 
 export async function restoreFromTrash(userId: ObjectId, trashId: string): Promise<RestoreResult> {
