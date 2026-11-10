@@ -1,4 +1,4 @@
-import { ObjectId, type Document } from "mongodb";
+import { ObjectId, type Db, type Document } from "mongodb";
 import { getDb } from "../mongodb";
 import type { TrashItemDTO, TrashKind } from "./trash";
 import type { CategoryColor } from "./categories";
@@ -129,6 +129,34 @@ const NAME_SCOPED: Record<string, (doc: Document, userId: ObjectId) => Document>
   "expenses.accountTypes": (doc, userId) => ({ userId, kind: doc.kind }),
 };
 
+/** 有「order」欄位、而且 order 只在同一層裡才有意義的集合——還原時要確認那個位置還空著。 */
+const ORDER_SCOPED: Record<string, (doc: Document, userId: ObjectId) => Document> = {
+  "expenses.categories": (doc, userId) => ({ userId, kind: doc.kind, parentId: doc.parentId ?? null }),
+  "expenses.accountTypes": (doc, userId) => ({ userId, kind: doc.kind }),
+};
+
+/** 還原時決定這筆要用哪個 order。
+ *
+ *  **原本的位置還空著就放回原位**：刪錯了馬上按還原是最常見的情況，那時候原本的位置
+ *  就是一個洞，放回去使用者看到的就是「什麼都沒發生」，這才是還原該有的樣子。
+ *
+ *  **被佔走了就排到最後**：刪掉之後又排序過的話，整層已經被重新編號成 0,1,2,…，原本
+ *  那個數字現在是別人的。硬插回去會變成兩筆同號、並列在一起，位置由資料庫決定——就是
+ *  新增分類時那個「排不到最後」的老問題換一條路發生。排到最後至少是確定的，而且看得
+ *  出來「它回來了」。
+ *
+ *  刻意不去推開別人（把 ≥ 原位的那些整批往後挪）：使用者在刪除之後特地排過一次順序，
+ *  那是他明確表達過的意思，不該為了讓一筆還原的資料回到舊位置就把整層推一遍。 */
+async function restoreOrder(db: Db, collection: string, doc: Document, userId: ObjectId): Promise<number | undefined> {
+  const scope = ORDER_SCOPED[collection];
+  if (!scope || typeof doc.order !== "number") return undefined;
+  const filter = scope(doc, userId);
+  const taken = await db.collection(collection).countDocuments({ ...filter, order: doc.order }, { limit: 1 });
+  if (taken === 0) return doc.order;
+  const last = await db.collection(collection).find(filter).sort({ order: -1 }).limit(1).next();
+  return last ? Number(last.order) + 1 : 0;
+}
+
 export async function restoreFromTrash(userId: ObjectId, trashId: string): Promise<RestoreResult> {
   if (!ObjectId.isValid(trashId)) return { ok: false, error: "找不到這一項" };
   const col = await collection();
@@ -151,6 +179,10 @@ export async function restoreFromTrash(userId: ObjectId, trashId: string): Promi
         doc.name = next;
       }
     }
+
+    // 原本的位置被佔走了就排到最後（見 restoreOrder）。
+    const order = await restoreOrder(db, entry.collection, doc, userId);
+    if (order !== undefined) doc.order = order;
 
     // 參照的東西已經不在了就把那個欄位清掉，不要插一筆指向不存在帳戶的紀錄。
     for (const [field, refCollection] of [
