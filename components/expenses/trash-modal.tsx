@@ -166,14 +166,14 @@ export function TrashModal({
               onClick={() => setPurgeOpen(true)}
               className="text-xs font-medium text-[#D1517E] disabled:opacity-40"
             >
-              永久刪除{chosen.length > 0 ? ` ${chosen.length} 項` : ""}
+              永久刪除
             </button>
             <div className="flex items-center gap-2">
               <Button variant="ghost" onClick={close}>
                 關閉
               </Button>
               <Button disabled={chosen.length === 0 || restore.busy || askRestore.busy} onClick={() => askRestore.run(chosen)}>
-                還原{chosen.length > 0 ? ` ${chosen.length} 項` : ""}
+                還原
               </Button>
             </div>
           </div>

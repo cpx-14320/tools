@@ -198,19 +198,15 @@ export function AiDraftsModal({
       // 畫面上根本看不到的東西，按下去唯一的回饋是一句「已清掉 N 批」——使用者無從判斷
       // 清掉了什麼。已經寫進消費紀錄的批次留在資料庫裡也不影響任何畫面，所以整顆移除。
       footer={
-        // 左下角是破壞性動作、右下角是離開，跟「最近刪除」同一種排法。沒勾任何一批時
-        // 刪除是停用狀態。
-        <div className="flex w-full items-center justify-between gap-2">
-          <button
-            type="button"
-            disabled={chosen.length === 0}
-            onClick={() => setDeleteBatch(true)}
-            className="text-xs font-medium text-[#D1517E] disabled:opacity-40"
-          >
-            刪除{chosen.length > 0 ? ` ${chosen.length} 批` : ""}
-          </button>
+        // 跟「最近刪除」的還原按鈕同一個位置、同一種樣式：實心按鈕擺在右下角、跟關閉
+        // 排一起，不是左下角的文字連結。這一層只有刪除這一個批次動作，不像垃圾桶要
+        // 另外留左下角給更危險的「永久刪除」。
+        <div className="flex w-full items-center justify-end gap-2">
           <Button variant="ghost" onClick={close}>
             關閉
+          </Button>
+          <Button disabled={chosen.length === 0} onClick={() => setDeleteBatch(true)}>
+            刪除
           </Button>
         </div>
       }
