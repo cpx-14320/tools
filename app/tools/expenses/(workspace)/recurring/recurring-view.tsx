@@ -113,12 +113,19 @@ export function RecurringView({
   async function resolvePending(action: "confirm" | "skip", items: { ruleId: string; date: string }[]) {
     const keys = items.map((it) => `${it.ruleId}|${it.date}`);
     setBusy((set) => new Set([...set, ...keys]));
-    const data: { pending?: PendingOccurrence[]; transactions?: TransactionDTO[]; transfers?: TransferDTO[] } = await fetch(
-      "/api/expenses/recurring-rules/pending",
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, items }) },
-    )
-      .then((res) => res.json())
-      .catch(() => ({}));
+    // 一次確認好幾期要跑一會兒（每一期都要寫一筆交易或轉帳），沿用共用的處理中遮罩，
+    // 跟刪除、批次修改、還原同一個長相（見 busy.tsx）。
+    const data: { pending?: PendingOccurrence[]; transactions?: TransactionDTO[]; transfers?: TransferDTO[] } = await runBusy(
+      "處理中…",
+      () =>
+        fetch("/api/expenses/recurring-rules/pending", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action, items }),
+        })
+          .then((res) => res.json())
+          .catch(() => ({})),
+    );
     if (data.pending) setPending(data.pending);
     if (data.transactions) setTransactions(data.transactions);
     if (data.transfers) setTransfers(data.transfers);

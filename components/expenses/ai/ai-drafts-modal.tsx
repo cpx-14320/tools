@@ -10,6 +10,8 @@ import { ConfirmModal } from "../confirm-modal";
 import { TransactionModal, type TransactionModalDraft } from "../transaction-modal";
 import { text } from "../theme";
 import { useToast } from "../toast";
+import { useBusy } from "../busy";
+import { SelectionDot } from "../selection-bar";
 import { AiDraftList } from "./ai-draft-list";
 import { useDraftEditData } from "./use-draft-edit-data";
 import { draftSummaryLine, pendingItems, unclassifiedItems, type AiDraftDTO, type AiDraftItemDTO } from "@/lib/expenses/ai-drafts";
@@ -35,10 +37,15 @@ export function AiDraftsModal({
   onDraftsChange: (drafts: AiDraftDTO[]) => void;
 }) {
   const showToast = useToast();
+  const runBusy = useBusy();
   const [openId, setOpenId] = useState<string | null>(null);
   const [editing, setEditing] = useState<AiDraftItemDTO | null>(null);
   const [discardId, setDiscardId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // 第一層清單的多選。跟「最近刪除」同一套：整列就是勾選目標，底下那排按鈕對勾起來的
+  // 那幾批做事——一批一批點進去捨棄，重跑過好幾次的時候要點很多輪。
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [discardBatch, setDiscardBatch] = useState(false);
   // 編輯一筆草稿要用到帳戶、交易、轉帳（新增／編輯彈窗裡的帳戶選擇要顯示餘額）。
   // 這些刻意不從設定頁的 Server Component 傳下來——那會讓每次進設定頁都多載一份完整的
   // 交易清單（量過大約 80KB），只為了一個多數時候不會打開的彈窗。改成真的打開才抓。
@@ -46,6 +53,14 @@ export function AiDraftsModal({
 
   const current = openId ? (drafts.find((d) => d.id === openId) ?? null) : null;
   const pendingDrafts = drafts.filter((d) => d.status === "pending" && pendingItems(d).length > 0);
+  const chosen = pendingDrafts.filter((d) => selected.has(d.id));
+  const allSelected = pendingDrafts.length > 0 && pendingDrafts.every((d) => selected.has(d.id));
+
+  /** 關掉彈窗時把勾選清掉：下次打開要是乾淨的（理由同 trash-modal 的 close）。 */
+  function close() {
+    setSelected(new Set());
+    onClose();
+  }
 
   async function post(body: Record<string, unknown>) {
     setBusy(true);
@@ -92,14 +107,15 @@ export function AiDraftsModal({
               <Button
                 disabled={busy || pending.length === 0 || unclassified.length > 0}
                 onClick={async () => {
-                  const data = await post({ action: "commit", draftId: current.id });
+                  // 進行中一律交給共用的處理中遮罩，按鈕文字不換（見 busy.tsx）。
+                  const data = await runBusy("寫入中…", () => post({ action: "commit", draftId: current.id }));
                   if (data.drafts) {
                     showToast(`已寫入 ${data.count ?? 0} 筆`);
                     setOpenId(null);
                   }
                 }}
               >
-                {busy ? "寫入中…" : `寫入 ${pending.length} 筆`}
+                寫入 {pending.length} 筆
               </Button>
             </div>
           }
@@ -184,14 +200,28 @@ export function AiDraftsModal({
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={close}
       title="待確認的解析結果"
+      // 滿版＋標題與底部固定，跟「最近刪除」同一種版型：兩個都是「一長串待處理的項目，
+      // 一邊捲一邊挑」。本來是跟著內容長高的彈窗，批次一多就整個頂到畫面外，而關閉鍵
+      // 在最底下——要關掉得先捲到底。
+      fullHeight
       // 本來左邊還有一顆「清掉已處理的」：這份清單只列還沒處理完的，那顆按鈕動到的是
       // 畫面上根本看不到的東西，按下去唯一的回饋是一句「已清掉 N 批」——使用者無從判斷
       // 清掉了什麼。已經寫進消費紀錄的批次留在資料庫裡也不影響任何畫面，所以整顆移除。
       footer={
-        <div className="flex w-full justify-end">
-          <Button variant="ghost" onClick={onClose}>
+        // 左下角是破壞性動作、右下角是離開，跟「最近刪除」同一種排法。沒勾任何一批時
+        // 捨棄是停用狀態。
+        <div className="flex w-full items-center justify-between gap-2">
+          <button
+            type="button"
+            disabled={chosen.length === 0}
+            onClick={() => setDiscardBatch(true)}
+            className="text-xs font-medium text-[#D1517E] disabled:opacity-40"
+          >
+            捨棄{chosen.length > 0 ? ` ${chosen.length} 批` : ""}
+          </button>
+          <Button variant="ghost" onClick={close}>
             關閉
           </Button>
         </div>
@@ -201,15 +231,39 @@ export function AiDraftsModal({
         <p className={`px-1 ${text.faint}`}>目前沒有待確認的解析結果。</p>
       ) : (
         <>
-          <p className={`${text.muted} leading-relaxed`}>每一筆是一次解析的結果，點進去可以調整。</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className={`${text.muted} leading-relaxed`}>每一筆是一次解析的結果，點進去可以調整。</p>
+            {/* 勾選是為了「整批捨棄」用的，點列本身還是進去處理那一批——兩個都是常用
+                動作，所以勾選框另外給一個點擊區，不像最近刪除那樣整列都是勾選。 */}
+            <button
+              type="button"
+              onClick={() => setSelected(allSelected ? new Set() : new Set(pendingDrafts.map((d) => d.id)))}
+              className="shrink-0 text-xs font-medium text-[#6F5FD6]"
+            >
+              {allSelected ? "取消全選" : "全選"}
+            </button>
+          </div>
           <ListCard>
             {pendingDrafts.map((d) => (
-              <button
-                key={d.id}
-                type="button"
-                onClick={() => setOpenId(d.id)}
-                className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-[#F3EFFC]"
-              >
+              <div key={d.id} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={selected.has(d.id)}
+                  aria-label={`選取「${d.inputSummary}」`}
+                  onClick={() =>
+                    setSelected((set) => {
+                      const next = new Set(set);
+                      if (next.has(d.id)) next.delete(d.id);
+                      else next.add(d.id);
+                      return next;
+                    })
+                  }
+                  className="shrink-0"
+                >
+                  <SelectionDot selected={selected.has(d.id)} />
+                </button>
+                <button type="button" onClick={() => setOpenId(d.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
                 {/* 本來是 📄／💬 兩個 emoji 分 CSV 跟打字輸入，但使用者在這一頁要挑的是
                     「哪一批還沒確認」，不是「它當初從哪裡來」——來源在點進去的詳情裡看得到。
                     統一換成帳單圖，跟清單其他列的圖示同一套畫風。 */}
@@ -224,11 +278,30 @@ export function AiDraftsModal({
                   <span className="shrink-0 rounded-full bg-[#FDF4E7] px-2 py-0.5 text-xs font-semibold text-[#9A7430]">待分類</span>
                 )}
                 <span className={text.faint}>›</span>
-              </button>
+                </button>
+              </div>
             ))}
           </ListCard>
         </>
       )}
+
+      {/* 批次捨棄的確認。捨棄只是標成不處理、不會動到已經寫進消費紀錄的那幾筆，所以
+          不是不可逆的刪除，但一次處理好幾批還是要先問過。 */}
+      <ConfirmModal
+        open={discardBatch}
+        title={chosen.length > 1 ? `捨棄 ${chosen.length} 批` : "捨棄這一批"}
+        message={`勾起來的${chosen.length > 1 ? `這 ${chosen.length} 批` : "這一批"}解析結果會整批標成不處理，不會寫進消費紀錄。已經寫入的那幾筆不受影響。`}
+        confirmLabel="捨棄"
+        onConfirm={async () => {
+          // 逐批送出：API 一次只收一個 draftId，而且每次都回傳最新的完整清單。
+          await runBusy("處理中…", async () => {
+            for (const d of chosen) await post({ action: "discard", draftId: d.id });
+          });
+          setSelected(new Set());
+          showToast(`已捨棄 ${chosen.length} 批`);
+        }}
+        onClose={() => setDiscardBatch(false)}
+      />
     </Modal>
   );
 }
