@@ -2,7 +2,6 @@ import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import { occurrencesUpTo, type RecurringRuleDTO, type RecurringRuleInput, type RecurringTransfer } from "./recurring-rules";
 import { contributeToGoal } from "./goals.server";
-import { putInTrash } from "./trash.server";
 import { ensureFeeCategory } from "./categories.server";
 
 /** 轉帳規則在資料庫裡的樣子。帳戶存 ObjectId（跟 expenses.transfers 一致），手續費存數字。 */
@@ -142,14 +141,11 @@ export async function deleteRecurringRule(userId: ObjectId, id: string): Promise
   const doc = await col.findOne({ _id: new ObjectId(id), userId });
   if (!doc) return { rules: await listRecurringRules(userId) };
 
-  const trashId = await putInTrash(userId, {
-    kind: "recurringRule",
-    label: doc.note?.trim() || "固定收支",
-    sublabel: `每 ${doc.interval} ${doc.frequencyUnit} · ${doc.amount}`,
-    entries: [{ collection: "expenses.recurringRules", doc }],
-  });
+  // **刻意不進垃圾桶**（理由同 goals.server.ts 的 deleteGoal）：規則是設定不是紀錄，
+  // 而且已經入帳過的交易是獨立快照、不會跟著消失，真正會不見的只有「往後還沒發生的
+  // 期數」——那本來就是重建一條規則就有的東西。
   await col.deleteOne({ _id: doc._id, userId });
-  return { rules: await listRecurringRules(userId), trashId };
+  return { rules: await listRecurringRules(userId) };
 }
 
 /** 這條規則目前已經入帳的那幾期——key 是發生日期（YYYY-MM-DD），value 是對應的

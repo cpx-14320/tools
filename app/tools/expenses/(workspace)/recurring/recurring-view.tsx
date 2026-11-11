@@ -16,7 +16,6 @@ import { RecurringRuleModal, type RecurringRuleModalDraft, type RecurringRuleKin
 import { ICON_PATHS } from "@/components/expenses/icon-paths";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { useBusy } from "@/components/expenses/busy";
-import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
 import { StickyToolbar } from "@/components/expenses/sticky-toolbar";
 import { categoryById, categoryColorClass, type CategoryDTO } from "@/lib/expenses/categories";
@@ -325,7 +324,7 @@ export function RecurringView({
       <ConfirmModal
         open={deleteConfirm !== null}
         title="確定要刪除固定收支嗎？"
-        message={`刪除後這${(deleteConfirm?.length ?? 0) > 1 ? ` ${deleteConfirm?.length} 條` : "條"}規則不會再自動入帳，但已經入帳過的交易紀錄不會被刪除，會繼續留著。${TRASH_RESTORE_NOTE}`}
+        message={`刪除後這${(deleteConfirm?.length ?? 0) > 1 ? ` ${deleteConfirm?.length} 條` : "條"}規則不會再自動入帳，但已經入帳過的交易紀錄不會被刪除，會繼續留著。規則本身刪掉就沒了，不會進「最近刪除」。`}
         onConfirm={handleConfirmedDelete}
         onClose={() => setDeleteConfirm(null)}
       />
@@ -365,7 +364,7 @@ export function RecurringView({
             <p className={`mt-1 ${text.muted}`}>
               {pendingSelected.size > 0
                 ? "只會處理勾起來的那幾筆。"
-                : "確認後才會寫進消費紀錄；沒有勾選時，上面兩顆處理的是全部。"}
+                : "確認後才會寫進消費紀錄。"}
             </p>
 
             <div className="mt-3 flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA]">

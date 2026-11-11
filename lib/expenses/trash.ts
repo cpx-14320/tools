@@ -20,6 +20,20 @@ import type { CategoryColor } from "./categories";
 
 export type TrashKind = "transaction" | "transfer" | "goal" | "recurringRule" | "account" | "accountType" | "category";
 
+/** 垃圾桶的分頁。種類有七種，一種一個分頁太多了（而且垃圾桶平常是空的），所以收成
+ *  三組＋全部：明細（交易、轉帳）、分類、帳戶（帳戶本身跟帳戶類型）。
+ *
+ *  存錢目標跟固定收支已經不進垃圾桶（見 goals.server.ts 的 deleteGoal），但舊資料裡
+ *  可能還留著，所以 trashGroupOf 仍然要處理得了——它們歸 null，只會出現在「全部」。 */
+export type TrashGroup = "all" | "entry" | "category" | "account";
+
+export function trashGroupOf(kind: TrashKind): Exclude<TrashGroup, "all"> | null {
+  if (kind === "transaction" || kind === "transfer") return "entry";
+  if (kind === "category") return "category";
+  if (kind === "account" || kind === "accountType") return "account";
+  return null;
+}
+
 export const TRASH_KIND_LABEL: Record<TrashKind, string> = {
   transaction: "交易",
   transfer: "轉帳",

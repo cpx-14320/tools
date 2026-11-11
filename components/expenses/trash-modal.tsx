@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Modal } from "./modal";
-import { Button, PillButton } from "./button";
+import { Button, SegmentedControl } from "./button";
 import { ListCard, ListRow } from "./list-row";
 import { SelectionDot } from "./selection-bar";
 import { categoryColorClass } from "@/lib/expenses/categories";
@@ -12,7 +12,7 @@ import { useToast } from "./toast";
 import { useAsyncAction } from "./use-async-action";
 import { useBusy } from "./busy";
 import { ICON_PATHS } from "./icon-paths";
-import { TRASH_KIND_LABEL, type TrashItemDTO, type TrashKind } from "@/lib/expenses/trash";
+import { TRASH_KIND_LABEL, trashGroupOf, type TrashGroup, type TrashItemDTO, type TrashKind } from "@/lib/expenses/trash";
 import { formatDateWithWeekday } from "@/lib/format";
 
 /** 舊資料沒有存圖示時依種類退回的預設圖（2026-11 之前刪掉的東西）。 */
@@ -60,17 +60,15 @@ export function TrashModal({
   // 多數情況要找的是「我剛剛刪掉的那一筆」，照日期往下看就到了。只有在一次刪了很多種
   // 東西、要挑其中一類還原的時候才需要篩，所以它是可選的收斂手段，不是主要的瀏覽方式。
   // 只列「垃圾桶裡真的有的種類」——列出七個固定選項，其中五個按了都是空的沒有意義。
-  const [kindFilter, setKindFilter] = useState<TrashKind | null>(null);
+  const [group, setGroup] = useState<TrashGroup>("all");
 
-  const kinds = [...new Set(items.map((i) => i.kind))];
-  // 篩選條件如果指到一個已經沒有東西的種類（最後一筆被還原或永久刪除了），當作沒篩——
-  // 不然畫面會停在一個空清單上，而且那個膠囊已經不在了，使用者按不掉它。
-  const activeKind = kindFilter && kinds.includes(kindFilter) ? kindFilter : null;
-  const visible = activeKind ? items.filter((i) => i.kind === activeKind) : items;
+  const visible = items.filter((i) => group === "all" || trashGroupOf(i.kind) === group);
 
   // 勾選的項目只算「現在看得到的」：篩選切換後，之前勾到、現在被篩掉的那幾項要跟著
   // 失效，不然底下的「還原 N 項」會把看不見的東西算進去（跟 useSelection 同一個理由）。
   const chosen = visible.filter((i) => selected.has(i.id));
+
+  const allVisibleSelected = visible.length > 0 && visible.every((i) => selected.has(i.id));
 
   /** 關掉彈窗時把勾選清掉：下次打開要是乾淨的——上次勾了一半沒處理的項目還留著，
    *  使用者看到「還原 3 項」會不知道是哪三項。 */
@@ -185,21 +183,30 @@ export function TrashModal({
           <p className={`px-1 ${text.faint}`}>目前沒有已刪除的項目。</p>
         ) : (
           <>
-            <p className={`${text.muted} leading-relaxed`}>刪掉的項目會一直留在這裡，直到你自己清掉為止，不會自動消失。</p>
-            {/* 只有兩種以上才顯示：垃圾桶裡只有交易的時候，一排「全部／交易」兩顆膠囊
-                等於沒有篩選功能，只是多佔一行。 */}
-            {kinds.length > 1 && (
-              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5">
-                <PillButton active={activeKind === null} onClick={() => setKindFilter(null)}>
-                  全部 {items.length}
-                </PillButton>
-                {kinds.map((kind) => (
-                  <PillButton key={kind} active={activeKind === kind} onClick={() => setKindFilter(kind)}>
-                    {TRASH_KIND_LABEL[kind]} {items.filter((i) => i.kind === kind).length}
-                  </PillButton>
-                ))}
-              </div>
-            )}
+            {/* 分頁用共用的 SegmentedControl（跟養成的商店彈窗同一顆）。
+                固定四格、不顯示數字：數字會讓這一排的寬度隨資料跳動，而且「分類 3」裡的
+                3 跟右邊每一列的筆數長得像，容易看成同一種東西。 */}
+            <div className="flex items-center justify-between gap-2">
+              <SegmentedControl
+                value={group}
+                onChange={setGroup}
+                options={[
+                  { value: "all", label: "全部" },
+                  { value: "entry", label: "明細" },
+                  { value: "category", label: "分類" },
+                  { value: "account", label: "帳戶" },
+                ]}
+              />
+              {/* 全選只選「現在這個分頁看得到的」——切到「分類」按全選，使用者要的是
+                  全選分類，不是連別的分頁一起勾起來。 */}
+              <button
+                type="button"
+                onClick={() => setSelected(allVisibleSelected ? new Set() : new Set(visible.map((i) => i.id)))}
+                className="shrink-0 text-xs font-medium text-[#6F5FD6]"
+              >
+                {allVisibleSelected ? "取消全選" : "全選"}
+              </button>
+            </div>
             {/* 依「刪除日期」分組，日期當小標題——跟明細頁的消費清單同一種排法。
                 一天刪好幾次是常有的事，沒有分組的話整串看起來就是一長條，要找「我昨天
                 刪掉的那筆」只能一列一列看日期。 */}

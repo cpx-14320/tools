@@ -9,6 +9,7 @@ import { useToast } from "../toast";
 import { AiDraftList } from "./ai-draft-list";
 import { useAiKey } from "./use-ai-key";
 import { useSpeechInput } from "./use-speech-input";
+import { splitSpokenEntries } from "./split-spoken";
 import { scanInvoiceQr } from "./scan-invoice-qr";
 import type { CategoryDTO } from "@/lib/expenses/categories";
 import { unclassifiedItems, type AiDraftDTO, type AiDraftItemDTO } from "@/lib/expenses/ai-drafts";
@@ -64,7 +65,12 @@ export function AiComposeModal({
   // 語音輸入：收完音把整段話接到輸入框後面（不是蓋掉）——使用者可能先打了幾筆、再用講的
   // 補後面那幾筆。接的時候補一個逗號，解析那邊本來就用逗號斷句。
   const speech = useSpeechInput({
-    onResult: (spoken) => setInput((prev) => (prev.trim() ? `${prev.trim()}，${spoken}` : spoken)),
+    // 口述沒有標點，所以先照金額切成一筆一筆再填進來（見 splitSpokenEntries）——
+    // 「晚餐150元看電影300元」直接變成兩行，不用使用者自己回去加逗號。
+    onResult: (spoken) => {
+      const parts = splitSpokenEntries(spoken);
+      setInput((prev) => [prev.trim(), ...parts].filter(Boolean).join("\n"));
+    },
     onError: showToast,
   });
 
@@ -213,7 +219,7 @@ export function AiComposeModal({
               </button>
             )}
           </div>
-          {speech.listening && <p className={`-mt-1 ${text.muted}`}>聆聽中…講完按一下紅色按鈕，辨識結果會自動填進上面的框。</p>}
+          {speech.listening && <p className={`-mt-1 ${text.muted}`}>聆聽中…講完按一下紅色按鈕。講到金額就算一筆，「晚餐150元看電影300元」會自動分成兩筆。</p>}
           <p className={`${text.faint} leading-relaxed`}>
             一次最多 20 筆。用逗號或換行分開每一筆，日期可以講「昨天」「前天」，沒講就當作今天。收入或支出會看分類自己判斷。
           </p>

@@ -1,7 +1,6 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import { withAccountBalances, type SavingsGoalDTO } from "./goals";
-import { putInTrash } from "./trash.server";
 import { accountBalance } from "./accounts";
 import { listAccounts } from "./accounts.server";
 import { listAccountTypes } from "./account-types.server";
@@ -172,13 +171,9 @@ export async function deleteGoal(userId: ObjectId, id: string): Promise<{ goals:
   // 連動是使用者的決定，自作主張接回去反而會讓一條他已經改過的規則突然又開始存錢。
   await db.collection("expenses.recurringRules").updateMany({ userId, linkedGoalId: goalId }, { $unset: { linkedGoalId: "" } });
 
-  const trashId = await putInTrash(userId, {
-    kind: "goal",
-    label: doc.name,
-    sublabel: `目標 ${doc.targetAmount}`,
-    icon: doc.icon,
-    entries: [{ collection: "expenses.goals", doc }],
-  });
+  // **刻意不進垃圾桶**：目標只是一個「名稱＋金額＋期限」的設定，重打一次三十秒就好，
+  // 不像一筆交易或一個分類那樣牽動別的資料。垃圾桶的種類愈多，使用者要在裡面找東西
+  // 就愈難，所以只留真的救不回來的那幾種（交易、轉帳、分類、帳戶、帳戶類型）。
   await col.deleteOne({ _id: goalId, userId });
-  return { goals: await listGoalsWithProgress(userId), trashId };
+  return { goals: await listGoalsWithProgress(userId) };
 }
