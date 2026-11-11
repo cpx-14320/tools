@@ -54,6 +54,10 @@ export function AiDraftsModal({
   const pendingDrafts = drafts.filter((d) => d.status === "pending" && pendingItems(d).length > 0);
   const chosen = pendingDrafts.filter((d) => selected.has(d.id));
   const allSelected = pendingDrafts.length > 0 && pendingDrafts.every((d) => selected.has(d.id));
+  // 勾起來的裡面只要有一批還有沒分類的項目就不給按：commit 只會寫「已經有分類」的那幾筆，
+  // 卻會把整批標成 committed（見 ai-drafts.server.ts 的 closeAiDraft），沒分類的那幾筆就
+  // 這樣不見了。進詳情頁把它分完類再回來勾，不讓這種半吊子的寫入發生。
+  const chosenHasUnclassified = chosen.some((d) => unclassifiedItems(d).length > 0);
 
   /** 關掉彈窗時把勾選清掉：下次打開要是乾淨的（理由同 trash-modal 的 close）。 */
   function close() {
@@ -87,37 +91,30 @@ export function AiDraftsModal({
     if (data.draft) onDraftsChange(drafts.map((d) => (d.id === data.draft!.id ? data.draft! : d)));
   }
 
+  /** 批次確認：勾起來的那幾批逐批寫入消費紀錄。跟批次刪除同一個寫法——API 一次只收
+   *  一個 draftId，每次都回傳最新的完整清單。 */
+  async function confirmChosen() {
+    const targets = chosen;
+    await runBusy("寫入中…", async () => {
+      let total = 0;
+      for (const d of targets) total += (await post({ action: "commit", draftId: d.id })).count ?? 0;
+      showToast(`已寫入 ${total} 筆`);
+    });
+    setSelected(new Set());
+  }
+
   // ── 第二層：處理其中一批 ──────────────────────────────────────────────────
   if (current) {
-    const pending = pendingItems(current);
     const unclassified = unclassifiedItems(current);
     return (
-      <>
         <Modal
           open={open}
           onClose={() => setOpenId(null)}
           title="待確認"
           fullHeight
-          footer={
-            // 這一層只負責「處理這一批」，刪除統一在上一層做（勾選＋刪除）。本來這裡
-            // 還有一顆「整批捨棄」，跟上一層的刪除是同一件事卻用不同的字、放在不同
-            // 的地方，使用者得記住兩套。
-            <div className="flex w-full items-center justify-end gap-2">
-              <Button
-                disabled={busy || pending.length === 0 || unclassified.length > 0}
-                onClick={async () => {
-                  // 進行中一律交給共用的處理中遮罩，按鈕文字不換（見 busy.tsx）。
-                  const data = await runBusy("寫入中…", () => post({ action: "commit", draftId: current.id }));
-                  if (data.drafts) {
-                    showToast(`已寫入 ${data.count ?? 0} 筆`);
-                    setOpenId(null);
-                  }
-                }}
-              >
-                寫入 {pending.length} 筆
-              </Button>
-            </div>
-          }
+          // 這一層只負責「看、調整、略過」，寫入統一在上一層做（勾選＋確認）。本來這裡
+          // 有一顆「寫入 N 筆」，跟上一層的確認是同一件事卻用不同的字、放在不同的地方，
+          // 使用者得記兩套；而且一批一批點進去寫，重跑過好幾次的時候要點很多輪。
         >
           {/* 標題就是當初打進去的那句話——使用者認得的是自己寫的字，不是日期或模型名稱。
               本來底下還有一行「日期 · 模擬解析 · N 筆待確認 · N 筆未分類」，那些數字在
@@ -179,8 +176,6 @@ export function AiDraftsModal({
             onCategoriesChange={editData.setCategories}
           />
         </Modal>
-
-      </>
     );
   }
 
@@ -198,16 +193,26 @@ export function AiDraftsModal({
       // 畫面上根本看不到的東西，按下去唯一的回饋是一句「已清掉 N 批」——使用者無從判斷
       // 清掉了什麼。已經寫進消費紀錄的批次留在資料庫裡也不影響任何畫面，所以整顆移除。
       footer={
-        // 跟「最近刪除」的還原按鈕同一個位置、同一種樣式：實心按鈕擺在右下角、跟關閉
-        // 排一起，不是左下角的文字連結。這一層只有刪除這一個批次動作，不像垃圾桶要
-        // 另外留左下角給更危險的「永久刪除」。
-        <div className="flex w-full items-center justify-end gap-2">
-          <Button variant="ghost" onClick={close}>
-            關閉
-          </Button>
-          <Button disabled={chosen.length === 0} onClick={() => setDeleteBatch(true)}>
+        // 左下角是破壞性動作、右下角是離開＋主要動作，跟「最近刪除」同一種排法：
+        // 永久刪除／刪除放文字連結，還原／確認放實心按鈕。沒勾任何一批時都是停用狀態；
+        // 勾到的裡面有還沒分類完的，確認也不給按（見 chosenHasUnclassified）。
+        <div className="flex w-full items-center justify-between gap-2">
+          <button
+            type="button"
+            disabled={chosen.length === 0}
+            onClick={() => setDeleteBatch(true)}
+            className="text-xs font-medium text-[#D1517E] disabled:opacity-40"
+          >
             刪除
-          </Button>
+          </button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={close}>
+              關閉
+            </Button>
+            <Button disabled={chosen.length === 0 || chosenHasUnclassified || busy} onClick={confirmChosen}>
+              確認
+            </Button>
+          </div>
         </div>
       }
     >
