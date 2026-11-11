@@ -18,6 +18,7 @@ import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { useBusy } from "@/components/expenses/busy";
 import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
+import { StickyToolbar } from "@/components/expenses/sticky-toolbar";
 import { categoryById, categoryColorClass, type CategoryDTO } from "@/lib/expenses/categories";
 import type { TransactionDTO } from "@/lib/expenses/transactions";
 import type { SavingsGoalDTO } from "@/lib/expenses/goals";
@@ -264,6 +265,8 @@ export function RecurringView({
           一片灰條上面很突兀（跟首頁、資產總表同一個處理）。 */}
       <FloatingAddButton onClick={() => setModal({ mode: "create" })} label="新增固定收支" />
 
+      {/* 整塊釘在卡片頂端（含選取工具列），理由見 StickyToolbar。 */}
+      <StickyToolbar>
       <div className="flex items-center justify-between gap-2">
         <SegmentedControl
           value={kind}
@@ -276,6 +279,16 @@ export function RecurringView({
         />
         <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />
       </div>
+      {selection.selecting && (
+        <SelectionBar
+          count={selection.selectedIds.size}
+          total={selection.total}
+          onToggleAll={selection.toggleAll}
+          onCancel={selection.exit}
+          onDelete={() => setDeleteConfirm([...selection.selectedIds])}
+        />
+      )}
+      </StickyToolbar>
 
       <RecurringRuleModal
         key={modal ? JSON.stringify(modal) : "closed"}
@@ -317,15 +330,6 @@ export function RecurringView({
         onClose={() => setDeleteConfirm(null)}
       />
 
-      {selection.selecting && (
-        <SelectionBar
-          count={selection.selectedIds.size}
-          total={selection.total}
-          onToggleAll={selection.toggleAll}
-          onCancel={selection.exit}
-          onDelete={() => setDeleteConfirm([...selection.selectedIds])}
-        />
-      )}
 
       {/* 待確認：到期但還沒入帳的那幾期。排在清單最上面，而且跟著支出／收入分頁一起篩
           ——本來是刻意不分頁的（「現在要你處理的事」不該被藏起來），但那造成切到收入時

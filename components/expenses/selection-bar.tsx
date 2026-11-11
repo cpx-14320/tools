@@ -87,9 +87,6 @@ export interface SelectionAction {
 export interface SelectionPending {
   /** 工具列上顯示的待套用內容，例如「修改帳戶 → 玉山銀行」。 */
   summary: ReactNode;
-  /** 送出前要讓人看到的細節（原本掛在哪幾個帳戶、這批橫跨哪段日期）。本來這些話是另外
-   *  跳一個確認彈窗講的，現在「完成」就是最後一關了，話要留在看得到的地方。 */
-  detail?: ReactNode;
   confirmLabel?: string;
   onConfirm: () => void;
   /** 放掉這次選的目標值，回到原本那排動作按鈕（不會離開選取模式、不會清掉勾選的項目）。 */
@@ -101,15 +98,13 @@ export interface SelectionPending {
  *  點「選取」進入選取模式，列表的列會換成可以打勾；這條工具列負責全選、顯示已選幾項、
  *  退出選取模式，以及對選到的那批做事。
  *
- *  版面是兩行：**第一行右邊放動作、第二行右邊放「已選 N 項」**。
+ *  **收成一列**：左邊「全選 ・ 已選 N 項」，右邊是動作。這條列現在跟排序／選取那一排
+ *  一起釘在卡片頂端（見 StickyToolbar），釘住的東西每多一列，清單就少看一列——原本
+ *  兩列的版本（動作一列、數量一列）在釘住之後太佔。明細頁三個動作加上全選、數量、取消
+ *  在 430px 寬的卡片上還排得下一列。
  *
- *  為什麼動作在上面而不是跟著數量走：這條列出現的時候，使用者已經選完了，下一步是「要
- *  對它們做什麼」——動作才是這一刻的主角，數量是確認用的輔助資訊。動作放在拇指最容易
- *  構到的第一行，數量退到第二行當註腳。而且明細頁有三個動作，全部擠在一行裡，「取消全選」
- *  那個狀態會把第一行撐到換行，變成一條高矮不定的列。
- *
- *  `actions` 給多個動作用（目前只有明細頁的改帳戶／改分類）；只傳 onDelete 的那四頁
- *  第一行右邊就只有一顆紅色的「刪除」。 */
+ *  待套用（pending）狀態也是一列：「修改分類：→ 零嘴 › 甜食 ・ 已選 N 項」在左，
+ *  「取消／完成」在右。 */
 export function SelectionBar({
   count,
   total,
@@ -130,64 +125,65 @@ export function SelectionBar({
 }) {
   const allSelected = total > 0 && count === total;
   const disabled = count === 0;
-  return (
-    // 白底＋淡紫邊框，跟清單卡片同一種底色。本來整條是淡紫底（#F3EFFC），在同樣是淡紫
-    // 的頁面背景上看起來像一塊暈開的色塊，而且它壓在白色清單卡上方時又變成第三種底色。
-    <div className="flex flex-col gap-1.5 rounded-2xl border border-[#ECE4FA] bg-white px-4 py-2.5">
-      <div className="flex items-center justify-between gap-2">
-        {/* 待確認狀態下左邊換成「要套用什麼」，全選先收起來——這一刻該做的是確認或取消，
-            再讓人去改選了哪些項目，等於邀請使用者在送出前一刻又動一次範圍。 */}
-        {pending ? (
-          <span className="min-w-0 flex-1 truncate text-xs font-medium text-[#4A3B7C]">{pending.summary}</span>
-        ) : (
-          <button type="button" onClick={onToggleAll} className="shrink-0 text-xs font-medium text-[#6F5FD6]">
-            {allSelected ? "取消全選" : "全選"}
+
+  if (pending) {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#ECE4FA] bg-white px-4 py-2">
+        {/* 左邊「要套用什麼」，全選先收起來——這一刻該做的是確認或取消，再讓人去改選了
+            哪些項目，等於邀請使用者在送出前一刻又動一次範圍。 */}
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="truncate text-xs font-medium text-[#4A3B7C]">{pending.summary}</span>
+          <span className="shrink-0 text-xs text-[#9C94C4]">已選 {count} 項</span>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {/* 「取消」只放掉剛選的目標值，不會整個退出選取模式——勾了半天的項目因為想換
+              一個帳戶就全部清掉，使用者得從頭再勾一次。 */}
+          <button type="button" disabled={pending.busy} onClick={pending.onCancel} className="text-xs font-medium text-[#9C94C4] disabled:opacity-40">
+            取消
           </button>
-        )}
-        {pending ? (
           <button
             type="button"
             disabled={disabled || pending.busy}
             onClick={pending.onConfirm}
-            // 唯一會動到資料的那一顆，所以是整條列上最實心的樣式（實心紫底）——跟旁邊
-            // 那些淡紫膠囊（只會開彈窗）分得開。
-            className="shrink-0 rounded-full bg-[#6F5FD6] px-3.5 py-1 text-xs font-semibold text-white disabled:opacity-40"
+            // 唯一會動到資料的那一顆，所以是整條列上最實心的樣式（實心紫底）。
+            className="rounded-full bg-[#6F5FD6] px-3.5 py-1 text-xs font-semibold text-white disabled:opacity-40"
           >
-            {pending.busy ? "處理中…" : (pending.confirmLabel ?? "完成")}
-          </button>
-        ) : (
-        <div className="flex items-center gap-2">
-          {actions.map((action) => (
-            <button
-              key={action.label}
-              type="button"
-              disabled={disabled}
-              onClick={action.onClick}
-              // 改資料的動作用淡紫膠囊（跟固定收支待確認的「確認」同一顆），刪除維持純紅字
-              // 不加底——同樣是按鈕，但一個是補資料、一個是不可逆，不該長得一樣重。
-              // 底色跟著整條列從白底換成淡紫：整條變白之後，原本的白底膠囊在白上看不見。
-              className="rounded-full bg-[#F3EFFC] px-3 py-1 text-xs font-medium text-[#6F5FD6] disabled:opacity-40"
-            >
-              {action.label}
-            </button>
-          ))}
-          <button type="button" disabled={disabled} onClick={onDelete} className="text-xs font-semibold text-[#D1517E] disabled:opacity-40">
-            刪除
+            {pending.confirmLabel ?? "完成"}
           </button>
         </div>
-        )}
       </div>
-      {pending?.detail && <p className="text-[11px] leading-snug text-[#9C94C4]">{pending.detail}</p>}
-      <div className="flex items-center justify-end gap-3">
-        <span className="text-xs font-medium text-[#4A3B7C]">已選 {count} 項</span>
-        {/* 待確認狀態的「取消」只放掉剛選的目標值，不會整個退出選取模式——勾了半天的
-            項目因為想換一個帳戶就全部清掉，使用者得從頭再勾一次。 */}
-        <button
-          type="button"
-          disabled={pending?.busy}
-          onClick={pending ? pending.onCancel : onCancel}
-          className="text-xs font-medium text-[#9C94C4] disabled:opacity-40"
-        >
+    );
+  }
+
+  return (
+    // 白底＋淡紫邊框，跟清單卡片同一種底色。本來整條是淡紫底（#F3EFFC），在同樣是淡紫
+    // 的頁面背景上看起來像一塊暈開的色塊，而且它壓在白色清單卡上方時又變成第三種底色。
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#ECE4FA] bg-white px-4 py-2">
+      {/* 全選跟數量擺一起：兩個都在講「選了哪些」。數量用淡字當註腳，全選才是可以按的。 */}
+      <div className="flex min-w-0 items-center gap-2">
+        <button type="button" onClick={onToggleAll} className="shrink-0 text-xs font-medium text-[#6F5FD6]">
+          {allSelected ? "取消全選" : "全選"}
+        </button>
+        <span className="truncate text-xs text-[#9C94C4]">已選 {count} 項</span>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        {actions.map((action) => (
+          <button
+            key={action.label}
+            type="button"
+            disabled={disabled}
+            onClick={action.onClick}
+            // 改資料的動作用淡紫膠囊（跟固定收支待確認的「確認」同一顆），刪除維持純紅字
+            // 不加底——同樣是按鈕，但一個是補資料、一個是不可逆，不該長得一樣重。
+            className="rounded-full bg-[#F3EFFC] px-3 py-1 text-xs font-medium text-[#6F5FD6] disabled:opacity-40"
+          >
+            {action.label}
+          </button>
+        ))}
+        <button type="button" disabled={disabled} onClick={onDelete} className="text-xs font-semibold text-[#D1517E] disabled:opacity-40">
+          刪除
+        </button>
+        <button type="button" onClick={onCancel} className="text-xs font-medium text-[#9C94C4]">
           取消
         </button>
       </div>

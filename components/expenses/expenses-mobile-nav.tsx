@@ -13,7 +13,7 @@ import { ICON_PATHS } from "./icon-paths";
 const tabs = [
   { href: "/tools/expenses", label: "明細", icon: ICON_PATHS.navHome, owns: ["/tools/expenses/transactions"] },
   { href: "/tools/expenses/reports", label: "報表", icon: ICON_PATHS.navReports, owns: [] },
-  { href: "/tools/expenses/assets", label: "資產", icon: ICON_PATHS.navAssets, owns: [] },
+  { href: "/tools/expenses/assets", label: "帳戶", icon: ICON_PATHS.navAssets, owns: [] },
   { href: "/tools/expenses/pet", label: "養成", icon: ICON_PATHS.navPet, owns: [] },
   {
     href: "/tools/expenses/more",

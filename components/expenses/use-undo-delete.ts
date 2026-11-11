@@ -1,6 +1,7 @@
 "use client";
 
 import { useToast } from "./toast";
+import { useBusy } from "./busy";
 
 /** 刪除之後跳一個帶「復原」的提示。
  *
@@ -16,6 +17,7 @@ import { useToast } from "./toast";
  *  需要的清單不一樣（交易、轉帳、目標、規則…），由呼叫端決定抓什麼最省。 */
 export function useUndoDelete() {
   const showToast = useToast();
+  const runBusy = useBusy();
 
   /** @param trashIds 刪除 API 回傳的垃圾桶項目 id；一個都沒有就只顯示一般的提示。 */
   return function showDeleteToast(
@@ -36,19 +38,22 @@ export function useUndoDelete() {
         let renamedTo: string | undefined;
         let droppedRefs = 0;
         let failed = 0;
-        for (const id of ids) {
-          const data: { error?: string; renamedTo?: string; droppedRefs?: number } = await fetch("/api/expenses/trash", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "restore", id }),
-          })
-            .then((r) => r.json())
-            .catch(() => ({ error: "復原失敗" }));
-          if (data.error) failed++;
-          if (data.renamedTo) renamedTo = data.renamedTo;
-          droppedRefs += data.droppedRefs ?? 0;
-        }
-        await onRestored();
+        // 剛刪完馬上按復原，中間那一兩秒要讓人看到「還原中」——不然會以為沒按到。
+        await runBusy("還原中…", async () => {
+          for (const id of ids) {
+            const data: { error?: string; renamedTo?: string; droppedRefs?: number } = await fetch("/api/expenses/trash", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "restore", id }),
+            })
+              .then((r) => r.json())
+              .catch(() => ({ error: "復原失敗" }));
+            if (data.error) failed++;
+            if (data.renamedTo) renamedTo = data.renamedTo;
+            droppedRefs += data.droppedRefs ?? 0;
+          }
+          await onRestored();
+        });
 
         // 還原時可能動過兩件事，都要讓使用者知道，不要默默改掉。
         if (failed === ids.length) showToast("復原失敗，到「設定 › 最近刪除」看看");

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useAsyncAction } from "./use-async-action";
+import { useBusy } from "./busy";
 import { Button } from "./button";
 import { Modal, fieldInputClass } from "./modal";
 import { text } from "./theme";
@@ -47,8 +48,14 @@ export function ConfirmModal({
   // 本來是 `onConfirm(); onClose();` ——不 await 也不擋重複：手快點兩下就送出兩次
   // （彈窗要等重繪才消失，中間那一瞬間按得到），而且 onConfirm 多半是非同步的，
   // 失敗了彈窗早就關掉，使用者只看到「什麼都沒發生」。
+  //
+  // 進行中統一用共用的處理中遮罩（見 busy.tsx），按鈕文字不換成「處理中…」——跟
+  // ModalFooter 同一套，整個 app 只有一種「正在做」的長相。
+  const runBusy = useBusy();
   const confirmAction = useAsyncAction(async () => {
-    await onConfirm?.();
+    await runBusy(confirmLabel.includes("刪除") ? "刪除中…" : "處理中…", async () => {
+      await onConfirm?.();
+    });
     onClose();
   });
 
@@ -78,7 +85,7 @@ export function ConfirmModal({
             className={danger && !onlyAcknowledge ? "!shadow-none" : undefined}
             style={danger && !onlyAcknowledge ? { background: "#D1517E" } : undefined}
           >
-            {onlyAcknowledge ? "知道了" : confirmAction.busy ? "處理中…" : confirmLabel}
+            {onlyAcknowledge ? "知道了" : confirmLabel}
           </Button>
         </div>
       }

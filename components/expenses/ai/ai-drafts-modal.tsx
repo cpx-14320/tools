@@ -189,7 +189,13 @@ export function AiDraftsModal({
       // 本來左邊還有一顆「清掉已處理的」：這份清單只列還沒處理完的，那顆按鈕動到的是
       // 畫面上根本看不到的東西，按下去唯一的回饋是一句「已清掉 N 批」——使用者無從判斷
       // 清掉了什麼。已經寫進消費紀錄的批次留在資料庫裡也不影響任何畫面，所以整顆移除。
-      footer={<Button variant="ghost" onClick={onClose}>關閉</Button>}
+      footer={
+        <div className="flex w-full justify-end">
+          <Button variant="ghost" onClick={onClose}>
+            關閉
+          </Button>
+        </div>
+      }
     >
       {pendingDrafts.length === 0 ? (
         <p className={`px-1 ${text.faint}`}>目前沒有待確認的解析結果。</p>

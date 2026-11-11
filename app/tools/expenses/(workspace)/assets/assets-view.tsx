@@ -275,7 +275,7 @@ export function AssetsView({
           （信用卡還款的轉入端是負債帳戶），掛在某一段的小標旁邊會讀成「這一段的操作」。
           文字鈕換成線條 SVG 圖示，跟日期膠囊、眼睛那顆同一組視覺（見 line-icon-button.tsx）。 */}
       <PageHeader
-        title="資產總表"
+        title="帳戶總表"
         flush
         actions={<DateFilterPicker />}
       />

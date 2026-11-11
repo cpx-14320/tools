@@ -4,6 +4,7 @@ import { useState } from "react";
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { useUndoDelete } from "@/components/expenses/use-undo-delete";
 import { PageHeader } from "@/components/expenses/page-header";
+import { StickyToolbar } from "@/components/expenses/sticky-toolbar";
 import { Badge } from "@/components/expenses/button";
 import { Card, CardBody } from "@/components/expenses/card";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
@@ -117,12 +118,23 @@ export function GoalsView({
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader
-        flush
-        title="存錢目標"
-        help="設定目標金額，追蹤存了多少、還差多少"
-        actions={<SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />}
-      />
+      <PageHeader flush title="存錢目標" help="設定目標金額，追蹤存了多少、還差多少" />
+
+      {/* 選取跟選取工具列一起釘在卡片頂端，標題不釘（見 StickyToolbar）。 */}
+      <StickyToolbar>
+        <div className="flex items-center justify-end gap-2">
+          <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />
+        </div>
+      {selection.selecting && (
+          <SelectionBar
+            count={selection.selectedIds.size}
+            total={selection.total}
+            onToggleAll={selection.toggleAll}
+            onCancel={selection.exit}
+            onDelete={() => setDeleteConfirm([...selection.selectedIds])}
+          />
+      )}
+      </StickyToolbar>
 
       <FloatingAddButton onClick={() => setModal({ mode: "create" })} label="新增存錢目標" />
 
@@ -147,15 +159,6 @@ export function GoalsView({
         onClose={() => setDeleteConfirm(null)}
       />
 
-      {selection.selecting && (
-        <SelectionBar
-          count={selection.selectedIds.size}
-          total={selection.total}
-          onToggleAll={selection.toggleAll}
-          onCancel={selection.exit}
-          onDelete={() => setDeleteConfirm([...selection.selectedIds])}
-        />
-      )}
 
       {goals.length === 0 ? (
         <p className={text.faint}>還沒有任何目標，點右下角的＋新增第一個</p>

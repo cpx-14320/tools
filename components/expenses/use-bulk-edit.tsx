@@ -12,7 +12,6 @@ import type { TransactionDTO } from "@/lib/expenses/transactions";
 import type { AccountDTO } from "@/lib/expenses/accounts";
 import type { AccountTypeDTO } from "@/lib/expenses/account-types";
 import type { TransferDTO } from "@/lib/expenses/transfers";
-import { formatDate } from "@/lib/format";
 
 /** 多選之後「修改帳戶／修改分類」的那一整套：工具列上的兩顆按鈕、挑目標的彈窗、待確認
  *  狀態、送出。明細頁跟帳戶明細頁共用同一份——兩邊列的都是交易，操作當然該一模一樣。
@@ -66,36 +65,18 @@ export function useBulkEdit({
   // 要展開哪個大分類底下的「項目」那一排。
   const [categoryPick, setCategoryPick] = useState("");
 
-  const rows = transactions.filter((t) => selectedIds.has(t.id));
-
-  const targetName =
-    target?.kind === "account"
-      ? target.accountId
-        ? `改掛到「${accounts.find((a) => a.id === target.accountId)?.name ?? "（已刪除帳戶）"}」`
-        : "改成不指定帳戶"
-      : target?.kind === "category"
-        ? `改成「${categoryPath(categories, target.categoryId)}」`
-        : "";
 
   // 工具列第一行那句。用「→」而不是整句話：那一行寬度有限，右邊還要擺「完成」。
-  const pendingSummary =
+  // 工具列第一行那句。「修改分類：→ 零嘴 › 甜食」——冒號接目標，整塊只有這一列。
+  const targetLabel =
     target?.kind === "account"
-      ? `修改帳戶 → ${target.accountId ? (accounts.find((a) => a.id === target.accountId)?.name ?? "（已刪除帳戶）") : "不指定"}`
+      ? target.accountId
+        ? (accounts.find((a) => a.id === target.accountId)?.name ?? "（已刪除帳戶）")
+        : "不指定"
       : target?.kind === "category"
-        ? `修改分類 → ${categoryPath(categories, target.categoryId) || "（已刪除分類）"}`
+        ? categoryPath(categories, target.categoryId) || "（已刪除分類）"
         : "";
-
-  /** 把選到的那批依某個欄位分組計數，用來在確認彈窗講清楚「原本是什麼，會被改掉」。
-   *  只回傳**跟目標不一樣**的那幾組——本來就已經是目標值的不算「會被改掉」。 */
-  function originSummary(label: (t: TransactionDTO) => string, isAlreadyTarget: (t: TransactionDTO) => boolean): string {
-    const counts = new Map<string, number>();
-    for (const t of rows) {
-      if (isAlreadyTarget(t)) continue;
-      const key = label(t);
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
-    return [...counts.entries()].map(([name, n]) => `${name} ${n}`).join("、");
-  }
+  const pendingSummary = target ? `${target.kind === "account" ? "修改帳戶" : "修改分類"}：→ ${targetLabel}` : "";
 
   async function apply() {
     if (!target) return;
@@ -118,7 +99,7 @@ export function useBulkEdit({
     }
     onUpdated(data.transactions);
     // 報實際改到的筆數，不是選取的筆數——中途被別的裝置刪掉的那幾筆不會算進去。
-    showToast(`已改好 ${data.updated ?? 0} 筆${targetName ? `，${targetName}` : ""}`);
+    showToast(`${data.updated ?? 0} 筆已改為${target.kind === "account" && !target.accountId ? "不指定帳戶" : `「${targetLabel}」`}`);
     setTarget(null);
     onDone();
   }
@@ -141,7 +122,6 @@ export function useBulkEdit({
     },
   ];
 
-  const sorted = [...rows].sort((a, b) => (a.date < b.date ? -1 : 1));
 
   const element = (
     <>
@@ -182,29 +162,10 @@ export function useBulkEdit({
     </>
   );
 
-  // 待確認狀態下工具列要講的細節：原本掛在哪幾個帳戶／哪幾個分類，以及這批橫跨的日期。
-  // 本來這些話在確認彈窗裡，現在「完成」就是最後一關，話要留在按鈕旁邊看得到的地方。
-  const originDetail =
-    target?.kind === "account"
-      ? originSummary(
-          (t) => (t.accountId ? (accounts.find((a) => a.id === t.accountId)?.name ?? "（已刪除帳戶）") : "未指定"),
-          (t) => (t.accountId ?? null) === target.accountId,
-        )
-      : target?.kind === "category"
-        ? originSummary((t) => categoryPath(categories, t.categoryId) || "（已刪除分類）", (t) => t.categoryId === target.categoryId)
-        : "";
-  const spansMonths = sorted.length > 1 && sorted[0].date.slice(0, 7) !== sorted[sorted.length - 1].date.slice(0, 7);
-
   const pending: SelectionPending | undefined = target
     ? {
         summary: pendingSummary,
-        detail: [
-          originDetail ? `原本是：${originDetail}` : "",
-          spansMonths ? `橫跨 ${formatDate(sorted[0].date)} ～ ${formatDate(sorted[sorted.length - 1].date)}` : "",
-        ]
-          .filter(Boolean)
-          .join("・"),
-        confirmLabel: `完成（${selectedIds.size} 筆）`,
+        confirmLabel: "完成",
         busy,
         onConfirm: apply,
         onCancel: () => setTarget(null),

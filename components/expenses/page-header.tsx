@@ -2,7 +2,6 @@
 
 import { useState, type ReactNode } from "react";
 import { Modal } from "./modal";
-import { StickyToolbar } from "./sticky-toolbar";
 import { text } from "./theme";
 
 export function PageHeader({
@@ -11,7 +10,6 @@ export function PageHeader({
   help,
   actions,
   flush = false,
-  sticky = false,
 }: {
   title: string;
   /** 多半是一句說明文字；帳戶明細頁要在這裡放「圖示＋類型名稱」，所以也吃 JSX。
@@ -25,21 +23,15 @@ export function PageHeader({
    *  但報表頁的最外層是 flex flex-col gap-4，兩個加起來變成 28px，標題跟下面那排分頁
    *  中間空一大截。那種頁面傳 flush，間距交給外層的 gap 統一控制。 */
   flush?: boolean;
-  /** 捲動時把整列（標題＋右邊的操作）釘在卡片頂端。
-   *
-   *  給「操作按鈕放在標題列、清單又很長」的頁面用（帳戶類型的排序／選取就在這裡）——
-   *  滑到最底下調整完，結束模式的按鈕還在最上面，每調一次就要整頁滑回去一次。
-   *  操作不在標題列的頁面（收支分類）自己用 StickyToolbar 包那一列就好。 */
-  sticky?: boolean;
 }) {
   const [helpOpen, setHelpOpen] = useState(false);
 
-  const Wrapper = sticky ? StickyToolbar : "div";
-
+  // 刻意不提供「釘住」：標題不是操作，捲動時跟著佔住頂端只是浪費空間。要釘的是排序／
+  // 選取那一列，各頁自己用 StickyToolbar 包。
   return (
     // 左邊只有一行標題時跟右邊的控制項垂直置中（首頁、明細、報表那種「標題＋日期膠囊」
     // 的排法）；有 description 時左邊是兩行，改成靠上對齊，不然膠囊會掉到兩行的中間。
-    <Wrapper className={`flex flex-wrap justify-between gap-3 ${description ? "items-start" : "items-center"} ${flush ? "" : "mb-3"}`}>
+    <div className={`flex flex-wrap justify-between gap-3 ${description ? "items-start" : "items-center"} ${flush ? "" : "mb-3"}`}>
       <div>
         <div className="flex items-center gap-1.5">
           <h1 className={text.pageTitle}>{title}</h1>
@@ -64,6 +56,6 @@ export function PageHeader({
           {typeof help === "string" ? <p className={`${text.muted} leading-relaxed`}>{help}</p> : help}
         </Modal>
       )}
-    </Wrapper>
+    </div>
   );
 }

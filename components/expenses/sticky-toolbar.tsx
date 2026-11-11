@@ -2,11 +2,15 @@
 
 import type { ReactNode } from "react";
 
-/** 捲動時黏在卡片頂端的模式工具列（分頁切換＋排序／選取那一列）。
+/** 捲動時黏在卡片頂端的模式工具列：分頁切換＋排序／選取那一列，以及選取模式下的
+ *  「全選／修改帳戶／修改分類／刪除／已選 N 項／取消」那一條。
  *
  *  **為什麼需要**：分類清單有二十幾張卡，進排序模式滑到最底下調整完，要按的「完成」
- *  卻還在最上面——每調一次就要整頁滑回去一次。選取模式也一樣。把這一列釘住之後，不管
- *  捲到哪裡，結束這個模式的出口都在手指附近。
+ *  卻還在最上面——每調一次就要整頁滑回去一次。選取模式更糟：要刪的資料在最下面，
+ *  勾完之後「刪除」那顆在最上面，得滑很久才按得到。把這兩排一起釘住之後，不管捲到
+ *  哪裡，當下這個模式的所有操作都在手指附近。
+ *
+ *  是直向容器：子元素自己排成一列或多列，這裡只管「釘住」跟列與列之間的間距。
  *
  *  **為什麼 sticky 在這裡真的有效**：外殼那張手機卡片是固定高度、由 `<main>` 自己
  *  `overflow-y-auto` 捲動（見 expenses-mobile-shell.tsx），sticky 的參考對象就是那個
@@ -19,6 +23,6 @@ import type { ReactNode } from "react";
  *  不同位置時會跟背後對不起來，糊一下就看不出接縫。 */
 export function StickyToolbar({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`sticky top-0 z-20 -mx-5 bg-[#EDE6FB]/95 px-5 pb-2.5 pt-2.5 backdrop-blur-sm ${className}`}>{children}</div>
+    <div className={`sticky top-0 z-20 -mx-5 flex flex-col gap-3 bg-[#EDE6FB]/95 px-5 pb-2.5 pt-2.5 backdrop-blur-sm ${className}`}>{children}</div>
   );
 }

@@ -313,7 +313,7 @@ export function AccountDetailView({
   if (!account) {
     return (
       <div className="flex flex-col gap-4">
-        <BackLink href="/tools/expenses/assets" label="返回資產總表" />
+        <BackLink href="/tools/expenses/assets" label="返回帳戶總表" />
         <p className={text.faint}>找不到這個帳戶，可能已經被刪除</p>
       </div>
     );
@@ -499,6 +499,10 @@ export function AccountDetailView({
         <CardBody>
           {/* 這一頁的重點就是明細，所以篩選直接放在標題旁邊——轉帳混在支出收入裡不好找，
               而且這一頁本來就是最常拿來核對轉帳的地方。 */}
+          {/* 釘在卡片頂端（含底下的選取工具列）。這裡在白色卡片裡面，所以不用
+              StickyToolbar——那個的底色跟左右外距是照頁面層級的紫底、20px 留白設計的，
+              放進 p-4 的卡片裡會凸出去。自己用卡片的白底跟 16px 外距。 */}
+          <div className="sticky top-0 z-20 -mx-4 -mt-4 flex flex-col gap-3 bg-white px-4 pb-3 pt-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className={text.sectionHeading}>明細</p>
             <div className="flex items-center gap-2">
@@ -518,18 +522,17 @@ export function AccountDetailView({
           </div>
 
           {selection.selecting && (
-            <div className="mt-3">
-              <SelectionBar
-                count={selection.selectedIds.size}
-                total={selection.total}
-                actions={bulkEdit.actions}
-                pending={bulkEdit.pending}
-                onToggleAll={selection.toggleAll}
-                onCancel={selection.exit}
-                onDelete={() => setBulkDeleteConfirm([...selection.selectedIds])}
-              />
-            </div>
+            <SelectionBar
+              count={selection.selectedIds.size}
+              total={selection.total}
+              actions={bulkEdit.actions}
+              pending={bulkEdit.pending}
+              onToggleAll={selection.toggleAll}
+              onCancel={selection.exit}
+              onDelete={() => setBulkDeleteConfirm([...selection.selectedIds])}
+            />
           )}
+          </div>
           {visibleEntries.length === 0 ? (
             <p className={`mt-3 ${text.muted}`}>
               {transfersOnly ? "這段期間這個帳戶沒有轉帳紀錄。" : "這段期間這個帳戶還沒有掛任何交易或轉帳。"}

@@ -10,6 +10,7 @@ import { ConfirmModal } from "./confirm-modal";
 import { text } from "./theme";
 import { useToast } from "./toast";
 import { useAsyncAction } from "./use-async-action";
+import { useBusy } from "./busy";
 import { ICON_PATHS } from "./icon-paths";
 import { TRASH_KIND_LABEL, type TrashItemDTO, type TrashKind } from "@/lib/expenses/trash";
 import { formatDateWithWeekday } from "@/lib/format";
@@ -47,6 +48,7 @@ export function TrashModal({
   onRestored?: () => void;
 }) {
   const showToast = useToast();
+  const runBusy = useBusy();
   // 勾起來的那幾項。還原跟永久刪除都靠底下那兩顆，每一列不再各掛一組按鈕——一列兩顆
   // 小按鈕在手機上很容易按錯，而且「永久刪除」被按錯的代價是資料真的沒了。
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -69,6 +71,13 @@ export function TrashModal({
   // 勾選的項目只算「現在看得到的」：篩選切換後，之前勾到、現在被篩掉的那幾項要跟著
   // 失效，不然底下的「還原 N 項」會把看不見的東西算進去（跟 useSelection 同一個理由）。
   const chosen = visible.filter((i) => selected.has(i.id));
+
+  /** 關掉彈窗時把勾選清掉：下次打開要是乾淨的——上次勾了一半沒處理的項目還留著，
+   *  使用者看到「還原 3 項」會不知道是哪三項。 */
+  function close() {
+    setSelected(new Set());
+    onClose();
+  }
   const toggle = (id: string) =>
     setSelected((set) => {
       const next = new Set(set);
@@ -107,14 +116,20 @@ export function TrashModal({
   const restore = useAsyncAction(async (targets: TrashItemDTO[]) => {
     let renamed = 0;
     let dropped = 0;
-    for (const item of targets) {
-      const data = await post({ action: "restore", id: item.id });
-      if (data.error) {
-        showToast(data.error);
-        return;
+    // 「還原中」跟刪除走同一個共用遮罩：還原分類會去改交易的 categoryId，一次還原好
+    // 幾項時要跑一會兒，沒有遮罩的話按下去完全沒反應，使用者會以為沒按到再按一次。
+    const failed = await runBusy("還原中…", async () => {
+      for (const item of targets) {
+        const data = await post({ action: "restore", id: item.id });
+        if (data.error) return data.error;
+        if (data.renamedTo) renamed += 1;
+        else if (data.droppedRefs) dropped += 1;
       }
-      if (data.renamedTo) renamed += 1;
-      else if (data.droppedRefs) dropped += 1;
+      return null;
+    });
+    if (failed) {
+      showToast(failed);
+      return;
     }
     setSelected(new Set());
     onRestored?.();
@@ -139,7 +154,7 @@ export function TrashModal({
     <>
       <Modal
         open={open}
-        onClose={onClose}
+        onClose={close}
         title="最近刪除"
         fullHeight
         footer={
@@ -156,11 +171,11 @@ export function TrashModal({
               永久刪除{chosen.length > 0 ? ` ${chosen.length} 項` : ""}
             </button>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" onClick={onClose}>
+              <Button variant="ghost" onClick={close}>
                 關閉
               </Button>
               <Button disabled={chosen.length === 0 || restore.busy || askRestore.busy} onClick={() => askRestore.run(chosen)}>
-                {restore.busy || askRestore.busy ? "還原中…" : `還原${chosen.length > 0 ? ` ${chosen.length} 項` : ""}`}
+                還原{chosen.length > 0 ? ` ${chosen.length} 項` : ""}
               </Button>
             </div>
           </div>
@@ -271,7 +286,9 @@ export function TrashModal({
         confirmLabel="永久刪除"
         onConfirm={async () => {
           // 逐筆送出：purge 一次只收一個 id，而且每次都回傳最新的完整清單。
-          for (const item of chosen) await post({ action: "purge", id: item.id });
+          await runBusy("刪除中…", async () => {
+            for (const item of chosen) await post({ action: "purge", id: item.id });
+          });
           setSelected(new Set());
           showToast(`已永久刪除 ${chosen.length} 項`);
         }}

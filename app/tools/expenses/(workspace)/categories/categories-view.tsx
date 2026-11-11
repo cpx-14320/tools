@@ -51,7 +51,7 @@ export function CategoriesView({
   const [modal, setModal] = useState<CategoryDTO | null>(null);
   const [batchTarget, setBatchTarget] = useState<BatchTarget | null>(null);
   const [kind, setKind] = useState<CategoryKind>("支出");
-  const [deleteConfirm, setDeleteConfirm] = useState<{ ids: string[]; inUseCount: number; subCount: number } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ ids: string[]; inUseCount: number; subCount: number; skipped?: string[] } | null>(null);
   // 排序模式：每一列右邊長出 ↑↓。跟多選模式互斥——兩個都開的話一列右邊會擠進打勾、
   // 筆數跟兩顆箭頭，而且點一下到底是要選取還是要移動也說不清楚。
   const [sorting, setSorting] = useState(false);
@@ -136,9 +136,15 @@ export function CategoriesView({
    *  「刪得掉的不問、刪不掉的才問」，剛好跟直覺相反——使用者在列表上勾了幾個分類按刪除，
    *  什麼都沒跳就少了幾列。刪分類的副作用（連帶子分類、交易被改掛到未分類）正是最需要
    *  先講一聲的那種，所以不管乾不乾淨都走同一道確認，差別只在彈窗裡多講幾句。 */
-  function askDelete(ids: string[]) {
-    if (ids.length === 0) return;
-    setDeleteConfirm({ ids, inUseCount: inUseCount(ids), subCount: subCount(ids) });
+  function askDelete(rawIds: string[]) {
+    // 系統分類（手續費）可以被勾起來改帳戶，但不能刪——從這裡濾掉，確認彈窗裡講一聲。
+    const skipped = rawIds.map((id) => categories.find((c) => c.id === id)).filter((c): c is CategoryDTO => !!c && isSystemCategory(c));
+    const ids = rawIds.filter((id) => !skipped.some((c) => c.id === id));
+    if (ids.length === 0) {
+      if (skipped.length > 0) showToast(`「${skipped.map((c) => c.name).join("」「")}」是系統分類，不能刪除`);
+      return;
+    }
+    setDeleteConfirm({ ids, inUseCount: inUseCount(ids), subCount: subCount(ids), skipped: skipped.map((c) => c.name) });
   }
 
   function handleDelete() {
@@ -220,8 +226,11 @@ export function CategoriesView({
   //
   // 「修改帳戶」只動得到主分類（預設帳戶照設計只設在主分類上，見 categories.ts 的
   // defaultAccountForCategory），勾到的子分類會被略過——那個動作自己會講清楚。
+  //
+  // 系統分類裡只排除「未分類」：手續費可以被批次「修改帳戶」（它是真的會記帳的分類，
+  // 預設帳戶有意義），只是不能被刪——刪除那條路會自己把系統分類略過（見 askDelete）。
   const selectableIds = parents
-    .filter((c) => !isSystemCategory(c))
+    .filter((c) => !c.isUncategorized)
     .flatMap((c) => [c.id, ...subCategoriesOf(categories, c.id).map((sub) => sub.id)]);
   const selection = useSelection(selectableIds);
 
@@ -264,9 +273,9 @@ export function CategoriesView({
     // 勾到的子分類不會被改到（預設帳戶只設在主分類上），所以直接把「改了幾個」講出來，
     // 不要讓使用者拿「已選 8 項」去對「改好了」然後以為有幾個漏掉。
     const skipped = selection.selectedIds.size - targets.length;
-    const what = accountId ? `改成「${accountName(accountId)}」` : "改成不指定帳戶";
+    const what = accountId ? `「${accountName(accountId)}」` : "不指定帳戶";
     const n = data.updated ?? targets.length;
-    showToast(skipped > 0 ? `${n} 個主分類${what}（子分類沿用主分類，不另外設）` : `${n} 個分類${what}`);
+    showToast(skipped > 0 ? `${n} 個主分類已改為${what}（子分類沿用主分類，不另外設）` : `${n} 個分類已改為${what}`);
     setPendingAccount(null);
     selection.exit();
   }
@@ -276,23 +285,6 @@ export function CategoriesView({
     setAccountPickerOpen(false);
     setPendingAccount({ accountId });
   }
-
-  // 待確認時工具列要補的那行細節：有幾個原本已經設過帳戶、會被蓋掉。使用者這一刻要判斷
-  // 的是「我是不是不小心勾到了」，光一個數字判斷不了，所以把名稱也列出來（多了就收尾）。
-  const overwriteTargets = pendingAccount
-    ? selectedTopLevel().filter((c) => c.defaultAccountId && c.defaultAccountId !== pendingAccount.accountId)
-    : [];
-  const pendingDetail = (() => {
-    if (!pendingAccount) return "";
-    const parts: string[] = [];
-    const subs = selection.selectedIds.size - selectedTopLevel().length;
-    if (overwriteTargets.length > 0) {
-      const names = overwriteTargets.slice(0, 3).map((c) => `${c.name}（${accountName(c.defaultAccountId)}）`).join("、");
-      parts.push(`${overwriteTargets.length} 個原本已設定會被蓋掉：${names}${overwriteTargets.length > 3 ? "…" : ""}`);
-    }
-    if (subs > 0) parts.push(`勾到的 ${subs} 個子分類沿用主分類，不會改`);
-    return parts.join("・");
-  })();
 
   /** 一個主分類右邊要顯示的筆數＝它自己的 ＋ 底下所有子項目的。
    *
@@ -432,7 +424,7 @@ export function CategoriesView({
               unassignedOnly ? "border-[#6F5FD6] bg-[#F3EFFC] font-medium text-[#6F5FD6]" : "border-[#ECE4FA] bg-white text-[#4A3B7C]"
             }`}
           >
-            只看未指定帳戶的分類
+            顯示不指定的分類
           </button>
         </div>
 
@@ -490,6 +482,7 @@ export function CategoriesView({
           (deleteConfirm?.inUseCount ?? 0) > 0
             ? `共 ${deleteConfirm?.inUseCount} 筆交易掛在上面，刪除後會自動歸類到「未分類」，紀錄本身不會被刪掉。`
             : "已經記過的交易如果有掛到這些分類，會自動歸類到「未分類」，不會被刪除。",
+          deleteConfirm?.skipped?.length ? `「${deleteConfirm.skipped.join("」「")}」是系統分類，這次不會被刪除。` : "",
           TRASH_RESTORE_NOTE,
         ]
           .filter(Boolean)
@@ -500,7 +493,8 @@ export function CategoriesView({
 
       {/* 這一列捲動時釘在卡片頂端：清單很長，排序／選取模式的「完成」在最上面，不釘住
           的話滑到底調整完要整頁滑回去才按得到（見 StickyToolbar）。 */}
-      <StickyToolbar className="flex items-center justify-between gap-2">
+      <StickyToolbar>
+        <div className="flex items-center justify-between gap-2">
         <SegmentedControl
           value={kind}
           onChange={setKind}
@@ -528,8 +522,9 @@ export function CategoriesView({
             pendingConfirm={pendingAccount ? () => void applyDefaultAccount() : undefined}
           />
         </div>
-      </StickyToolbar>
+        </div>
 
+      {/* 選取工具列也在釘住的區塊裡：要刪的資料在最下面時，勾完不用再滑回頂端找「刪除」。 */}
       {selection.selecting && (
         <SelectionBar
           count={selection.selectedIds.size}
@@ -550,9 +545,8 @@ export function CategoriesView({
           pending={
             pendingAccount
               ? {
-                  summary: `修改帳戶 → ${pendingAccount.accountId ? accountName(pendingAccount.accountId) : "不設預設帳戶"}`,
-                  detail: pendingDetail,
-                  confirmLabel: `完成（${selectedTopLevel().length} 個）`,
+                  summary: `修改帳戶：→ ${pendingAccount.accountId ? accountName(pendingAccount.accountId) : "不設預設帳戶"}`,
+                  confirmLabel: "完成",
                   onConfirm: () => void applyDefaultAccount(),
                   onCancel: () => setPendingAccount(null),
                 }
@@ -563,6 +557,7 @@ export function CategoriesView({
           onDelete={handleBulkDelete}
         />
       )}
+      </StickyToolbar>
 
       {parents.length === 0 ? (
         // 篩掉之後變空的，要講清楚是「被篩掉」不是「沒有分類」——不然使用者會以為
@@ -613,9 +608,11 @@ export function CategoriesView({
                       <span className={text.muted}>{totalCount(c.id)} 筆紀錄</span>
                     )
                   }
-                  leading={selection.selecting && !isSystemCategory(c) ? <SelectionDot selected={selection.selectedIds.has(c.id)} /> : undefined}
+                  // 勾選只排除「未分類」：手續費雖然是系統分類，但可以被批次改帳戶（跟
+                  // selectableIds 同一條規則）；排序那邊才是整組系統分類都不動。
+                  leading={selection.selecting && !c.isUncategorized ? <SelectionDot selected={selection.selectedIds.has(c.id)} /> : undefined}
                   onClick={
-                    sorting ? undefined : () => (selection.selecting ? (isSystemCategory(c) ? undefined : selection.toggle(c.id)) : setModal(c))
+                    sorting ? undefined : () => (selection.selecting ? (c.isUncategorized ? undefined : selection.toggle(c.id)) : setModal(c))
                   }
                 />
 

@@ -6,6 +6,7 @@ import { Button } from "./button";
 import { text } from "./theme";
 import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { useAsyncAction } from "./use-async-action";
+import { useBusy } from "./busy";
 
 // placeholder 的顏色寫在這裡，不要讓瀏覽器自己配灰色：同一列裡常常一邊是真 input、
 // 一邊是假成輸入框的 SelectField（它的提示文字是自己畫的 #B3ABD4，見 select-field.tsx），
@@ -186,9 +187,17 @@ export function ModalFooter({
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const runBusy = useBusy();
   // 刪除也要擋連點，理由同 confirm-modal.tsx。
+  //
+  // 「進行中」統一由共用的處理中遮罩表示（見 busy.tsx），按鈕文字不換：以前有的按鈕按下去
+  // 會變成「處理中…」、有的不會，同一個 app 裡兩種回饋方式只會讓人懷疑沒變字的那顆是不是
+  // 沒按到。遮罩蓋住整張卡片，而且每一條會跑一陣子的路徑（存檔、刪除、還原、批次）都是
+  // 同一個樣子。
   const deleteAction = useAsyncAction(async () => {
-    await onDelete?.();
+    await runBusy("刪除中…", async () => {
+      await onDelete?.();
+    });
     setConfirmingDelete(false);
   });
 
@@ -197,7 +206,9 @@ export function ModalFooter({
     savingRef.current = true;
     setSaving(true);
     try {
-      await onConfirm();
+      await runBusy("儲存中…", async () => {
+        await onConfirm();
+      });
     } finally {
       savingRef.current = false;
       setSaving(false);
@@ -250,7 +261,7 @@ export function ModalFooter({
                 disabled={deleteAction.busy}
                 onClick={deleteAction.run}
               >
-                {deleteAction.busy ? "處理中…" : deleteLabel}
+                {deleteLabel}
               </Button>
             </div>
           }

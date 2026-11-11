@@ -4,6 +4,7 @@ import { useState } from "react";
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { useUndoDelete } from "@/components/expenses/use-undo-delete";
 import { PageHeader } from "@/components/expenses/page-header";
+import { StickyToolbar } from "@/components/expenses/sticky-toolbar";
 import { FloatingAddButton } from "@/components/expenses/floating-add-button";
 import { text } from "@/components/expenses/theme";
 import { AccountTypeModal, type AccountTypeModalDraft } from "@/components/expenses/account-type-modal";
@@ -215,31 +216,40 @@ export function AccountTypesView({
           記帳本時就自動建好的（見 lib/expenses/presets.server.ts），不再需要套用按鈕。 */}
       <PageHeader
         flush
-        // 排序／選取的「完成」就在這一列，清單又會捲——釘住才不用滑回最上面。
-        sticky
         title="帳戶類型"
         // 這一頁現在是從「設定」進來的，標題列不再掛「返回資產總表」那顆箭頭——
         // 指回一個不是上一頁的地方只會讓人迷路，要回去按瀏覽器/系統的返回就好。
-        actions={
-          // 排序跟選取兩個模式互斥，開一個就把另一個關掉。
-          <div className="flex shrink-0 items-center gap-2">
-            <SortToggle
-              sorting={sorting}
-              onToggle={() => {
-                if (!sorting) selection.exit();
-                setSorting((v) => !v);
-              }}
-            />
-            <SelectionToggle
-              selecting={selection.selecting}
-              onToggle={() => {
-                if (!selection.selecting) setSorting(false);
-                selection.toggleMode();
-              }}
-            />
-          </div>
-        }
       />
+
+      {/* 排序／選取跟選取工具列一起釘在卡片頂端，標題不釘（見 StickyToolbar）。 */}
+      <StickyToolbar>
+        {/* 排序跟選取兩個模式互斥，開一個就把另一個關掉。 */}
+        <div className="flex items-center justify-end gap-2">
+          <SortToggle
+            sorting={sorting}
+            onToggle={() => {
+              if (!sorting) selection.exit();
+              setSorting((v) => !v);
+            }}
+          />
+          <SelectionToggle
+            selecting={selection.selecting}
+            onToggle={() => {
+              if (!selection.selecting) setSorting(false);
+              selection.toggleMode();
+            }}
+          />
+        </div>
+      {selection.selecting && (
+          <SelectionBar
+            count={selection.selectedIds.size}
+            total={selection.total}
+            onToggleAll={selection.toggleAll}
+            onCancel={selection.exit}
+            onDelete={handleBulkDelete}
+          />
+      )}
+      </StickyToolbar>
 
       <FloatingAddButton onClick={() => setBatchOpen(true)} label="新增帳戶類型" />
 
@@ -275,15 +285,6 @@ export function AccountTypesView({
         onClose={() => setBlockedInfo(null)}
       />
 
-      {selection.selecting && (
-        <SelectionBar
-          count={selection.selectedIds.size}
-          total={selection.total}
-          onToggleAll={selection.toggleAll}
-          onCancel={selection.exit}
-          onDelete={handleBulkDelete}
-        />
-      )}
 
       {accountTypes.length === 0 ? (
         <p className={text.faint}>還沒有任何帳戶類型，點右下角的＋新增</p>

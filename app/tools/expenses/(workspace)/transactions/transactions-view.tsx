@@ -8,6 +8,7 @@ import { useBusy } from "@/components/expenses/busy";
 import { TRASH_RESTORE_NOTE } from "@/lib/expenses/trash";
 import { useSearchParams } from "next/navigation";
 import { SegmentedControl } from "@/components/expenses/button";
+import { StickyToolbar } from "@/components/expenses/sticky-toolbar";
 import { Card, CardBody } from "@/components/expenses/card";
 import { ListCard } from "@/components/expenses/list-row";
 import { OptionGrid } from "@/components/expenses/option-grid";
@@ -420,7 +421,10 @@ export function TransactionsView({
       </Modal>
 
       {/* 支出／收入切換跟多選排同一列。篩選本來也在這一列，改成圖示之後搬去日期那一排
-          （見上面的 DateFilterPicker actions）。 */}
+          （見上面的 DateFilterPicker actions）。
+          整塊釘在卡片頂端（含底下的選取工具列）：清單長的時候勾完最下面那幾筆，
+          「刪除／修改分類」在最上面要滑很久才按得到（見 StickyToolbar）。 */}
+      <StickyToolbar>
       <div className="flex items-center gap-2">
         {/* 選中色跟報表頁那組主分頁同一個（實心紫白字，見 theme.ts 的 activeSolid）
             ——兩頁的「支出／收入」是同一件事，不該一邊白底紫字、一邊實心紫。 */}
@@ -438,6 +442,21 @@ export function TransactionsView({
         </div>
       </div>
 
+      {selection.selecting && (
+        <SelectionBar
+          count={selection.selectedIds.size}
+          total={selection.total}
+          // 只有列交易的頁面有批次改資料的動作：分類、帳戶類型那幾頁管的是「定義」，
+          // 一批一批改的需求不存在。
+          actions={bulkEdit.actions}
+          pending={bulkEdit.pending}
+          onToggleAll={selection.toggleAll}
+          onCancel={selection.exit}
+          onDelete={() => setDeleteConfirm([...selection.selectedIds])}
+        />
+      )}
+      </StickyToolbar>
+
       {/* 搜尋列貼著清單：它篩的是下面那份清單，擺在整頁最上面（日期篩選器之上）看起來
           像是跟期間同一組設定。 */}
       <label className="flex items-center gap-2 rounded-full border border-[#ECE4FA] bg-white px-4 py-2.5">
@@ -452,20 +471,6 @@ export function TransactionsView({
           className="w-full bg-transparent text-sm text-[#4A3B7C] outline-none placeholder:text-[#B3ABD4]"
         />
       </label>
-
-      {selection.selecting && (
-        <SelectionBar
-          count={selection.selectedIds.size}
-          total={selection.total}
-          // 只有列交易的頁面有批次改資料的動作：分類、帳戶類型那幾頁管的是「定義」，
-          // 一批一批改的需求不存在。
-          actions={bulkEdit.actions}
-          pending={bulkEdit.pending}
-          onToggleAll={selection.toggleAll}
-          onCancel={selection.exit}
-          onDelete={() => setDeleteConfirm([...selection.selectedIds])}
-        />
-      )}
 
       {bulkEdit.element}
 
