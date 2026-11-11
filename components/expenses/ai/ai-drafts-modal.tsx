@@ -40,12 +40,11 @@ export function AiDraftsModal({
   const runBusy = useBusy();
   const [openId, setOpenId] = useState<string | null>(null);
   const [editing, setEditing] = useState<AiDraftItemDTO | null>(null);
-  const [discardId, setDiscardId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   // 第一層清單的多選。跟「最近刪除」同一套：整列就是勾選目標，底下那排按鈕對勾起來的
-  // 那幾批做事——一批一批點進去捨棄，重跑過好幾次的時候要點很多輪。
+  // 那幾批做事——一批一批點進去刪，重跑過好幾次的時候要點很多輪。
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [discardBatch, setDiscardBatch] = useState(false);
+  const [deleteBatch, setDeleteBatch] = useState(false);
   // 編輯一筆草稿要用到帳戶、交易、轉帳（新增／編輯彈窗裡的帳戶選擇要顯示餘額）。
   // 這些刻意不從設定頁的 Server Component 傳下來——那會讓每次進設定頁都多載一份完整的
   // 交易清單（量過大約 80KB），只為了一個多數時候不會打開的彈窗。改成真的打開才抓。
@@ -100,10 +99,10 @@ export function AiDraftsModal({
           title="待確認"
           fullHeight
           footer={
-            <div className="flex w-full items-center justify-between gap-2">
-              <button type="button" onClick={() => setDiscardId(current.id)} className="text-xs font-medium text-[#D1517E]">
-                整批捨棄
-              </button>
+            // 這一層只負責「處理這一批」，刪除統一在上一層做（勾選＋刪除）。本來這裡
+            // 還有一顆「整批捨棄」，跟上一層的刪除是同一件事卻用不同的字、放在不同
+            // 的地方，使用者得記住兩套。
+            <div className="flex w-full items-center justify-end gap-2">
               <Button
                 disabled={busy || pending.length === 0 || unclassified.length > 0}
                 onClick={async () => {
@@ -181,17 +180,6 @@ export function AiDraftsModal({
           />
         </Modal>
 
-        <ConfirmModal
-          open={discardId !== null}
-          title="整批捨棄"
-          message="這一批解析結果會整批標成不處理，不會寫進消費紀錄。已經寫入的那幾筆不受影響。"
-          confirmLabel="捨棄這一批"
-          onConfirm={async () => {
-            await post({ action: "discard", draftId: current.id });
-            setOpenId(null);
-          }}
-          onClose={() => setDiscardId(null)}
-        />
       </>
     );
   }
@@ -211,15 +199,15 @@ export function AiDraftsModal({
       // 清掉了什麼。已經寫進消費紀錄的批次留在資料庫裡也不影響任何畫面，所以整顆移除。
       footer={
         // 左下角是破壞性動作、右下角是離開，跟「最近刪除」同一種排法。沒勾任何一批時
-        // 捨棄是停用狀態。
+        // 刪除是停用狀態。
         <div className="flex w-full items-center justify-between gap-2">
           <button
             type="button"
             disabled={chosen.length === 0}
-            onClick={() => setDiscardBatch(true)}
+            onClick={() => setDeleteBatch(true)}
             className="text-xs font-medium text-[#D1517E] disabled:opacity-40"
           >
-            捨棄{chosen.length > 0 ? ` ${chosen.length} 批` : ""}
+            刪除{chosen.length > 0 ? ` ${chosen.length} 批` : ""}
           </button>
           <Button variant="ghost" onClick={close}>
             關閉
@@ -233,7 +221,7 @@ export function AiDraftsModal({
         <>
           <div className="flex items-center justify-between gap-2">
             <p className={`${text.muted} leading-relaxed`}>每一筆是一次解析的結果，點進去可以調整。</p>
-            {/* 勾選是為了「整批捨棄」用的，點列本身還是進去處理那一批——兩個都是常用
+            {/* 勾選是為了「批次刪除」用的，點列本身還是進去處理那一批——兩個都是常用
                 動作，所以勾選框另外給一個點擊區，不像最近刪除那樣整列都是勾選。 */}
             <button
               type="button"
@@ -285,22 +273,24 @@ export function AiDraftsModal({
         </>
       )}
 
-      {/* 批次捨棄的確認。捨棄只是標成不處理、不會動到已經寫進消費紀錄的那幾筆，所以
-          不是不可逆的刪除，但一次處理好幾批還是要先問過。 */}
+      {/* 按鈕寫「刪除」就真的刪掉（API 的 delete），不是標成不處理的 discard——後者會
+          把文件永遠留在資料庫裡、畫面上又看不到，使用者以為刪掉了其實沒有。
+          不進垃圾桶：這是還沒寫進消費紀錄的暫存解析結果，重跑一次就有，救它不划算
+          （跟存錢目標、固定收支同一個判斷）。 */}
       <ConfirmModal
-        open={discardBatch}
-        title={chosen.length > 1 ? `捨棄 ${chosen.length} 批` : "捨棄這一批"}
-        message={`勾起來的${chosen.length > 1 ? `這 ${chosen.length} 批` : "這一批"}解析結果會整批標成不處理，不會寫進消費紀錄。已經寫入的那幾筆不受影響。`}
-        confirmLabel="捨棄"
+        open={deleteBatch}
+        title={chosen.length > 1 ? `刪除 ${chosen.length} 批` : "刪除這一批"}
+        message={`勾起來的${chosen.length > 1 ? `這 ${chosen.length} 批` : "這一批"}解析結果會被刪掉，不會寫進消費紀錄，也不會進「最近刪除」。已經寫入的那幾筆不受影響。`}
+        confirmLabel="刪除"
         onConfirm={async () => {
           // 逐批送出：API 一次只收一個 draftId，而且每次都回傳最新的完整清單。
-          await runBusy("處理中…", async () => {
-            for (const d of chosen) await post({ action: "discard", draftId: d.id });
+          await runBusy("刪除中…", async () => {
+            for (const d of chosen) await post({ action: "delete", draftId: d.id });
           });
           setSelected(new Set());
-          showToast(`已捨棄 ${chosen.length} 批`);
+          showToast(`已刪除 ${chosen.length} 批`);
         }}
-        onClose={() => setDiscardBatch(false)}
+        onClose={() => setDeleteBatch(false)}
       />
     </Modal>
   );
