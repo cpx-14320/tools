@@ -18,6 +18,8 @@ interface TrashDoc {
    *  畫面上會退回「依種類給一張預設圖」。 */
   icon?: string;
   color?: CategoryColor;
+  /** 交易刪除當下的分類路徑快照（見 trash.ts 的 TrashItemDTO）。 */
+  categoryPath?: string;
   entries: { collection: string; doc: Document }[];
   /** 刪分類時被改掛到「未分類」的那幾筆交易／固定收支。
    *
@@ -40,6 +42,7 @@ function toDTO(doc: TrashDoc): TrashItemDTO {
     sublabel: doc.sublabel,
     icon: doc.icon,
     color: doc.color,
+    categoryPath: doc.categoryPath,
     docCount: doc.entries.length,
   };
 }
@@ -68,6 +71,7 @@ export async function putInTrash(
     sublabel?: string;
     icon?: string;
     color?: CategoryColor;
+    categoryPath?: string;
     entries: { collection: string; doc: Document }[];
     reassigned?: { collection: string; ids: ObjectId[]; fromCategoryId: ObjectId }[];
   },
@@ -83,6 +87,7 @@ export async function putInTrash(
     sublabel: input.sublabel,
     icon: input.icon,
     color: input.color,
+    categoryPath: input.categoryPath,
     entries: input.entries,
     reassigned: input.reassigned,
   });

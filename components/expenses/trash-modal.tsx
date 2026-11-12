@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Modal } from "./modal";
 import { Button, SegmentedControl } from "./button";
 import { ListCard, ListRow } from "./list-row";
+import { TransactionRowLabel } from "./transaction-row-label";
 import { SelectionDot } from "./selection-bar";
 import { categoryColorClass } from "@/lib/expenses/categories";
 import { ConfirmModal } from "./confirm-modal";
@@ -13,7 +14,7 @@ import { useAsyncAction } from "./use-async-action";
 import { useBusy } from "./busy";
 import { ICON_PATHS } from "./icon-paths";
 import { TRASH_KIND_LABEL, trashGroupOf, type TrashGroup, type TrashItemDTO, type TrashKind } from "@/lib/expenses/trash";
-import { formatDateWithWeekday } from "@/lib/format";
+import { formatCurrency, formatDateWithWeekday } from "@/lib/format";
 
 /** 舊資料沒有存圖示時依種類退回的預設圖（2026-11 之前刪掉的東西）。 */
 const KIND_ICON: Record<TrashKind, string> = {
@@ -207,6 +208,9 @@ export function TrashModal({
                 {allVisibleSelected ? "取消全選" : "全選"}
               </button>
             </div>
+            {/* 切到某個分頁但那個分頁剛好沒東西（例如垃圾桶裡只有分類，切去「帳戶」）：
+                講清楚是「這個分頁沒有」，不要整塊空白讓人以為沒反應。 */}
+            {visible.length === 0 && <p className={`px-1 ${text.faint}`}>還沒有任何資料。</p>}
             {/* 依「刪除日期」分組，日期當小標題——跟明細頁的消費清單同一種排法。
                 一天刪好幾次是常有的事，沒有分組的話整串看起來就是一長條，要找「我昨天
                 刪掉的那筆」只能一列一列看日期。 */}
@@ -214,27 +218,64 @@ export function TrashModal({
               <div key={date}>
                 <p className={`mb-1.5 px-1 font-medium ${text.muted}`}>{formatDateWithWeekday(date)}</p>
                 <ListCard>
-                  {dayItems.map((item) => (
-                    // 整列就是勾選目標（跟明細頁的多選一樣），圓點只是指示器。
-                    <ListRow
-                      key={item.id}
-                      icon={item.icon || KIND_ICON[item.kind]}
-                      iconClassName={item.color ? categoryColorClass[item.color] : undefined}
-                      leading={<SelectionDot selected={selected.has(item.id)} />}
-                      name={
-                        <span className="block min-w-0">
-                          <span className={`block truncate ${text.body}`}>{item.label}</span>
-                          <span className={`block truncate ${text.muted}`}>
-                            {TRASH_KIND_LABEL[item.kind]}
-                            {item.sublabel ? ` · ${item.sublabel}` : ""}
-                            {/* 一次刪除連帶移除好幾個文件時講明白（刪分類會連子分類一起）。 */}
-                            {item.docCount > 1 ? ` · 共 ${item.docCount} 項` : ""}
-                          </span>
-                        </span>
-                      }
-                      onClick={() => toggle(item.id)}
-                    />
-                  ))}
+                  {dayItems.map((item) => {
+                    const isEntry = trashGroupOf(item.kind) === "entry";
+                    // 明細（交易／轉帳）刪除當下把「日期 · 金額」存成一串 sublabel（見
+                    // transactions.server.ts／transfers.server.ts），這裡拆開來：金額挪到
+                    // 右邊，跟首頁「最近消費」同一個位置、同一種樣式；日期留在副標裡。
+                    const sublabelParts = item.sublabel?.split(" · ") ?? [];
+                    const amount = isEntry ? Number(sublabelParts[sublabelParts.length - 1]) : NaN;
+                    const hasAmount = isEntry && !Number.isNaN(amount);
+                    const restSublabel = hasAmount ? sublabelParts.slice(0, -1).join(" · ") : item.sublabel;
+
+                    if (isEntry) {
+                      // 明細列直接借用明細頁／首頁最近消費同一顆 TransactionRowLabel，而不是
+                      // 自己複製一份長得很像的 JSX——那顆字重／顏色之後要調，這裡才會跟著動，
+                      // 不會變成三個地方各改各的、慢慢不同步。
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => toggle(item.id)}
+                          className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+                        >
+                          <SelectionDot selected={selected.has(item.id)} />
+                          <TransactionRowLabel
+                            icon={item.icon || KIND_ICON[item.kind]}
+                            iconClassName={item.color ? categoryColorClass[item.color] : undefined}
+                            title={item.label}
+                            subtitle={
+                              // 有分類路徑快照（交易）就照明細頁／首頁最近消費同一種排法，標題下
+                              // 面只放「大分類 › 子分類」；轉帳沒有分類，退回種類＋日期。
+                              item.categoryPath ?? (
+                                <>
+                                  {TRASH_KIND_LABEL[item.kind]}
+                                  {restSublabel ? ` · ${restSublabel}` : ""}
+                                  {item.docCount > 1 ? ` · 共 ${item.docCount} 項` : ""}
+                                </>
+                              )
+                            }
+                          />
+                          {hasAmount && (
+                            <span className="shrink-0 tabular-nums font-semibold text-[#4A3B7C]">{formatCurrency(amount)}</span>
+                          )}
+                        </button>
+                      );
+                    }
+
+                    // 分類／帳戶列照各自設定頁的清單樣式，直接用那兩頁清單共用的 ListRow：
+                    // 單行名稱，不掛右側附註文字（跟那兩頁清單一樣乾淨）。
+                    return (
+                      <ListRow
+                        key={item.id}
+                        icon={item.icon || KIND_ICON[item.kind]}
+                        iconClassName={item.color ? categoryColorClass[item.color] : undefined}
+                        leading={<SelectionDot selected={selected.has(item.id)} />}
+                        name={item.label}
+                        onClick={() => toggle(item.id)}
+                      />
+                    );
+                  })}
                 </ListCard>
               </div>
             ))}
