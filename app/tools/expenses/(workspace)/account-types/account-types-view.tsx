@@ -211,44 +211,46 @@ export function AccountTypesView({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* 標題列只留「選取」——新增搬到右下角的浮動按鈕（跟首頁新增交易同一招），
-          按鈕一多擠一列在手機上會換行成兩排，很難看也很難點。常見類型現在是第一次進
-          記帳本時就自動建好的（見 lib/expenses/presets.server.ts），不再需要套用按鈕。 */}
-      <PageHeader
-        flush
-        title="帳戶類型"
-        // 這一頁現在是從「設定」進來的，標題列不再掛「返回資產總表」那顆箭頭——
-        // 指回一個不是上一頁的地方只會讓人迷路，要回去按瀏覽器/系統的返回就好。
-      />
-
-      {/* 排序／選取跟選取工具列一起釘在卡片頂端，標題不釘（見 StickyToolbar）。 */}
+      {/* 標題跟排序／選取排同一列，整塊一起釘在卡片頂端（見 StickyToolbar）。
+          分成「標題一列、按鈕一列」的話，按鈕那列左邊整片空著，還白白多佔一列高度——
+          這一頁右邊只有兩顆按鈕，併成一列剛好。
+          新增搬到右下角的浮動按鈕（跟首頁新增交易同一招）：按鈕一多擠一列在手機上會
+          換行成兩排，很難看也很難點。常見類型現在是第一次進記帳本時就自動建好的
+          （見 lib/expenses/presets.server.ts），不再需要套用按鈕。 */}
       <StickyToolbar>
-        {/* 排序跟選取兩個模式互斥，開一個就把另一個關掉。 */}
-        <div className="flex items-center justify-end gap-2">
-          <SortToggle
-            sorting={sorting}
-            onToggle={() => {
-              if (!sorting) selection.exit();
-              setSorting((v) => !v);
-            }}
-          />
-          <SelectionToggle
-            selecting={selection.selecting}
-            onToggle={() => {
-              if (!selection.selecting) setSorting(false);
-              selection.toggleMode();
-            }}
-          />
-        </div>
-      {selection.selecting && (
+        <PageHeader
+          flush
+          title="帳戶類型"
+          // 這一頁現在是從「設定」進來的，標題列不再掛「返回資產總表」那顆箭頭——
+          // 指回一個不是上一頁的地方只會讓人迷路，要回去按瀏覽器/系統的返回就好。
+          actions={
+            // 排序跟選取兩個模式互斥，開一個就把另一個關掉。
+            <div className="flex shrink-0 items-center gap-2">
+              <SortToggle
+                sorting={sorting}
+                onToggle={() => {
+                  if (!sorting) selection.exit();
+                  setSorting((v) => !v);
+                }}
+              />
+              <SelectionToggle
+                selecting={selection.selecting}
+                onToggle={() => {
+                  if (!selection.selecting) setSorting(false);
+                  selection.toggleMode();
+                }}
+              />
+            </div>
+          }
+        />
+        {selection.selecting && (
           <SelectionBar
             count={selection.selectedIds.size}
             total={selection.total}
             onToggleAll={selection.toggleAll}
-            onCancel={selection.exit}
             onDelete={handleBulkDelete}
           />
-      )}
+        )}
       </StickyToolbar>
 
       <FloatingAddButton onClick={() => setBatchOpen(true)} label="新增帳戶類型" />

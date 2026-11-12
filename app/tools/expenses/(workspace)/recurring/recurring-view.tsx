@@ -290,7 +290,6 @@ export function RecurringView({
           count={selection.selectedIds.size}
           total={selection.total}
           onToggleAll={selection.toggleAll}
-          onCancel={selection.exit}
           onDelete={() => setDeleteConfirm([...selection.selectedIds])}
         />
       )}

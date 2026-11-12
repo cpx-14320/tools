@@ -51,7 +51,7 @@ export function CategoriesView({
   const [modal, setModal] = useState<CategoryDTO | null>(null);
   const [batchTarget, setBatchTarget] = useState<BatchTarget | null>(null);
   const [kind, setKind] = useState<CategoryKind>("支出");
-  const [deleteConfirm, setDeleteConfirm] = useState<{ ids: string[]; inUseCount: number; subCount: number; skipped?: string[] } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ ids: string[]; inUseCount: number; subCount: number } | null>(null);
   // 排序模式：每一列右邊長出 ↑↓。跟多選模式互斥——兩個都開的話一列右邊會擠進打勾、
   // 筆數跟兩顆箭頭，而且點一下到底是要選取還是要移動也說不清楚。
   const [sorting, setSorting] = useState(false);
@@ -136,15 +136,12 @@ export function CategoriesView({
    *  「刪得掉的不問、刪不掉的才問」，剛好跟直覺相反——使用者在列表上勾了幾個分類按刪除，
    *  什麼都沒跳就少了幾列。刪分類的副作用（連帶子分類、交易被改掛到未分類）正是最需要
    *  先講一聲的那種，所以不管乾不乾淨都走同一道確認，差別只在彈窗裡多講幾句。 */
-  function askDelete(rawIds: string[]) {
-    // 系統分類（手續費）可以被勾起來改帳戶，但不能刪——從這裡濾掉，確認彈窗裡講一聲。
-    const skipped = rawIds.map((id) => categories.find((c) => c.id === id)).filter((c): c is CategoryDTO => !!c && isSystemCategory(c));
-    const ids = rawIds.filter((id) => !skipped.some((c) => c.id === id));
-    if (ids.length === 0) {
-      if (skipped.length > 0) showToast(`「${skipped.map((c) => c.name).join("」「")}」是系統分類，不能刪除`);
-      return;
-    }
-    setDeleteConfirm({ ids, inUseCount: inUseCount(ids), subCount: subCount(ids), skipped: skipped.map((c) => c.name) });
+  function askDelete(ids: string[]) {
+    // 系統分類（未分類、手續費）根本選不到、編輯彈窗也沒有刪除鈕（見 selectableIds
+    // 跟底下的 onDelete），所以這裡不用再濾一次「哪些不能刪」——伺服器那邊還有一道
+    // 守門（categories.server.ts 的 deleteCategory）。
+    if (ids.length === 0) return;
+    setDeleteConfirm({ ids, inUseCount: inUseCount(ids), subCount: subCount(ids) });
   }
 
   function handleDelete() {
@@ -227,10 +224,13 @@ export function CategoriesView({
   // 「修改帳戶」只動得到主分類（預設帳戶照設計只設在主分類上，見 categories.ts 的
   // defaultAccountForCategory），勾到的子分類會被略過——那個動作自己會講清楚。
   //
-  // 系統分類裡只排除「未分類」：手續費可以被批次「修改帳戶」（它是真的會記帳的分類，
-  // 預設帳戶有意義），只是不能被刪——刪除那條路會自己把系統分類略過（見 askDelete）。
+  // **系統分類（未分類、手續費）兩個都不能勾**：它們是系統固定會有的分類，刪不掉，
+  // 勾得起來卻刪不掉等於讓人白勾一輪、按了刪除才被打回票。手續費本來開放勾選是為了
+  // 批次改它的預設帳戶，但「可以勾」在這份清單上就代表「可以一起刪」，為了一個很少用
+  // 的批次動作讓系統分類混進刪除範圍並不划算——要改它的預設帳戶，點那一列進編輯彈窗
+  // 一樣改得到。排序那邊也是同一條規則（見上面的 sortable）。
   const selectableIds = parents
-    .filter((c) => !c.isUncategorized)
+    .filter((c) => !isSystemCategory(c))
     .flatMap((c) => [c.id, ...subCategoriesOf(categories, c.id).map((sub) => sub.id)]);
   const selection = useSelection(selectableIds);
 
@@ -482,7 +482,6 @@ export function CategoriesView({
           (deleteConfirm?.inUseCount ?? 0) > 0
             ? `共 ${deleteConfirm?.inUseCount} 筆交易掛在上面，刪除後會自動歸類到「未分類」，紀錄本身不會被刪掉。`
             : "已經記過的交易如果有掛到這些分類，會自動歸類到「未分類」，不會被刪除。",
-          deleteConfirm?.skipped?.length ? `「${deleteConfirm.skipped.join("」「")}」是系統分類，這次不會被刪除。` : "",
           TRASH_RESTORE_NOTE,
         ]
           .filter(Boolean)
@@ -518,8 +517,6 @@ export function CategoriesView({
               if (!selection.selecting) setSorting(false);
               selection.toggleMode();
             }}
-            // 挑好帳戶還沒送出時，這顆跟工具列那顆「完成」做同一件事（見 SelectionToggle）。
-            pendingConfirm={pendingAccount ? () => void applyDefaultAccount() : undefined}
           />
         </div>
         </div>
@@ -553,7 +550,6 @@ export function CategoriesView({
               : undefined
           }
           onToggleAll={selection.toggleAll}
-          onCancel={selection.exit}
           onDelete={handleBulkDelete}
         />
       )}
@@ -571,11 +567,13 @@ export function CategoriesView({
             const subs = subCategoriesOf(categories, c.id);
             const sortableIndex = sortable.indexOf(c);
             return (
-              // 排序模式下「未分類」整張淡掉：它固定在最後一個、不能移動，淡化是讓人
-              // 一眼看出「這張不用管」，而不是讓他去找為什麼那一列沒有箭頭。
+              // 排序／選取模式下系統分類整張淡掉：它們位置固定、也刪不掉，淡化是讓人
+              // 一眼看出「這張不用管」，而不是讓他去找為什麼那一列沒有箭頭／沒有勾選圈。
               <div
                 key={c.id}
-                className={`overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white ${sorting && isSystemCategory(c) ? "opacity-50" : ""}`}
+                className={`overflow-hidden rounded-2xl border border-[#ECE4FA] bg-white ${
+                  (sorting || selection.selecting) && isSystemCategory(c) ? "opacity-50" : ""
+                }`}
               >
                 <ListRow
                   icon={c.icon}
@@ -608,11 +606,12 @@ export function CategoriesView({
                       <span className={text.muted}>{totalCount(c.id)} 筆紀錄</span>
                     )
                   }
-                  // 勾選只排除「未分類」：手續費雖然是系統分類，但可以被批次改帳戶（跟
-                  // selectableIds 同一條規則）；排序那邊才是整組系統分類都不動。
-                  leading={selection.selecting && !c.isUncategorized ? <SelectionDot selected={selection.selectedIds.has(c.id)} /> : undefined}
+                  // 系統分類（未分類、手續費）一律不給勾：它們刪不掉，給打勾圓點只是讓人
+                  // 勾了一輪才在刪除時被打回票（跟 selectableIds、sortable 同一條規則）。
+                  // 連圓點都不畫，而不是畫了點了沒反應——看得到的勾選框按不動更讓人困惑。
+                  leading={selection.selecting && !isSystemCategory(c) ? <SelectionDot selected={selection.selectedIds.has(c.id)} /> : undefined}
                   onClick={
-                    sorting ? undefined : () => (selection.selecting ? (c.isUncategorized ? undefined : selection.toggle(c.id)) : setModal(c))
+                    sorting ? undefined : () => (selection.selecting ? (isSystemCategory(c) ? undefined : selection.toggle(c.id)) : setModal(c))
                   }
                 />
 

@@ -117,22 +117,23 @@ export function GoalsView({
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader flush title="存錢目標" help="設定目標金額，追蹤存了多少、還差多少" />
-
-      {/* 選取跟選取工具列一起釘在卡片頂端，標題不釘（見 StickyToolbar）。 */}
+      {/* 標題跟「選取」排同一列，整塊一起釘在卡片頂端（見 StickyToolbar）——這一頁右邊
+          只有一顆按鈕，自己佔一列的話左邊整片空著，還多墊高一截。 */}
       <StickyToolbar>
-        <div className="flex items-center justify-end gap-2">
-          <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />
-        </div>
-      {selection.selecting && (
+        <PageHeader
+          flush
+          title="存錢目標"
+          help="設定目標金額，追蹤存了多少、還差多少"
+          actions={<SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />}
+        />
+        {selection.selecting && (
           <SelectionBar
             count={selection.selectedIds.size}
             total={selection.total}
             onToggleAll={selection.toggleAll}
-            onCancel={selection.exit}
             onDelete={() => setDeleteConfirm([...selection.selectedIds])}
           />
-      )}
+        )}
       </StickyToolbar>
 
       <FloatingAddButton onClick={() => setModal({ mode: "create" })} label="新增存錢目標" />

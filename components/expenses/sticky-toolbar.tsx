@@ -2,8 +2,8 @@
 
 import type { ReactNode } from "react";
 
-/** 捲動時黏在卡片頂端的模式工具列：分頁切換＋排序／選取那一列，以及選取模式下的
- *  「全選／修改帳戶／修改分類／刪除／已選 N 項／取消」那一條。
+/** 捲動時黏在頂端的模式工具列：標題／分頁切換＋排序／選取那一列，以及選取模式下的
+ *  「全選／修改帳戶／修改分類／刪除／已選 N 項」那一條。
  *
  *  **為什麼需要**：分類清單有二十幾張卡，進排序模式滑到最底下調整完，要按的「完成」
  *  卻還在最上面——每調一次就要整頁滑回去一次。選取模式更糟：要刪的資料在最下面，
@@ -11,18 +11,47 @@ import type { ReactNode } from "react";
  *  哪裡，當下這個模式的所有操作都在手指附近。
  *
  *  是直向容器：子元素自己排成一列或多列，這裡只管「釘住」跟列與列之間的間距。
+ *  **只有操作才值得釘**，但頁面標題可以跟操作並排在同一列一起釘（帳戶類型、存錢目標
+ *  那種右邊只有一兩顆按鈕的頁面就是這樣擺）——那不會多佔一列，反而把原本「標題一列、
+ *  按鈕一列」的兩列併成一列，整頁少一截高度。有分頁切換（支出／收入）的頁面則維持
+ *  標題在外面，不然釘住的部分會變成兩列。
  *
  *  **為什麼 sticky 在這裡真的有效**：外殼那張手機卡片是固定高度、由 `<main>` 自己
  *  `overflow-y-auto` 捲動（見 expenses-mobile-shell.tsx），sticky 的參考對象就是那個
  *  捲動容器，`top-0` 黏的是卡片頂端而不是瀏覽器視窗頂端。
  *
- *  `-mx-5 px-5` 是為了讓背景鋪滿整個卡片寬度：外層內容區有 20px 的左右留白，不往外
- *  擴的話，黏住時兩側會露出一條縫，底下的內容從縫裡穿過去。
+ *  **負 margin 在抵銷呼叫端的留白**，兩個方向各有理由：
+ *  - `-mx-*`：讓背景鋪滿整個容器寬度。外層內容區有左右留白，不往外擴的話，黏住時兩側
+ *    會露出一條縫，底下的內容從縫裡穿過去。
+ *  - `-my-4`：呼叫端那幾頁的最外層都是 `flex flex-col gap-4`，上下各 16px 的 gap 加上
+ *    這裡自己的 12px 內距，等於標題跟工具列之間空了 28px，工具列跟清單之間又 28px，
+ *    一個只有一列按鈕的區塊佔掉快一百 px。把 gap 吃掉之後，間距完全由這裡的 `py-3`
+ *    決定（上下各 12px），所有用到的頁面一次對齊。
  *
  *  背景用「接近不透明的底色＋backdrop blur」而不是純色：卡片底色是漸層，純色在捲動到
  *  不同位置時會跟背後對不起來，糊一下就看不出接縫。 */
-export function StickyToolbar({ children, className = "" }: { children: ReactNode; className?: string }) {
+export function StickyToolbar({
+  children,
+  /** 釘在白色卡片裡面（帳戶明細頁的「明細」區）而不是頁面上。卡片的底色、內距跟頁面
+   *  層級不一樣（白底、16px 內距、沒有漸層所以不需要糊背景），本來是在那一頁自己複製
+   *  一份 sticky 的 class 串，兩邊改樣式要記得改兩個地方。
+   *
+   *  自己補 `rounded-t-2xl`：它靠負 margin 鋪滿卡片寬度，而卡片為了讓 sticky 生效不能
+   *  再 `overflow-hidden`（見 account-detail-view.tsx 的說明），圓角沒人切就得自己留。 */
+  inCard = false,
+  className = "",
+}: {
+  children: ReactNode;
+  inCard?: boolean;
+  className?: string;
+}) {
   return (
-    <div className={`sticky top-0 z-20 -mx-5 flex flex-col gap-3 bg-[#EDE6FB]/95 px-5 pb-2.5 pt-2.5 backdrop-blur-sm ${className}`}>{children}</div>
+    <div
+      className={`sticky top-0 z-20 flex flex-col gap-2.5 ${
+        inCard ? "-mx-4 -mt-4 rounded-t-2xl bg-white px-4 pb-3 pt-4" : "-mx-5 -my-4 bg-[#EDE6FB]/95 px-5 py-3 backdrop-blur-sm"
+      } ${className}`}
+    >
+      {children}
+    </div>
   );
 }

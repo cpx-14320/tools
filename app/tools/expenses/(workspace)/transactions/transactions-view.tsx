@@ -438,7 +438,7 @@ export function TransactionsView({
           ]}
         />
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-          <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} pendingConfirm={bulkEdit.pending?.onConfirm} />
+          <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />
         </div>
       </div>
 
@@ -451,7 +451,6 @@ export function TransactionsView({
           actions={bulkEdit.actions}
           pending={bulkEdit.pending}
           onToggleAll={selection.toggleAll}
-          onCancel={selection.exit}
           onDelete={() => setDeleteConfirm([...selection.selectedIds])}
         />
       )}

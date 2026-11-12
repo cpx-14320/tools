@@ -50,22 +50,16 @@ export function useSelection(ids: string[]) {
 
 /** 進入／離開多選模式的那顆按鈕——跟分頁切換（SegmentedControl）等高，可以並排在同一列。
  *
- *  **有待套用的變更時，這顆要改成「送出」而不是「離開選取模式」**：工具列上那顆也叫
- *  「完成」，兩顆同名卻做不同的事，按到這一顆會把剛挑好的帳戶／分類靜默丟掉——選了
- *  二十筆資料、挑好分類、按下完成，然後什麼都沒發生。呼叫端有待套用狀態時就把
- *  `pendingConfirm` 傳進來，兩顆按鈕的行為才會一致。 */
-export function SelectionToggle({
-  selecting,
-  onToggle,
-  pendingConfirm,
-}: {
-  selecting: boolean;
-  onToggle: () => void;
-  pendingConfirm?: () => void;
-}) {
+ *  **選取模式中這顆寫「取消」，不是「完成」**：它做的事是「退出選取模式、把勾選清掉」，
+ *  那就是取消。寫「完成」會被讀成「把剛剛選的那些送出去」，按下去卻什麼都沒發生——
+ *  選取本身不是一個要送出的表單，真正會動資料的是工具列上的刪除／修改那幾顆。
+ *
+ *  （隔壁的「排序」反過來是對的：排序模式下每按一次箭頭就已經存檔了，離開時沒有東西
+ *  要取消，所以 SortToggle 維持「完成」。兩顆長得一樣但字不同，是因為它們真的不一樣。） */
+export function SelectionToggle({ selecting, onToggle }: { selecting: boolean; onToggle: () => void }) {
   return (
-    <PillButton onClick={pendingConfirm ?? onToggle} active={selecting}>
-      {selecting ? "完成" : "選取"}
+    <PillButton onClick={onToggle} active={selecting}>
+      {selecting ? "取消" : "選取"}
     </PillButton>
   );
 }
@@ -95,23 +89,26 @@ export interface SelectionPending {
 }
 
 /** 多選共用的工具列——分類、帳戶類型、存錢目標、固定收支、明細這幾個頁面都用同一套：
- *  點「選取」進入選取模式，列表的列會換成可以打勾；這條工具列負責全選、顯示已選幾項、
- *  退出選取模式，以及對選到的那批做事。
+ *  點「選取」進入選取模式，列表的列會換成可以打勾；這條工具列負責全選、顯示已選幾項，
+ *  以及對選到的那批做事。
  *
- *  **收成一列**：左邊「全選 ・ 已選 N 項」，右邊是動作。這條列現在跟排序／選取那一排
- *  一起釘在卡片頂端（見 StickyToolbar），釘住的東西每多一列，清單就少看一列——原本
- *  兩列的版本（動作一列、數量一列）在釘住之後太佔。明細頁三個動作加上全選、數量、取消
- *  在 430px 寬的卡片上還排得下一列。
+ *  **退出選取模式不在這條列上**：上面那顆「取消」（SelectionToggle）就是出口，它跟這條
+ *  列一起釘在頂端、永遠按得到。這裡本來還有一顆同樣寫著「取消」的按鈕，等於同一個畫面
+ *  上兩顆字一樣的按鈕做同一件事，右邊那排也被它多佔一格。
+ *
+ *  **收成一列**：左邊「全選 ・ 已選 N 項」，右邊是動作。這條列跟排序／選取那一排一起
+ *  釘在卡片頂端（見 StickyToolbar），釘住的東西每多一列，清單就少看一列——原本兩列的
+ *  版本（動作一列、數量一列）在釘住之後太佔。
  *
  *  待套用（pending）狀態也是一列：「修改分類：→ 零嘴 › 甜食 ・ 已選 N 項」在左，
- *  「取消／完成」在右。 */
+ *  「取消／完成」在右——那兩顆是這次修改的取消與送出，管的是「挑好的那個目標」，
+ *  跟上面那顆退出選取模式的「取消」不是同一層。 */
 export function SelectionBar({
   count,
   total,
   actions = [],
   pending,
   onToggleAll,
-  onCancel,
   onDelete,
 }: {
   count: number;
@@ -120,7 +117,6 @@ export function SelectionBar({
   /** 給了就切換成待確認樣式：第一行變成「要套用什麼＋完成」，動作跟刪除都先收起來。 */
   pending?: SelectionPending;
   onToggleAll: () => void;
-  onCancel: () => void;
   onDelete: () => void;
 }) {
   const allSelected = total > 0 && count === total;
@@ -182,9 +178,6 @@ export function SelectionBar({
         ))}
         <button type="button" disabled={disabled} onClick={onDelete} className="text-xs font-semibold text-[#D1517E] disabled:opacity-40">
           刪除
-        </button>
-        <button type="button" onClick={onCancel} className="text-xs font-medium text-[#9C94C4]">
-          取消
         </button>
       </div>
     </div>

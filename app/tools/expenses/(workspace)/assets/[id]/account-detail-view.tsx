@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
+import { StickyToolbar } from "@/components/expenses/sticky-toolbar";
 import { useBulkEdit } from "@/components/expenses/use-bulk-edit";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/expenses/page-header";
@@ -495,14 +496,19 @@ export function AccountDetailView({
         onSave={handleReconcile}
       />
 
-      <Card>
+      {/* overflow-visible：Card 預設 overflow-hidden（切圓角用），但那會讓裡面的
+          `position: sticky` 失效——瀏覽器改成以這張卡當捲動參考，而卡片自己不捲動，
+          底下那條工具列就只是停在原地跟著內容捲走。這一頁的明細動輒上百列，工具列
+          釘不住等於勾到最後一筆就按不到「刪除」。卡片的圓角改由工具列自己的
+          rounded-t-2xl 接住（見 StickyToolbar 的 inCard）。 */}
+      <Card className="overflow-visible!">
         <CardBody>
           {/* 這一頁的重點就是明細，所以篩選直接放在標題旁邊——轉帳混在支出收入裡不好找，
               而且這一頁本來就是最常拿來核對轉帳的地方。 */}
-          {/* 釘在卡片頂端（含底下的選取工具列）。這裡在白色卡片裡面，所以不用
-              StickyToolbar——那個的底色跟左右外距是照頁面層級的紫底、20px 留白設計的，
-              放進 p-4 的卡片裡會凸出去。自己用卡片的白底跟 16px 外距。 */}
-          <div className="sticky top-0 z-20 -mx-4 -mt-4 flex flex-col gap-3 bg-white px-4 pb-3 pt-4">
+          {/* 釘在卡片頂端（含底下的選取工具列）。這裡在白色卡片裡面，所以走 StickyToolbar
+              的 inCard 版本：底色、左右外距都照卡片來（頁面層級那一套是紫底、20px 留白，
+              放進 p-4 的卡片裡會凸出去）。 */}
+          <StickyToolbar inCard>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className={text.sectionHeading}>明細</p>
             <div className="flex items-center gap-2">
@@ -517,7 +523,7 @@ export function AccountDetailView({
               />
               {/* 只看轉帳的時候一筆都選不到，按鈕就不出現——擺一顆按了只會得到空工具列
                   的按鈕，比沒有更讓人困惑。 */}
-              {!transfersOnly && <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} pendingConfirm={bulkEdit.pending?.onConfirm} />}
+              {!transfersOnly && <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />}
             </div>
           </div>
 
@@ -528,11 +534,10 @@ export function AccountDetailView({
               actions={bulkEdit.actions}
               pending={bulkEdit.pending}
               onToggleAll={selection.toggleAll}
-              onCancel={selection.exit}
               onDelete={() => setBulkDeleteConfirm([...selection.selectedIds])}
             />
           )}
-          </div>
+          </StickyToolbar>
           {visibleEntries.length === 0 ? (
             <p className={`mt-3 ${text.muted}`}>
               {transfersOnly ? "這段期間這個帳戶沒有轉帳紀錄。" : "這段期間這個帳戶還沒有掛任何交易或轉帳。"}
