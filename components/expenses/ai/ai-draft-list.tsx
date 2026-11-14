@@ -1,14 +1,19 @@
 "use client";
 
-import { IconAvatar } from "../icon-avatar";
+import { ListCard } from "../list-row";
+import { TransactionRowLabel } from "../transaction-row-label";
 import { text } from "../theme";
 import { categoryById, categoryColorClass, categoryPath, displayCategoryOf, type CategoryDTO } from "@/lib/expenses/categories";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { AiDraftDTO, AiDraftItemDTO } from "@/lib/expenses/ai-drafts";
 
-/** 待確認清單——AI 記帳的彈窗跟設定頁的批次詳情共用同一份。
+/** 待確認清單——AI 記帳的彈窗跟「待確認的解析結果」詳情頁共用同一份。
  *
- *  每一列的重點是「這筆被歸到哪、對不對」，所以分類放在最顯眼的位置，金額靠右。
+ *  **整份比照明細頁的消費清單**：白底卡片（ListCard）＋ 圖示、標題、分類路徑、靠右金額
+ *  （TransactionRowLabel），跟使用者確認完之後會看到的那份清單長得一模一樣——這裡列的
+ *  本來就是「等一下會變成那幾列」的東西，兩邊長得不一樣只會讓人多比對一次。本來這裡是
+ *  自己刻的一張透明底卡片，疊在同樣是淡紫的頁面背景上看起來像沒有卡片。
+ *
  *  沒分類的那幾列標橘色而不是紅色：那不是錯誤，是模型誠實說「我不確定」，紅色會讓人
  *  以為是壞掉了。 */
 export function AiDraftList({
@@ -28,7 +33,7 @@ export function AiDraftList({
   }
 
   return (
-    <div className="flex flex-col divide-y divide-[#F2EEFA] overflow-hidden rounded-2xl border border-[#ECE4FA]">
+    <ListCard>
       {items.map((item) => {
         const category = item.categoryId ? categoryById(categories, item.categoryId) : undefined;
         // 沒配到分類、但知道是哪個大分類時（「麥當勞」知道是餐飲、不知道哪一餐），用那個
@@ -39,19 +44,32 @@ export function AiDraftList({
         // 哪個分類決定），所以同一批裡會同時出現兩種。子分類的 kind 看它的大分類。
         const isIncome = display?.kind === "收入";
         return (
-          <div key={item.key} className="flex items-center gap-3 px-4 py-3">
-            {display ? (
-              <IconAvatar icon={display.icon} className={categoryColorClass[display.color]} />
-            ) : (
-              // 真的完全不知道的才用問號的空位，不要讓那一列比別人矮一截。
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#FDF4E7] text-sm font-bold text-[#E0A33E]">？</span>
-            )}
-            <button type="button" onClick={() => onEdit(item)} className="min-w-0 flex-1 text-left">
-              <p className={`truncate ${text.body}`}>{item.note || category?.name || "（沒有備註）"}</p>
-              <p className={item.categoryId ? text.muted : "text-xs font-medium text-[#E0A33E]"}>
-                {item.categoryId ? categoryPath(categories, item.categoryId) : hint ? `${hint.name} › 點一下選項目` : "尚未分類，點一下補上"}
-                <span className={`ml-1.5 ${text.faint}`}>{formatDate(item.date)}</span>
-              </p>
+          <div key={item.key} className="flex w-full items-center gap-3 px-4 py-3">
+            <button type="button" onClick={() => onEdit(item)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+              {display ? (
+                <TransactionRowLabel
+                  icon={display.icon}
+                  iconClassName={categoryColorClass[display.color]}
+                  title={item.note || category?.name || "（沒有備註）"}
+                  subtitle={
+                    <>
+                      {item.categoryId ? (
+                        categoryPath(categories, item.categoryId)
+                      ) : (
+                        <span className="font-medium text-[#E0A33E]">{hint ? `${hint.name} › 點一下選項目` : "尚未分類，點一下補上"}</span>
+                      )}
+                      <span className={`ml-1.5 ${text.faint}`}>{formatDate(item.date)}</span>
+                    </>
+                  }
+                />
+              ) : (
+                // 完全不知道是哪一類時，圖示那一格放一個橘色問號——位置跟尺寸仍然走
+                // IconAvatar，那一列才不會比別人矮一截、文字起點也對得齊。
+                <TransactionRowLabelFallback
+                  title={item.note || "（沒有備註）"}
+                  date={formatDate(item.date)}
+                />
+              )}
             </button>
             <span className={`shrink-0 tabular-nums text-sm font-semibold ${isIncome ? "text-[#2FAE82]" : "text-[#4A3B7C]"}`}>
               {isIncome ? "＋" : "－"}
@@ -63,6 +81,24 @@ export function AiDraftList({
           </div>
         );
       })}
-    </div>
+    </ListCard>
+  );
+}
+
+/** 連大分類都判不出來的那一列：橘色問號＋「尚未分類」。拆成一個小元件只是為了讓上面
+ *  那段三元運算子不要再多包兩層，兩種情況的排版（40px 圖示＋兩行文字）完全一樣。 */
+function TransactionRowLabelFallback({ title, date }: { title: string; date: string }) {
+  return (
+    <TransactionRowLabel
+      icon="？"
+      iconClassName="bg-[#FDF4E7] text-[#E0A33E]"
+      title={title}
+      subtitle={
+        <>
+          <span className="font-medium text-[#E0A33E]">尚未分類，點一下補上</span>
+          <span className={`ml-1.5 ${text.faint}`}>{date}</span>
+        </>
+      }
+    />
   );
 }
