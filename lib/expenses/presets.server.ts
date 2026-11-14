@@ -132,8 +132,63 @@ export async function seedExpensesPresets(userId: ObjectId): Promise<void> {
   await seedDemoTransactions(db, userId, categoryDocs, accountDocs, now);
 }
 
-/** 新帳號的示範資料——近兩個月的幾筆收支，讓第一次打開的人看到的是一份「長得像在用」的
- *  帳本，而不是四張寫著「還沒有任何資料」的空卡。
+/** 每個月都會發生的那幾筆示範資料。`day` 是當月第幾天，金額會依月份小幅浮動（見
+ *  `varied`），不要每個月都一模一樣——整年十二個月長得一樣，報表的趨勢圖會是一條直線，
+ *  使用者看不出那些圖會動。 */
+const MONTHLY_SEEDS: { day: number; category: string; amount: number; note: string; account: "cash" | "bank" }[] = [
+  { day: 1, category: "房租", amount: 15000, note: "", account: "bank" },
+  { day: 3, category: "行動電話", amount: 599, note: "", account: "bank" },
+  { day: 5, category: "月薪", amount: 52000, note: "", account: "bank" },
+  { day: 6, category: "服務訂閱", amount: 390, note: "串流月費", account: "bank" },
+  { day: 8, category: "早餐", amount: 55, note: "豆漿蛋餅", account: "cash" },
+  { day: 9, category: "定期票", amount: 1280, note: "月票", account: "bank" },
+  { day: 12, category: "午餐", amount: 125, note: "便當", account: "cash" },
+  { day: 14, category: "手搖飲", amount: 68, note: "", account: "cash" },
+  { day: 17, category: "日用品", amount: 342, note: "衛生紙、洗髮精", account: "bank" },
+  { day: 21, category: "晚餐", amount: 268, note: "跟同事吃飯", account: "cash" },
+  { day: 24, category: "電費", amount: 1180, note: "", account: "bank" },
+  { day: 27, category: "甜食", amount: 85, note: "", account: "cash" },
+];
+
+/** 一年只來幾次的那些。`month` 是 1–12。擺進來是為了讓報表不要每個月都一個樣：
+ *  年終在一月、所得稅在五月，年度對照表才看得出「某些月份就是特別多」。 */
+const YEARLY_SEEDS: { month: number; day: number; category: string; amount: number; note: string; account: "cash" | "bank" }[] = [
+  { month: 1, day: 20, category: "年終", amount: 86000, note: "", account: "bank" },
+  { month: 2, day: 14, category: "電影", amount: 760, note: "", account: "cash" },
+  { month: 3, day: 18, category: "上衣", amount: 1280, note: "換季買的", account: "bank" },
+  { month: 4, day: 11, category: "加油費", amount: 1050, note: "", account: "cash" },
+  { month: 5, day: 25, category: "所得稅", amount: 18600, note: "", account: "bank" },
+  { month: 6, day: 15, category: "獎金", amount: 12000, note: "端午獎金", account: "bank" },
+  { month: 7, day: 9, category: "線上課程", amount: 2400, note: "", account: "bank" },
+  { month: 8, day: 22, category: "3C電器", amount: 8900, note: "換鍵盤跟螢幕", account: "bank" },
+  { month: 9, day: 6, category: "利息", amount: 213, note: "活存利息", account: "bank" },
+  { month: 10, day: 19, category: "高鐵", amount: 1490, note: "回老家", account: "bank" },
+  { month: 11, day: 28, category: "鞋子", amount: 2180, note: "", account: "bank" },
+  { month: 12, day: 24, category: "獎金", amount: 9000, note: "聖誕獎金", account: "bank" },
+];
+
+/** 每個月各分類的預算。只設最常花、而且月月都有的那幾個主分類——預算頁一次列出十七個
+ *  分類要使用者自己填，多數人會直接跳過，有幾個現成的才看得出那張卡在幹嘛。 */
+const BUDGET_SEEDS: { category: string; amount: number }[] = [
+  { category: "飲食", amount: 8000 },
+  { category: "飲料", amount: 1200 },
+  { category: "交通", amount: 2000 },
+  { category: "住家", amount: 3500 },
+  { category: "日用品", amount: 1500 },
+  { category: "服務訂閱", amount: 600 },
+];
+
+/** 新帳號的示範資料——讓第一次打開的人看到的是一份「長得像在用」的帳本，而不是一整排
+ *  寫著「還沒有任何資料」的空卡。
+ *
+ *  **為什麼要鋪滿三年（去年、今年、明年）**：報表頁有「支出年度對照」，只鋪近兩個月的話
+ *  那張表兩欄都是 0，使用者永遠不會知道有這個功能；而且註冊的時間點不固定，一月註冊的人
+ *  如果只鋪「往前兩個月」，今年的圖表幾乎整年空白。鋪滿前後各一年，不管什麼時候註冊，
+ *  月份切換、趨勢圖、年度對照一打開就有東西可看。
+ *
+ *  **收入跟預算也要有**：首頁的「收入來源」「預算支出」兩張卡本來一進來就是空的——有
+ *  支出卻沒有收入，等於示範了一份只會扣錢的帳本。現在每個月都有月薪，另外鋪了年終、
+ *  獎金、利息，預算也先設好六個最常花的分類。
  *
  *  刻意**不**帶 isPreset：示範資料就是要被清掉的。使用者想認真記帳時，設定頁的
  *  「清除所有消費紀錄」會把這些連同轉帳一起刪乾淨，而分類、帳戶、預算那些設定都留著
@@ -152,36 +207,79 @@ async function seedDemoTransactions(
   const idOf = (docs: Record<string, unknown>[], name: string) => docs.find((d) => d.name === name)?._id as ObjectId | undefined;
   const cash = idOf(accountDocs, "現金錢包");
   const bank = idOf(accountDocs, "銀行帳戶");
+  const accountOf = (key: "cash" | "bank") => (key === "cash" ? cash : bank);
 
-  /** 今天往前第 n 天。示範資料跟著「現在」走，不是寫死日期——不然幾個月後新註冊的人
-   *  看到的會是一份一年前的帳本，報表上近六個月全是空的。 */
-  const dayBefore = (n: number) => {
-    const d = new Date(now);
-    d.setDate(d.getDate() - n);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const thisYear = now.getFullYear();
+  const years = [thisYear - 1, thisYear, thisYear + 1];
+  const iso = (y: number, m: number, d: number) => `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+  /** 金額依「第幾個月」小幅浮動（±12% 以內），但同一個帳號每次算出來都一樣——用的是
+   *  月份本身當種子，不是亂數，所以之後要重現某個畫面不會每次都不同。 */
+  const varied = (amount: number, monthIndex: number, salt: number) => {
+    const wave = Math.sin(monthIndex * 1.7 + salt) * 0.12;
+    return Math.max(1, Math.round(amount * (1 + wave)));
   };
 
-  const seeds: { daysAgo: number; category: string; amount: number; note: string; account?: ObjectId }[] = [
-    { daysAgo: 0, category: "早餐", amount: 55, note: "豆漿蛋餅", account: cash },
-    { daysAgo: 0, category: "大眾交通", amount: 32, note: "捷運", account: cash },
-    { daysAgo: 1, category: "午餐", amount: 125, note: "便當", account: cash },
-    { daysAgo: 1, category: "零食", amount: 68, note: "手搖飲", account: cash },
-    { daysAgo: 2, category: "日用品", amount: 342, note: "衛生紙、洗髮精", account: bank },
-    { daysAgo: 3, category: "晚餐", amount: 268, note: "跟同事吃飯", account: cash },
-    { daysAgo: 5, category: "服務訂閱", amount: 390, note: "串流月費", account: bank },
-    { daysAgo: 8, category: "衣服", amount: 1280, note: "換季買的外套", account: bank },
-    { daysAgo: 12, category: "醫療", amount: 450, note: "看牙", account: bank },
-    { daysAgo: 15, category: "電話費", amount: 599, note: "", account: bank },
-    { daysAgo: 18, category: "娛樂", amount: 760, note: "看電影", account: cash },
-    { daysAgo: 22, category: "薪水", amount: 52000, note: "", account: bank },
-    { daysAgo: 25, category: "房租", amount: 15000, note: "", account: bank },
-    { daysAgo: 34, category: "午餐", amount: 110, note: "", account: cash },
-    { daysAgo: 40, category: "大眾交通", amount: 1280, note: "月票", account: bank },
-    { daysAgo: 45, category: "利息", amount: 213, note: "活存利息", account: bank },
-    { daysAgo: 52, category: "薪水", amount: 52000, note: "", account: bank },
-  ];
+  const txDocs: Record<string, unknown>[] = [];
+  const transferDocs: Record<string, unknown>[] = [];
 
-  const txDocs = seeds.flatMap((seed) => {
+  years.forEach((year, yearIndex) => {
+    for (let month = 1; month <= 12; month++) {
+      const monthIndex = yearIndex * 12 + month;
+
+      for (const [i, seed] of MONTHLY_SEEDS.entries()) {
+        const categoryId = idOf(categoryDocs, seed.category);
+        if (!categoryId) continue;
+        txDocs.push({
+          _id: new ObjectId(),
+          userId,
+          categoryId,
+          accountId: accountOf(seed.account),
+          amount: varied(seed.amount, monthIndex, i),
+          date: iso(year, month, seed.day),
+          note: seed.note || undefined,
+          createdAt: now,
+        });
+      }
+
+      for (const seed of YEARLY_SEEDS.filter((s) => s.month === month)) {
+        const categoryId = idOf(categoryDocs, seed.category);
+        if (!categoryId) continue;
+        txDocs.push({
+          _id: new ObjectId(),
+          userId,
+          categoryId,
+          accountId: accountOf(seed.account),
+          amount: varied(seed.amount, monthIndex, seed.day),
+          date: iso(year, month, seed.day),
+          note: seed.note || undefined,
+          createdAt: now,
+        });
+      }
+
+      // 每季一筆「從銀行領現金」：沒有轉帳的話資產總表那一區一開始是空的，使用者不會
+      // 知道那裡是做什麼的；每個月都來一筆又太吵。
+      if (cash && bank && month % 3 === 1) {
+        transferDocs.push({
+          _id: new ObjectId(),
+          userId,
+          fromAccountId: bank,
+          toAccountId: cash,
+          amount: 3000,
+          date: iso(year, month, 10),
+          note: "領現金",
+          createdAt: now,
+        });
+      }
+    }
+  });
+
+  if (txDocs.length > 0) await db.collection("expenses.transactions").insertMany(txDocs);
+  if (transferDocs.length > 0) await db.collection("expenses.transfers").insertMany(transferDocs);
+
+  // 預算規則：從最早那一年的一月起生效，所以不管使用者把月份切到哪一年都看得到預算。
+  // 「從某個月起每月多少」只要一筆，之後的月份會沿用（見 lib/expenses/budgets.ts）。
+  const budgetDocs = BUDGET_SEEDS.flatMap((seed) => {
     const categoryId = idOf(categoryDocs, seed.category);
     if (!categoryId) return [];
     return [
@@ -189,28 +287,11 @@ async function seedDemoTransactions(
         _id: new ObjectId(),
         userId,
         categoryId,
-        accountId: seed.account,
+        effectiveFrom: `${years[0]}-01`,
         amount: seed.amount,
-        date: dayBefore(seed.daysAgo),
-        note: seed.note || undefined,
         createdAt: now,
       },
     ];
   });
-  if (txDocs.length > 0) await db.collection("expenses.transactions").insertMany(txDocs);
-
-  // 一筆轉帳：從銀行領錢到錢包。沒有這一筆的話，資產總表的「轉帳明細」一開始是空的，
-  // 使用者不會知道那一區是做什麼的。
-  if (cash && bank) {
-    await db.collection("expenses.transfers").insertOne({
-      _id: new ObjectId(),
-      userId,
-      fromAccountId: bank,
-      toAccountId: cash,
-      amount: 3000,
-      date: dayBefore(6),
-      note: "領現金",
-      createdAt: now,
-    });
-  }
+  if (budgetDocs.length > 0) await db.collection("expenses.budgets").insertMany(budgetDocs);
 }

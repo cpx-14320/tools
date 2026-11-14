@@ -389,7 +389,7 @@ export function AssetsView({
               )}
             </div>
             {transferGroups.length === 0 ? (
-              <EmptyListCard>{orphanOnly ? "沒有對不到帳戶的轉帳。" : "還沒有任何轉帳紀錄，點右上角的圖示新增"}</EmptyListCard>
+              <EmptyListCard>{orphanOnly ? "沒有對不到帳戶的轉帳。" : "還沒有任何轉帳紀錄"}</EmptyListCard>
             ) : (
               <>
                 <div className="flex flex-col gap-5">

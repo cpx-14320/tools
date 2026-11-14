@@ -360,7 +360,7 @@ export function DashboardView({
           // 一個預算都沒編的時候不要畫「NT$ 0 / NT$ 0　剩 26 天　0%」：那一行每一個數字
           // 都是真的（沒有分母所以是 0），但擺在一起看起來像「這個月還沒開始花」，而底下
           // 「尚未設定預算」那張卡明明列著花掉的錢。沒有分母就不要畫分母，直接講要做什麼。
-          <EmptyListCard>還沒設定任何預算，到「設定 › 預算設定」幫常花的分類設一個</EmptyListCard>
+          <EmptyListCard>還沒設定任何預算</EmptyListCard>
         ) : (
           <ListCard>
             <div className="px-4 py-3.5">

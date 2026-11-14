@@ -268,9 +268,9 @@ try {
   // ── 四、交易（含拆明細）──────────────────────────────────────────────────────
   await run("交易：新增、拆明細淨額、編輯、刪除/還原（含分類路徑快照）", async () => {
     const cats = await categoriesSrv.listCategories(userId);
-    const foodParent = cats.find((c) => c.name === "餐飲" && !c.parentId);
+    const foodParent = cats.find((c) => c.name === "飲食" && !c.parentId);
     const lunch = cats.find((c) => c.name === "午餐" && c.parentId === foodParent?.id);
-    check("預設資料裡找得到「餐飲 › 午餐」", !!lunch);
+    check("預設資料裡找得到「飲食 › 午餐」", !!lunch);
     if (!lunch) return;
     ids.lunchCategory = lunch.id;
 
@@ -300,7 +300,7 @@ try {
     if (del.trashId) {
       const trashItems = await trashSrv.listTrash(userId);
       const item = trashItems.find((t) => t.id === del.trashId);
-      check("垃圾桶項目存了分類路徑快照（飲食 › 午餐）", item?.categoryPath === "餐飲 › 午餐", `實際 ${item?.categoryPath}`);
+      check("垃圾桶項目存了分類路徑快照（飲食 › 午餐）", item?.categoryPath === "飲食 › 午餐", `實際 ${item?.categoryPath}`);
       check("垃圾桶項目存了標題（備註）", item?.label === "W-簡單交易-改過", `實際 ${item?.label}`);
 
       const restored = await trashSrv.restoreFromTrash(userId, del.trashId);

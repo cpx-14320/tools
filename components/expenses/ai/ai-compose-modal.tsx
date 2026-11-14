@@ -171,7 +171,9 @@ export function AiComposeModal({
         onClose();
       }}
       title="AI 記帳"
-      fullHeight
+      // 不吃滿版：這個彈窗的內容是「一個輸入框＋兩張輸入方式的卡」，撐到整個畫面高度的話
+      // 底下會空一大片，而且解析完的待確認清單本來就有自己的捲動區，撐滿反而讓人分不出
+      // 哪裡是可以捲的。半高（max-h-80%）會跟著內容長，短的時候就只有那麼高。
       footer={
         draft ? (
           <div className="flex w-full items-center justify-between gap-2">

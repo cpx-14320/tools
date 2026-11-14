@@ -60,42 +60,37 @@ export interface PresetCategorySeed {
  *  分得比以前細（原本是「購物」「生活」兩個大籃子，現在拆成電商購物／服飾／保養品／
  *  日用品／電話費／服務訂閱…）：大籃子記起來快，但月底看報表只會知道「生活花了八千」，
  *  想知道是日用品還是電話費就得一筆一筆翻。 */
+/** 支出分類。
+ *
+ *  **這一份是從實際在用的帳本（cpx1104）直接倒出來的**，不是另外想一套「大家應該會用
+ *  到的分類」。理由很簡單：真的記了一年多的帳本才知道哪些分類會被用到、哪些只是想像
+ *  出來的——原本的預設有「社交」「旅遊」「保險」這種多數人一年記不到三筆的分類，卻沒有
+ *  「水費」「停車費」「手搖飲」這些每週都在花的。要重新產生這一份，用
+ *  scripts/.dump-presets.mts 倒出來再轉成下面的格式即可。
+ *
+ *  分類結構的兩個原則（看得出來是從實際使用長出來的）：
+ *  1. **會想分開看的就開子項目**：交通拆成定期票／捷運／高鐵…，因為「捷運 30」跟
+ *     「高鐵 1490」在報表上的意義完全不同；混在一格就只剩一個加總。
+ *  2. **金額規模差很多的不要混**：開車（加油、停車、保養）跟大眾交通分開、3C電器跟
+ *     日用品分開——不然一筆兩萬的電腦會把那個月的日用品撞成平常的十倍。 */
 export const PRESET_EXPENSE_CATEGORIES: PresetCategorySeed[] = [
-  { name: "餐飲", icon: expenseCategoryIcon("food"), color: "a", children: ["早餐", "午餐", "晚餐"] },
-  { name: "零食", icon: expenseCategoryIcon("dessert"), color: "f" },
-  // 子項目排「怎麼搭」而不是「搭去哪」：月票放第一個（最常記的固定支出），
-  // 其他依搭乘頻率排。沒有子項目的話「捷運 30」跟「高鐵 1490」會混在同一格，
-  // 而這兩筆在報表上的意義完全不同。
-  {
-    name: "大眾交通",
-    icon: expenseCategoryIcon("transport"),
-    color: "a",
-    children: ["月票", "捷運", "公車", "火車", "高鐵", "客運", "計程車"],
-  },
-  { name: "電商購物", icon: expenseCategoryIcon("shopping"), color: "c" },
+  { name: "飲食", icon: expenseCategoryIcon("food"), color: "a", children: ["早餐", "午餐", "晚餐", "宵夜", "水果", "食材"] },
+  { name: "飲料", icon: expenseCategoryIcon("beverage"), color: "a", children: ["手搖飲", "咖啡", "酒", "水"] },
+  { name: "零嘴", icon: expenseCategoryIcon("dessert"), color: "f", children: ["甜食", "鹹食", "冰品"] },
+  { name: "住家", icon: expenseCategoryIcon("furniture"), color: "e", children: ["電費", "水費", "瓦斯費", "管理費", "修繕費", "居家服務"] },
+  { name: "交通", icon: expenseCategoryIcon("transport"), color: "a", children: ["定期票", "公車", "客運", "台鐵", "捷運", "高鐵", "計程車", "飛機"] },
+  { name: "開車", icon: expenseCategoryIcon("transportation"), color: "a", children: ["加油費", "停車費", "過路費", "洗車", "換機油", "維修保養"] },
   { name: "服飾", icon: expenseCategoryIcon("clothing"), color: "c", children: ["上衣", "包包", "下衣", "鞋子"] },
-  { name: "保養品", icon: expenseCategoryIcon("skincare"), color: "e" },
-  { name: "日用品", icon: expenseCategoryIcon("life"), color: "d" },
+  { name: "美妝保養", icon: expenseCategoryIcon("skincare"), color: "e" },
   { name: "寵物", icon: expenseCategoryIcon("pet"), color: "c" },
-  { name: "學習", icon: expenseCategoryIcon("education"), color: "d" },
-  { name: "娛樂", icon: expenseCategoryIcon("entertainment"), color: "f" },
-  { name: "社交", icon: expenseCategoryIcon("social"), color: "c" },
-  { name: "旅遊", icon: expenseCategoryIcon("travel"), color: "e" },
-  { name: "醫療", icon: expenseCategoryIcon("medical"), color: "a" },
-  { name: "保險", icon: expenseCategoryIcon("insurance"), color: "b" },
-  { name: "房租", icon: expenseCategoryIcon("rent"), color: "e" },
-  { name: "繳稅", icon: expenseCategoryIcon("bill"), color: "a" },
-  { name: "電話費", icon: expenseCategoryIcon("phone"), color: "c" },
+  { name: "娛樂", icon: expenseCategoryIcon("entertainment"), color: "f", children: ["電影", "遊戲", "音樂", "數位服務"] },
+  { name: "學習", icon: expenseCategoryIcon("education"), color: "d", children: ["線上課程", "實體課程", "學費", "證照費"] },
+  { name: "電信", icon: expenseCategoryIcon("internet"), color: "c", children: ["市內電話", "行動電話", "網路費", "電視費"] },
   { name: "服務訂閱", icon: expenseCategoryIcon("subscription"), color: "b" },
-  // 家電 3C 單筆金額大、次數少，混在日用品裡會把那個月的「日用品」撞成兩倍。
-  { name: "家電", icon: expenseCategoryIcon("furniture"), color: "d" },
-  // 飲料不歸在「餐飲」底下：餐飲的子項目是早／午／晚餐，一杯手搖卡不進任何一餐，
-  // 而且「一個月喝掉多少飲料」本來就是很多人會想單獨看的數字。
-  { name: "飲料", icon: expenseCategoryIcon("beverage"), color: "b" },
-  // 自己開車騎車的花費（加油、停車、過路費、保養）——跟大眾運輸分開記，
-  // 兩者的金額規模、頻率、能不能節省都不一樣。
-  { name: "開車", icon: expenseCategoryIcon("transportation"), color: "d" },
-  { name: "水電", icon: expenseCategoryIcon("water"), color: "c" },
+  { name: "稅金", icon: expenseCategoryIcon("bill"), color: "a", children: ["所得稅", "牌照稅", "燃料稅", "房屋稅", "地價稅"] },
+  { name: "房租", icon: expenseCategoryIcon("rent"), color: "a" },
+  { name: "日用品", icon: expenseCategoryIcon("life"), color: "a" },
+  { name: "3C電器", icon: expenseCategoryIcon("electronics"), color: "r" },
   // 「其他」排最後：它是「挑不到合適的就先丟這裡」，夾在中間會變成一個被略過的選項。
   { name: "其他", icon: EXPENSE_ICON_OTHER, color: "f" },
 ];
@@ -131,16 +126,16 @@ export interface PresetAccountSeed {
  *  用不到的可以在「設定 › 帳戶類型」刪掉（底下沒有帳戶在用才刪得掉）。 */
 export const PRESET_ACCOUNTS: PresetAccountSeed[] = [
   { name: "現金錢包", icon: accountIcon("cash"), color: "a", kind: "asset", withAccount: true },
-  { name: "銀行帳戶", icon: accountIcon("bank"), color: "b", kind: "asset", withAccount: true },
-  { name: "定存", icon: accountIcon("fund"), color: "c", kind: "asset" },
+  { name: "銀行帳戶", icon: accountIcon("bank"), color: "f", kind: "asset", withAccount: true },
+  { name: "定存", icon: accountIcon("fund"), color: "c", kind: "asset", withAccount: true },
   // 股票／黃金的圖還沒放進 public/expenses，先指到之後要放的檔名；圖檔補上去就會自己
   // 出現，在那之前 IconAvatar 會顯示漸層佔位，不會壞版。
-  { name: "股票", icon: "/expenses/category-stocks.png", color: "d", kind: "asset" },
-  { name: "黃金", icon: "/expenses/category-gold.png", color: "e", kind: "asset" },
+  { name: "股票", icon: "/expenses/category-stocks.png", color: "a", kind: "asset" },
+  { name: "黃金", icon: "/expenses/category-gold.png", color: "f", kind: "asset" },
   { name: "信用卡", icon: accountIcon("card"), color: "a", kind: "liability" },
-  { name: "房貸", icon: accountIcon("home"), color: "b", kind: "liability" },
-  { name: "車貸", icon: accountIcon("car"), color: "c", kind: "liability" },
-  { name: "學貸", icon: accountIcon("education"), color: "d", kind: "liability" },
+  { name: "房貸", icon: accountIcon("home"), color: "l", kind: "liability" },
+  { name: "車貸", icon: accountIcon("car"), color: "h", kind: "liability" },
+  { name: "學貸", icon: accountIcon("education"), color: "a", kind: "liability" },
 ];
 
 /** 圖示選擇器可以選的圖——使用者新增自訂分類時從這裡挑，挑不到合適的就用「其他」那張
