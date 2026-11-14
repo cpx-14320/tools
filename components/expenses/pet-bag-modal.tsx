@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 
-import { Modal } from "./modal";
-import { SegmentedControl } from "./button";
+import { PetModal } from "./pet-modal";
+import { PetTabs, petThumbClass, petTileClass, petTileLabelClass } from "./pet-ui";
 import { IconImg } from "./icon-img";
 import { PetSprite, PET_ANIMATION_MS, type PetMood } from "./pet-sprite";
-import { text } from "./theme";
 import { PET_ITEMS, PET_HATCH_LEVEL, effectiveOutfitId, outfitUnlocked, petBackground, petItemThumb, type PetItem, type PetItemKind } from "@/lib/expenses/pet";
 
 /** 背包要知道的那幾個欄位——跟商店彈窗同一組，只是這裡不需要 coins（背包不花錢）。 */
@@ -83,17 +82,19 @@ export function PetBagModal({
   }, [mood]);
 
   return (
-    <Modal open={open} onClose={onClose} title="背包" fullHeight>
-      {/* 預覽：16:9 的橫幅，角色 180px 置中——換裝、換背景的結果直接在上面看得到，不用
+    <PetModal open={open} onClose={onClose} title="背包">
+      {/* 預覽：16:9 的橫幅，角色 160px 置中——換裝、換背景的結果直接在上面看得到，不用
           關掉彈窗才知道換起來長怎樣。背景圖本身是 9:16 的直式房間圖，在這個扁框裡只看得到
           其中一條；裁切位置往上挪到 42%（不是置中）——置中會切在地板那一段，往上一點才
           帶到房間的陳設，角色也不會看起來像站在一片空地上。 */}
-      <div className="grid aspect-[16/9] w-full place-items-center rounded-2xl p-3" style={{ background: petBackground(pet.backgroundId, "center 42%") }}>
-        <PetSprite mood={mood} outfitId={currentOutfit} size={180} />
+      <div
+        className="grid aspect-[16/9] w-full place-items-center rounded-2xl border-2 border-[#E3D4F5] p-2"
+        style={{ background: petBackground(pet.backgroundId, "center 42%") }}
+      >
+        <PetSprite mood={mood} outfitId={currentOutfit} size={160} />
       </div>
 
-      <SegmentedControl
-        className="self-start"
+      <PetTabs
         value={kind}
         onChange={onKindChange}
         options={[
@@ -104,11 +105,11 @@ export function PetBagModal({
       />
 
       {items.length === 0 ? (
-        <p className={text.muted}>背包裡還沒有{kind}，去商店買一件吧。</p>
+        <p className="text-center text-xs text-[#9C7FC0]">背包裡還沒有{kind}，去商店買一件吧。</p>
       ) : (
         /* 一列兩格：縮圖改成正方形之後，三格一列的每一格只剩 100px 出頭，背景圖裁成那麼
            小看不出是哪個房間、服裝也只剩一個小人影。 */
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2">
           {items.map((item) => {
             const { equipped } = ownedState(item, pet, currentOutfit);
             const thumb = petItemThumb(item);
@@ -132,16 +133,14 @@ export function PetBagModal({
                   }
                 }}
                 disabled={locked}
-                className={`flex flex-col items-center gap-1.5 rounded-2xl border p-2.5 transition-colors ${
-                  equipped ? "border-[#6F5FD6] bg-[#F3EFFC]" : "border-[#ECE4FA] bg-white"
-                } ${locked ? "opacity-50" : ""}`}
+                className={petTileClass({ selected: equipped, locked })}
               >
                 {/* 縮圖固定正方形：服裝那張精靈圖是靠 background-size 700% × 300% 把一格
                     撐成整個框（見 petItemThumb），框本身不是正方形的話那一格就會被拉扁。
                     背景圖則是 9:16，在正方形框裡置中裁切，比例一樣不會變形。 */}
                 <span className="relative block w-full">
                   {thumb ? (
-                    <span className="block aspect-square w-full rounded-xl border border-[#ECE4FA]" style={{ background: thumb }} />
+                    <span className={`block ${petThumbClass}`} style={{ background: thumb }} />
                   ) : (
                     <IconImg src={item.image} alt={item.name} size={40} />
                   )}
@@ -149,25 +148,23 @@ export function PetBagModal({
                       （沒在用的就留空），結果每一格的下緣都空著一條；之後改成貼著角落
                       又剛好卡在圖片跟外框的交界上，一半在圖上一半在白邊上。 */}
                   {equipped && (
-                    <span className="absolute right-1.5 top-1.5 rounded-full bg-[#6F5ED4] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                    <span className="absolute right-1.5 top-1.5 rounded-full bg-[#9B7BD6] px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
                       使用中
                     </span>
                   )}
                   {/* 還沒孵化就買好的造型：標出要幾級才穿得上，不是只有一顆按不動的格子。 */}
                   {locked && (
-                    <span className="absolute right-1.5 top-1.5 rounded-full bg-[#4A3B7C]/75 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                    <span className="absolute right-1.5 top-1.5 rounded-full bg-[#5B3B8C]/75 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
                       Lv.{PET_HATCH_LEVEL}
                     </span>
                   )}
                 </span>
-                <span className={`line-clamp-1 w-full text-center text-[11px] ${equipped ? "font-semibold text-[#6F5FD6]" : "text-[#4A3B7C]"}`}>
-                  {item.name}
-                </span>
+                <span className={petTileLabelClass}>{item.name}</span>
               </button>
             );
           })}
         </div>
       )}
-    </Modal>
+    </PetModal>
   );
 }

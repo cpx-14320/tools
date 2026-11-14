@@ -35,7 +35,9 @@ export function PetModal({
   /** 標題下面那行淡色小字（參考稿的「每天回來，累積小小成長」）。 */
   subtitle,
   children,
-  /** 底部那顆大按鈕。 */
+  /** 釘在框底的那一塊（簽到那顆大按鈕、商店的購買列）。**不跟著內容捲動**：商店那種
+   *  一次列十幾格的彈窗，選好一格之後要按的「確認購買」如果跟著捲走，使用者得先捲到底
+   *  才按得到。內容短的時候它就貼在內容下面，看起來跟以前一樣。 */
   footer,
 }: {
   open: boolean;
@@ -71,14 +73,18 @@ export function PetModal({
           <Slice name="bottom-right" className="col-start-3 row-start-3" />
 
           {/* 內容放在正中間那一格，底圖就是 center-center 那張切片（整格拉滿）。
-              pt-5：留給騎在框上緣的標題緞帶。 */}
+              pt-5：留給騎在框上緣的標題緞帶。
+              這一格自己再分成「會捲的內容」跟「釘在底下的 footer」兩段，所以底圖只鋪一次、
+              捲動的範圍也只有中間那一段。 */}
           <div
-            className="no-scrollbar col-start-2 row-start-2 flex min-h-0 flex-col gap-3 overflow-y-auto px-2 pb-3 pt-5"
+            className="col-start-2 row-start-2 flex min-h-0 flex-col px-2 pb-3 pt-5"
             style={{ backgroundImage: 'url("/expenses/pet-modal-center-center.png")', backgroundSize: "100% 100%" }}
           >
-            {subtitle && <p className="text-center text-xs text-[#9C7FC0]">{subtitle}</p>}
-            {children}
-            {footer}
+            <div className="no-scrollbar flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+              {subtitle && <p className="text-center text-xs text-[#9C7FC0]">{subtitle}</p>}
+              {children}
+            </div>
+            {footer && <div className="shrink-0 pt-3">{footer}</div>}
           </div>
         </div>
 

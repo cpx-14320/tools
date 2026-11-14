@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Modal, ModalFooter } from "./modal";
+import { PetModal, PetModalButton } from "./pet-modal";
+import { PetTabs, petThumbClass, petTileClass, petTileLabelClass, petTileNoteClass } from "./pet-ui";
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { IconButton } from "./icon-button";
-import { Button, SegmentedControl } from "./button";
 import { IconImg } from "./icon-img";
-import { text } from "./theme";
 import { PET_ITEMS, PET_HATCH_LEVEL, effectiveOutfitId, outfitUnlocked, petItemById, petItemThumb, type PetItem, type PetItemKind } from "@/lib/expenses/pet";
 
 interface ShopPetState {
@@ -98,83 +97,82 @@ export function PetShopModal({
   }
 
   return (
-    <Modal
+    <PetModal
       open={open}
       onClose={() => {
         setSelected(null);
         onClose();
       }}
       title="商店"
-      fullHeight
-      stickyBottom={
-        selectedItem && (
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-2">
+      subtitle={`⭐ ${pet.coins}`}
+      footer={
+        // 選好一格之後才長出來的購買列。釘在框底（PetModal 的 footer 不跟著捲），
+        // 不然在十幾格的清單裡選完要按的按鈕會跟著內容捲走。
+        selectedItem ? (
+          <div className="flex flex-col gap-2 rounded-2xl border-2 border-[#E3D4F5] bg-white/85 p-2">
+            <div className="flex items-center gap-2">
               {selectedThumb ? (
-                <span className="size-9 shrink-0 rounded-lg border border-[#ECE4FA]" style={{ background: selectedThumb }} />
+                <span className="size-9 shrink-0 rounded-lg border border-[#E3D4F5]" style={{ background: selectedThumb }} />
               ) : (
                 <IconImg src={selectedItem.image} alt={selectedItem.name} size={36} />
               )}
-              <div className="min-w-0">
-                <p className={`truncate ${text.body}`}>{selectedItem.name}</p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-bold text-[#5B3B8C]">{selectedItem.name}</p>
                 {/* 買好幾份時顯示的是總價——單價寫在商品格子上，這裡要回答的是「這次要花多少」。 */}
-                <p className={text.muted}>{totalPrice === 0 ? "免費" : `⭐ ${totalPrice}`}</p>
+                <p className={petTileNoteClass}>{totalPrice === 0 ? "免費" : `⭐ ${totalPrice}`}</p>
               </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
               {/* 數量：減、數字、加。數字本身可以點，開小鍵盤直接打（一次買 20 份時
                   按 19 下加號太荒謬）。只有食物有數量，服裝／背景買一份就永久擁有。 */}
               {isFood && (
                 <span className="flex shrink-0 items-center gap-1">
-                  <IconButton icon="minus" tone="soft" size={28} iconSize={11} aria-label="減少一份" disabled={qty <= 1} onClick={() => setQty((n) => Math.max(1, n - 1))} />
+                  <IconButton icon="minus" tone="soft" size={26} iconSize={10} aria-label="減少一份" disabled={qty <= 1} onClick={() => setQty((n) => Math.max(1, n - 1))} />
                   <button
                     type="button"
                     onClick={() => setQtyKeypadOpen(true)}
                     aria-label="輸入數量"
-                    className="min-w-9 rounded-full bg-[#F3EFFC] px-2 py-1 text-sm font-semibold tabular-nums text-[#4A3B7C]"
+                    className="min-w-8 rounded-full bg-[#F1E7FD] px-2 py-1 text-xs font-bold tabular-nums text-[#5B3B8C]"
                   >
                     {qty}
                   </button>
-                  <IconButton icon="plus" tone="soft" size={28} iconSize={11} aria-label="增加一份" disabled={qty >= 99} onClick={() => setQty((n) => Math.min(99, n + 1))} />
+                  <IconButton icon="plus" tone="soft" size={26} iconSize={10} aria-label="增加一份" disabled={qty >= 99} onClick={() => setQty((n) => Math.min(99, n + 1))} />
                 </span>
               )}
-              <Button variant="ghost" onClick={() => setSelected(null)}>
+            </div>
+            <div className="flex items-center gap-2">
+              <PetModalButton tone="secondary" onClick={() => setSelected(null)}>
                 取消
-              </Button>
-              <Button disabled={!canAfford} onClick={confirmBuy}>
-                儲存
-              </Button>
+              </PetModalButton>
+              <PetModalButton disabled={!canAfford} onClick={confirmBuy}>
+                {canAfford ? "確認購買" : "星星幣不夠"}
+              </PetModalButton>
             </div>
           </div>
-        )
+        ) : undefined
       }
     >
-      {message && <div className="rounded-2xl bg-[#F3EFFC] px-4 py-2.5 text-center text-xs text-[#4A3B7C]">{message}</div>}
+      {message && <p className="rounded-2xl bg-[#F1E7FD] px-3 py-2 text-center text-[11px] font-medium text-[#5B3B8C]">{message}</p>}
 
-      <div className="flex items-center justify-between">
-        <SegmentedControl
-          value={kind}
-          onChange={(next) => {
-            setKind(next);
-            setSelected(null);
-          }}
-          options={[
-            { value: "食物", label: "食物" },
-            { value: "服裝", label: "服裝" },
-            { value: "背景", label: "背景" },
-            { value: "狀態", label: "狀態" },
-          ]}
-        />
-        <span className="text-sm font-semibold tabular-nums text-[#6F5FD6]">⭐ {pet.coins}</span>
-      </div>
+      <PetTabs
+        value={kind}
+        onChange={(next) => {
+          setKind(next);
+          setSelected(null);
+        }}
+        options={[
+          { value: "食物", label: "食物" },
+          { value: "服裝", label: "服裝" },
+          { value: "背景", label: "背景" },
+          { value: "狀態", label: "狀態" },
+        ]}
+      />
 
       {/* 食物三欄（圖小、只要看得出是哪一種），服裝跟背景兩欄——它們的縮圖是整張場景圖
           跟整個角色，裁進三欄的小格子裡看不出差別（跟背包同一個理由）。 */}
       {items.length === 0 ? (
         // 目前只有狀態會是空的：圖還在畫，先讓這一頁存在，使用者知道之後會有東西。
-        <p className={text.muted}>{kind}準備中。</p>
+        <p className="text-center text-xs text-[#9C7FC0]">{kind}準備中。</p>
       ) : (
-        <div className={`grid gap-3 ${kind === "食物" ? "grid-cols-3" : "grid-cols-2"}`}>
+        <div className={`grid gap-2 ${kind === "食物" ? "grid-cols-3" : "grid-cols-2"}`}>
           {items.map((item) => (
             <ShopTile key={item.id} item={item} pet={pet} level={level} selected={item.id === selected} onClick={() => handleTileClick(item)} />
           ))}
@@ -184,7 +182,7 @@ export function PetShopModal({
       {/* key 綁目前數量：彈窗是常駐掛著、只靠 open 切換顯示的，不換 key 的話裡面的
           useState 只會在第一次掛載時初始化，第二次打開看到的還是上一次的數字。 */}
       <QtyKeypadModal key={`qty-${qty}`} open={qtyKeypadOpen} initial={qty} onClose={() => setQtyKeypadOpen(false)} onSave={setQty} />
-    </Modal>
+    </PetModal>
   );
 }
 
@@ -208,24 +206,31 @@ function QtyKeypadModal({
   const canSave = Number.isFinite(value) && value >= 1 && value <= 99;
 
   return (
-    <Modal
+    // 跟商店、背包、簽到同一個插畫框：它是從商店裡再開一層的彈窗，長成白色表單的話，
+    // 使用者會以為自己跳出遊戲畫面了（養成頁的彈窗統一走 PetModal）。
+    <PetModal
       open={open}
       onClose={onClose}
       title="要買幾份"
-      stickyBottom={<AmountKeypad expr={expr} onExprChange={setExpr} label="數量" prefix="" />}
       footer={
-        <ModalFooter
-          onClose={onClose}
-          onConfirm={() => {
-            onSave(Math.floor(value));
-            onClose();
-          }}
-          confirmDisabled={!canSave}
-        />
+        <div className="flex items-center gap-2">
+          <PetModalButton tone="secondary" onClick={onClose}>
+            取消
+          </PetModalButton>
+          <PetModalButton
+            disabled={!canSave}
+            onClick={() => {
+              onSave(Math.floor(value));
+              onClose();
+            }}
+          >
+            確定
+          </PetModalButton>
+        </div>
       }
     >
-      <></>
-    </Modal>
+      <AmountKeypad expr={expr} onExprChange={setExpr} label="數量" prefix="" />
+    </PetModal>
   );
 }
 
@@ -251,16 +256,9 @@ function ShopTile({
   const locked = item.kind === "服裝" && !outfitUnlocked(item, level);
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={equipped}
-      className={`relative flex flex-col items-center gap-1.5 rounded-2xl border p-2.5 text-center transition-colors ${
-        equipped || selected ? "border-[#6F5FD6] bg-[#F3EFFC]" : "border-[#ECE4FA] bg-white"
-      }`}
-    >
+    <button type="button" onClick={onClick} disabled={equipped} className={petTileClass({ selected: equipped || selected })}>
       {(owned || equipped) && (
-        <span className="absolute right-1.5 top-1.5 grid size-5 place-items-center rounded-full bg-[#6F5FD6] text-white">
+        <span className="absolute right-1.5 top-1.5 grid size-5 place-items-center rounded-full bg-[#9B7BD6] text-white">
           <span aria-hidden className="text-[10px] leading-none">
             ✓
           </span>
@@ -270,16 +268,16 @@ function ShopTile({
           不走 IconImg——IconImg 是 contain，整張塞進方框會留白或縮成一排小人。
           寬度跟著格子走（兩欄的格子比食物那欄寬很多），高度用 aspect-square 鎖住比例。 */}
       {thumb ? (
-        <span className="aspect-square w-full rounded-xl border border-[#ECE4FA]" style={{ background: thumb }} />
+        <span className={petThumbClass} style={{ background: thumb }} />
       ) : (
-        <IconImg src={item.image} alt={item.name} size={56} />
+        <IconImg src={item.image} alt={item.name} size={52} />
       )}
-      <span className="line-clamp-1 w-full text-xs font-semibold text-[#4A3B7C]">
+      <span className={petTileLabelClass}>
         {item.name}
         {/* 持有數量接在名稱後面（飯糰 ×3），不另外做徽章——跟養成頁那排食物同一個寫法。 */}
         {count > 0 && <span className="tabular-nums"> ×{count}</span>}
       </span>
-      <span className="text-[11px] font-medium text-[#9C94C4]">
+      <span className={petTileNoteClass}>
         {item.kind === "狀態" && owned
           ? "可在背包勾選"
           : owned && locked
