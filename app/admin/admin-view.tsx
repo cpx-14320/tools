@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { PageHeader, TableWrap, Th, Td, Badge, Button } from "@/components/ui";
+import { PageHeader, Badge, Button } from "@/components/ui";
 import { TOOLS_REGISTRY } from "@/lib/tools-registry";
 
 interface AdminUser {
@@ -93,55 +93,62 @@ export function AdminView() {
       {!users ? (
         <p className="text-sm text-muted">載入中…</p>
       ) : (
-        <TableWrap>
-          <thead>
-            <tr>
-              <Th>帳號</Th>
-              {TOOLS_REGISTRY.map((tool) => (
-                <Th key={tool.toolId}>{tool.name}</Th>
-              ))}
-              <Th>刪除</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((u) => {
-              const isSelf = u.id === me?.id;
-              return (
-                <tr key={u.id}>
-                  <Td>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{u.name}</span>
-                      <span className="text-xs text-muted">@{u.username}</span>
-                      {u.isAdmin && <Badge tone="brand">管理者</Badge>}
-                    </div>
-                  </Td>
-                  {TOOLS_REGISTRY.map((tool) => (
-                    <Td key={tool.toolId}>
-                      <input
-                        type="checkbox"
-                        checked={u.tools.includes(tool.toolId)}
-                        disabled={savingIds.has(u.id)}
-                        onChange={() => toggleTool(u, tool.toolId)}
-                        className="size-4"
-                      />
-                    </Td>
-                  ))}
-                  <Td>
-                    <Button
-                      variant="secondary"
-                      className="text-negative"
-                      disabled={isSelf || deletingIds.has(u.id)}
-                      onClick={() => handleDelete(u)}
-                      title={isSelf ? "不能刪除自己目前登入的帳號" : undefined}
-                    >
-                      {deletingIds.has(u.id) ? "刪除中…" : "刪除"}
-                    </Button>
-                  </Td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </TableWrap>
+        // 一個帳號一張卡，手機上疊成三段（帳號／權限／刪除）、桌機上攤成一列。
+        //
+        // **不用表格**：原本是一張 min-w-[520px] 的表，在 430px 的手機外框裡只能橫向
+        // 捲動——要勾第二個工具得先把表格往左推，而且勾選框是裸的 checkbox，欄位標題
+        // 在最上面，捲下去之後根本看不出那一欄是哪個工具。改成每個工具一顆帶名字的
+        // 膠囊，不管多窄都看得懂自己在勾什麼，工具變多也只是換行。
+        <div className="flex flex-col gap-3">
+          {users.map((u) => {
+            const isSelf = u.id === me?.id;
+            return (
+              <div
+                key={u.id}
+                className="flex flex-col gap-3 rounded-[1.5rem] border border-line bg-surface p-4 shadow-[0_6px_20px_-8px_rgba(111,95,214,0.2)] lg:flex-row lg:items-center lg:gap-4"
+              >
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                  <span className="font-semibold text-ink">{u.name}</span>
+                  <span className="text-xs text-muted">@{u.username}</span>
+                  {u.isAdmin && <Badge tone="brand">管理者</Badge>}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {TOOLS_REGISTRY.map((tool) => {
+                    const on = u.tools.includes(tool.toolId);
+                    return (
+                      <label
+                        key={tool.toolId}
+                        className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                          on ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-muted hover:text-ink"
+                        } ${savingIds.has(u.id) ? "pointer-events-none opacity-50" : ""}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          disabled={savingIds.has(u.id)}
+                          onChange={() => toggleTool(u, tool.toolId)}
+                          className="size-3.5 accent-[color:var(--brand)]"
+                        />
+                        {tool.name}
+                      </label>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="secondary"
+                  className="shrink-0 text-negative"
+                  disabled={isSelf || deletingIds.has(u.id)}
+                  onClick={() => handleDelete(u)}
+                  title={isSelf ? "不能刪除自己目前登入的帳號" : undefined}
+                >
+                  {deletingIds.has(u.id) ? "刪除中…" : "刪除"}
+                </Button>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

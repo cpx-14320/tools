@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { HubShell } from "@/components/hub-shell";
+import { SiteShell } from "@/components/site-shell";
 import { RegisterView } from "./register-view";
 
 export const metadata: Metadata = { title: "註冊" };
 
 export default function RegisterPage() {
   return (
-    <HubShell>
+    <SiteShell>
       <RegisterView />
-    </HubShell>
+    </SiteShell>
   );
 }

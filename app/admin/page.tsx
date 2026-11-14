@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
-import { HubShell } from "@/components/hub-shell";
+import { SiteShell } from "@/components/site-shell";
 import { AdminView } from "./admin-view";
 
 export const metadata = { title: "管理後台" };
@@ -10,8 +10,8 @@ export default async function AdminPage() {
   if (!user?.isAdmin) redirect("/");
 
   return (
-    <HubShell>
+    <SiteShell>
       <AdminView />
-    </HubShell>
+    </SiteShell>
   );
 }

@@ -1,22 +1,26 @@
 @import "tailwindcss";
 
+/* 色票跟記帳本（components/expenses/theme.ts）對齊——入口頁、登入、註冊、管理後台
+   本來是一組偏深藍紫的舊色票（brand #2A2550、ink #211D3B），點進記帳本之後整個色調
+   換一套，看起來像兩個不同的網站。這裡只改共用 tokens 的值，用到它們的只有那四頁跟
+   components/ui.tsx（記帳本與搭乘車各自內嵌色碼、不吃這組），所以改動範圍很乾淨。 */
 :root {
-  --bg: #FBFAFF;
+  --bg: #EFE9FB;
   --surface: #FFFFFF;
-  --surface-2: #F2F0FA;
-  --ink: #211D3B;
-  --muted: #847FA6;
-  --line: #EAE7F7;
-  --brand: #2A2550;
+  --surface-2: #F3EFFC;
+  --ink: #4A3B7C;
+  --muted: #9C94C4;
+  --line: #ECE4FA;
+  --brand: #6F5FD6;
   --brand-fg: #FFFFFF;
-  --brand-soft: #EDEAFC;
+  --brand-soft: #F3EFFC;
   --lavender: #8B8DD8;
   --pink: #F6AECB;
   --violet: #C9A6F2;
   --positive: #2FAE82;
-  --positive-soft: #DFF4EB;
-  --negative: #E0607B;
-  --negative-soft: #FBE3E8;
+  --positive-soft: #E3F6EC;
+  --negative: #D1517E;
+  --negative-soft: #FDEEF0;
   --icon: #ada0ff;
 
   /* 六色一起重新調過（2026-10），同一組彩度/亮度（OKLCH 驗證過色盲可辨識度），色相
