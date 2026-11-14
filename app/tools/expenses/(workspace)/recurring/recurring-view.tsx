@@ -450,13 +450,16 @@ export function RecurringView({
                       底下才是金額與進度。原本是「名稱可以點＝編輯」，看不出來可以改，所以
                       改成跟存錢目標一樣掛一顆明確的鉛筆。 */}
                   <div className="flex items-center gap-3">
-                    {selection.selecting ? (
+                    {/* 選取模式下勾選圓點是「加在圖示前面」，不是把圖示換掉——圖示是這一列
+                        用來認人的東西（房租、電話費、轉帳各有各的圖），換成一顆圓點之後
+                        整排卡片只剩文字，要勾哪幾條得一行一行讀。跟明細、分類那幾頁的
+                        選取模式同一個排法（圓點 ＋ 原本的圖示）。 */}
+                    {selection.selecting && (
                       <button type="button" onClick={() => selection.toggle(rule.id)} className="shrink-0">
                         <SelectionDot selected={selection.selectedIds.has(rule.id)} />
                       </button>
-                    ) : (
-                      <IconAvatar icon={row.icon} className={row.colorClass} />
                     )}
+                    <IconAvatar icon={row.icon} className={row.colorClass} />
 
                     <div className="min-w-0 flex-1">
                       <div className="flex min-w-0 flex-wrap items-center gap-2">

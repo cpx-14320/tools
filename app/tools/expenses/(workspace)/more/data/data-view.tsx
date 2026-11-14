@@ -162,8 +162,30 @@ export function DataView({
         }
       />
 
-      <SegmentedControl className="mb-3" fullWidth value={mode} onChange={setMode} options={MODES} />
-      <SegmentedControl className="mb-4" fullWidth value={kind} onChange={setKind} options={KINDS} />
+      {/* 兩層切換刻意長得不一樣。本來兩排都是一模一樣的滿版膠囊，上下疊在一起時看不出
+          哪一排管什麼——使用者會以為是同一組六個選項。
+          第一層「匯出／匯入」是這一頁的主要模式（整頁的內容跟著它整個換掉），所以用實心
+          紫底，跟明細頁的「支出／收入」主分頁同一種表現。
+          第二層「要處理哪一種資料」是在模式底下再挑一個對象，用外框膠囊（跟分類頁篩選
+          彈窗裡的帳戶膠囊同一種），份量明顯輕一階。 */}
+      <SegmentedControl className="mb-3" fullWidth activeTone="solid" value={mode} onChange={setMode} options={MODES} />
+      <div className="mb-4 flex flex-wrap gap-2">
+        {KINDS.map((k) => {
+          const active = k.value === kind;
+          return (
+            <button
+              key={k.value}
+              type="button"
+              onClick={() => setKind(k.value)}
+              className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                active ? "border-[#6F5FD6] bg-[#F3EFFC] font-medium text-[#6F5FD6]" : "border-[#ECE4FA] bg-white text-[#4A3B7C]"
+              }`}
+            >
+              {k.label}
+            </button>
+          );
+        })}
+      </div>
 
       {mode === "export" ? (
         <ExportPanel kind={kind} categories={categories} accounts={accounts} transactions={transactions} budgetRules={budgetRules} />

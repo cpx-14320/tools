@@ -8,6 +8,7 @@ import { PetSigninModal } from "@/components/expenses/pet-signin-modal";
 import { PetHelpModal } from "@/components/expenses/pet-help-modal";
 import { IconImg } from "@/components/expenses/icon-img";
 import { ICON_PATHS } from "@/components/expenses/icon-paths";
+import { useToast } from "@/components/expenses/toast";
 import {
   PET_ITEMS,
   effectiveOutfitId,
@@ -113,13 +114,10 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
   const [feedNonce, setFeedNonce] = useState(0);
   // 現在正在演的那個動作狀態的精靈圖（只有 mood === "action" 時有意義）。
   const [actionSprite, setActionSprite] = useState<string | undefined>(undefined);
-  // 進頁面時剛結算到的獎勵先報一句。放在 state 初始值而不是 effect 裡：這是算得出來的
-  // 初始畫面，不是副作用。
-  const [message, setMessage] = useState<string | null>(() =>
-    initialPet?.justEarned?.length
-      ? `獲得 ${initialPet.justEarned.reduce((s, r) => s + r.coins, 0)} 顆星星幣：${initialPet.justEarned.map((r) => r.label).join("、")}`
-      : null,
-  );
+  // 動作的結果**不另外用文字講**：換衣服、換場地、餵食的結果畫面上直接看得到（角色換
+  // 了一套、場地換了一張、經驗條往前跑），再疊一塊「場地換成星空書房」的訊息框只是把
+  // 商店彈窗的第一行佔掉。只有失敗需要講，那個走共用的提示（useToast）。
+  const showToast = useToast();
 
   /** 今日簽到。跟餵食／購買不同，它沒有品項，而且日期要前端給——伺服器時區不一定跟
    *  使用者同一個（跟 GET /api/expenses/pet 同一個理由）。 */
@@ -143,7 +141,7 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
     }).catch(() => null);
     const data: { pet?: PetState; error?: string } = (await res?.json().catch(() => ({}))) ?? {};
     if (data.error) {
-      setMessage(data.error);
+      showToast(data.error);
       return;
     }
     if (data.pet) {
@@ -153,22 +151,6 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
         setMood("eating");
         setFeedNonce((n) => n + 1);
       }
-      const item = petItemById(itemId);
-      setMessage(
-        action === "toggle"
-          ? `${data.pet.activeStateIds.includes(itemId) ? "勾選" : "取消"}${item?.name}`
-          : action === "feed"
-          ? `餵了${item?.name}，經驗值 +${item?.xp}`
-          : action === "buy"
-            ? item?.kind === "食物"
-              ? `買了${item?.name}，放進背包了`
-              : item?.kind === "背景"
-                ? `買了${item?.name}，場地換好了`
-                : `買了${item?.name}，已經換上`
-            : item?.kind === "背景"
-              ? `場地換成${item?.name}`
-              : `換上${item?.name}`,
-      );
     }
   }
 
@@ -346,7 +328,6 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
           ownedStateIds: pet?.ownedStateIds ?? [],
           foodCounts: pet?.foodCounts ?? {},
         }}
-        message={message}
         onAct={act}
       />
 

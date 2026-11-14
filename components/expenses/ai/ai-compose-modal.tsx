@@ -213,7 +213,7 @@ export function AiComposeModal({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             rows={4}
-            placeholder="早餐飯糰50，午餐小火鍋200，昨天晚餐拉麵200"
+            placeholder="範例：早餐飯糰50，午餐小火鍋200，昨天晚餐拉麵200"
             className="w-full resize-none rounded-2xl border border-[#ECE4FA] bg-white px-4 py-3 text-sm text-[#4A3B7C] outline-none placeholder:text-[#B3ABD4] focus:border-[#6F5FD6]"
           />
 
@@ -264,9 +264,6 @@ export function AiComposeModal({
                   {speech.listening ? "停止收音" : "開麥"}
                 </Button>
               </div>
-              {speech.listening && (
-                <p className={text.muted}>聆聽中…講完按一下「停止收音」。「晚餐150元看電影300元」會自動分成兩筆。</p>
-              )}
             </div>
           )}
 

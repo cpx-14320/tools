@@ -51,7 +51,6 @@ export function PetShopModal({
   onClose,
   pet,
   level,
-  message,
   onAct,
 }: {
   open: boolean;
@@ -59,8 +58,6 @@ export function PetShopModal({
   pet: ShopPetState;
   /** 目前等級——決定造型格子要不要標「Lv.10 解鎖」。 */
   level: number;
-  /** 最近一次動作的提示文字，彈窗開著的時候原本頁面底下的訊息看不到，這裡另外顯示一份。 */
-  message?: string | null;
   /** 食物可以一次買好幾份，count 只對食物有意義（服裝／背景固定一份）。 */
   onAct: (action: "buy", itemId: string, count?: number) => void;
 }) {
@@ -150,8 +147,6 @@ export function PetShopModal({
         ) : undefined
       }
     >
-      {message && <p className="rounded-2xl bg-[#F1E7FD] px-3 py-2 text-center text-[11px] font-medium text-[#5B3B8C]">{message}</p>}
-
       <PetTabs
         value={kind}
         onChange={(next) => {
@@ -170,7 +165,7 @@ export function PetShopModal({
           跟整個角色，裁進三欄的小格子裡看不出差別（跟背包同一個理由）。 */}
       {items.length === 0 ? (
         // 目前只有狀態會是空的：圖還在畫，先讓這一頁存在，使用者知道之後會有東西。
-        <p className="text-center text-xs text-[#9C7FC0]">{kind}準備中。</p>
+        <p className="text-center text-xs text-[#9C7FC0]">準備中。</p>
       ) : (
         <div className={`grid gap-2 ${kind === "食物" ? "grid-cols-3" : "grid-cols-2"}`}>
           {items.map((item) => (

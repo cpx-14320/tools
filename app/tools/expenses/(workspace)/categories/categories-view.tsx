@@ -218,20 +218,20 @@ export function CategoriesView({
   // 按了會被打回原位的按鈕。
   const sortable = parents.filter((c) => !isSystemCategory(c));
 
-  // 多選可以連子分類一起選——選取清單包含目前畫面上的主分類跟它們底下的子分類，
-  // 「全選」才不會漏掉子分類，刪除時也能一次把挑好的子分類清掉。
+  // **只有主分類能勾，子分類跟著主分類走**（勾了主分類，它底下的子分類會一起顯示成
+  // 打勾、但點不動，整列淡化）。
   //
-  // 「修改帳戶」只動得到主分類（預設帳戶照設計只設在主分類上，見 categories.ts 的
-  // defaultAccountForCategory），勾到的子分類會被略過——那個動作自己會講清楚。
+  // 為什麼不讓子分類自己被勾：這一頁兩個批次動作的對象都是主分類——「修改帳戶」的預設
+  // 帳戶照設計只設在主分類上（見 categories.ts 的 defaultAccountForCategory），刪除主分類
+  // 本來就會連子分類一起刪（見 categories.server.ts 的 deleteCategory）。開放單獨勾子分類
+  // 的話，使用者會以為「勾了三個子分類按修改帳戶」會有作用，實際上全部被略過；而勾了
+  // 主分類卻沒勾子分類，刪除時子分類還是會跟著消失，等於畫面上的勾選跟真正會發生的事
+  // 對不起來。改成「子分類只是顯示主分類的狀態」，勾到什麼就會刪到什麼。
   //
   // **系統分類（未分類、手續費）兩個都不能勾**：它們是系統固定會有的分類，刪不掉，
-  // 勾得起來卻刪不掉等於讓人白勾一輪、按了刪除才被打回票。手續費本來開放勾選是為了
-  // 批次改它的預設帳戶，但「可以勾」在這份清單上就代表「可以一起刪」，為了一個很少用
-  // 的批次動作讓系統分類混進刪除範圍並不划算——要改它的預設帳戶，點那一列進編輯彈窗
-  // 一樣改得到。排序那邊也是同一條規則（見上面的 sortable）。
-  const selectableIds = parents
-    .filter((c) => !isSystemCategory(c))
-    .flatMap((c) => [c.id, ...subCategoriesOf(categories, c.id).map((sub) => sub.id)]);
+  // 勾得起來卻刪不掉等於讓人白勾一輪、按了刪除才被打回票。要改手續費的預設帳戶，
+  // 點那一列進編輯彈窗一樣改得到。排序那邊也是同一條規則（見上面的 sortable）。
+  const selectableIds = parents.filter((c) => !isSystemCategory(c)).map((c) => c.id);
   const selection = useSelection(selectableIds);
 
   /** 勾起來的項目裡，真正會被「改帳戶」動到的那幾個。
@@ -618,25 +618,34 @@ export function CategoriesView({
                 {subs.length > 0 && (
                   <div className="flex flex-col divide-y divide-[#F2EEFA] border-t border-[#ECE4FA] bg-[#F9F7FE]">
                     {subs.map((sub, subIndex) => (
-                      <ListRow
-                        key={sub.id}
-                        name={sub.name}
-                        // 子項目的 ↑↓ 只在 subs（同一個主分類底下）裡面移動，不會跨到別的分類。
-                        right={
-                          sorting ? (
-                            <SortArrows
-                              onUp={() => move(subs, subIndex, -1)}
-                              onDown={() => move(subs, subIndex, 1)}
-                              canUp={subIndex > 0}
-                              canDown={subIndex < subs.length - 1}
-                            />
-                          ) : (
-                            <span className={text.muted}>{counts[sub.id] ?? 0} 筆</span>
-                          )
-                        }
-                        leading={selection.selecting ? <SelectionDot selected={selection.selectedIds.has(sub.id)} /> : undefined}
-                        onClick={sorting ? undefined : () => (selection.selecting ? selection.toggle(sub.id) : setModal(sub))}
-                      />
+                      // 選取模式下子分類整列淡掉、點不動：它的勾選狀態完全跟著上面那個
+                      // 主分類（見 selectableIds 的說明），自己不是一個可以單獨勾的對象。
+                      // 淡化跟系統分類同一種處理——讓人一眼看出「這幾列不用管」，而不是
+                      // 去找為什麼點了沒反應。
+                      <div key={sub.id} className={selection.selecting && !isSystemCategory(c) ? "opacity-55" : ""}>
+                        <ListRow
+                          name={sub.name}
+                          // 子項目的 ↑↓ 只在 subs（同一個主分類底下）裡面移動，不會跨到別的分類。
+                          right={
+                            sorting ? (
+                              <SortArrows
+                                onUp={() => move(subs, subIndex, -1)}
+                                onDown={() => move(subs, subIndex, 1)}
+                                canUp={subIndex > 0}
+                                canDown={subIndex < subs.length - 1}
+                              />
+                            ) : (
+                              <span className={text.muted}>{counts[sub.id] ?? 0} 筆</span>
+                            )
+                          }
+                          // 圓點照畫，但顯示的是主分類的狀態：勾了主分類就看得到「底下這幾個
+                          // 也會一起」，不用自己推敲刪除會波及什麼。
+                          leading={
+                            selection.selecting && !isSystemCategory(c) ? <SelectionDot selected={selection.selectedIds.has(c.id)} /> : undefined
+                          }
+                          onClick={sorting || selection.selecting ? undefined : () => setModal(sub)}
+                        />
+                      </div>
                     ))}
                   </div>
                 )}

@@ -109,10 +109,21 @@ export function PetModal({
   );
 }
 
-/** 彈窗底部那顆大按鈕。底圖是整顆畫好的膠囊（504×88），用 bg-[length:100%_100%] 拉到
- *  需要的寬度——它是左右對稱的純色膠囊，橫向拉伸不會讓圖案變形。
- *  disabled 的那一顆改用 secondary 的淡紫底（參考稿的「今日已簽到」），不是把 primary
- *  調淡：兩種狀態是兩張不同的圖，調透明度會讓文字也跟著糊掉。 */
+/** 按鈕高度（px）。端點切片的寬度跟著它等比算，見下面的 CAP_RATIO。 */
+const BUTTON_H = 44;
+/** 端點切片原圖是 30×60（寬是高的一半），所以端點寬度＝按鈕高度的一半。 */
+const CAP_RATIO = 0.5;
+
+/** 彈窗底部那顆大按鈕。
+ *
+ *  **形狀用三張切片，顏色用 CSS**：以前整顆是一張畫好的膠囊圖（pet-button-primary.png
+ *  ／-secondary.png）直接 `background-size: 100% 100%` 拉到需要的寬度——按鈕只要不是
+ *  原圖那個比例，兩頭的圓弧跟亮面就會被拉扁，而且想多一種顏色就得多畫一張圖。
+ *
+ *  現在改成跟養成頁狀態列同一招（見 pet-view.tsx 的 pillBackground）：左端貼左、右端
+ *  貼右、中間那張補滿剩下的寬度，只有中間會被拉伸，所以膠囊兩頭永遠不變形。顏色則是
+ *  把那三張切片當**遮罩**（mask）、底下鋪 CSS 漸層，要幾種顏色就幾種，不用再出圖。
+ *  遮罩鋪在一層獨立的 span 上而不是按鈕本身——mask 會連子元素一起遮，文字會跟著被切掉。 */
 export function PetModalButton({
   children,
   onClick,
@@ -124,18 +135,39 @@ export function PetModalButton({
   tone?: "primary" | "secondary";
   disabled?: boolean;
 }) {
-  const src = tone === "primary" ? "/expenses/pet-button-primary.png" : "/expenses/pet-button-secondary.png";
+  const cap = Math.round(BUTTON_H * CAP_RATIO);
+  const slices = ["pet-level-left", "pet-level-right", "pet-level-leftcenter"].map((n) => `url("/expenses/${n}.png")`).join(", ");
+  const maskStyle = {
+    maskImage: slices,
+    WebkitMaskImage: slices,
+    maskPosition: `left center, right center, ${cap}px center`,
+    WebkitMaskPosition: `left center, right center, ${cap}px center`,
+    maskSize: `${cap}px 100%, ${cap}px 100%, calc(100% - ${cap * 2}px) 100%`,
+    WebkitMaskSize: `${cap}px 100%, ${cap}px 100%, calc(100% - ${cap * 2}px) 100%`,
+    maskRepeat: "no-repeat",
+    WebkitMaskRepeat: "no-repeat",
+  } as const;
+
+  // 主要動作是粉紫漸層（跟養成頁那組插畫同一個色系），次要是淡紫白底。停用時整顆降彩度，
+  // 不是調透明度——透明度會讓底下的插畫背景透出來，看起來像沒畫完。
+  const fill = disabled
+    ? "linear-gradient(180deg, #E8DEF4, #D8CCEB)"
+    : tone === "primary"
+      ? "linear-gradient(180deg, #FF9ECB, #ED5C9B)"
+      : "linear-gradient(180deg, #FFFFFF, #EFE4FB)";
+
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`grid h-11 w-full place-items-center bg-no-repeat text-sm font-bold transition-transform ${
-        tone === "primary" ? "text-white" : "text-[#6B4FA8]"
+      className={`relative grid w-full place-items-center text-sm font-bold transition-transform ${
+        disabled ? "text-[#A694C4]" : tone === "primary" ? "text-white" : "text-[#6B4FA8]"
       } ${disabled ? "" : "active:scale-[0.98]"}`}
-      style={{ backgroundImage: `url("${src}")`, backgroundSize: "100% 100%" }}
+      style={{ height: BUTTON_H }}
     >
-      {children}
+      <span aria-hidden className="absolute inset-0" style={{ ...maskStyle, backgroundImage: fill }} />
+      <span className="relative">{children}</span>
     </button>
   );
 }

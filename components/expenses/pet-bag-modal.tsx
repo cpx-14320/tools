@@ -83,7 +83,7 @@ export function PetBagModal({
 
   return (
     <PetModal open={open} onClose={onClose} title="背包">
-      {/* 預覽：16:9 的橫幅，角色 160px 置中——換裝、換背景的結果直接在上面看得到，不用
+      {/* 預覽：16:9 的橫幅，角色 130px 置中——換裝、換背景的結果直接在上面看得到，不用
           關掉彈窗才知道換起來長怎樣。背景圖本身是 9:16 的直式房間圖，在這個扁框裡只看得到
           其中一條；裁切位置往上挪到 42%（不是置中）——置中會切在地板那一段，往上一點才
           帶到房間的陳設，角色也不會看起來像站在一片空地上。 */}
@@ -91,7 +91,7 @@ export function PetBagModal({
         className="grid aspect-[16/9] w-full place-items-center rounded-2xl border-2 border-[#E3D4F5] p-2"
         style={{ background: petBackground(pet.backgroundId, "center 42%") }}
       >
-        <PetSprite mood={mood} outfitId={currentOutfit} size={160} />
+        <PetSprite mood={mood} outfitId={currentOutfit} size={130} />
       </div>
 
       <PetTabs

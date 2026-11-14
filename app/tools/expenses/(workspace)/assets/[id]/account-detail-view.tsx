@@ -512,6 +512,11 @@ export function AccountDetailView({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className={text.sectionHeading}>明細</p>
             <div className="flex items-center gap-2">
+              {/* 「選取」放在分頁切換的**左邊**：只看轉帳時一筆都選不到，那顆按鈕會整個
+                  收起來（擺一顆按了只會得到空工具列的按鈕，比沒有更讓人困惑）——擺右邊的話
+                  它一消失，右邊的「全部／只看轉帳」就會往右滑一截，使用者剛點完的那顆
+                  在手指底下跑掉。放左邊，消失的是最左邊那格，分頁本身的位置不會動。 */}
+              {!transfersOnly && <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />}
               <SegmentedControl
                 value={transfersOnly ? "transfer" : "all"}
                 onChange={(v) => setTransfersOnly(v === "transfer")}
@@ -521,9 +526,6 @@ export function AccountDetailView({
                   { value: "transfer", label: "只看轉帳" },
                 ]}
               />
-              {/* 只看轉帳的時候一筆都選不到，按鈕就不出現——擺一顆按了只會得到空工具列
-                  的按鈕，比沒有更讓人困惑。 */}
-              {!transfersOnly && <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />}
             </div>
           </div>
 
