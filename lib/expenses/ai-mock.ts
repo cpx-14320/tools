@@ -144,6 +144,37 @@ function guessCategory(
  *  而且待確認區一次要確認五十筆也不是好體驗。 */
 export const AI_MAX_ITEMS = 20;
 
+/** 這一段文字要變成備註時，先把「已經由別的欄位表達過的詞」拿掉。
+ *
+ *  **為什麼**：打「午餐小火鍋200」解析出來的那一列，左邊已經寫著分類「餐飲 › 午餐」、
+ *  右邊寫著日期跟金額，備註再寫一次「午餐小火鍋」就是同一件事講兩遍，而且那三個字會
+ *  一路被寫進消費紀錄，之後在明細頁看到的每一筆午餐都叫「午餐○○」。拿掉之後剩「小火鍋」
+ *  ——真正只有使用者自己知道、別的欄位放不下的那部分。
+ *
+ *  **只拿掉三類詞**，不是看到分類名稱就刪：
+ *  1. 金額（本來就有）。
+ *  2. 日期詞（昨天、前天…）——列上已經有日期欄。
+ *  3. **餐別**（早餐/午餐/晚餐，以及對到同一餐的時段詞「中午」「晚上」），而且**只有在
+ *     這一筆真的被分到那一餐時**才拿掉。
+ *
+ *  第 3 點刻意不放寬成「所有分類名稱」：「電影院看電影350」被分到娛樂 › 電影，把所有
+ *  「電影」都刪掉會剩下「院看」。餐別特別適用是因為它同時是子分類名稱、又是中文裡
+ *  講一筆飯錢時幾乎一定會先講的那兩個字。
+ *
+ *  全部拿掉之後變成空字串是正常的（「午餐200」）：畫面上備註空著會自動顯示分類名稱
+ *  （見 ai-draft-list.tsx），不會變成一列沒有標題的東西。 */
+function noteFromFragment(fragment: string, category: CategoryDTO | null): string {
+  let note = fragment.replace(/\d[\d,]*\s*元?/g, "");
+  note = note.replace(/前天|昨天|昨日|今天|今日/g, "");
+  if (category) {
+    for (const { pattern, sub } of MEAL_BY_TIME) {
+      if (sub !== category.name) continue;
+      note = note.replace(new RegExp(pattern.source, "g"), "");
+    }
+  }
+  return note.trim();
+}
+
 export function mockParse(text: string, categories: CategoryDTO[], todayISO: string): AiDraftItemDTO[] {
   // 支出跟收入一起找。收支方向由「配到哪個分類」決定，不是另外問一次——多問一次就多
   // 一個會答錯的地方，而且使用者會先被迫自己做一次分類判斷，那正是 AI 該做的事。
@@ -153,9 +184,8 @@ export function mockParse(text: string, categories: CategoryDTO[], todayISO: str
     const amount = extractAmount(fragment);
     if (amount === null) continue; // 沒有金額就不是一筆帳
     const { category, hint } = guessCategory(fragment, leaves, categories);
-    // 備註用「把數字拿掉之後剩下的字」——使用者打的是「午餐全家便當 120」，備註應該是
-    // 「午餐全家便當」，不是整串含金額的原文。
-    const note = fragment.replace(/\d[\d,]*\s*元?/g, "").trim();
+    // 備註＝這一段扣掉「金額、日期、已經變成分類的餐別」之後剩下的字，見 noteFromFragment。
+    const note = noteFromFragment(fragment, category);
     items.push({
       key: `${items.length}-${Math.random().toString(36).slice(2, 8)}`,
       categoryId: category?.id ?? null,

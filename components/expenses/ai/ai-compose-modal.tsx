@@ -183,7 +183,18 @@ export function AiComposeModal({
             </Button>
           </div>
         ) : (
-          <div className="flex w-full justify-end">
+          // 「取消」放在解析左邊，跟記帳本其他彈窗的底部一樣（見 ModalFooter）：關彈窗
+          // 的出口本來只有右上角那個 ✕，手指在底部按鈕上的時候要回頭找它很遠。
+          <div className="flex w-full items-center justify-end gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                reset();
+                onClose();
+              }}
+            >
+              取消
+            </Button>
             <Button disabled={busy || input.trim().length === 0} onClick={parse}>
               {busy ? "解析中…" : "解析"}
             </Button>
@@ -193,36 +204,16 @@ export function AiComposeModal({
     >
       {!draft && (
         <>
-          <div className="relative">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              rows={4}
-              placeholder="午餐全家便當 120，晚上跟朋友看電影 350"
-              // 右邊留出麥克風那顆按鈕的位置（pr-14），不然打字會跑到按鈕底下。
-              className="w-full resize-none rounded-2xl border border-[#ECE4FA] bg-white py-3 pl-4 pr-14 text-sm text-[#4A3B7C] outline-none placeholder:text-[#B3ABD4] focus:border-[#6F5FD6]"
-            />
-            {/* 瀏覽器不支援語音辨識時整顆不顯示（見 useSpeechInput 的說明）——留一顆按了
-                沒反應的按鈕比沒有更糟。 */}
-            {speech.supported && (
-              <button
-                type="button"
-                onClick={speech.listening ? speech.stop : speech.start}
-                aria-label={speech.listening ? "停止收音" : "用說的輸入"}
-                title={speech.listening ? "停止收音" : "用說的輸入"}
-                className={`absolute right-3 top-3 grid size-9 place-items-center rounded-full text-base transition-colors ${
-                  // 收音中換成紅色方塊＋呼吸效果：麥克風開著是會讓人介意的狀態，要一眼看得出來。
-                  speech.listening ? "animate-pulse bg-[#D1517E] text-white" : "bg-[#F3EFFC] text-[#6F5FD6]"
-                }`}
-              >
-                {speech.listening ? "■" : "🎤"}
-              </button>
-            )}
-          </div>
-          {speech.listening && <p className={`-mt-1 ${text.muted}`}>聆聽中…講完按一下紅色按鈕。講到金額就算一筆，「晚餐150元看電影300元」會自動分成兩筆。</p>}
-          <p className={`${text.faint} leading-relaxed`}>
-            一次最多 20 筆。用逗號或換行分開每一筆，日期可以講「昨天」「前天」，沒講就當作今天。收入或支出會看分類自己判斷。
-          </p>
+          {/* 輸入框裡不再疊一顆麥克風：語音有自己的一塊（見下面），跟掃發票並排成兩種
+              「不用自己打字」的入口。塞在輸入框角落的圖示按鈕既要佔走打字的位置
+              （本來得留 pr-14），也看不出它跟掃發票是同一類的東西。 */}
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            rows={4}
+            placeholder="早餐飯糰50，午餐小火鍋200，昨天晚餐拉麵200"
+            className="w-full resize-none rounded-2xl border border-[#ECE4FA] bg-white px-4 py-3 text-sm text-[#4A3B7C] outline-none placeholder:text-[#B3ABD4] focus:border-[#6F5FD6]"
+          />
 
           {/* 掃發票：走統一發票上的 QR code，不是對照片做文字辨識——QR 裡本來就有金額跟
               日期，是讀出來的不是認出來的，而且整段解碼都在瀏覽器裡跑完，照片不會上傳。 */}
@@ -251,6 +242,35 @@ export function AiComposeModal({
               }}
             />
           </div>
+
+          {/* 語音輸入：跟掃發票同一種卡片——兩個都是「不用自己打字」的輸入方式，長得一樣
+              才看得出是同一類。瀏覽器不支援語音辨識時整塊不顯示（見 useSpeechInput），
+              留一顆按了沒反應的按鈕比沒有更糟。 */}
+          {speech.supported && (
+            <div className="flex flex-col gap-1.5 rounded-2xl border border-[#ECE4FA] bg-[#FBF9FE] px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="min-w-0">
+                  <span className={`block ${text.body}`}>語音輸入</span>
+                  <span className={`block ${text.muted}`}>用講的，講到金額就自動算一筆</span>
+                </span>
+                <Button
+                  variant="ghost"
+                  // 收音中換成紅字：麥克風開著是會讓人介意的狀態，要一眼看得出來。
+                  className={speech.listening ? "text-[#D1517E] hover:text-[#D1517E]" : ""}
+                  onClick={speech.listening ? speech.stop : speech.start}
+                >
+                  {speech.listening ? "停止收音" : "開麥"}
+                </Button>
+              </div>
+              {speech.listening && (
+                <p className={text.muted}>聆聽中…講完按一下「停止收音」。「晚餐150元看電影300元」會自動分成兩筆。</p>
+              )}
+            </div>
+          )}
+
+          <p className={`${text.faint} leading-relaxed`}>
+            一次最多 20 筆。用逗號或換行分開每一筆，日期可以講「昨天」「前天」，沒講就當作今天。收入或支出會看分類自己判斷。
+          </p>
           {/* 沒金鑰不擋著不讓用——目前本來就是模擬解析。但要讓人找得到設定的地方。 */}
           <button type="button" onClick={onOpenKeyModal} className="self-start text-xs font-medium text-[#6F5FD6]">
             {hasKey ? "已設定 API Key，點這裡更換" : "目前是模擬解析 · 設定 API Key"}

@@ -46,15 +46,22 @@ function AiKeyModalBody({ open, onClose }: { open: boolean; onClose: () => void 
           ) : (
             <span />
           )}
-          <Button
-            disabled={!canSave}
-            onClick={() => {
-              save(draft);
-              onClose();
-            }}
-          >
-            儲存
-          </Button>
+          {/* 取消擺在儲存左邊，跟記帳本其他彈窗的底部一致（見 ModalFooter）——貼到一半
+              想放棄時，不用回頭找右上角那個 ✕。 */}
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={onClose}>
+              取消
+            </Button>
+            <Button
+              disabled={!canSave}
+              onClick={() => {
+                save(draft);
+                onClose();
+              }}
+            >
+              儲存
+            </Button>
+          </div>
         </div>
       }
     >

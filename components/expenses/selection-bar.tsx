@@ -104,8 +104,8 @@ export interface SelectionPending {
  *  版本（動作一列、數量一列）在釘住之後太佔。
  *
  *  待套用（pending）狀態也是一列：「修改分類：→ 零嘴 › 甜食 ・ 已選 N 項」在左，
- *  「取消／完成」在右——那兩顆是這次修改的取消與送出，管的是「挑好的那個目標」，
- *  跟上面那顆退出選取模式的「取消」不是同一層。 */
+ *  「重選／完成」在右——那兩顆管的是「挑好的那個目標」，跟上面那顆退出選取模式的
+ *  「取消」不是同一層，所以刻意不共用同一個字（見底下那顆按鈕的說明）。 */
 export function SelectionBar({
   count,
   total,
@@ -143,10 +143,14 @@ export function SelectionBar({
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {/* 「取消」只放掉剛選的目標值，不會整個退出選取模式——勾了半天的項目因為想換
-              一個帳戶就全部清掉，使用者得從頭再勾一次。 */}
+          {/* 「重選」只放掉剛挑的目標值，不會整個退出選取模式——勾了半天的項目因為想換
+              一個帳戶就全部清掉，使用者得從頭再勾一次。
+              **為什麼不叫「取消」**：上面那顆退出選取模式的也叫取消，同一個畫面上兩顆
+              一樣的字做不同範圍的事（一個丟掉這次挑的目標、一個丟掉整批勾選），使用者
+              只能靠位置猜。這顆做的是「回去重挑一個」，就寫重選；「取消」在整個記帳本裡
+              固定只代表一件事：離開選取模式。 */}
           <button type="button" disabled={pending.busy} onClick={pending.onCancel} className="text-xs font-medium text-[#9C94C4] disabled:opacity-40">
-            取消
+            重選
           </button>
           <button
             type="button"
