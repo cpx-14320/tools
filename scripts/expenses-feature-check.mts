@@ -21,7 +21,6 @@
  *  結束碼：全部通過是 0，有任何一項失敗是 1（可以接 CI 或 pre-push hook）。
  *  詳細報告另外寫一份到 scripts/.feature-check-report.txt（已在 .gitignore 裡，不會進版控）。
  */
-import { ObjectId } from "mongodb";
 import { readFileSync, writeFileSync } from "node:fs";
 import bcrypt from "bcryptjs";
 
