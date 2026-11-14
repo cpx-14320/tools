@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Switch } from "../button";
 import { IconAvatar } from "../icon-avatar";
 import { ICON_PATHS } from "../icon-paths";
@@ -8,10 +9,7 @@ import { ListCard } from "../list-row";
 import { text } from "../theme";
 import { useToast } from "../toast";
 import { AiKeyModal } from "./ai-key-modal";
-import { AiDraftsModal } from "./ai-drafts-modal";
 import { maskKey, useAiKey } from "./use-ai-key";
-import { pendingItems, type AiDraftDTO } from "@/lib/expenses/ai-drafts";
-import type { CategoryDTO } from "@/lib/expenses/categories";
 
 /** 設定頁的「AI 記帳」整區——整個 AI 功能在設定頁的唯一接觸點。
  *
@@ -23,21 +21,16 @@ import type { CategoryDTO } from "@/lib/expenses/categories";
  *  沒有待確認的批次時那一列整個不顯示。 */
 export function AiSettingsSection({
   initialEnabled,
-  initialDrafts,
-  categories,
+  draftCount,
 }: {
   initialEnabled: boolean;
-  initialDrafts: AiDraftDTO[];
-  categories: CategoryDTO[];
+  /** 還沒處理完的解析批次有幾批。清單本身是獨立的一頁（/more/ai-drafts），這裡只掛數字。 */
+  draftCount: number;
 }) {
   const showToast = useToast();
   const { hasKey, key } = useAiKey();
   const [enabled, setEnabled] = useState(initialEnabled);
-  const [drafts, setDrafts] = useState(initialDrafts);
   const [keyOpen, setKeyOpen] = useState(false);
-  const [draftsOpen, setDraftsOpen] = useState(false);
-
-  const pendingDrafts = drafts.filter((d) => d.status === "pending" && pendingItems(d).length > 0);
 
   async function toggle(next: boolean) {
     // 先動畫面再送出：這個開關純粹是顯示偏好，送失敗了最糟就是下次進來回到舊值，
@@ -87,20 +80,19 @@ export function AiSettingsSection({
           </button>
         )}
 
-        {enabled && pendingDrafts.length > 0 && (
-          <button type="button" onClick={() => setDraftsOpen(true)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-[#F3EFFC]">
+        {/* 跟上面幾組功能入口一樣是 <Link>：右邊那個 › 代表會換頁，而它現在真的會
+            （/more/ai-drafts）。本來是開彈窗，點進去還要再疊第二層彈窗處理單一批次。 */}
+        {enabled && draftCount > 0 && (
+          <Link href="/tools/expenses/more/ai-drafts" className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-[#F3EFFC]">
             <IconAvatar icon={ICON_PATHS.aiDrafts} plain />
             <span className={`min-w-0 flex-1 ${text.body}`}>待確認的解析結果</span>
-            <span className="shrink-0 rounded-full bg-[#F3EFFC] px-2 py-0.5 text-xs font-semibold tabular-nums text-[#6F5FD6]">
-              {pendingDrafts.length}
-            </span>
+            <span className="shrink-0 rounded-full bg-[#F3EFFC] px-2 py-0.5 text-xs font-semibold tabular-nums text-[#6F5FD6]">{draftCount}</span>
             <span className={text.faint}>›</span>
-          </button>
+          </Link>
         )}
       </ListCard>
 
       <AiKeyModal open={keyOpen} onClose={() => setKeyOpen(false)} />
-      <AiDraftsModal open={draftsOpen} drafts={drafts} categories={categories} onClose={() => setDraftsOpen(false)} onDraftsChange={setDrafts} />
     </div>
   );
 }

@@ -13,10 +13,6 @@ import { PageHeader } from "@/components/expenses/page-header";
 import { text } from "@/components/expenses/theme";
 import { TOOLS_REGISTRY } from "@/lib/tools-registry";
 import { AiSettingsSection } from "@/components/expenses/ai/ai-settings-section";
-import { TrashModal } from "@/components/expenses/trash-modal";
-import type { TrashItemDTO } from "@/lib/expenses/trash";
-import type { AiDraftDTO } from "@/lib/expenses/ai-drafts";
-import type { CategoryDTO } from "@/lib/expenses/categories";
 
 interface SettingItem {
   href: string;
@@ -67,25 +63,23 @@ export function MoreView({
    *  這個數字跟著歸零，不用自己再打一次 API。 */
   pendingCount,
   aiEnabled,
-  aiDrafts,
-  categories,
-  trash,
+  aiDraftCount,
+  trashCount,
 }: {
   pendingCount: number;
   /** AI 記帳整區的狀態。整個功能在這一頁的接觸點只有下面那一行 <AiSettingsSection />，
    *  不要的話刪那一行＋刪 components/expenses/ai/ 資料夾就乾淨了。 */
   aiEnabled: boolean;
-  aiDrafts: AiDraftDTO[];
-  /** 待確認清單要用它顯示分類、補分類。 */
-  categories: CategoryDTO[];
-  /** 垃圾桶裡的項目。空的時候那一區整個不顯示（見下面）。 */
-  trash: TrashItemDTO[];
+  /** 還沒處理完的解析批次有幾批——只拿來掛在那一列右邊的徽章，清單本身在
+   *  /more/ai-drafts 那一頁自己讀。 */
+  aiDraftCount: number;
+  /** 垃圾桶裡有幾項。空的時候那一區整個不顯示（見下面）；清單本身在 /more/trash
+   *  那一頁自己讀。 */
+  trashCount: number;
 }) {
   const router = useRouter();
   const { user, logout } = useAuth();
   const otherTools = TOOLS_REGISTRY.filter((t) => t.toolId !== CURRENT_TOOL_ID && (user?.tools ?? []).includes(t.toolId));
-  const [trashItems, setTrashItems] = useState(trash);
-  const [trashOpen, setTrashOpen] = useState(false);
   const [resetScope, setResetScope] = useState<ResetScope | null>(null);
   // 預設不勾：清資料多半是想重新記帳，不是想放棄養成進度。
   const [resetPet, setResetPet] = useState(false);
@@ -140,27 +134,29 @@ export function MoreView({
 
         {/* AI 記帳：緊接在上面那幾組功能入口後面——它是一個可以開關的附加功能，跟那幾組
             「記帳本的設定」是同一層；放到帳號／清除資料後面會像是系統層級的東西。 */}
-        <AiSettingsSection initialEnabled={aiEnabled} initialDrafts={aiDrafts} categories={categories} />
+        <AiSettingsSection initialEnabled={aiEnabled} draftCount={aiDraftCount} />
 
         {/* 最近刪除接在記帳本自己的設定後面、「其他小工具」之前：它講的還是這個工具裡的
             資料，跟「跳去別的工具」不是同一件事。垃圾桶是空的時候整區不顯示，不要讓一個
             平常用不到的東西天天佔版面。 */}
-        {trashItems.length > 0 && (
+        {trashCount > 0 && (
           <div>
             <p className={`mb-2 px-1 ${text.label}`}>最近刪除</p>
             <ListCard>
-              {/* 排版跟上面那幾組功能入口一樣（圖示＋標題／說明＋›），只是右邊多一個件數。 */}
-              <button type="button" onClick={() => setTrashOpen(true)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-[#F3EFFC]">
+              {/* 跟上面那幾組功能入口一樣是 <Link>（圖示＋標題／說明＋›），只是右邊多一個
+                  件數。本來這一列是開彈窗的 <button>，右邊卻掛著代表「會換頁」的 ›——
+                  同一張卡裡兩種行為卻同一種長相。 */}
+              <Link href="/tools/expenses/more/trash" className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-[#F3EFFC]">
                 <IconAvatar icon={ICON_PATHS.settingTrash} plain />
                 <span className="min-w-0 flex-1">
                   <span className={`block ${text.body}`}>已刪除的項目</span>
                   <span className={`block ${text.muted}`}>還原誤刪的紀錄，或永久清掉</span>
                 </span>
                 <span className="shrink-0 rounded-full bg-[#F3EFFC] px-2 py-0.5 text-xs font-semibold tabular-nums text-[#6F5FD6]">
-                  {trashItems.length}
+                  {trashCount}
                 </span>
                 <span className={text.faint}>›</span>
-              </button>
+              </Link>
             </ListCard>
           </div>
         )}
@@ -216,16 +212,6 @@ export function MoreView({
           </ListCard>
         </div>
       </div>
-
-      <TrashModal
-        open={trashOpen}
-        items={trashItems}
-        onClose={() => setTrashOpen(false)}
-        onItemsChange={setTrashItems}
-        // 還原之後固定收支的待確認筆數可能會變（還原一條規則＝它過去的期數又回來了），
-        // 整頁重抓最簡單也最不會漏。
-        onRestored={() => router.refresh()}
-      />
 
       <ConfirmModal
         open={resetScope !== null}

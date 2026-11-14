@@ -1,18 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Modal } from "./modal";
-import { Button, SegmentedControl } from "./button";
-import { ListCard, ListRow } from "./list-row";
-import { TransactionRowLabel } from "./transaction-row-label";
-import { SelectionDot } from "./selection-bar";
+import { useRouter } from "next/navigation";
+import { SegmentedControl } from "@/components/expenses/button";
+import { ListCard, ListRow } from "@/components/expenses/list-row";
+import { PageHeader } from "@/components/expenses/page-header";
+import { StickyToolbar } from "@/components/expenses/sticky-toolbar";
+import { TransactionRowLabel } from "@/components/expenses/transaction-row-label";
+import { SelectionBar, SelectionDot } from "@/components/expenses/selection-bar";
+import { ConfirmModal } from "@/components/expenses/confirm-modal";
+import { text } from "@/components/expenses/theme";
+import { useToast } from "@/components/expenses/toast";
+import { useAsyncAction } from "@/components/expenses/use-async-action";
+import { useBusy } from "@/components/expenses/busy";
+import { ICON_PATHS } from "@/components/expenses/icon-paths";
 import { categoryColorClass } from "@/lib/expenses/categories";
-import { ConfirmModal } from "./confirm-modal";
-import { text } from "./theme";
-import { useToast } from "./toast";
-import { useAsyncAction } from "./use-async-action";
-import { useBusy } from "./busy";
-import { ICON_PATHS } from "./icon-paths";
 import { TRASH_KIND_LABEL, trashGroupOf, type TrashGroup, type TrashItemDTO, type TrashKind } from "@/lib/expenses/trash";
 import { formatCurrency, formatDateWithWeekday } from "@/lib/format";
 
@@ -27,30 +29,25 @@ const KIND_ICON: Record<TrashKind, string> = {
   category: ICON_PATHS.settingCategories,
 };
 
-/** 設定頁的「最近刪除」。
+/** 「設定 › 最近刪除」。
+ *
+ *  **為什麼是獨立一頁而不是彈窗**：設定頁那一列跟它上下的收支分類、預算設定長得一模一樣
+ *  （圖示＋說明＋右邊一個「›」），隔壁點了都是換頁，只有這一列開彈窗。而且這裡面還要再開
+ *  確認彈窗，彈窗疊彈窗之後，手機的返回手勢會直接把整個記帳本退掉，而不是關掉最上層。
+ *  變成一頁之後：網址可以指（刪除失敗的提示就能直接連過來）、返回鍵行為正常、設定頁也
+ *  不用為了「可能不會打開」的東西先把整包垃圾桶讀出來。
  *
  *  **沒有自動過期**：這些是使用者自己記了很久的資料，時間到了自己消失會嚇到人，而且
- *  「我以為還在」比「垃圾桶有點滿」糟得多。只能由使用者自己按「永久刪除」或「清空」。
+ *  「我以為還在」比「垃圾桶有點滿」糟得多。只能由使用者自己按「永久刪除」。
  *
  *  還原的三種結果（正常、撞名被改名、原本的帳戶已不在）都會用提示講清楚——後兩種不是
  *  錯誤，但使用者需要知道東西回來之後長得跟原本不太一樣。 */
-export function TrashModal({
-  open,
-  items,
-  onClose,
-  onItemsChange,
-  onRestored,
-}: {
-  open: boolean;
-  items: TrashItemDTO[];
-  onClose: () => void;
-  onItemsChange: (items: TrashItemDTO[]) => void;
-  /** 還原之後呼叫端可能要重抓自己的清單（設定頁沒有需要跟著更新的東西，所以是選填）。 */
-  onRestored?: () => void;
-}) {
+export function TrashView({ initialItems }: { initialItems: TrashItemDTO[] }) {
+  const router = useRouter();
   const showToast = useToast();
   const runBusy = useBusy();
-  // 勾起來的那幾項。還原跟永久刪除都靠底下那兩顆，每一列不再各掛一組按鈕——一列兩顆
+  const [items, setItems] = useState(initialItems);
+  // 勾起來的那幾項。還原跟永久刪除都靠工具列那兩顆，每一列不再各掛一組按鈕——一列兩顆
   // 小按鈕在手機上很容易按錯，而且「永久刪除」被按錯的代價是資料真的沒了。
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [purgeOpen, setPurgeOpen] = useState(false);
@@ -60,23 +57,14 @@ export function TrashModal({
   // 種類篩選。做成膠囊而不是分頁：垃圾桶平常是空的，一進來先看到七個分頁很笨重，而且
   // 多數情況要找的是「我剛剛刪掉的那一筆」，照日期往下看就到了。只有在一次刪了很多種
   // 東西、要挑其中一類還原的時候才需要篩，所以它是可選的收斂手段，不是主要的瀏覽方式。
-  // 只列「垃圾桶裡真的有的種類」——列出七個固定選項，其中五個按了都是空的沒有意義。
   const [group, setGroup] = useState<TrashGroup>("all");
 
   const visible = items.filter((i) => group === "all" || trashGroupOf(i.kind) === group);
 
   // 勾選的項目只算「現在看得到的」：篩選切換後，之前勾到、現在被篩掉的那幾項要跟著
-  // 失效，不然底下的「還原 N 項」會把看不見的東西算進去（跟 useSelection 同一個理由）。
+  // 失效，不然「還原 N 項」會把看不見的東西算進去（跟 useSelection 同一個理由）。
   const chosen = visible.filter((i) => selected.has(i.id));
 
-  const allVisibleSelected = visible.length > 0 && visible.every((i) => selected.has(i.id));
-
-  /** 關掉彈窗時把勾選清掉：下次打開要是乾淨的——上次勾了一半沒處理的項目還留著，
-   *  使用者看到「還原 3 項」會不知道是哪三項。 */
-  function close() {
-    setSelected(new Set());
-    onClose();
-  }
   const toggle = (id: string) =>
     setSelected((set) => {
       const next = new Set(set);
@@ -99,7 +87,7 @@ export function TrashModal({
     )
       .then((r) => r.json())
       .catch(() => ({ error: "操作失敗，再試一次" }));
-    if (data.items) onItemsChange(data.items);
+    if (data.items) setItems(data.items);
     return data;
   }
 
@@ -131,7 +119,9 @@ export function TrashModal({
       return;
     }
     setSelected(new Set());
-    onRestored?.();
+    // 還原出去的東西會影響別頁的數字（還原一條固定收支規則＝它過去的期數又回來了，
+    // 設定頁那顆待確認徽章要跟著變）。整頁重抓最簡單也最不會漏。
+    router.refresh();
     // 撞名改名、原本掛的帳戶不在了——這兩種不是錯誤，但使用者需要知道東西回來之後
     // 長得跟原本不太一樣。
     if (renamed > 0) showToast(`已還原 ${targets.length} 項，其中 ${renamed} 項因為名稱重複而改了名`);
@@ -150,70 +140,60 @@ export function TrashModal({
   });
 
   return (
-    <>
-      <Modal
-        open={open}
-        onClose={close}
-        title="最近刪除"
-        fullHeight
-        footer={
-          // 左下角原本是「清空垃圾桶」：那是一顆按下去就把全部東西永久刪掉的按鈕，
-          // 擺在這裡太容易誤觸，而且想清空的人大可全選再按永久刪除。改成兩顆針對
-          // 勾選項目的動作，沒勾任何一項時都是停用狀態。
-          <div className="flex w-full items-center justify-between gap-2">
-            <button
-              type="button"
-              disabled={chosen.length === 0}
-              onClick={() => setPurgeOpen(true)}
-              className="text-xs font-medium text-[#D1517E] disabled:opacity-40"
-            >
-              永久刪除
-            </button>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" onClick={close}>
-                關閉
-              </Button>
-              <Button disabled={chosen.length === 0 || restore.busy || askRestore.busy} onClick={() => askRestore.run(chosen)}>
-                還原
-              </Button>
-            </div>
-          </div>
-        }
-      >
-        {items.length === 0 ? (
+    <div className="flex flex-col gap-4">
+      {items.length === 0 ? (
+        <>
+          <PageHeader flush title="最近刪除" />
           <p className={`px-1 ${text.faint}`}>目前沒有已刪除的項目。</p>
-        ) : (
-          <>
-            {/* 分頁用共用的 SegmentedControl（跟養成的商店彈窗同一顆）。
-                固定四格、不顯示數字：數字會讓這一排的寬度隨資料跳動，而且「分類 3」裡的
-                3 跟右邊每一列的筆數長得像，容易看成同一種東西。 */}
-            <div className="flex items-center justify-between gap-2">
-              <SegmentedControl
-                value={group}
-                onChange={setGroup}
-                options={[
-                  { value: "all", label: "全部" },
-                  { value: "entry", label: "明細" },
-                  { value: "category", label: "分類" },
-                  { value: "account", label: "帳戶" },
-                ]}
-              />
-              {/* 全選只選「現在這個分頁看得到的」——切到「分類」按全選，使用者要的是
-                  全選分類，不是連別的分頁一起勾起來。 */}
-              <button
-                type="button"
-                onClick={() => setSelected(allVisibleSelected ? new Set() : new Set(visible.map((i) => i.id)))}
-                className="shrink-0 text-xs font-medium text-[#6F5FD6]"
-              >
-                {allVisibleSelected ? "取消全選" : "全選"}
-              </button>
-            </div>
-            {/* 切到某個分頁但那個分頁剛好沒東西（例如垃圾桶裡只有分類，切去「帳戶」）：
-                講清楚是「這個分頁沒有」，不要整塊空白讓人以為沒反應。 */}
-            {visible.length === 0 && <p className={`px-1 ${text.faint}`}>還沒有任何資料。</p>}
-            {/* 依「刪除日期」分組，日期當小標題——跟明細頁的消費清單同一種排法。
-                一天刪好幾次是常有的事，沒有分組的話整串看起來就是一長條，要找「我昨天
-                刪掉的那筆」只能一列一列看日期。 */}
+        </>
+      ) : (
+        <>
+          {/* 標題跟種類篩選排同一列、整塊釘住：這一頁的工具列固定有兩列（篩選＋選取），
+              標題自己再佔一列的話，清單在手機上只剩半個畫面。篩選那幾顆字很短，擠得下。 */}
+          <StickyToolbar>
+            <PageHeader
+              flush
+              title="最近刪除"
+              actions={
+                <SegmentedControl
+                  value={group}
+                  onChange={setGroup}
+                  size="xs"
+                  options={[
+                    { value: "all", label: "全部" },
+                    { value: "entry", label: "明細" },
+                    { value: "category", label: "分類" },
+                    { value: "account", label: "帳戶" },
+                  ]}
+                />
+              }
+            />
+            {/* 跟其他清單頁的選取工具列同一顆元件：左邊全選＋已選幾項，右邊還原（淡紫
+                膠囊）跟永久刪除（紅字）。這一頁永遠處在選取狀態，所以沒有「選取」開關。 */}
+            <SelectionBar
+              count={chosen.length}
+              total={visible.length}
+              actions={[
+                {
+                  label: "還原",
+                  onClick: () => void askRestore.run(chosen),
+                  disabled: restore.busy || askRestore.busy,
+                },
+              ]}
+              deleteLabel="永久刪除"
+              onToggleAll={() => setSelected(chosen.length === visible.length ? new Set() : new Set(visible.map((i) => i.id)))}
+              onDelete={() => setPurgeOpen(true)}
+            />
+          </StickyToolbar>
+
+          {/* 切到某個分頁但那個分頁剛好沒東西（例如垃圾桶裡只有分類，切去「帳戶」）：
+              講清楚是「這個分頁沒有」，不要整塊空白讓人以為沒反應。 */}
+          {visible.length === 0 && <p className={`px-1 ${text.faint}`}>還沒有任何資料。</p>}
+
+          {/* 依「刪除日期」分組，日期當小標題——跟明細頁的消費清單同一種排法。
+              一天刪好幾次是常有的事，沒有分組的話整串看起來就是一長條，要找「我昨天
+              刪掉的那筆」只能一列一列看日期。 */}
+          <div className="flex flex-col gap-4">
             {[...groups.entries()].map(([date, dayItems]) => (
               <div key={date}>
                 <p className={`mb-1.5 px-1 font-medium ${text.muted}`}>{formatDateWithWeekday(date)}</p>
@@ -222,7 +202,7 @@ export function TrashModal({
                     const isEntry = trashGroupOf(item.kind) === "entry";
                     // 明細（交易／轉帳）刪除當下把「日期 · 金額」存成一串 sublabel（見
                     // transactions.server.ts／transfers.server.ts），這裡拆開來：金額挪到
-                    // 右邊，跟首頁「最近消費」同一個位置、同一種樣式；日期留在副標裡。
+                    // 右邊，跟首頁「最近消費」同一個位置、同一種樣式。
                     const sublabelParts = item.sublabel?.split(" · ") ?? [];
                     const amount = isEntry ? Number(sublabelParts[sublabelParts.length - 1]) : NaN;
                     const hasAmount = isEntry && !Number.isNaN(amount);
@@ -230,12 +210,13 @@ export function TrashModal({
 
                     if (isEntry) {
                       // 明細列直接借用明細頁／首頁最近消費同一顆 TransactionRowLabel，而不是
-                      // 自己複製一份長得很像的 JSX——那顆字重／顏色之後要調，這裡才會跟著動，
-                      // 不會變成三個地方各改各的、慢慢不同步。
+                      // 自己複製一份長得很像的 JSX——那顆字重／顏色之後要調，這裡才會跟著動。
                       return (
                         <button
                           key={item.id}
                           type="button"
+                          role="checkbox"
+                          aria-checked={selected.has(item.id)}
                           onClick={() => toggle(item.id)}
                           className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
                         >
@@ -279,9 +260,9 @@ export function TrashModal({
                 </ListCard>
               </div>
             ))}
-          </>
-        )}
-      </Modal>
+          </div>
+        </>
+      )}
 
       {/* 撞名確認：現有的清單裡已經有同名的東西，還原回來的那幾項會被自動加序號。
           一次列出全部會改名的，不是一項跳一次——批次還原十項、其中三項撞名的話，
@@ -311,7 +292,7 @@ export function TrashModal({
         onClose={() => setRenameConfirm(null)}
       />
 
-      {/* 永久刪除是這個彈窗裡唯一不可逆的動作，所以要列出刪的是哪幾項、而且明講救不回來。
+      {/* 永久刪除是這一頁唯一不可逆的動作，所以要列出刪的是哪幾項、而且明講救不回來。
           選到三項以上就不一一列出（名稱可能很長），只講數量。 */}
       <ConfirmModal
         open={purgeOpen}
@@ -342,6 +323,6 @@ export function TrashModal({
         }}
         onClose={() => setPurgeOpen(false)}
       />
-    </>
+    </div>
   );
 }

@@ -64,10 +64,13 @@ export function SelectionToggle({ selecting, onToggle }: { selecting: boolean; o
   );
 }
 
-/** 多選模式的其中一個動作（改帳戶、改分類…）。刪除不走這裡，它有自己的樣式跟位置。 */
+/** 多選模式的其中一個動作（改帳戶、改分類、還原…）。刪除不走這裡，它有自己的樣式跟位置。 */
 export interface SelectionAction {
   label: string;
   onClick: () => void;
+  /** 勾了東西但這個動作仍然不能按時給 true（待確認頁的「確認」遇到還沒分類完的批次就是
+   *  這種）。沒勾任何一項時本來就是停用的，不用在呼叫端自己再判斷一次。 */
+  disabled?: boolean;
 }
 
 /** 「已經選好要套用什麼，但還沒送出」的待確認狀態。
@@ -106,18 +109,24 @@ export interface SelectionPending {
 export function SelectionBar({
   count,
   total,
+  unit = "項",
   actions = [],
   pending,
   onToggleAll,
   onDelete,
+  deleteLabel = "刪除",
 }: {
   count: number;
   total: number;
+  /** 「已選 N ○」的量詞。預設「項」；待確認那頁一次處理的是一整批解析結果，用「批」。 */
+  unit?: string;
   actions?: SelectionAction[];
   /** 給了就切換成待確認樣式：第一行變成「要套用什麼＋完成」，動作跟刪除都先收起來。 */
   pending?: SelectionPending;
   onToggleAll: () => void;
   onDelete: () => void;
+  /** 紅色那顆的字。預設「刪除」；垃圾桶那頁刪掉就真的沒了，要寫明「永久刪除」。 */
+  deleteLabel?: string;
 }) {
   const allSelected = total > 0 && count === total;
   const disabled = count === 0;
@@ -129,7 +138,9 @@ export function SelectionBar({
             哪些項目，等於邀請使用者在送出前一刻又動一次範圍。 */}
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate text-xs font-medium text-[#4A3B7C]">{pending.summary}</span>
-          <span className="shrink-0 text-xs text-[#9C94C4]">已選 {count} 項</span>
+          <span className="shrink-0 text-xs text-[#9C94C4]">
+            已選 {count} {unit}
+          </span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {/* 「取消」只放掉剛選的目標值，不會整個退出選取模式——勾了半天的項目因為想換
@@ -160,14 +171,16 @@ export function SelectionBar({
         <button type="button" onClick={onToggleAll} className="shrink-0 text-xs font-medium text-[#6F5FD6]">
           {allSelected ? "取消全選" : "全選"}
         </button>
-        <span className="truncate text-xs text-[#9C94C4]">已選 {count} 項</span>
+        <span className="truncate text-xs text-[#9C94C4]">
+          已選 {count} {unit}
+        </span>
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {actions.map((action) => (
           <button
             key={action.label}
             type="button"
-            disabled={disabled}
+            disabled={disabled || action.disabled}
             onClick={action.onClick}
             // 改資料的動作用淡紫膠囊（跟固定收支待確認的「確認」同一顆），刪除維持純紅字
             // 不加底——同樣是按鈕，但一個是補資料、一個是不可逆，不該長得一樣重。
@@ -177,7 +190,7 @@ export function SelectionBar({
           </button>
         ))}
         <button type="button" disabled={disabled} onClick={onDelete} className="text-xs font-semibold text-[#D1517E] disabled:opacity-40">
-          刪除
+          {deleteLabel}
         </button>
       </div>
     </div>
