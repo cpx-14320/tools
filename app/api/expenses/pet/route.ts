@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { requireTool } from "@/lib/auth";
-import { buyFood, buyWearable, equipWearable, feedPet, settlePetRewards, signInToday, toggleState } from "@/lib/expenses/pet.server";
+import { buyFood, buyWearable, equipWearable, feedPet, redeemCode, settlePetRewards, signInToday, toggleState } from "@/lib/expenses/pet.server";
 import { petItemById } from "@/lib/expenses/pet";
 
 /** GET 會順便結算一次獎勵——養成頁本身就是使用者會回來看「我賺到幾顆星星幣」的地方，
@@ -53,6 +53,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ pet: result });
   }
 
+  // 活動序號換星星幣。跟簽到一樣沒有品項，所以擋在 itemId 檢查之前。
+  if (action === "redeem") {
+    const result = await redeemCode(userId, typeof body?.code === "string" ? body.code : "");
+    if ("error" in result) return NextResponse.json(result, { status: 409 });
+    return NextResponse.json({ pet: result });
+  }
+
   const itemId = typeof body?.itemId === "string" ? body.itemId : "";
   if (!itemId) return NextResponse.json({ error: "缺少 itemId" }, { status: 400 });
 
@@ -73,7 +80,7 @@ export async function POST(request: Request) {
           ? await equipWearable(userId, itemId)
           : action === "toggle"
             ? await toggleState(userId, itemId)
-            : { error: "action 只能是 signin、feed、buy、equip 或 toggle" };
+            : { error: "action 只能是 signin、redeem、feed、buy、equip 或 toggle" };
 
   if ("error" in result) return NextResponse.json(result, { status: 409 });
   return NextResponse.json({ pet: result });

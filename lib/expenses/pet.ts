@@ -90,11 +90,11 @@ export const PET_ITEMS: PetItem[] = [
   // 吃東西還是共用 intj-eating.png（見 pet-sprite.tsx）。
   { id: "outfit-egg", name: "蛋", kind: "服裝", price: 0, eating: EGG_EATING_SPRITE, desc: "還沒孵化的樣子，孵化後也可以換回來", image: EGG_IDLE_SPRITE },
   { id: "outfit-laboratory", name: "書房便服", kind: "服裝", price: 0, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "孵化後的第一套衣服", image: petModelSprite("laboratory") },
-  { id: "outfit-plushroom", name: "兔兔睡衣", kind: "服裝", price: 80, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "抱著玩偶的居家時間", image: petModelSprite("plushroom") },
-  { id: "outfit-studio", name: "畫室圍裙", kind: "服裝", price: 120, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "動手做點東西的日子", image: petModelSprite("studio") },
-  { id: "outfit-gamingroom", name: "電玩連帽衣", kind: "服裝", price: 140, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "手把握著就不想放下", image: petModelSprite("gamingroom") },
-  { id: "outfit-dessertcafe", name: "甜點圍裙", kind: "服裝", price: 160, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "今天換你站在櫃檯裡", image: petModelSprite("dessertcafe") },
-  { id: "outfit-beach", name: "海灘花襯衫", kind: "服裝", price: 200, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "存到一筆錢的獎勵", image: petModelSprite("beach") },
+  { id: "outfit-plushroom", name: "兔兔睡衣", kind: "服裝", price: 5000, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "抱著玩偶的居家時間", image: petModelSprite("plushroom") },
+  { id: "outfit-studio", name: "畫室圍裙", kind: "服裝", price: 5000, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "動手做點東西的日子", image: petModelSprite("studio") },
+  { id: "outfit-gamingroom", name: "電玩連帽衣", kind: "服裝", price: 5000, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "手把握著就不想放下", image: petModelSprite("gamingroom") },
+  { id: "outfit-dessertcafe", name: "甜點圍裙", kind: "服裝", price: 5000, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "今天換你站在櫃檯裡", image: petModelSprite("dessertcafe") },
+  { id: "outfit-beach", name: "海灘花襯衫", kind: "服裝", price: 5000, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "存到一筆錢的獎勵", image: petModelSprite("beach") },
   // 狀態分兩種：
   //  ・紀念（price 0、沒有 action）：不賣、不選，Lv.PET_HATCH_LEVEL 之後在背包裡解鎖，
   //    點了在預覽區重播一次。目前只有孵化。
@@ -106,11 +106,11 @@ export const PET_ITEMS: PetItem[] = [
   // 所以 id 要跟檔名對得起來：bg-laboratory → pet-bg-laboratory.png。角色是去背的 PNG，
   // 直接疊在圖上就好，背景深一點也不會把角色一起乘暗。
   { id: "bg-laboratory", name: "星空書房", kind: "背景", price: 0, desc: "一開始就有的場地", image: petItemImage("bg-laboratory") },
-  { id: "bg-bedroom", name: "臥室", kind: "背景", price: 100, desc: "睡前記帳的時間", image: petItemImage("bg-bedroom") },
-  { id: "bg-studio", name: "工作室", kind: "背景", price: 150, desc: "專心做自己事情的角落", image: petItemImage("bg-studio") },
-  { id: "bg-dessertcafe", name: "甜點咖啡廳", kind: "背景", price: 200, desc: "小小奢侈的下午", image: petItemImage("bg-dessertcafe") },
-  { id: "bg-gamingroom", name: "電玩房", kind: "背景", price: 250, desc: "下班後的放鬆場地", image: petItemImage("bg-gamingroom") },
-  { id: "bg-beach", name: "海邊", kind: "背景", price: 300, desc: "存到一筆錢才去得成的旅行", image: petItemImage("bg-beach") },
+  { id: "bg-bedroom", name: "臥室", kind: "背景", price: 5000, desc: "睡前記帳的時間", image: petItemImage("bg-bedroom") },
+  { id: "bg-studio", name: "工作室", kind: "背景", price: 5000, desc: "專心做自己事情的角落", image: petItemImage("bg-studio") },
+  { id: "bg-dessertcafe", name: "甜點咖啡廳", kind: "背景", price: 5000, desc: "小小奢侈的下午", image: petItemImage("bg-dessertcafe") },
+  { id: "bg-gamingroom", name: "電玩房", kind: "背景", price: 5000, desc: "下班後的放鬆場地", image: petItemImage("bg-gamingroom") },
+  { id: "bg-beach", name: "海邊", kind: "背景", price: 5000, desc: "存到一筆錢才去得成的旅行", image: petItemImage("bg-beach") },
 ];
 
 /** 新帳號一開始身上的造型＝蛋。孵化（Lv.PET_HATCH_LEVEL）那一次會自動換成

@@ -6,6 +6,7 @@ import { PetShopModal } from "@/components/expenses/pet-shop";
 import { PetBagModal } from "@/components/expenses/pet-bag-modal";
 import { PetSigninModal } from "@/components/expenses/pet-signin-modal";
 import { PetHelpModal } from "@/components/expenses/pet-help-modal";
+import { PetRedeemModal } from "@/components/expenses/pet-redeem-modal";
 import { IconImg } from "@/components/expenses/icon-img";
 import { ICON_PATHS } from "@/components/expenses/icon-paths";
 import { useToast } from "@/components/expenses/toast";
@@ -99,6 +100,7 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
   const [shopOpen, setShopOpen] = useState(false);
   const [signinOpen, setSigninOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [redeemOpen, setRedeemOpen] = useState(false);
   // 背包的頁籤狀態放在這裡：「衣服」跟「背景」是兩顆不同的入口，各自要開在對應的那一頁。
   const [bagOpen, setBagOpen] = useState(false);
   const [bagKind, setBagKind] = useState<Exclude<PetItemKind, "食物">>("服裝");
@@ -221,16 +223,21 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
           </div>
 
           {/* 星星固定貼左邊的圓端、數字靠右邊的圓端：數字變長時整個框往左長，星星跟數字
-              各自待在原位，不會因為多一位數就整排跟著位移。 */}
-          <div
-            className="flex shrink-0 items-center gap-1.5 text-sm font-bold tabular-nums text-[#8A5A2B]"
+              各自待在原位，不會因為多一位數就整排跟著位移。
+              整框可以點，開「活動序號」——想到要更多星星幣的時候，眼睛本來就在這個數字上，
+              不用另外在場地上多擺一顆平常用不到的按鈕。 */}
+          <button
+            type="button"
+            onClick={() => setRedeemOpen(true)}
+            aria-label="輸入活動序號"
+            className="flex shrink-0 items-center gap-1.5 text-sm font-bold tabular-nums text-[#8A5A2B] transition-transform active:scale-95"
             // minWidth 放寬一點：星星幣是會累積的數字，十萬～百萬位（七位數）才是常態的
             // 上限。框太窄的話每多一位就要往左長一截，整排跟著抖；先留到放得下七位數。
             style={{ ...pillBackground("pet-starcount", 0.5), height: HUD_H, minWidth: 124 }}
           >
             <IconImg src={ICON_PATHS.petStar} alt="星星幣" size={20} background={false} />
             <span className="ml-auto text-right">{pet?.coins ?? 0}</span>
-          </div>
+          </button>
 
           <button
             type="button"
@@ -350,6 +357,24 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
       />
 
       <PetSigninModal open={signinOpen} onClose={() => setSigninOpen(false)} streak={streak} onSignIn={signIn} />
+
+      <PetRedeemModal
+        open={redeemOpen}
+        onClose={() => setRedeemOpen(false)}
+        onRedeem={async (code) => {
+          const res = await fetch("/api/expenses/pet", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "redeem", code }),
+          }).catch(() => null);
+          const data: { pet?: PetState; error?: string } = (await res?.json().catch(() => ({}))) ?? {};
+          if (data.pet) {
+            setPet(data.pet);
+            return null;
+          }
+          return data.error ?? "兌換失敗，再試一次";
+        }}
+      />
 
     </div>
   );

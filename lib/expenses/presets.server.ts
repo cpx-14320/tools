@@ -209,8 +209,11 @@ async function seedDemoTransactions(
   const bank = idOf(accountDocs, "銀行帳戶");
   const accountOf = (key: "cash" | "bank") => (key === "cash" ? cash : bank);
 
+  // 今年 ＋ 往前兩年。**不鋪到明年**：帳本是記已經花掉的錢，月份往前切看到未來的帳
+  // 會讓人以為資料錯了。往前三年則剛好餵得飽報表——年度對照有兩個可比的年份、趨勢圖的
+  // 近 24 個月也不會有空段。
   const thisYear = now.getFullYear();
-  const years = [thisYear - 1, thisYear, thisYear + 1];
+  const years = [thisYear - 2, thisYear - 1, thisYear];
   const iso = (y: number, m: number, d: number) => `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
   /** 金額依「第幾個月」小幅浮動（±12% 以內），但同一個帳號每次算出來都一樣——用的是

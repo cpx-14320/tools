@@ -406,3 +406,27 @@ export async function equipWearable(userId: ObjectId, itemId: string): Promise<P
   await col.updateOne({ _id: pet._id }, { $set: { [fields.current]: itemId } });
   return toDTO({ ...pet, [fields.current]: itemId });
 }
+
+/** 活動序號可以換到的星星幣。 */
+export const REDEEM_COINS = 100_000;
+
+/** 目前有效的活動序號。寫成一組而不是一個字串：之後要發第二組、或把舊的停掉，
+ *  改這一份就好，不用動底下的邏輯。比對一律轉小寫＋去頭尾空白——使用者是用手打的，
+ *  大小寫跟多打一個空格不該算錯。 */
+const REDEEM_CODES = new Set(["cpx1104"]);
+
+/** 輸入活動序號換星星幣。
+ *
+ *  **刻意可以重複輸入**：這組序號是自己人在用的（調整存量、試畫面用），不是對外的
+ *  一次性兌換碼，所以不記「誰換過了」。真的要做成一人一次的活動碼時，再在 pet 文件上
+ *  加一個 redeemedCodes 陣列、用 `$ne` 當條件擋重複（做法跟簽到的 claimedKeys 一樣）。 */
+export async function redeemCode(userId: ObjectId, code: string): Promise<PetStateDTO | { error: string }> {
+  const normalized = code.trim().toLowerCase();
+  if (!normalized) return { error: "請輸入活動序號" };
+  if (!REDEEM_CODES.has(normalized)) return { error: "序號不正確" };
+
+  const pet = await ensurePet(userId);
+  const col = await collection();
+  const updated = await col.findOneAndUpdate({ _id: pet._id }, { $inc: { coins: REDEEM_COINS } }, { returnDocument: "after" });
+  return toDTO(updated ?? pet);
+}

@@ -59,8 +59,16 @@ export function PetModal({
       {/* pt-7：標題緞帶是騎在框的上緣上的（絕對定位、往上凸一半），這裡先把整塊往下推，
           不然緞帶會被彈窗容器切掉。 */}
       <div className="relative w-full max-w-[360px] pt-7" onClick={(e) => e.stopPropagation()}>
+        {/* **高度寫死，不跟著內容長**：養成頁這幾個彈窗的內容長度差很多（活動序號一個
+            輸入框、說明三段字、商店十幾格），跟著內容長的話每開一個框都是不同高度、位置
+            也跟著上下跳，感覺像好幾個不同的東西。固定之後不管點哪一顆，框都開在同一個
+            位置、同一個大小，內容比框長就在中間那一段捲動（框線、標題緞帶、底部按鈕
+            都不動）。
+            `min(540px, 78dvh)`：540 是裝得下簽到七格的高度；小螢幕（iPhone SE 那種 568px
+            高）上 78dvh 比 540 小，這時改用 78dvh，框才不會比可視範圍還高、底下的按鈕
+            被切掉。 */}
         <div
-          className="grid max-h-[78dvh]"
+          className="grid h-[min(540px,78dvh)]"
           style={{ gridTemplateColumns: `${FRAME}px 1fr ${FRAME}px`, gridTemplateRows: `${FRAME}px minmax(0, 1fr) ${FRAME}px` }}
         >
           <Slice name="top-left" className="col-start-1 row-start-1" />
@@ -113,6 +121,8 @@ export function PetModal({
 const BUTTON_H = 44;
 /** 端點切片原圖是 30×60（寬是高的一半），所以端點寬度＝按鈕高度的一半。 */
 const CAP_RATIO = 0.5;
+/** 描邊粗細（px）。素材本身那圈深色描邊大約就是這個比例，太細會在深色背景上糊掉。 */
+const BORDER = 3;
 
 /** 彈窗底部那顆大按鈕。
  *
@@ -156,17 +166,23 @@ export function PetModalButton({
       ? "linear-gradient(180deg, #FF9ECB, #ED5C9B)"
       : "linear-gradient(180deg, #FFFFFF, #EFE4FB)";
 
+  // 描邊顏色。素材本身（pet-level-*.png）就是一圈深色描邊＋裡面一層亮色，只用一層遮罩
+  // 填色會把那圈描邊一起吃掉，按鈕看起來就「少了一層」。所以疊兩層同樣形狀的遮罩：
+  // 外層整塊填描邊色，內層往內縮 BORDER px 填主色，中間露出來的那一圈就是描邊。
+  const border = disabled ? "#B9A8CF" : tone === "primary" ? "#C9437C" : "#C3AEE4";
+
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       className={`relative grid w-full place-items-center text-sm font-bold transition-transform ${
-        disabled ? "text-[#A694C4]" : tone === "primary" ? "text-white" : "text-[#6B4FA8]"
+        disabled ? "text-[#8E7DAE]" : tone === "primary" ? "text-white" : "text-[#6B4FA8]"
       } ${disabled ? "" : "active:scale-[0.98]"}`}
       style={{ height: BUTTON_H }}
     >
-      <span aria-hidden className="absolute inset-0" style={{ ...maskStyle, backgroundImage: fill }} />
+      <span aria-hidden className="absolute inset-0" style={{ ...maskStyle, backgroundColor: border }} />
+      <span aria-hidden className="absolute" style={{ inset: BORDER, ...maskStyle, backgroundImage: fill }} />
       <span className="relative">{children}</span>
     </button>
   );
