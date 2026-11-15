@@ -25,19 +25,35 @@ export function leafCategories(categories: CategoryDTO[], kind?: CategoryKind): 
   return out;
 }
 
-/** 把一句話切成「一筆一筆」。中文的逗號、頓號、分號、換行都算分隔。 */
+/** 把一句話切成「一筆一筆」。中文的逗號、頓號、分號、換行都算分隔。
+ *
+ *  **夾在數字中間的逗號不算分隔**：「加油 1,200 元」是千分位，照一般規則切會變成
+ *  「加油 1」跟「200 元」兩筆帳——金額還只剩 1。 */
 function splitFragments(text: string): string[] {
   return text
-    .split(/[，,、;；\n]+/)
-    .map((s) => s.trim())
+    .split(/[、;；\n]+|(?<![0-9０-９])[，,]|[，,](?![0-9０-９])/)
+    .map((s) => s?.trim() ?? "")
     .filter(Boolean);
 }
 
-/** 抓出這一段裡的金額。取最後一個數字——「午餐 2 個便當 240」要的是 240 不是 2。 */
-function extractAmount(fragment: string): number | null {
-  const matches = [...fragment.matchAll(/\d[\d,]*/g)].map((m) => Number(m[0].replace(/,/g, "")));
-  const valid = matches.filter((n) => Number.isFinite(n) && n > 0);
-  return valid.length > 0 ? valid[valid.length - 1] : null;
+/** 抓出這一段裡的金額，連同它在原文的位置一起回傳。
+ *
+ *  **取最後一個數字**——「午餐 2 個便當 240」要的是 240 不是 2。
+ *
+ *  **後面接著英文或數字的不算**：3C、24h、iPhone 15 這種是名稱的一部分，不是金額。
+ *
+ *  **要回傳位置**，是因為備註要把金額那幾個字拿掉（見 noteFromFragment）。用字串比對
+ *  去刪的話，「7-11 買東西 50」會把 7 跟 11 一起刪掉，剩下一句「- 買東西」。 */
+function extractAmount(fragment: string): { amount: number; start: number; end: number } | null {
+  // 全形數字也收（手機輸入法很容易打出「５０」），逗號分隔的千分位算同一個數字。
+  const matches = [...fragment.matchAll(/[0-9０-９][0-9０-９,，]*(?![0-9０-９,，a-zａ-ｚ])/gi)];
+  for (const match of matches.reverse()) {
+    const amount = Number(match[0].normalize("NFKC").replace(/[,，]/g, ""));
+    if (Number.isFinite(amount) && amount > 0) {
+      return { amount, start: match.index, end: match.index + match[0].length };
+    }
+  }
+  return null;
 }
 
 /** 今天往前第 n 天。 */
@@ -140,11 +156,46 @@ function guessCategory(
   return { category: null, hint };
 }
 
+/** 把一次猜測的結果攤成草稿那三個欄位。文字解析跟發票解析共用，省得兩邊各寫一次
+ *  （以前發票那邊漏掉 aiGuess，同一筆資料在兩條路徑上長得不一樣）。 */
+function draftCategoryFields(
+  { category, hint }: ReturnType<typeof guessCategory>,
+  categories: CategoryDTO[],
+): Pick<AiDraftItemDTO, "categoryId" | "categoryHintId" | "aiGuess"> {
+  return {
+    categoryId: category?.id ?? null,
+    categoryHintId: hint?.id,
+    // 只猜到大分類時也記下來（帶個問號），之後回頭看才分得出「完全不知道」跟
+    // 「知道是飲食、只是不知道哪一餐」。
+    aiGuess: category ? categoryPath(categories, category.id) : hint ? `${hint.name} › ?` : undefined,
+  };
+}
+
+/** 一張發票的分類：**每個品名各自判，全部一致才採用**。
+ *
+ *  一張發票只會變成一筆帳（見 parse route 的說明），所以分類只有一個。以前的做法是把
+ *  所有品名接成一行字丟進 mockParse，等於「整串裡第一個中的關鍵字說了算」——買了可樂
+ *  跟衛生紙的那張發票會被很有自信地歸成「飲料」。
+ *
+ *  改成逐項判、意見不一致就回未分類：使用者在待確認區自己選一次，比幫他選錯好。 */
+export function guessInvoiceCategory(
+  names: string[],
+  categories: CategoryDTO[],
+): ReturnType<typeof draftCategoryFields> {
+  const leaves = leafCategories(categories);
+  const guesses = names.map((name) => guessCategory(name, leaves, categories));
+  const first = guesses[0];
+  if (first && guesses.every((g) => g.category?.id === first.category?.id && g.hint?.id === first.hint?.id)) {
+    return draftCategoryFields(first, categories);
+  }
+  return { categoryId: null };
+}
+
 /** 一次最多認幾筆。防呆用，不是遊戲規則——貼一整個月的帳單進來，回應會大到不好處理，
  *  而且待確認區一次要確認五十筆也不是好體驗。 */
 export const AI_MAX_ITEMS = 20;
 
-/** 這一段文字要變成備註時，先把「已經由別的欄位表達過的詞」拿掉。
+/** 這一段文字要變成「名稱（備註）」時，先把「已經由別的欄位表達過的詞」拿掉。
  *
  *  **為什麼**：打「午餐小火鍋200」解析出來的那一列，左邊已經寫著分類「餐飲 › 午餐」、
  *  右邊寫著日期跟金額，備註再寫一次「午餐小火鍋」就是同一件事講兩遍，而且那三個字會
@@ -152,7 +203,8 @@ export const AI_MAX_ITEMS = 20;
  *  ——真正只有使用者自己知道、別的欄位放不下的那部分。
  *
  *  **只拿掉三類詞**，不是看到分類名稱就刪：
- *  1. 金額（本來就有）。
+ *  1. 金額（本來就有）——**按位置刪掉那幾個字**，不是刪掉所有數字，不然「7-11」「50嵐」
+ *     「iPhone 15」這種名稱裡的數字會一起不見。
  *  2. 日期詞（昨天、前天…）——列上已經有日期欄。
  *  3. **餐別**（早餐/午餐/晚餐，以及對到同一餐的時段詞「中午」「晚上」），而且**只有在
  *     這一筆真的被分到那一餐時**才拿掉。
@@ -163,8 +215,9 @@ export const AI_MAX_ITEMS = 20;
  *
  *  全部拿掉之後變成空字串是正常的（「午餐200」）：畫面上備註空著會自動顯示分類名稱
  *  （見 ai-draft-list.tsx），不會變成一列沒有標題的東西。 */
-function noteFromFragment(fragment: string, category: CategoryDTO | null): string {
-  let note = fragment.replace(/\d[\d,]*\s*元?/g, "");
+function noteFromFragment(fragment: string, money: { start: number; end: number }, category: CategoryDTO | null): string {
+  // 金額後面那個「元」「塊」也一起拿掉，不然會剩一個孤零零的量詞。
+  let note = `${fragment.slice(0, money.start)}${fragment.slice(money.end).replace(/^\s*(元|塊錢|塊)/, "")}`;
   note = note.replace(/前天|昨天|昨日|今天|今日/g, "");
   if (category) {
     for (const { pattern, sub } of MEAL_BY_TIME) {
@@ -172,7 +225,8 @@ function noteFromFragment(fragment: string, category: CategoryDTO | null): strin
       note = note.replace(new RegExp(pattern.source, "g"), "");
     }
   }
-  return note.trim();
+  // 中間被挖空之後可能留下連續空白（「吃 50 元 便當」），收成一個。
+  return note.replace(/\s+/g, " ").trim();
 }
 
 export function mockParse(text: string, categories: CategoryDTO[], todayISO: string): AiDraftItemDTO[] {
@@ -181,22 +235,18 @@ export function mockParse(text: string, categories: CategoryDTO[], todayISO: str
   const leaves = leafCategories(categories);
   const items: AiDraftItemDTO[] = [];
   for (const fragment of splitFragments(text)) {
-    const amount = extractAmount(fragment);
-    if (amount === null) continue; // 沒有金額就不是一筆帳
-    const { category, hint } = guessCategory(fragment, leaves, categories);
-    // 備註＝這一段扣掉「金額、日期、已經變成分類的餐別」之後剩下的字，見 noteFromFragment。
-    const note = noteFromFragment(fragment, category);
+    const money = extractAmount(fragment);
+    if (!money) continue; // 沒有金額就不是一筆帳
+    const guess = guessCategory(fragment, leaves, categories);
+    // 名稱＝這一段扣掉「金額、日期、已經變成分類的餐別」之後剩下的字，見 noteFromFragment。
+    const note = noteFromFragment(fragment, money, guess.category);
     items.push({
       key: `${items.length}-${Math.random().toString(36).slice(2, 8)}`,
-      categoryId: category?.id ?? null,
-      amount,
+      ...draftCategoryFields(guess, categories),
+      amount: money.amount,
       date: extractDate(fragment, todayISO),
       note: note || undefined,
       state: "pending",
-      categoryHintId: hint?.id,
-      // 只猜到大分類時也記下來（帶個問號），之後回頭看才分得出「完全不知道」跟
-      // 「知道是餐飲、只是不知道哪一餐」。
-      aiGuess: category ? categoryPath(categories, category.id) : hint ? hint.name + " › ?" : undefined,
     });
     if (items.length >= AI_MAX_ITEMS) break;
   }

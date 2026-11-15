@@ -3,7 +3,7 @@ import { ObjectId } from "mongodb";
 import { requireTool } from "@/lib/auth";
 import { listCategories } from "@/lib/expenses/categories.server";
 import { createAiDraft, findAiDraftByInput, findRecentAiDraft } from "@/lib/expenses/ai-drafts.server";
-import { AI_MAX_ITEMS, mockParse } from "@/lib/expenses/ai-mock";
+import { AI_MAX_ITEMS, guessInvoiceCategory, mockParse } from "@/lib/expenses/ai-mock";
 import type { InvoiceQrResult } from "@/lib/expenses/invoice-qr";
 import { todayInTaipei } from "@/lib/expenses/pet.server";
 
@@ -65,11 +65,10 @@ export async function POST(request: Request) {
 /** 一張發票 ＝ 一筆帳，不是一個品項一筆。
  *
  *  去全聯買五樣東西，記帳要的是「全聯 850」一筆，不是五筆各一百多的流水帳——明細塞進
- *  備註就夠了。品名拿來猜分類（買的是什麼，比店名更能決定歸哪一類）。
+ *  名稱就夠了。品名拿來猜分類（買的是什麼，比店名更能決定歸哪一類）。
  *
- *  分類判斷直接重用 mockParse：把「品名 總金額」組成一行文字丟進去，就能沿用它那套
- *  關鍵字字典與分類比對，不用為發票另外寫一份。todayISO 傳發票日期，這樣 mockParse
- *  在句子裡找不到日期時填的預設值就是開立日期，而不是今天。 */
+ *  分類沿用文字解析那套關鍵字字典，但**每個品名各自判、全部一致才採用**
+ *  （見 guessInvoiceCategory）。日期直接用發票的開立日期，不用猜。 */
 async function handleInvoice(userId: ObjectId, invoice: InvoiceQrResult) {
   const amount = Number(invoice?.totalAmount);
   if (!invoice?.invoiceNumber || !invoice?.date || !Number.isFinite(amount) || amount <= 0) {
@@ -87,7 +86,6 @@ async function handleInvoice(userId: ObjectId, invoice: InvoiceQrResult) {
 
   const categories = await listCategories(userId);
   const names = (invoice.items ?? []).map((i) => i.name).filter(Boolean);
-  const [item] = mockParse(`${names.join(" ")} ${amount}`.trim(), categories, invoice.date);
 
   const draft = await createAiDraft(userId, {
     source: "invoice",
@@ -96,16 +94,12 @@ async function handleInvoice(userId: ObjectId, invoice: InvoiceQrResult) {
     model: "invoice-qr",
     items: [
       {
-        // mockParse 一定找得到金額（我們自己把金額接在字串後面），但萬一分類那段出意外，
-        // 至少要留下一筆金額正確、分類待補的紀錄，不要整張掃完卻什麼都沒進去。
         key: `0-${invoice.invoiceNumber}`,
-        categoryId: item?.categoryId ?? null,
+        ...guessInvoiceCategory(names, categories),
         amount,
         date: invoice.date,
         note: names.length > 0 ? names.join("、") : `發票 ${invoice.invoiceNumber}`,
         state: "pending",
-        categoryHintId: item?.categoryHintId,
-        aiGuess: item?.aiGuess,
       },
     ],
   });
