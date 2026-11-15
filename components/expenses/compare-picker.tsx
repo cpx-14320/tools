@@ -5,13 +5,15 @@ import { Modal } from "./modal";
 import { PillButton } from "./button";
 import { useDateFilter } from "./date-filter-context";
 import { text } from "./theme";
-import { compareLabel, type CompareMode } from "@/lib/expenses/date-filter";
+import { compareDateFilter, compareLabel, shiftYearMonth, type CompareMode } from "@/lib/expenses/date-filter";
 import { OptionChip } from "./button";
+import { DateField } from "./date-field";
 
 const OPTIONS: { value: CompareMode; label: string; hint: string }[] = [
   { value: "previous", label: "上一期", hint: "月模式比上個月、年模式比去年、日模式比前一天" },
   { value: "lastYear", label: "去年同期", hint: "看的是 2026 年 10 月就比 2025 年 10 月" },
   { value: "year", label: "指定年份同期", hint: "挑一個基準年，一直拿它跟現在看的這段比" },
+  { value: "custom", label: "自訂年月", hint: "自己挑一個年月，把現在看的這段平移過去比" },
   { value: "none", label: "不比較", hint: "隱藏所有漲跌百分比" },
 ];
 
@@ -32,7 +34,11 @@ export function ComparePicker({ className = "" }: { className?: string }) {
     return Array.from({ length: YEAR_SPAN }, (_, i) => thisYear - i);
   });
 
-  const label = compareLabel(filter, compare) || "不比較";
+  // 算不出可比的那一段時（挑到同一年、日期範圍是「全部」）按鈕就寫「不比較」——畫面上
+  // 一個漲跌徽章都沒有，按鈕卻寫著「vs 2026 年」，看起來像是比完了全部持平。
+  const label = (compareDateFilter(filter, compare) ? compareLabel(filter, compare) : "") || "不比較";
+  // 自訂年月的預設值：現在看的這段的上一個月（跟 compareDateFilter 裡的 fallback 同一套）。
+  const customYearMonth = compare.yearMonth ?? shiftYearMonth(`${filter.year}-${String(filter.month).padStart(2, "0")}`, -1);
 
   return (
     <>
@@ -54,8 +60,9 @@ export function ComparePicker({ className = "" }: { className?: string }) {
                 key={opt.value}
                 type="button"
                 onClick={() => {
-                  setCompare({ ...compare, mode: opt.value });
-                  if (opt.value !== "year") setOpen(false);
+                  // 自訂年月跟指定年份一樣：選了之後彈窗要留著，底下還有一個年月／年份要挑。
+                  setCompare({ ...compare, mode: opt.value, yearMonth: opt.value === "custom" ? customYearMonth : compare.yearMonth });
+                  if (opt.value !== "year" && opt.value !== "custom") setOpen(false);
                 }}
                 className={`px-4 py-3 text-left ${active ? "bg-[#F9F7FE]" : ""}`}
               >
@@ -91,6 +98,30 @@ export function ComparePicker({ className = "" }: { className?: string }) {
             </div>
             {/* 基準年跟現在看的年份一樣時沒東西可比，講清楚比讓百分比默默消失好。 */}
             {compare.year === filter.year && <p className={`mt-2 ${text.faint}`}>基準年就是現在看的年份，這樣沒有東西可以比，換一年看看。</p>}
+          </div>
+        )}
+
+        {/* 自訂年月：挑「平移到哪個年月」，不是挑一段起訖。區間長度跟著現在看的那段走，
+            兩邊的天數才一樣多——看近三個月時挑 2024/03，比的是 2023/12～2024/03 那三個月
+            （見 date-filter.ts 的 shiftFilterToYearMonth）。 */}
+        {compare.mode === "custom" && (
+          <div>
+            <p className={`mb-2 ${text.label}`}>平移到哪個年月</p>
+            <DateField
+              value={customYearMonth}
+              granularity="month"
+              onChange={(yearMonth) => {
+                setCompare({ ...compare, mode: "custom", yearMonth });
+                setOpen(false);
+              }}
+            />
+            <p className={`mt-2 ${text.faint}`}>
+              {filter.mode === "year"
+                ? customYearMonth.slice(0, 4) === String(filter.year)
+                  ? "現在看的是整年，挑同一年等於跟自己比，換一年看看。"
+                  : "現在看的是整年，所以只會用到你挑的那一年，月份不影響。"
+                : "現在看的這段期間有多長，平移過去的那段就一樣長。"}
+            </p>
           </div>
         )}
       </Modal>

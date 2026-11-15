@@ -5,6 +5,11 @@ import { TOAST, useToast } from "@/components/expenses/toast";
 import { PageHeader } from "@/components/expenses/page-header";
 import { ListRow } from "@/components/expenses/list-row";
 import { BudgetModal } from "@/components/expenses/budget-modal";
+import { BudgetBatchModal, type BudgetBatchItem } from "@/components/expenses/budget-batch-modal";
+import { StickyToolbar } from "@/components/expenses/sticky-toolbar";
+import { SelectionBar, SelectionDot, SelectionToggle, useSelection } from "@/components/expenses/selection-bar";
+import { ConfirmModal } from "@/components/expenses/confirm-modal";
+import { useBusy } from "@/components/expenses/busy";
 import { text } from "@/components/expenses/theme";
 import { budgetForMonth, isLegacyRule, rulesForCategory, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
 import { topLevelCategories, categoryColorClass, type CategoryDTO } from "@/lib/expenses/categories";
@@ -34,8 +39,11 @@ export function BudgetsView({ initialCategories, initialRules }: { initialCatego
   // 完整清單覆蓋這裡的 state（不用 router.refresh()，少一趟來回）。
   const categories = initialCategories;
   const showToast = useToast();
+  const runBusy = useBusy();
   const [rules, setRules] = useState<BudgetRuleDTO[]>(initialRules);
   const [editing, setEditing] = useState<EditTarget | null>(null);
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [clearConfirm, setClearConfirm] = useState(false);
 
   async function handleSave(yearMonth: string, amount: number) {
     if (!editing) return;
@@ -71,14 +79,98 @@ export function BudgetsView({ initialCategories, initialRules }: { initialCatego
     showToast(TOAST.deleted);
   }
 
+  /** 批次設定：選到的每個分類各寫一筆「從同一個月起多少」。
+   *
+   *  逐筆依序送，不是 Promise.all：每一筆的回傳都是「這個使用者目前完整的規則清單」，
+   *  併發送出時幾個回應會互相覆蓋，最後留在畫面上的是最早回來那一份（看起來像有幾筆
+   *  沒存到，重新整理才出現）。 */
+  async function handleBatchSave(yearMonth: string, items: BudgetBatchItem[]) {
+    const latest = await runBusy("儲存中…", async () => {
+      let rulesNow = rules;
+      for (const item of items) {
+        const data: { rules?: BudgetRuleDTO[] } = await fetch("/api/expenses/budgets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ categoryId: item.categoryId, effectiveFrom: yearMonth, amount: item.amount }),
+        })
+          .then((res) => res.json())
+          .catch(() => ({}));
+        if (data.rules) rulesNow = data.rules;
+      }
+      return rulesNow;
+    });
+    setRules(latest);
+    setBatchOpen(false);
+    selection.exit();
+    showToast(`已設定 ${items.length} 個分類的預算`);
+  }
+
+  /** 批次清除：把選到的分類設過的每一筆都刪掉，變回「未設定」。
+   *
+   *  改版前存在分類身上的那一筆（legacy）資料庫裡沒有對應文件可以刪，所以改成補一筆
+   *  金額 0 蓋掉它——不然清除之後它會原地復活，使用者以為沒清掉。 */
+  async function handleBatchClear() {
+    const ids = [...selection.selectedIds];
+    const latest = await runBusy("清除中…", async () => {
+      let rulesNow = rules;
+      for (const categoryId of ids) {
+        for (const rule of rulesForCategory(withLegacyCategoryBudgets(rulesNow, categories), categoryId)) {
+          const data: { rules?: BudgetRuleDTO[] } = await (
+            isLegacyRule(rule)
+              ? fetch("/api/expenses/budgets", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ categoryId, effectiveFrom: thisMonth, amount: 0 }),
+                })
+              : fetch(`/api/expenses/budgets?id=${rule.id}`, { method: "DELETE" })
+          )
+            .then((res) => res.json())
+            .catch(() => ({}));
+          if (data.rules) rulesNow = data.rules;
+        }
+      }
+      return rulesNow;
+    });
+    setRules(latest);
+    setClearConfirm(false);
+    selection.exit();
+    showToast(`已清除 ${ids.length} 個分類的預算`);
+  }
+
   const expenseCategories = topLevelCategories(categories, "支出");
+  // 只有主分類可以選（子分類不在這一頁，預算本來就是編在主分類上）。
+  const selection = useSelection(expenseCategories.map((c) => c.id));
   // 改版前存在分類身上的舊預算會補成一筆虛擬規則，使用者的舊設定不會因為改版就不見。
   const effectiveRules = withLegacyCategoryBudgets(rules, categories);
   const thisMonth = currentYearMonth();
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader flush title="預算設定" help="點分類設定「從哪個月起每月多少」，之後的月份會沿用；要調整時再設一筆新的，之前的月份不會被追溯蓋掉" />
+      {/* 標題跟「選取」排同一列一起釘在頂端（跟帳戶類型、存錢目標那幾頁同一套）：
+          分類多的時候要編的那一張卡常常在最下面，勾完之後動作鍵還在最上面。 */}
+      <StickyToolbar>
+        <PageHeader
+          flush
+          title="預算設定"
+          help="點分類設定「從哪個月起每月多少」，之後的月份會沿用；要調整時再設一筆新的，之前的月份不會被追溯蓋掉"
+          actions={
+            expenseCategories.length > 0 ? (
+              <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />
+            ) : undefined
+          }
+        />
+        {selection.selecting && (
+          <SelectionBar
+            count={selection.selectedIds.size}
+            total={selection.total}
+            unit="個分類"
+            actions={[{ label: "設定預算", onClick: () => setBatchOpen(true) }]}
+            onToggleAll={selection.toggleAll}
+            onDelete={() => setClearConfirm(true)}
+            deleteLabel="清除預算"
+          />
+        )}
+      </StickyToolbar>
 
       {expenseCategories.length === 0 ? (
         <p className={text.faint}>還沒有任何支出分類，先去「收支分類」建立分類才能編預算</p>
@@ -93,6 +185,7 @@ export function BudgetsView({ initialCategories, initialRules }: { initialCatego
                   icon={c.icon}
                   iconClassName={categoryColorClass[c.color]}
                   name={c.name}
+                  leading={selection.selecting ? <SelectionDot selected={selection.selectedIds.has(c.id)} /> : undefined}
                   // 右邊是「這個月實際生效的金額」，不是最後一筆設定——最後一筆有可能是
                   // 設在未來的月份，那筆現在還沒生效。
                   right={
@@ -100,7 +193,7 @@ export function BudgetsView({ initialCategories, initialRules }: { initialCatego
                       {current === undefined ? "未設定" : current > 0 ? formatCurrency(current) : "不編預算"}
                     </span>
                   }
-                  onClick={() => setEditing({ category: c })}
+                  onClick={() => (selection.selecting ? selection.toggle(c.id) : setEditing({ category: c }))}
                 />
 
                 {/* 設過的幾筆直接攤在分類名稱下方，不用點進去才看得到「幾月改成多少」。
@@ -113,9 +206,12 @@ export function BudgetsView({ initialCategories, initialRules }: { initialCatego
                       const legacy = isLegacyRule(rule);
                       return (
                         <div key={rule.id} className="flex items-center gap-3 px-4 py-3">
+                          {/* 選取模式中這幾列只是資訊：這時候要做的是「挑分類」，讓人點進
+                              單筆編輯會把剛勾好的一批丟在半路（而且下面那顆刪除也跟工具列
+                              上的「清除預算」撞在一起）。 */}
                           <button
                             type="button"
-                            disabled={legacy}
+                            disabled={legacy || selection.selecting}
                             onClick={() => setEditing({ category: c, rule })}
                             className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
                           >
@@ -124,9 +220,8 @@ export function BudgetsView({ initialCategories, initialRules }: { initialCatego
                               {rule.amount > 0 ? formatCurrency(rule.amount) : "不編預算"}
                             </span>
                           </button>
-                          {legacy ? (
-                            <span className={`shrink-0 text-xs ${text.faint}`}>沿用中</span>
-                          ) : (
+                          {legacy && <span className={`shrink-0 text-xs ${text.faint}`}>沿用中</span>}
+                          {!legacy && !selection.selecting && (
                             <button type="button" onClick={() => handleDeleteRule(rule.id)} className="shrink-0 text-xs font-medium text-[#D1517E]">
                               刪除
                             </button>
@@ -152,6 +247,30 @@ export function BudgetsView({ initialCategories, initialRules }: { initialCatego
         currentAmount={editing?.rule?.amount ?? (editing ? (budgetForMonth(effectiveRules, editing.category.id, thisMonth) ?? 0) : 0)}
         onClose={() => setEditing(null)}
         onSave={handleSave}
+      />
+
+      {/* 批次設定：一個共用的生效月份＋每個分類一列金額（見 BudgetBatchModal）。
+          key 綁在選到哪幾個分類上，重新勾一批再開時每一列的預設值才會是那幾個分類
+          當下的金額，不是上一次留下的。 */}
+      <BudgetBatchModal
+        // 關起來時的 key 不能跟上面那個 BudgetModal 一樣寫 "closed"：兩個是同一層的
+        // 兄弟節點，React 會說「有兩個小孩用同一個 key」，而且兩個彈窗的狀態會互相竄位。
+        key={batchOpen ? `batch-${[...selection.selectedIds].sort().join(",")}` : "batch-closed"}
+        open={batchOpen}
+        categories={expenseCategories.filter((c) => selection.selectedIds.has(c.id))}
+        defaultYearMonth={thisMonth}
+        currentAmounts={Object.fromEntries(expenseCategories.map((c) => [c.id, budgetForMonth(effectiveRules, c.id, thisMonth)]))}
+        onClose={() => setBatchOpen(false)}
+        onSave={handleBatchSave}
+      />
+
+      <ConfirmModal
+        open={clearConfirm}
+        title={`清除 ${selection.selectedIds.size} 個分類的預算`}
+        message="選到的分類設過的每一筆預算都會刪掉，變回「未設定」。已經記下的消費不會動到，之後要用再重新設定。"
+        confirmLabel="清除"
+        onConfirm={handleBatchClear}
+        onClose={() => setClearConfirm(false)}
       />
     </div>
   );

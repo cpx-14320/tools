@@ -143,7 +143,21 @@ export function AiComposeModal({
     })
       .then((r) => r.json())
       .catch(() => ({}));
-    if (data.draft) setDraft(data.draft);
+    if (!data.draft) return;
+    setDraft(data.draft);
+
+    // 全部略過＝這一批沒有任何東西要記：直接刪掉那一批，畫面回到輸入狀態。留著的話它
+    // 既不會出現在設定頁的待確認清單（那裡只列還有待處理項目的批次），也永遠不會被清掉
+    // ——跟待確認詳情頁同一條規則，見 ai-draft-detail-view.tsx 的說明。
+    if (data.draft.items.filter((i) => i.state === "pending").length === 0) {
+      await fetch("/api/expenses/ai/drafts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", draftId: data.draft.id }),
+      }).catch(() => null);
+      showToast("這一批都處理完了");
+      reset();
+    }
   }
 
   async function commit() {

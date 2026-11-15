@@ -133,3 +133,18 @@ export async function deleteClosedAiDrafts(userId: ObjectId): Promise<number> {
   const result = await col.deleteMany({ userId, status: { $in: ["committed", "discarded"] } });
   return result.deletedCount;
 }
+
+/** 清掉「還掛著 pending、但裡面每一筆都已經處理過」的空批次。
+ *
+ *  **為什麼會有這種資料**：使用者把一批裡的每一筆都按了略過。那一批既沒有寫進消費紀錄、
+ *  也沒有任何待處理的項目，待確認清單的篩選條件（status pending ＋ 還有 pending 的項目）
+ *  會把它濾掉——畫面上永遠看不到，但文件一直留在資料庫裡。
+ *
+ *  現在略過最後一筆時會直接刪掉那一批（見詳情頁與 AI 記帳彈窗），這支是**補刪以前留下
+ *  來的**：在列出待確認清單之前先掃一次，自己把舊的清乾淨。只刪「什麼都沒做成」的批次，
+ *  已經寫進紀錄的（committed）不動——那是查得到來源的歷史。 */
+export async function deleteEmptyAiDrafts(userId: ObjectId): Promise<number> {
+  const col = await collection();
+  const result = await col.deleteMany({ userId, status: "pending", items: { $not: { $elemMatch: { state: "pending" } } } });
+  return result.deletedCount;
+}

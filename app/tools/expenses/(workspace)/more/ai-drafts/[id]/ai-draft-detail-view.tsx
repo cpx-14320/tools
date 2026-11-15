@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/expenses/page-header";
 import { BackLink } from "@/components/expenses/back-link";
 import { TransactionModal, type TransactionModalDraft } from "@/components/expenses/transaction-modal";
 import { AiDraftList } from "@/components/expenses/ai/ai-draft-list";
+import { useToast } from "@/components/expenses/toast";
 import { text } from "@/components/expenses/theme";
-import { unclassifiedItems, type AiDraftDTO, type AiDraftItemDTO } from "@/lib/expenses/ai-drafts";
+import { pendingItems, unclassifiedItems, type AiDraftDTO, type AiDraftItemDTO } from "@/lib/expenses/ai-drafts";
 import type { CategoryDTO } from "@/lib/expenses/categories";
 import type { AccountDTO } from "@/lib/expenses/accounts";
 import type { AccountTypeDTO } from "@/lib/expenses/account-types";
@@ -33,6 +35,8 @@ export function AiDraftDetailView({
   transactions: TransactionDTO[];
   transfers: TransferDTO[];
 }) {
+  const router = useRouter();
+  const showToast = useToast();
   const [draft, setDraft] = useState(initialDraft);
   // 分類可能在編輯彈窗裡被當場新增（CategoryGridPicker 有「＋ 新增」），所以要能就地更新。
   const [categories, setCategories] = useState(initialCategories);
@@ -48,7 +52,27 @@ export function AiDraftDetailView({
     })
       .then((r) => r.json())
       .catch(() => ({}));
-    if (data.draft) setDraft(data.draft);
+    if (!data.draft) return;
+    setDraft(data.draft);
+
+    // **全部略過＝這一批沒有任何東西要記**：直接刪掉那一批，然後自己退回清單。
+    //
+    // 本來略過最後一筆之後會停在一張寫著「這一批都處理完了」的空白詳情頁，使用者得自己
+    // 按返回；而那一批既沒寫進消費紀錄、也不再有待處理項目，待確認清單的篩選條件會把它
+    // 濾掉——畫面上永遠看不到，文件卻一直留在資料庫裡。
+    //
+    // 刪掉而不是標成 discarded：跟清單上那顆「刪除」同一個判斷——標記只是讓它在畫面上
+    // 消失，使用者以為刪掉了其實沒有。這一批什麼都沒寫出去，留著查不到任何東西。
+    if (pendingItems(data.draft).length === 0) {
+      await fetch("/api/expenses/ai/drafts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", draftId: draft.id }),
+      }).catch(() => null);
+      showToast("這一批都處理完了");
+      // replace 不是 push：這一頁已經不存在了，留在歷史紀錄裡會讓返回鍵跳回一個 404。
+      router.replace("/tools/expenses/more/ai-drafts");
+    }
   }
 
   return (

@@ -143,12 +143,17 @@ export function previousPeriodSuffix(mode: DateFilterMode): string {
 // 任意區間：平移才保證兩邊的天數、落在一年裡的位置是對齊的，比出來的數字才可比。
 // ────────────────────────────────────────────────────────────────────────────
 
-export type CompareMode = "previous" | "lastYear" | "year" | "none";
+export type CompareMode = "previous" | "lastYear" | "year" | "custom" | "none";
 
 export interface CompareSetting {
   mode: CompareMode;
   /** mode === "year" 時要比的那個年份（例如 2024）。 */
   year: number;
+  /** mode === "custom" 時要平移到的那個年月（`YYYY-MM`）。沒給就當上一個月。
+   *
+   *  選的是「平移到哪個年月」而不是「哪一段到哪一段」：區間長度跟著現在看的那段走，
+   *  兩邊的天數才一樣多（見這一段開頭的說明）。 */
+  yearMonth?: string;
 }
 
 /** 預設不比較。換日期範圍只是換「看哪一段」，不該順便冒出一排 ▲／▼ 的漲跌徽章——
@@ -171,6 +176,44 @@ function shiftFilterToYear(f: DateFilter, year: number): DateFilter | null {
   return { ...f, year };
 }
 
+/** 把現在看的這段期間整個平移到指定的年月——「十月的消費跟今年三月比」這種自訂比較。
+ *
+ *  平移的量是「目標年月 − 現在看的參考年月」幾個月，窗口長度不動：
+ *  - 年模式只認年份（整年的窗口平移幾個月就不是一年了），所以直接換成目標年月的那一年。
+ *  - 月模式換成目標年月。
+ *  - 天／週／近三個月／近六個月都是靠一個基準日算出來的，把基準日平移同樣的月數就好
+ *    （shiftMonths 會處理 3/31 往前一個月這種溢位）。
+ *  - 自訂區間兩端各平移同樣的月數，保持原本的長度。 */
+function shiftFilterToYearMonth(f: DateFilter, yearMonth: string): DateFilter | null {
+  if (f.mode === "all") return null;
+  const [ty, tm] = yearMonth.split("-").map(Number);
+  if (!Number.isFinite(ty) || !Number.isFinite(tm)) return null;
+  const delta = (ty - f.year) * 12 + (tm - f.month);
+  // 平移 0 個月＝就是現在這一段，自己跟自己比每一項都是 0%，徽章不如不要顯示。
+  if (delta === 0) return null;
+
+  // 年模式只認年份，所以「2026/11 看整年、挑 2026/03」平移後還是同一年——月份不一樣
+  // 不代表有東西可以比，這裡要再擋一次（delta 擋不到）。
+  if (f.mode === "year") return ty === f.year ? null : { ...f, year: ty };
+  if (f.mode === "month") return { ...f, year: ty, month: tm };
+  if (f.mode === "custom") {
+    return {
+      ...f,
+      year: ty,
+      customStart: shiftMonths(f.customStart, delta),
+      customEnd: shiftMonths(f.customEnd, delta),
+    };
+  }
+  const moved = shiftMonths(`${f.year}-${pad2(f.month)}-${pad2(f.day)}`, delta);
+  const [y, m, d] = moved.split("-").map(Number);
+  return { ...f, year: y, month: m, day: d };
+}
+
+/** mode === "custom" 沒給年月時的預設：現在看的這段的上一個月。 */
+function compareYearMonth(f: DateFilter, setting: CompareSetting): string {
+  return setting.yearMonth ?? shiftYearMonth(`${f.year}-${pad2(f.month)}`, -1);
+}
+
 /** 依照比較設定算出「要拿來比的那一段」——回傳 null 代表這個組合沒有可比的區間
  *  （例如選了不比較、或「全部」模式下沒有同期的概念），畫面上就不顯示漲跌。 */
 export function compareDateFilter(f: DateFilter, setting: CompareSetting): DateFilter | null {
@@ -183,6 +226,8 @@ export function compareDateFilter(f: DateFilter, setting: CompareSetting): DateF
       return shiftFilterToYear(f, f.year - 1);
     case "year":
       return shiftFilterToYear(f, setting.year);
+    case "custom":
+      return shiftFilterToYearMonth(f, compareYearMonth(f, setting));
   }
 }
 
@@ -197,6 +242,11 @@ export function compareLabel(f: DateFilter, setting: CompareSetting): string {
       return "vs 去年同期";
     case "year":
       return `vs ${setting.year} 年同期`;
+    case "custom": {
+      const ym = compareYearMonth(f, setting);
+      // 年模式平移後實際比的是整年，寫「vs 2024/03」會讓人以為只比那一個月。
+      return f.mode === "year" ? `vs ${ym.slice(0, 4)} 年` : `vs ${ym.replace("-", "/")}`;
+    }
   }
 }
 
