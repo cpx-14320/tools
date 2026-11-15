@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/expenses/page-header";
+import { StickyToolbar } from "@/components/expenses/sticky-toolbar";
 import { Card, CardBody } from "@/components/expenses/card";
 import { ListProgressRow } from "@/components/expenses/list-progress-row";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
@@ -469,7 +470,10 @@ export function ReportsView({
 
       {/* 分頁靠左、「跟誰比」靠右，同一列——跟上面「報表＋日期」那一列同一個分法，
           兩列的右邊界也對齊。「跟誰比」四個分頁共用一個設定（本來只有資產分頁裡面有
-          一顆自己的基準日選擇器，切到別的分頁就不見了）。 */}
+          一顆自己的基準日選擇器，切到別的分頁就不見了）。
+          整列釘在頂端（跟收支分類、明細頁同一顆 StickyToolbar）：這一頁很長（KPI、圓環、
+          趨勢、年度對照一路往下），捲到趨勢圖才想換去「收入」的話，本來得整頁滑回最上面。 */}
+      <StickyToolbar>
       <div className="flex items-center justify-between gap-2">
         <SegmentedControl
           value={kind}
@@ -492,6 +496,7 @@ export function ReportsView({
         />
         <ComparePicker />
       </div>
+      </StickyToolbar>
 
       {kind === "資產" ? (
         <>
@@ -607,7 +612,7 @@ export function ReportsView({
                   組成的。版面跟支出／收入那張完全一樣（日期一列、底下一份圖示＋名稱＋
                   金額的清單），四個分頁點下去看到的才是同一種東西。 */}
               {selectedAssetPoint && (
-                <div className="mt-4 rounded-2xl border border-[#ECE4FA] bg-[#F9F7FE] p-4">
+                <div className="mt-4 rounded-2xl border border-[#ECE4FA] bg-white p-4">
                   <div className="flex items-center justify-between gap-2">
                     <p className={text.body}>{periodRangeLabel(selectedAssetPoint)}</p>
                     <p
@@ -830,7 +835,7 @@ export function ReportsView({
               併進「其他」的那份收合版）、跟總計——手機沒辦法 hover 看明細，點開
               才是唯一能看到完整拆項的地方。 */}
           {(selectedPoint || selectedIncomePoint || selectedExpensePoint) && (
-            <div className="mt-4 rounded-2xl border border-[#ECE4FA] bg-[#F9F7FE] p-4">
+            <div className="mt-4 rounded-2xl border border-[#ECE4FA] bg-white p-4">
               {selectedPoint && (
                 <>
                   <div className="flex items-center justify-between gap-2">

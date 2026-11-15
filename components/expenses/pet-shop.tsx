@@ -6,6 +6,8 @@ import { PetTabs, petThumbClass, petTileClass, petTileLabelClass, petTileNoteCla
 import { AmountKeypad, evaluateExpr } from "./amount-keypad";
 import { IconButton } from "./icon-button";
 import { IconImg } from "./icon-img";
+import { InlineIcon } from "./icon-avatar";
+import { ICON_PATHS } from "./icon-paths";
 import { PET_ITEMS, PET_HATCH_LEVEL, effectiveOutfitId, outfitUnlocked, petItemById, petItemThumb, type PetItem, type PetItemKind } from "@/lib/expenses/pet";
 
 interface ShopPetState {
@@ -101,7 +103,7 @@ export function PetShopModal({
         onClose();
       }}
       title="商店"
-      subtitle={`⭐ ${pet.coins}`}
+      subtitle={<StarAmount amount={pet.coins} />}
       footer={
         // 選好一格之後才長出來的購買列。釘在框底（PetModal 的 footer 不跟著捲），
         // 不然在十幾格的清單裡選完要按的按鈕會跟著內容捲走。
@@ -116,7 +118,7 @@ export function PetShopModal({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-bold text-[#5B3B8C]">{selectedItem.name}</p>
                 {/* 買好幾份時顯示的是總價——單價寫在商品格子上，這裡要回答的是「這次要花多少」。 */}
-                <p className={petTileNoteClass}>{totalPrice === 0 ? "免費" : `⭐ ${totalPrice}`}</p>
+                <p className={petTileNoteClass}>{totalPrice === 0 ? "免費" : <StarAmount amount={totalPrice} />}</p>
               </div>
               {/* 數量：減、數字、加。數字本身可以點，開小鍵盤直接打（一次買 20 份時
                   按 19 下加號太荒謬）。只有食物有數量，服裝／背景買一份就永久擁有。 */}
@@ -285,8 +287,19 @@ function ShopTile({
               ? "點擊換上"
               : item.price === 0
                 ? "免費"
-                : `⭐ ${item.price}`}
+                : <StarAmount amount={item.price} />}
       </span>
     </button>
+  );
+}
+
+/** 「星星圖示 ＋ 數字」。本來是 emoji 的 ⭐，那顆在不同平台長得不一樣（而且都不是
+ *  養成頁那套插畫裡的那顆星星），換成跟狀態列同一張 pet-star.png。 */
+function StarAmount({ amount }: { amount: number }) {
+  return (
+    <span className="inline-flex items-center gap-1 align-middle">
+      <InlineIcon icon={ICON_PATHS.petStar} className="size-3.5" />
+      <span className="tabular-nums">{amount}</span>
+    </span>
   );
 }

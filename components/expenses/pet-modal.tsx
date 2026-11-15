@@ -43,7 +43,9 @@ export function PetModal({
   open: boolean;
   onClose: () => void;
   title: string;
-  subtitle?: string;
+  /** 吃 ReactNode 不只吃字串：商店那行要放星星幣圖示＋數字，emoji 的 ⭐ 跟整頁的
+   *  插畫對不上（而且在不同平台長得不一樣）。 */
+  subtitle?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
 }) {

@@ -143,7 +143,7 @@ export function TransferModal({
       {/* 兩個金額欄位都擺出來，鍵盤跟著點到的那一欄走。轉帳金額本來只在鍵盤上，加了
           手續費之後就非得有一個「切回去編轉帳金額」的入口。 */}
       <AmountField label="轉帳金額" required value={amountNum} active={target === "amount"} onFocus={() => setTarget("amount")} placeholder="" />
-      <AmountField label="手續費" value={feeNum} active={target === "fee"} onFocus={() => setTarget("fee")} placeholder="沒有就留空" />
+      <AmountField label="手續費" value={feeNum} active={target === "fee"} onFocus={() => setTarget("fee")} />
       <p className={`-mt-1 ${text.faint}`}>
         跨行轉帳、ATM 提款被扣的錢。轉帳本身不影響淨資產，但手續費是真的花掉了，所以會另外記一筆掛在「手續費」分類的支出，從轉出帳戶扣。
       </p>

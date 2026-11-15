@@ -67,11 +67,11 @@ export function PetHelpModal({ open, onClose }: { open: boolean; onClose: () => 
       </div>
 
       <HelpRow icon="/expenses/pet-food-noodle.png" title="餵食與經驗">
-        點食物餵角色，價格跟經驗值一比一——花掉多少星星幣就換回多少經驗值。
+        點食物餵角色，價格跟經驗值一比一，花掉多少星星幣就換回多少經驗值。
       </HelpRow>
       <HelpRow icon="/expenses/pet-star.png" title="星星幣怎麼來">
         每日簽到 ＋{signinCoins(1)}（連續到第 {SIGNIN_STREAK_CAP} 天是 ＋{signinCoins(SIGNIN_STREAK_CAP)}）、每記一筆帳 ＋{ENTRY_COINS}、
-        上個月每個分類都沒超支 ＋{BUDGET_KEPT_COINS}。只看記帳習慣，不看你有多少錢。
+        上個月每個分類都沒超支 ＋{BUDGET_KEPT_COINS}。
       </HelpRow>
       <HelpRow icon="/expenses/pet-rewardchest.png" title="孵化與換裝">
         Lv.{PET_HATCH_LEVEL} 破殼之後就能換造型；衣服可以先買起來放，等孵化了再到背包換上。

@@ -56,7 +56,11 @@ export function AiComposeModal({
   const showToast = useToast();
   const { hasKey } = useAiKey();
   const [input, setInput] = useState("");
+  // 兩種「正在跑」分開記：按「解析」時掃發票那顆不該跟著變成「讀取中…」——它們是兩條
+  // 不同的路，共用一個 busy 會讓使用者以為自己按到的是掃發票。兩邊都在跑的時候彼此
+  // 互相鎖住（working），避免一邊還沒回來就又送出另一邊。
   const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState<AiDraftDTO | null>(null);
   /** 正在編輯的那一筆（null ＝ 沒有在編）。 */
@@ -79,11 +83,11 @@ export function AiComposeModal({
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function scanInvoice(file: File) {
-    setBusy(true);
+    setScanning(true);
     setError(null);
     const invoice = await scanInvoiceQr(file).catch(() => null);
     if (!invoice) {
-      setBusy(false);
+      setScanning(false);
       setError("這張圖裡找不到統一發票的 QR code。拍的時候讓兩個方塊都清楚入鏡，或改用上面的文字／語音輸入。");
       return;
     }
@@ -93,7 +97,7 @@ export function AiComposeModal({
       body: JSON.stringify({ invoice }),
     }).catch(() => null);
     const data: { draft?: AiDraftDTO; error?: string; reused?: boolean } = (await res?.json().catch(() => ({}))) ?? {};
-    setBusy(false);
+    setScanning(false);
     if (!data.draft) {
       setError(data.error ?? "發票解析失敗，再試一次");
       return;
@@ -197,7 +201,7 @@ export function AiComposeModal({
             >
               取消
             </Button>
-            <Button disabled={busy || input.trim().length === 0} onClick={parse}>
+            <Button disabled={busy || scanning || input.trim().length === 0} onClick={parse}>
               {busy ? "解析中…" : "解析"}
             </Button>
           </div>
@@ -225,8 +229,8 @@ export function AiComposeModal({
                 <span className={`block ${text.body}`}>掃統一發票</span>
                 <span className={`block ${text.muted}`}>金額跟日期直接從發票的 QR code 讀出來</span>
               </span>
-              <Button variant="ghost" disabled={busy} onClick={() => fileRef.current?.click()}>
-                {busy ? "讀取中…" : "選照片"}
+              <Button variant="ghost" disabled={busy || scanning} onClick={() => fileRef.current?.click()}>
+                {scanning ? "讀取中…" : "選照片"}
               </Button>
             </div>
             <input

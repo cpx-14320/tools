@@ -51,8 +51,8 @@ export function PetRedeemModal({
     <PetModal
       open={open}
       onClose={close}
-      title="活動序號"
-      subtitle="輸入序號，換星星幣"
+      title="序號兌換"
+      subtitle="輸入序號，領取獎勵"
       footer={
         <PetModalButton disabled={busy || code.trim().length === 0} onClick={submit}>
           {busy ? "兌換中…" : "兌換"}
@@ -69,7 +69,7 @@ export function PetRedeemModal({
         onKeyDown={(e) => {
           if (e.key === "Enter") void submit();
         }}
-        placeholder="請輸入活動序號"
+        placeholder="請輸入序號"
         autoComplete="off"
         spellCheck={false}
         className="w-full rounded-2xl border-2 border-[#E3D4F5] bg-white/85 px-4 py-2.5 text-center text-sm font-bold tracking-wider text-[#5B3B8C] outline-none placeholder:font-normal placeholder:tracking-normal placeholder:text-[#B9A6D6] focus:border-[#9B7BD6]"
@@ -77,10 +77,6 @@ export function PetRedeemModal({
 
       {error && <p className="text-center text-xs font-medium text-[#D1517E]">{error}</p>}
       {done && <p className="text-center text-xs font-medium text-[#2FAE82]">{done}</p>}
-
-      <p className="text-center text-[11px] leading-relaxed text-[#9C7FC0]">
-        序號會在活動期間公布。同一組序號可以重複輸入，每次都會加上對應的星星幣。
-      </p>
     </PetModal>
   );
 }
