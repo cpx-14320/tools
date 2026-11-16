@@ -1,9 +1,10 @@
 import { MongoServerError, ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
-import { PRESET_ACCOUNTS, PRESET_EXPENSE_CATEGORIES, PRESET_INCOME_CATEGORIES, type PresetCategorySeed } from "./presets";
+import { PRESET_ACCOUNTS, PRESET_EXPENSE_CATEGORIES, PRESET_INCOME_CATEGORIES, expenseCategoryIcon, type PresetCategorySeed } from "./presets";
 import type { CategoryKind } from "./categories";
 
-/** 記錄「這個使用者的記帳本預設資料已經建過了」。
+/** 記錄「這個使用者的記帳本預設資料已經建過了」，順便搭兩個旗標判斷首頁的示範資料
+ *  提示該不該出現（見下面的 shouldShowDemoDataNotice）。
  *
  *  不用「分類數量是 0 就建」來判斷：使用者可能是刻意把預設分類一個一個刪光的，那樣每次
  *  進頁面都會被重新建回來，等於刪不掉。用一筆獨立的標記文件記下「建過了」，之後不管使用者
@@ -13,10 +14,42 @@ interface PresetMetaDoc {
   _id: ObjectId;
   userId: ObjectId;
   presetsSeededAt: Date;
+  /** 使用者按過「清除所有消費紀錄」或「清除所有資料」——不管清的是哪個範圍，都代表
+   *  這個人已經在認真打理自己的帳本，不該再被提醒「這是示範資料」。 */
+  hasClearedData?: boolean;
+  /** 使用者自己建過至少一筆交易／預算／存錢目標（手動新增、CSV 匯入、AI 記帳寫入都算，
+   *  見 markHasOwnData 的呼叫端）。**刻意不會因為後來刪掉而重設回 false**——「新增過
+   *  又刪掉」仍然代表這個人已經操作過真正的功能，不是還沒碰過的新帳號。 */
+  hasOwnData?: boolean;
 }
 
 function metaCollection() {
   return getDb().then((db) => db.collection<PresetMetaDoc>("expenses.meta"));
+}
+
+/** 標記「清過資料」。reset route 不分 scope（只清紀錄／連設定一起清）都算，兩種都是
+ *  使用者自己主動做的清理動作。 */
+export async function markDataCleared(userId: ObjectId): Promise<void> {
+  const meta = await metaCollection();
+  await meta.updateOne({ userId }, { $set: { hasClearedData: true } }, { upsert: true });
+}
+
+/** 標記「自己建過真正的資料」。呼叫點刻意只選**使用者明確做了一個記帳動作**的那幾個
+ *  函式（手動新增交易、CSV／AI 匯入交易、設定預算、新增存錢目標），不包含分類／帳戶
+ *  這類結構性設定——建一個分類不代表「已經在用」，記下第一筆帳才算。 */
+export async function markHasOwnData(userId: ObjectId): Promise<void> {
+  const meta = await metaCollection();
+  await meta.updateOne({ userId }, { $set: { hasOwnData: true } }, { upsert: true });
+}
+
+/** 首頁那個「目前是示範資料」的提示要不要出現：鋪過示範資料、使用者還沒清過、也還沒
+ *  自己動手記過帳，三個條件同時成立才出現。沒有另外存一個「使用者關掉過提示」的旗標
+ *  ——只要這三個條件還成立，代表帳本裡還是那份系統鋪的假資料，每次進首頁都該提醒，
+ *  不是關掉一次就永遠不再講。 */
+export async function shouldShowDemoDataNotice(userId: ObjectId): Promise<boolean> {
+  const meta = await metaCollection();
+  const doc = await meta.findOne({ userId });
+  return !!doc?.presetsSeededAt && !doc.hasClearedData && !doc.hasOwnData;
 }
 
 /** 新帳號第一次進記帳本時，把預設的分類、帳戶類型、帳戶一次建好。
@@ -178,6 +211,20 @@ const BUDGET_SEEDS: { category: string; amount: number }[] = [
   { category: "服務訂閱", amount: 600 },
 ];
 
+/** 示範用的存錢目標——首頁「存錢目標」那個區塊跟設定頁的「存錢目標」入口都是空的話，
+ *  使用者根本不會知道記帳本裡有這個功能（它不像分類、預算那樣是進首頁就會看到的東西）。
+ *  三筆刻意涵蓋三種常見狀態：有期限（看得到試算）、已經達成（看得到「已達成」徽章）、
+ *  沒有期限（開放式存錢）。icon 都是 EXPENSE_ICON_OPTIONS 裡挑得到的圖，之後在編輯彈窗
+ *  打開也能正常對應選到那一張，不是一個使用者挑不到的孤兒路徑。
+ *
+ *  都是手動記錄模式（不綁帳戶）：示範資料本來就不是真的錢，綁一個帳戶反而會讓人誤以為
+ *  資產總表那几個帳戶裡有一筆錢是「準備拿去旅遊」而被特別圈起來。 */
+const GOAL_SEEDS: { name: string; icon: string; targetAmount: number; currentAmount: number; monthsFromNow?: number }[] = [
+  { name: "旅遊基金", icon: expenseCategoryIcon("flight-ticket"), targetAmount: 50000, currentAmount: 21500, monthsFromNow: 6 },
+  { name: "新手機", icon: expenseCategoryIcon("electronics"), targetAmount: 30000, currentAmount: 30000 },
+  { name: "緊急備用金", icon: expenseCategoryIcon("bill"), targetAmount: 100000, currentAmount: 42000 },
+];
+
 /** 新帳號的示範資料——讓第一次打開的人看到的是一份「長得像在用」的帳本，而不是一整排
  *  寫著「還沒有任何資料」的空卡。
  *
@@ -297,4 +344,26 @@ async function seedDemoTransactions(
     ];
   });
   if (budgetDocs.length > 0) await db.collection("expenses.budgets").insertMany(budgetDocs);
+
+  // 存錢目標：跟交易、預算不一樣的是這幾筆完全不需要分類／帳戶才能建，不用查 idOf。
+  const goalDocs = GOAL_SEEDS.map((seed) => ({
+    _id: new ObjectId(),
+    userId,
+    name: seed.name,
+    icon: seed.icon,
+    targetAmount: seed.targetAmount,
+    currentAmount: seed.currentAmount,
+    startDate: iso(years[0], 1, 1),
+    ...(seed.monthsFromNow ? { targetDate: isoMonthsFromNow(now, seed.monthsFromNow) } : {}),
+    createdAt: now,
+  }));
+  await db.collection("expenses.goals").insertMany(goalDocs);
+}
+
+/** 從 `base` 這個時間點往後推 `months`個月，算成 `YYYY-MM-DD`（取當天的日）。
+ *  示範目標的「還差幾個月到期」要看起來像「現在開始算」，不管帳號是什麼時候註冊的都一樣
+ *  新鮮，所以用建立時間當基準，不是寫死某個日期。 */
+function isoMonthsFromNow(base: Date, months: number): string {
+  const d = new Date(base.getFullYear(), base.getMonth() + months, base.getDate());
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }

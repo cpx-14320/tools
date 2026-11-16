@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { TOAST, useToast } from "@/components/expenses/toast";
 import { useUndoDelete } from "@/components/expenses/use-undo-delete";
 import { PageHeader } from "@/components/expenses/page-header";
@@ -37,7 +38,16 @@ export function GoalsView({
   const [goals, setGoals] = useState(initialGoals);
   const showToast = useToast();
   const showDeleteToast = useUndoDelete();
-  const [modal, setModal] = useState<ModalState | null>(null);
+  const searchParams = useSearchParams();
+  // 從首頁「存錢目標」區塊點一列過來的（?edit=id）：直接打開那一筆的編輯彈窗，不用
+  // 使用者自己在清單裡再找一次。只在掛載當下讀一次（lazy init）——這一頁不會再收到
+  // 新的 ?edit，不用隨 searchParams 變動重新判斷。找不到那個 id（已經被刪了）就當作
+  // 沒帶參數，正常顯示清單。
+  const [modal, setModal] = useState<ModalState | null>(() => {
+    const editId = searchParams.get("edit");
+    const goal = editId ? initialGoals.find((g) => g.id === editId) : undefined;
+    return goal ? { mode: "edit", goal } : null;
+  });
   const [deleteConfirm, setDeleteConfirm] = useState<string[] | null>(null);
   const runBusy = useBusy();
 

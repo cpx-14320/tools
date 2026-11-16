@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import { breakdownNet, type BreakdownItem, type TransactionDTO, type TransactionInput } from "./transactions";
 import { putInTrash } from "./trash.server";
+import { markHasOwnData } from "./presets.server";
 import { formatDate } from "../format";
 import type { CategoryColor } from "./categories";
 
@@ -72,6 +73,9 @@ export async function createTransaction(
     createdAt: new Date(),
   };
   await col.insertOne(doc);
+  // 使用者自己動手記了一筆——首頁的「目前是示範資料」提示不該再出現（見
+  // presets.server.ts 的 shouldShowDemoDataNotice）。
+  await markHasOwnData(userId);
   const transactions = await listTransactions(userId);
   return { transaction: toDTO(doc), transactions };
 }
@@ -186,6 +190,8 @@ export async function commitImportedTransactions(
     createdAt: new Date(),
   }));
   const result = await col.insertMany(docs);
+  // CSV／AI 匯入也是使用者帶進來的真實資料（理由同 createTransaction）。
+  await markHasOwnData(userId);
   return result.insertedCount;
 }
 

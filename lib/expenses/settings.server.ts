@@ -11,7 +11,11 @@ import { getDb } from "../mongodb";
  *  使用者自己的瀏覽器、我們不保管（見 components/expenses/ai/use-ai-key.ts）。兩者的
  *  性質不同，不該因為「都跟 AI 有關」就放在一起。
  *
- *  預設關閉：AI 是附屬功能，主要操作還是手動記帳。沒開的人版面上完全看不到它。 */
+ *  **預設開啟**（2026-11-16 改）：AI 記帳是新用戶最先會想試的功能之一，預設關掉等於
+ *  要先懂「設定裡有一個開關」才摸得到入口，多數人根本不會去找。不想用的人自己到設定頁
+ *  關掉即可，跟其他預設資料一樣是「先給看得到，再讓人自己收起來」而不是反過來。
+ *  沒設過值的（doc 不存在、或資料庫裡是舊帳號留下的 undefined）一律當作開啟——只有
+ *  明確存過 `false` 的才是真的關掉。 */
 interface ExpensesSettingsDoc {
   _id: ObjectId;
   userId: ObjectId;
@@ -29,7 +33,7 @@ export interface ExpensesSettings {
 export async function getExpensesSettings(userId: ObjectId): Promise<ExpensesSettings> {
   const col = await collection();
   const doc = await col.findOne({ userId });
-  return { aiEnabled: doc?.aiEnabled === true };
+  return { aiEnabled: doc?.aiEnabled !== false };
 }
 
 export async function setExpensesSettings(userId: ObjectId, patch: Partial<ExpensesSettings>): Promise<ExpensesSettings> {

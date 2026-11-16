@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { GoalsView } from "./goals-view";
 import { expensesUserId } from "@/lib/expenses/page-data.server";
 import { listGoalsWithProgress } from "@/lib/expenses/goals.server";
@@ -16,6 +17,9 @@ export const metadata: Metadata = { title: "存錢目標" };
  *  不然新增／刪除之後按上一頁再回來，看到的會是舊的那份。 */
 export const dynamic = "force-dynamic";
 
+/** GoalsView 用 useSearchParams 讀 ?edit=id（首頁存錢目標區塊點一列會帶過來，直接
+ *  打開那一筆的編輯彈窗），Next.js 要求用到 useSearchParams 的元件外面要包 Suspense，
+ *  不然 build 時會報錯（跟 transactions/page.tsx 的 ?kind 同一個理由）。 */
 export default async function GoalsPage() {
   const userId = await expensesUserId();
   // 帳戶跟類型是給彈窗的帳戶選擇器用的。綁定帳戶的目標進度（餘額）由
@@ -27,5 +31,9 @@ export default async function GoalsPage() {
     listAccountTypes(userId),
   ]);
 
-  return <GoalsView initialGoals={goals} accounts={accounts} accountTypes={accountTypes} />;
+  return (
+    <Suspense fallback={null}>
+      <GoalsView initialGoals={goals} accounts={accounts} accountTypes={accountTypes} />
+    </Suspense>
+  );
 }

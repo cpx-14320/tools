@@ -29,8 +29,43 @@ export const petModelSprite = (slug: string) => `/expenses/intj-model-${slug}-id
 const EGG_IDLE_SPRITE = "/expenses/egg-state.png";
 const EGG_EATING_SPRITE = "/expenses/egg-eating.png";
 
-/** 孵化後的造型共用的「吃東西」圖——還沒有各造型自己的那一張。 */
-const HATCHED_EATING_SPRITE = "/expenses/intj-eating.png";
+/** 針對特定食物畫的專屬吃東西動畫，key 是食物的 item id。現在十二種食物都有自己的
+ *  一張了（最早只有蛋糕，其餘十一張是陸續補上的）。
+ *
+ *  **孵化後的造型沒有「共用吃東西圖」這條退路**：以前還沒畫專屬動畫的食物會退回一張
+ *  所有造型共用的 intj-eating.png，那張圖已經淘汰、不再放進 public/expenses。萬一之後
+ *  又新增了這裡沒列到的食物，吃的時候會維持角色待機姿勢不動（見 petOutfitSprite），
+ *  不會播任何「吃東西」動畫，也不會去讀一張不存在的圖——圖畫好之後在這裡補一行就會
+ *  自動生效，不用改任何呼叫端的程式碼。
+ *
+ *  **規格跟其他精靈圖不一樣**：這裡是單列 7 格（3500×500，一格 500×500），演兩輪再回到
+ *  待機；其他精靈圖（待機、孵化、動作狀態）是 7 欄 × 3 列＝21 格、演一輪。兩種格式
+ *  混用是因為這批圖是之後才陸續補的，各種食物的咀嚼動作只需要一個短循環，重用 21 格
+ *  的規格只會逼著每張圖多畫 14 格用不到的內容。
+ *
+ *  檔名統一照 `intj-eating-<品項後半>.png` 命名（跟最早那張 intj-eating-cake.png
+ *  同一個規則）——美術那邊出圖時用的是另一套命名（`cookies_eat_7x1_3500x500.png`
+ *  這種），進專案時已經改名成這裡的慣例，兩套名字不要同時存在，不然之後找檔案會
+ *  不知道該認哪一個。 */
+export const FOOD_EATING_SPRITES: Partial<Record<string, string>> = {
+  "food-cookies": "/expenses/intj-eating-cookies.png",
+  "food-candiedhawthorn": "/expenses/intj-eating-candiedhawthorn.png",
+  "food-icecream": "/expenses/intj-eating-icecream.png",
+  "food-salad": "/expenses/intj-eating-salad.png",
+  "food-noodle": "/expenses/intj-eating-noodle.png",
+  "food-cake": "/expenses/intj-eating-cake.png",
+  "food-skewer": "/expenses/intj-eating-skewer.png",
+  "food-frieddrumstick": "/expenses/intj-eating-frieddrumstick.png",
+  "food-sushi": "/expenses/intj-eating-sushi.png",
+  "food-shrimp": "/expenses/intj-eating-shrimp.png",
+  "food-crab": "/expenses/intj-eating-crab.png",
+  "food-yuzu": "/expenses/intj-eating-yuzu.png",
+};
+
+/** 食物專屬吃東西動畫的格數／循環次數，跟 SPRITE_COLS/SPRITE_ROWS 分開放，因為兩者
+ *  規格真的不一樣（見 FOOD_EATING_SPRITES 的說明）。 */
+export const FOOD_SPRITE_COLS = 7;
+export const FOOD_SPRITE_LOOPS = 2;
 
 /** 孵化那一段動畫：蛋裂開、角色鑽出來、最後站成 intj-model-laboratory 的待機姿勢。
  *  排法跟其他精靈圖一樣是 7 欄 × 3 列，但它是**演一次就結束**的，不像待機那樣循環。 */
@@ -50,8 +85,9 @@ export interface PetItem {
   price: number;
   /** 食物餵一次給多少經驗值。服裝沒有這個欄位。 */
   xp?: number;
-  /** 服裝「吃東西」那一輪要播的精靈圖。蛋有自己的一張，孵化後的造型目前共用
-   *  intj-eating.png（還沒有各造型的吃東西圖）。 */
+  /** 服裝「吃東西」那一輪要播的精靈圖。只有蛋有自己的一張（egg-eating.png）；孵化後
+   *  的造型沒有這個欄位，吃東西時維持待機姿勢（見 petOutfitSprite）——真正的「吃東西」
+   *  畫面是食物本身的專屬動畫（FOOD_EATING_SPRITES），不是造型這邊的事。 */
   eating?: string;
   /** 「狀態」裡可以在背包複選、在養成頁隨機演出的那一種（例如跳舞、睡覺）。
    *  沒標的狀態（孵化）是純紀念、點了只重播一次，不能選起來。 */
@@ -87,14 +123,15 @@ export const PET_ITEMS: PetItem[] = [
   { id: "food-yuzu", name: "柚子酒", kind: "食物", price: 500, xp: 500, desc: "給自己的大獎勵", image: petItemImage("food-yuzu") },
   // 服裝＝一整套角色造型（換的是那張精靈圖，不是色相旋轉），所以 id 的後半要對得上
   // 檔名：outfit-plushroom → intj-model-plushroom-idle.png。目前只有待機那一組圖，
-  // 吃東西還是共用 intj-eating.png（見 pet-sprite.tsx）。
+  // 孵化後的造型沒有自己的「吃東西」姿勢，吃東西時維持待機姿勢不動（見下面
+  // petOutfitSprite 的說明）——不是共用一張圖，是沒有圖可以共用了。
   { id: "outfit-egg", name: "蛋", kind: "服裝", price: 0, eating: EGG_EATING_SPRITE, desc: "還沒孵化的樣子，孵化後也可以換回來", image: EGG_IDLE_SPRITE },
-  { id: "outfit-laboratory", name: "書房便服", kind: "服裝", price: 0, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "孵化後的第一套衣服", image: petModelSprite("laboratory") },
-  { id: "outfit-plushroom", name: "兔兔睡衣", kind: "服裝", price: 5000, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "抱著玩偶的居家時間", image: petModelSprite("plushroom") },
-  { id: "outfit-studio", name: "畫室圍裙", kind: "服裝", price: 5000, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "動手做點東西的日子", image: petModelSprite("studio") },
-  { id: "outfit-gamingroom", name: "電玩連帽衣", kind: "服裝", price: 5000, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "手把握著就不想放下", image: petModelSprite("gamingroom") },
-  { id: "outfit-dessertcafe", name: "甜點圍裙", kind: "服裝", price: 5000, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "今天換你站在櫃檯裡", image: petModelSprite("dessertcafe") },
-  { id: "outfit-beach", name: "海灘花襯衫", kind: "服裝", price: 5000, eating: HATCHED_EATING_SPRITE, minLevel: PET_HATCH_LEVEL, desc: "存到一筆錢的獎勵", image: petModelSprite("beach") },
+  { id: "outfit-laboratory", name: "書房便服", kind: "服裝", price: 0, minLevel: PET_HATCH_LEVEL, desc: "孵化後的第一套衣服", image: petModelSprite("laboratory") },
+  { id: "outfit-plushroom", name: "兔兔睡衣", kind: "服裝", price: 5000, minLevel: PET_HATCH_LEVEL, desc: "抱著玩偶的居家時間", image: petModelSprite("plushroom") },
+  { id: "outfit-studio", name: "畫室圍裙", kind: "服裝", price: 5000, minLevel: PET_HATCH_LEVEL, desc: "動手做點東西的日子", image: petModelSprite("studio") },
+  { id: "outfit-gamingroom", name: "電玩連帽衣", kind: "服裝", price: 5000, minLevel: PET_HATCH_LEVEL, desc: "手把握著就不想放下", image: petModelSprite("gamingroom") },
+  { id: "outfit-dessertcafe", name: "甜點圍裙", kind: "服裝", price: 5000, minLevel: PET_HATCH_LEVEL, desc: "今天換你站在櫃檯裡", image: petModelSprite("dessertcafe") },
+  { id: "outfit-beach", name: "海灘花襯衫", kind: "服裝", price: 5000, minLevel: PET_HATCH_LEVEL, desc: "存到一筆錢的獎勵", image: petModelSprite("beach") },
   // 狀態分兩種：
   //  ・紀念（price 0、沒有 action）：不賣、不選，Lv.PET_HATCH_LEVEL 之後在背包裡解鎖，
   //    點了在預覽區重播一次。目前只有孵化。
@@ -137,12 +174,19 @@ export const SPRITE_ROWS = 3;
  *  蛋是每個人都有的出生造型，退到它一定不會變成「穿著一件不該有的衣服」。 */
 export const FALLBACK_MODEL_SPRITE = EGG_IDLE_SPRITE;
 
-/** 角色身上那套造型的精靈圖。孵化那一段不看造型——它本來就是「從蛋變成角色」的過程。 */
+/** 角色身上那套造型的精靈圖。孵化那一段不看造型——它本來就是「從蛋變成角色」的過程，
+ *  一律播 EGG_HATCH_SPRITE。
+ *
+ *  **吃東西沒有圖可以播時退回待機姿勢，不是退回一張共用圖**：孵化後的造型本來會共用
+ *  一張 intj-eating.png，那張圖已經淘汰、不再放進 public/expenses。現在吃東西時：
+ *  有專屬動畫的食物由 PetSprite 自己接管（見 FOOD_EATING_SPRITES），這裡只負責「這份
+ *  食物還沒畫專屬動畫」的情況——維持角色待機的那張圖不動，看起來像站著吃，比播一張
+ *  不存在的圖（404）或借用別的造型的吃相要安全。 */
 export function petOutfitSprite(id: string, mood: "idle" | "eating" | "hatching" = "idle"): string {
   if (mood === "hatching") return EGG_HATCH_SPRITE;
   const item = petItemById(id);
-  if (item?.kind !== "服裝") return mood === "eating" ? HATCHED_EATING_SPRITE : FALLBACK_MODEL_SPRITE;
-  return mood === "eating" ? (item.eating ?? HATCHED_EATING_SPRITE) : item.image;
+  if (item?.kind !== "服裝") return FALLBACK_MODEL_SPRITE;
+  return mood === "eating" ? (item.eating ?? item.image) : item.image;
 }
 
 /** 商店賣的狀態（動作狀態）。孵化那種紀念狀態不賣，所以不在這裡。 */

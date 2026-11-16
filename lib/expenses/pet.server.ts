@@ -334,11 +334,15 @@ function ownedList(pet: PetDoc, kind: keyof typeof WEARABLES): string[] {
   return [...new Set([...free, ...(stored ?? [])])];
 }
 
-/** 買服裝或背景（已經有的不能重複買），買完直接換上。
+/** 買服裝或背景（已經有的不能重複買）。
  *
- *  還沒孵化就買的造型是例外：錢照扣、東西照進背包，但不會換上去（穿不上，見
- *  equipWearable）。先買起來放是刻意允許的——星星幣是記帳賺來的，不該因為等級還沒到
- *  就連買都不能買；等孵化了再去背包換上。 */
+ *  **買完不會自動換上**：商店只負責花錢，換裝一律是背包的事（見 equipWearable）。
+ *  以前買完會直接換上，同一個格子有時候扣錢有時候換裝，差別只在這件有沒有買過——
+ *  使用者記不住、而且猜錯會花掉星星幣；拆開之後商店裡的每一格一定是花錢，要換穿
+ *  哪一套、換哪個場地都回到背包自己挑，兩邊的動作不會混在一起。
+ *
+ *  還沒孵化就買的造型一樣可以買（穿不上，見 equipWearable）：星星幣是記帳賺來的，
+ *  不該因為等級還沒到就連買都不能買；等孵化了再去背包換上。 */
 export async function buyWearable(userId: ObjectId, itemId: string): Promise<PetStateDTO | { error: string }> {
   const item = petItemById(itemId);
   if (item?.kind !== "服裝" && item?.kind !== "背景" && item?.kind !== "狀態") return { error: "找不到這個商品" };
@@ -350,15 +354,9 @@ export async function buyWearable(userId: ObjectId, itemId: string): Promise<Pet
   const col = await collection();
   // 跟 buyFood 同一個道理：錢夠不夠、以及「還沒買過」都寫進 filter，連點兩下的第二下
   // 匹配不到（第一下已經把 itemId $push 進去了），不會扣兩次錢也不會在清單裡存兩筆。
-  // 狀態買完不會自己勾起來（它可以複選，替使用者決定勾哪個沒有道理）；服裝等級不夠也不換。
-  const wearNow = fields.current !== null && (item.kind !== "服裝" || outfitUnlocked(item, levelFromXp(pet.xp).level));
   const updated = await col.findOneAndUpdate(
     { _id: pet._id, coins: { $gte: item.price }, [fields.owned]: { $ne: itemId } },
-    {
-      $inc: { coins: -item.price },
-      $push: { [fields.owned]: itemId },
-      ...(wearNow && fields.current ? { $set: { [fields.current]: itemId } } : {}),
-    },
+    { $inc: { coins: -item.price }, $push: { [fields.owned]: itemId } },
     { returnDocument: "after" },
   );
   if (!updated) return { error: pet.coins < item.price ? "星星幣不夠" : fields.duplicate };

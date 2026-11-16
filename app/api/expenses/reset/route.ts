@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { requireTool } from "@/lib/auth";
 import { getDb } from "@/lib/mongodb";
+import { markDataCleared } from "@/lib/expenses/presets.server";
 
 /** 只清「記帳紀錄」——交易跟轉帳。分類、帳戶、帳戶類型、目標、固定收支、預算都留著，
  *  改完 CSV 可以直接重新匯入，不用從分類開始重建。 */
@@ -53,6 +54,10 @@ export async function POST(request: Request) {
     const result = await db.collection(name).deleteMany(filter);
     deleted[name] = result.deletedCount;
   }
+
+  // 不管清的是哪個範圍，都是使用者主動做的清理——首頁那個「目前是示範資料」的提示
+  // 不該再出現（見 shouldShowDemoDataNotice）。
+  await markDataCleared(userId);
 
   return NextResponse.json({ scope, deleted, total: Object.values(deleted).reduce((sum, n) => sum + n, 0) });
 }

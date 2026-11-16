@@ -20,8 +20,8 @@ interface ShopPetState {
   foodCounts: Record<string, number>;
 }
 
-/** 服裝跟背景在商店裡的行為一樣（買過就永久擁有、點一下換上），差別只在看哪個欄位。
- *  食物不走這條（可以重複買、會被吃掉），所以回傳 null。
+/** 服裝跟背景在商店裡的行為一樣（買過就永久擁有，但不會自動換上），差別只在看哪個
+ *  欄位。食物不走這條（可以重複買、會被吃掉），所以回傳 null。
  *
  *  免費的那一件一律算已擁有，跟後端 ownedList() 同一套規則——兩邊判斷不一致的話，
  *  畫面會顯示「可購買」但送出去被擋下來。 */
@@ -37,12 +37,13 @@ function wearableState(item: PetItem, pet: ShopPetState, level: number): { owned
 }
 
 /** 商店彈窗——比照一般換裝類手遊的商店版面：角色預覽＋星星幣餘額在上面，分類頁籤＋
- *  格狀商品卡在下面（圖＋名稱＋價格，服裝已擁有/穿著中用勾勾徽章、食物用左上角的
- *  持有數量徽章）。
+ *  格狀商品卡在下面（圖＋名稱＋價格，服裝／背景已擁有的用勾勾徽章＋格子變色，食物用
+ *  左上角的持有數量徽章）。
  *
- *  **這裡只負責買**，不負責換裝：已經擁有的服裝／背景點了不做事，要換去背包
- *  （PetBagModal）。拆開之後商店裡的每一格一定是花錢、背包裡的每一格一定是免費，
- *  不用在點下去之前先想「這件我買過了嗎」。
+ *  **這裡只負責買**，不負責換裝：已經擁有的服裝／背景點了不做事，連買完當下也不會
+ *  自動換上——要換裝一律去背包（PetBagModal）。拆開之後商店裡的每一格一定是花錢、
+ *  背包裡的每一格一定是免費，不用在點下去之前先想「這件我買過了嗎」「這格會不會
+ *  順便幫我換上」。
  *
  *  點格子不會立刻花錢：食物／還沒買過的服裝點了只是「選取」，真正扣款要在底下跳出來的
  *  確認列按「確認購買」才算數——食物買進來是進背包（foodCounts），不會順便餵下去，
@@ -91,7 +92,8 @@ export function PetShopModal({
   function confirmBuy() {
     if (!selectedItem) return;
     onAct("buy", selectedItem.id, isFood ? qty : 1);
-    // 服裝／背景一買就直接換上，選取面板的任務結束；食物保持選取，方便連續多買幾份。
+    // 服裝／背景買完收起選取面板（換裝回背包做，見上面的說明）；食物保持選取，方便
+    // 連續多買幾份。
     if (selectedItem.kind !== "食物") setSelected(null);
   }
 
@@ -142,7 +144,7 @@ export function PetShopModal({
                 取消
               </PetModalButton>
               <PetModalButton disabled={!canAfford} onClick={confirmBuy}>
-                {canAfford ? "確認購買" : "星星幣不夠"}
+                {canAfford ? "購買" : "星星幣不夠"}
               </PetModalButton>
             </div>
           </div>
@@ -279,15 +281,15 @@ function ShopTile({
           ? "可在背包勾選"
           : owned && locked
           ? `Lv.${PET_HATCH_LEVEL} 解鎖`
-          : equipped
-            ? item.kind === "背景"
-              ? "使用中"
-              : "穿著中"
-            : owned
-              ? "點擊換上"
-              : item.price === 0
-                ? "免費"
-                : <StarAmount amount={item.price} />}
+          : owned
+            ? // 已經買過的服裝／背景：換裝是背包的事，這裡不重複寫「點擊換上」「穿著中」
+              // ／「使用中」，右上角的勾勾徽章跟格子本身的變色（petTileClass 的 selected）
+              // 已經講了「有／正在用」，文字留一個不斷行空格撐住高度，不然這一格會比
+              // 旁邊還在賣的格子矮一截，整排高低不齊。
+              " "
+            : item.price === 0
+              ? "免費"
+              : <StarAmount amount={item.price} />}
       </span>
     </button>
   );

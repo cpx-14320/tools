@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
+import { ConfirmModal } from "@/components/expenses/confirm-modal";
 import { MonthFilterPicker } from "@/components/expenses/date-filter-picker";
 import { EmptyListCard, ListCard, ListRow } from "@/components/expenses/list-row";
 import { Card, CardBody } from "@/components/expenses/card";
@@ -31,6 +33,7 @@ import { type AccountDTO } from "@/lib/expenses/accounts";
 import { type AccountTypeDTO } from "@/lib/expenses/account-types";
 import { type TransferDTO } from "@/lib/expenses/transfers";
 import { monthDaysLeft, withLegacyCategoryBudgets, type BudgetRuleDTO } from "@/lib/expenses/budgets";
+import { goalProgress, type SavingsGoalDTO } from "@/lib/expenses/goals";
 import { petOsLines } from "@/lib/expenses/pet-os";
 import { formatCurrency, formatDateWithWeekday } from "@/lib/format";
 
@@ -77,9 +80,11 @@ export function DashboardView({
   accountTypes,
   transfers,
   budgetRules,
+  goals,
   osSeed,
   heroImage,
   aiEnabled,
+  showDemoDataNotice,
 }: {
   initialCategories: CategoryDTO[];
   initialTransactions: TransactionDTO[];
@@ -87,6 +92,14 @@ export function DashboardView({
   accountTypes: AccountTypeDTO[];
   transfers: TransferDTO[];
   budgetRules: BudgetRuleDTO[];
+  /** 已經換算成當下進度的存錢目標（綁定帳戶的那幾筆，currentAmount 在伺服器端就換成
+   *  帳戶餘額了，見 listGoalsWithProgress）。一筆都沒有就整區不顯示（見下面「存錢目標」
+   *  那一段）。 */
+  goals: SavingsGoalDTO[];
+  /** 要不要提醒「這是示範資料」。伺服器決定（見 presets.server.ts 的
+   *  shouldShowDemoDataNotice）：鋪過示範資料、還沒清過、也還沒自己記過帳，三個條件
+   *  同時成立才是 true。 */
+  showDemoDataNotice: boolean;
   /** 主視覺對話框抽句子用的亂數種子，由 page.tsx 在伺服器產生（見 pet-os.ts）。 */
   osSeed: number;
   /** 伺服器挑好的主視覺圖路徑（見 lib/expenses/hero-images.server.ts）。 */
@@ -109,6 +122,12 @@ export function DashboardView({
   const [expenseRowsExpanded, setExpenseRowsExpanded] = useState(false);
   const [unbudgetedRowsExpanded, setUnbudgetedRowsExpanded] = useState(false);
   const [incomeRowsExpanded, setIncomeRowsExpanded] = useState(false);
+  const [goalsExpanded, setGoalsExpanded] = useState(false);
+  // 示範資料提示：用伺服器算好的初始值開場，之後只能被使用者的「知道了」關掉——不隨
+  // props 變動重新打開（這一頁本來就不會在使用者停留期間重新拿到新的 showDemoDataNotice，
+  // 除非整頁重新整理，到時候 state 本來就會重新初始化）。
+  const [demoNoticeOpen, setDemoNoticeOpen] = useState(showDemoDataNotice);
+  const router = useRouter();
   const [recentExpanded, setRecentExpanded] = useState(false);
   // 在外面看記帳本時把金額遮起來，記在這台裝置上（見 hidden-amounts.tsx）。
   // 收入跟支出各一顆眼睛、各自記各自的狀態：只想遮薪水、不在意別人看到今天花了多少，
@@ -285,6 +304,23 @@ export function DashboardView({
 
           這一列只放日期，不放那兩顆眼睛：眼睛遮的是各自那一欄的數字，跟期間不是同一
           種東西，混在一起會讓人以為眼睛是全域開關。 */}
+      {/* 新帳號第一次看到的畫面是系統鋪好的示範資料（見 presets.server.ts），不講清楚的話
+          使用者會對著一堆自己沒記過的消費紀錄滿頭問號。只在「鋪過示範資料、還沒清過、
+          也還沒自己記過帳」三個條件同時成立時出現（shouldShowDemoDataNotice），使用者
+          清過資料或自己記過一筆之後就不會再看到。
+          用共用的 ConfirmModal（跟記帳本其他地方的確認彈窗同一套樣式），不是另外設計
+          一個——這是記帳本本體的頁面，不是養成頁那種插畫畫面，沒有理由換一套視覺。 */}
+      <ConfirmModal
+        open={demoNoticeOpen}
+        title="目前看到的是示範資料"
+        message="這些收支紀錄、預算、存錢目標都是系統準備的範例，讓你先逛逛記帳本長什麼樣子，不是你自己記的帳。想開始記自己的帳，到「設定」把這些示範資料清掉就可以了，分類、帳戶這些基本設定不會被清掉。"
+        danger={false}
+        confirmLabel="前往設定清除"
+        cancelLabel="知道了"
+        onConfirm={() => router.push("/tools/expenses/more")}
+        onClose={() => setDemoNoticeOpen(false)}
+      />
+
       <PageHeader flush title="收支總覽" actions={<MonthFilterPicker filter={filter} onChange={setFilter} />} />
 
       <Card>
@@ -455,6 +491,50 @@ export function DashboardView({
               total={unbudgetedRows.length}
               onToggle={() => setUnbudgetedRowsExpanded((v) => !v)}
             />
+          )}
+        </div>
+      )}
+
+      {/* 存錢目標：樣式照抄上面「預算支出」那一區（小標在框外、清單在框裡、每一列都是
+          一條進度條，查看全部／收合用同一套 ExpandToggle＋PREVIEW_COUNT）。
+          **一個目標都還沒設定就整區不出現**，不留 EmptyListCard——首頁本來就是摘要頁，
+          不該為了一個使用者可能完全用不到的功能常駐一塊「還沒有任何資料」。設定頁的
+          「存錢目標」本身仍然看得到入口，只是首頁不多佔一塊版面提醒一個空的東西。
+          點一列直接帶到設定頁並打開那一筆的編輯彈窗（?edit=id，見 goals-view.tsx 用
+          useSearchParams 接手），不是只連到清單頁要使用者自己再找一次。 */}
+      {goals.length > 0 && (
+        <div>
+          <div className="mb-2 flex items-center justify-between px-1">
+            <p className={text.sectionHeading}>存錢目標</p>
+            <Link href="/tools/expenses/goals" className="text-xs font-medium text-[#6F5FD6]">
+              查看全部
+            </Link>
+          </div>
+          <ListCard>
+            {(goalsExpanded ? goals : goals.slice(0, SUMMARY_LIMIT)).map((goal) => {
+              const { pct, achieved } = goalProgress(goal);
+              return (
+                <Link
+                  key={goal.id}
+                  href={`/tools/expenses/goals?edit=${goal.id}`}
+                  className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+                >
+                  <ListProgressRow
+                    icon={goal.icon}
+                    name={goal.name}
+                    amount={`${formatCurrency(goal.currentAmount)} / ${formatCurrency(goal.targetAmount)}`}
+                    pct={pct}
+                    pctLabel={achieved ? <span className="text-[#2FAE82]">已達成</span> : `${pct}%`}
+                    // 顏色跟設定頁存錢目標卡同一套（ProgressBar 的 brand／positive 兩色）：
+                    // 目標沒有分類那種「使用者自選色票」的欄位，固定用這兩色就好。
+                    barColorClass={achieved ? "bg-[#6FD9A8]" : "bg-[#A9A5FF]"}
+                  />
+                </Link>
+              );
+            })}
+          </ListCard>
+          {goals.length > SUMMARY_LIMIT && (
+            <ExpandToggle expanded={goalsExpanded} total={goals.length} onToggle={() => setGoalsExpanded((v) => !v)} />
           )}
         </div>
       )}

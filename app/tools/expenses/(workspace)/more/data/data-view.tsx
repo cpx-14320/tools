@@ -162,29 +162,16 @@ export function DataView({
         }
       />
 
-      {/* 兩層切換刻意長得不一樣。本來兩排都是一模一樣的滿版膠囊，上下疊在一起時看不出
-          哪一排管什麼——使用者會以為是同一組六個選項。
-          第一層「匯出／匯入」是這一頁的主要模式（整頁的內容跟著它整個換掉），所以用實心
-          紫底，跟明細頁的「支出／收入」主分頁同一種表現。
-          第二層「要處理哪一種資料」是在模式底下再挑一個對象，用外框膠囊（跟分類頁篩選
-          彈窗裡的帳戶膠囊同一種），份量明顯輕一階。 */}
-      <SegmentedControl className="mb-3" fullWidth activeTone="solid" value={mode} onChange={setMode} options={MODES} />
-      <div className="mb-4 flex flex-wrap gap-2">
-        {KINDS.map((k) => {
-          const active = k.value === kind;
-          return (
-            <button
-              key={k.value}
-              type="button"
-              onClick={() => setKind(k.value)}
-              className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                active ? "border-[#6F5FD6] bg-[#F3EFFC] font-medium text-[#6F5FD6]" : "border-[#ECE4FA] bg-white text-[#4A3B7C]"
-              }`}
-            >
-              {k.label}
-            </button>
-          );
-        })}
+      {/* 跟報表頁的「支出／收入／結餘／資產」同一顆 SegmentedControl、同一種排法
+          （分頁靠左、附帶的另一組選項靠右，同一列）：這一頁本來是「匯出／匯入」一整排
+          滿版膠囊、底下再疊一排外框膠囊選資料種類，兩層一上一下，比報表頁多佔一截高度，
+          樣式也跟記帳本其他分頁切換對不起來。併成一列之後「匯出／匯入」在左（這一頁的
+          主要模式），「資料種類」在右，跟報表頁「分頁在左、跟誰比在右」同一個分法。
+          兩組都用 size="xs"：兩組加起來要擠進同一列，預設尺寸的左右內距會讓六個字的
+          「消費紀錄」那組在手機寬度上跟左邊擠在一起。 */}
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <SegmentedControl size="xs" activeTone="solid" value={mode} onChange={setMode} options={MODES} />
+        <SegmentedControl size="xs" activeTone="solid" value={kind} onChange={setKind} options={KINDS} />
       </div>
 
       {mode === "export" ? (

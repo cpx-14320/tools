@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import type { BudgetRuleDTO, BudgetRuleInput } from "./budgets";
+import { markHasOwnData } from "./presets.server";
 
 interface BudgetRuleDoc {
   _id: ObjectId;
@@ -40,6 +41,9 @@ export async function upsertBudgetRule(userId: ObjectId, input: BudgetRuleInput)
     { $set: { amount: input.amount }, $setOnInsert: { _id: new ObjectId(), userId, categoryId, effectiveFrom: input.effectiveFrom, createdAt: new Date() } },
     { upsert: true },
   );
+  // 自己編了預算——首頁的「目前是示範資料」提示不該再出現（見 presets.server.ts 的
+  // shouldShowDemoDataNotice）。
+  await markHasOwnData(userId);
   return listBudgetRules(userId);
 }
 

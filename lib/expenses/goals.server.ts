@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import { getDb } from "../mongodb";
 import { withAccountBalances, type SavingsGoalDTO } from "./goals";
 import { accountBalance } from "./accounts";
+import { markHasOwnData } from "./presets.server";
 import { listAccounts } from "./accounts.server";
 import { listAccountTypes } from "./account-types.server";
 import { listTransactions } from "./transactions.server";
@@ -100,6 +101,9 @@ export async function createGoal(
     createdAt: new Date(),
   };
   await col.insertOne(doc);
+  // 自己設了一個目標——首頁的「目前是示範資料」提示不該再出現（見 presets.server.ts
+  // 的 shouldShowDemoDataNotice）。
+  await markHasOwnData(userId);
   const goals = await listGoalsWithProgress(userId);
   return { goal: toDTO(doc), goals };
 }

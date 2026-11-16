@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { PetSprite, PET_ANIMATION_MS, type PetMood } from "@/components/expenses/pet-sprite";
+import { useEffect, useRef, useState } from "react";
+import { PetSprite, PET_ANIMATION_MS, petEatingDurationMs, type PetMood } from "@/components/expenses/pet-sprite";
 import { PetShopModal } from "@/components/expenses/pet-shop";
+import { PetBuyResultModal } from "@/components/expenses/pet-buy-result-modal";
 import { PetBagModal } from "@/components/expenses/pet-bag-modal";
 import { PetSigninModal } from "@/components/expenses/pet-signin-modal";
 import { PetHelpModal } from "@/components/expenses/pet-help-modal";
@@ -91,6 +92,123 @@ function sortedFoods(counts: Record<string, number>) {
   return [...FOOD_ITEMS].sort((a, b) => (counts[b.id] ?? 0) - (counts[a.id] ?? 0) || a.price - b.price);
 }
 
+/** 讓一條橫向捲動的列可以**用滑鼠直接拖著滑**。
+ *
+ *  **為什麼需要**：那一列是 `overflow-x-auto`，而捲軸是藏起來的（no-scrollbar，露出來
+ *  會在插畫場景上多一條灰條）。手指滑、滾輪轉都動得了，唯獨「按住往旁邊拖」——桌機
+ *  使用者最直覺的那一招——瀏覽器原生不支援，於是整列看起來就是不會動。
+ *
+ *  只攔滑鼠（`pointerType === "mouse"`）：觸控本來就有原生的橫向捲動跟慣性，自己接管
+ *  只會做出一個比較差的版本。
+ *
+ *  拖完要吃掉那一次 click：不然放開手的位置剛好在某顆食物上，就會順手餵下去一份
+ *  ——使用者只是想滑過去看看有什麼。 */
+function useDragScroll() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  // 事件全部在 effect 裡掛到元素上，不回傳一包 onPointerXxx 讓呼叫端展開到 JSX：
+  // 那樣每次 render 都要碰一次 ref（lint 會擋，見 react-hooks/refs），而且這些狀態
+  // （按著沒、從哪裡開始拖）本來就不該進 render——畫面要變的只有 scrollLeft。
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let active = false;
+    let startX = 0;
+    let startLeft = 0;
+    let moved = false;
+
+    /** 放開手（或滾輪、觸控原生捲動停下來）之後，把位置吸附到最近一顆的左邊界，
+     *  而且是**用 scrollTo 的 smooth 選項**滑過去，不是瞬間跳過去。
+     *
+     *  這裡刻意**不用 CSS 的 `scroll-snap-type`**——那個規格是「只要捲動位置不在
+     *  吸附點上就立刻拉回去」，不分是使用者在拖、還是手動寫 `scrollLeft`，結果拖曳
+     *  途中每寫一次 `scrollLeft` 就被拉回最近的吸附點一次，使用者看到的不是跟著
+     *  手指滑過去，而是整條列用跳的（實測量過：拖到一半 scrollLeft 就已經等於吸附
+     *  點，不是放開手才吸附）。改成放手後才用這個函式自己算最近的位置、自己動畫，
+     *  拖曳過程完全不會被打斷。 */
+    // 寫成 const + 箭頭函式而不是 function 宣告——後者會被提升到整個 effect 最前面，
+    // TypeScript 對 el 的窄化（上面那行 if (!el) return）就套用不到裡面，每一行碰
+    // el 的地方都要報一次「可能是 null」。
+    const settle = () => {
+      const items = [...el.children] as HTMLElement[];
+      if (items.length < 2) return;
+      // 用前兩格的間距當「一格的寬度」（含 gap），不假設所有格子等寬寫死一個數字
+      // ——food-row 本來就是用 calc() 算寬度，版面改了這裡不用跟著改。
+      const step = items[1].offsetLeft - items[0].offsetLeft;
+      if (step <= 0) return;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      const nearest = Math.min(Math.max(Math.round(el.scrollLeft / step) * step, 0), maxScroll);
+      if (Math.abs(nearest - el.scrollLeft) > 1) el.scrollTo({ left: nearest, behavior: "smooth" });
+    };
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      active = true;
+      moved = false;
+      startX = e.clientX;
+      startLeft = el.scrollLeft;
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      if (!active) return;
+      const dx = e.clientX - startX;
+      // 4px 以內當成手震，不算拖曳——不然每次點食物都會被判定成拖過而吃不到。
+      if (!moved && Math.abs(dx) <= 4) return;
+      if (!moved) {
+        moved = true;
+        // **指標捕獲只在真的開始拖之後才抓**：抓了之後 click 會改派到捕獲的那個元素
+        // （這一整列），底下那顆食物按鈕就永遠收不到點擊、餵不下去。所以單純的點擊
+        // 全程不碰捕獲，只有確定在拖的時候才抓——抓了游標才能拖到列外面（甚至離開
+        // 視窗）還繼續捲，不會卡在「以為還按著」的狀態。
+        el.setPointerCapture(e.pointerId);
+      }
+      el.scrollLeft = startLeft - dx;
+    };
+    const onPointerUp = (e: PointerEvent) => {
+      if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+      const wasDrag = active && moved;
+      active = false;
+      if (wasDrag) settle();
+    };
+    // 拖完要吃掉那一次 click：不然放開手的位置剛好在某顆食物上就會順手餵下去一份，
+    // 使用者只是想滑過去看看有什麼。捕獲階段攔，才來得及在按鈕收到之前擋下來。
+    const onClickCapture = (e: MouseEvent) => {
+      if (!moved) return;
+      moved = false;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    // 滾輪、觸控的原生捲動也要吸附：等「停止捲動」之後（debounce 120ms 沒有新的
+    // scroll 事件）才叫 settle()，不能在每個 scroll 事件裡都呼叫——那樣會在滾輪還
+    // 在轉、手指還在滑的時候就被拉去吸附，變回同一個問題。拖曳時這裡也會收到
+    // scroll 事件，但拖曳中 settle() 量到的距離通常 <1px（還在拖、位置還沒停），
+    // debounce 到期時多半已經被 pointerup 的 settle() 處理過，兩邊重複呼叫也無妨
+    // （scrollTo 到同一個位置第二次不會有動作）。
+    let scrollTimer: ReturnType<typeof setTimeout> | undefined;
+    const onScroll = () => {
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(settle, 120);
+    };
+
+    el.addEventListener("pointerdown", onPointerDown);
+    el.addEventListener("pointermove", onPointerMove);
+    el.addEventListener("pointerup", onPointerUp);
+    el.addEventListener("pointercancel", onPointerUp);
+    el.addEventListener("click", onClickCapture, true);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("pointerdown", onPointerDown);
+      el.removeEventListener("pointermove", onPointerMove);
+      el.removeEventListener("pointerup", onPointerUp);
+      el.removeEventListener("pointercancel", onPointerUp);
+      el.removeEventListener("click", onClickCapture, true);
+      el.removeEventListener("scroll", onScroll);
+      clearTimeout(scrollTimer);
+    };
+  }, []);
+
+  return ref;
+}
+
 /** 養成頁。
  *
  *  資料都是 page.tsx 在伺服器上讀好傳進來的，所以沒有「載入中」這個狀態，也不需要骨架。
@@ -114,11 +232,21 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
   // 連續餵第二次時 mood 已經是 "eating"、setMood 等於沒變，下面那個計時器就不會重新
   // 計時，第二次的動畫會被第一次的計時器提早切掉。用這個每次遞增的數字當重新計時的依據。
   const [feedNonce, setFeedNonce] = useState(0);
+  // 正在吃的那個食物 id——有專屬動畫的食物要告訴 PetSprite 該播哪張圖、告訴底下的
+  // 計時器該演多久（petEatingDurationMs，見 pet-sprite.tsx）。
+  const [eatingFoodId, setEatingFoodId] = useState<string | undefined>(undefined);
+  // 剛買到的東西——買成功之後跳一次回饋（見 PetBuyResultModal 開頭的說明，這是「動作
+  // 結果不額外用文字講」這條原則唯一的例外）。
+  const [buyResult, setBuyResult] = useState<{ itemId: string; qty: number; totalPrice: number } | null>(null);
+  // 餵食列用滑鼠拖著滑（桌機最直覺的那一招，原生不支援，見 useDragScroll）。
+  const foodRowRef = useDragScroll();
   // 現在正在演的那個動作狀態的精靈圖（只有 mood === "action" 時有意義）。
   const [actionSprite, setActionSprite] = useState<string | undefined>(undefined);
-  // 動作的結果**不另外用文字講**：換衣服、換場地、餵食的結果畫面上直接看得到（角色換
-  // 了一套、場地換了一張、經驗條往前跑），再疊一塊「場地換成星空書房」的訊息框只是把
-  // 商店彈窗的第一行佔掉。只有失敗需要講，那個走共用的提示（useToast）。
+  // 動作的結果**大多不另外用文字講**：換衣服、換場地、餵食的結果畫面上直接看得到（角色
+  // 換了一套、場地換了一張、經驗條往前跑），再疊一塊「場地換成星空書房」的訊息框只是把
+  // 商店彈窗的第一行佔掉。失敗一律走共用的提示（useToast）。
+  // 「買」是這條原則唯一的例外——錢扣了、東西進背包，畫面上除了一個勾勾徽章看不出
+  // 任何變化，所以刻意保留一個購買成功的回饋（PetBuyResultModal，見 buyResult）。
   const showToast = useToast();
 
   /** 今日簽到。跟餵食／購買不同，它沒有品項，而且日期要前端給——伺服器時區不一定跟
@@ -148,20 +276,37 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
     }
     if (data.pet) {
       setPet(data.pet);
-      // 餵食時切成吃東西的動畫，跑完一輪（PET_EATING_MS）自己回到待機。
+      // 餵食時切成吃東西的動畫，跑完一輪自己回到待機（長度依這份食物有沒有專屬動畫
+      // 而不同，見下面那個計時器）。
       if (action === "feed") {
         setMood("eating");
+        setEatingFoodId(itemId);
         setFeedNonce((n) => n + 1);
+      }
+      // 買到東西本身在畫面上看不出變化（商店格子只是多一個勾勾），跳一次回饋講清楚
+      // 花了多少、東西去哪了（見 PetBuyResultModal）。
+      if (action === "buy") {
+        const item = petItemById(itemId);
+        if (item) setBuyResult({ itemId, qty: count, totalPrice: item.price * (item.kind === "食物" ? count : 1) });
       }
     }
   }
 
-  // 吃東西／孵化／動作狀態都是演一輪就回到待機（長度一樣，見 PET_ANIMATION_MS）。計時器掛在 mood 上而不是寫在 act() 裡：連續餵
-  // 好幾次時每次都會重新計時，不會被前一次的 setTimeout 提早切回待機。
+  // 算等級要提前到這裡：下面那個吃東西計時器要知道身上現在是不是蛋（食物專屬動畫
+  // 還沒孵化不套用，見 petEatingDurationMs 的說明），原本 level 是在更後面才算的。
+  const level = levelFromXp(pet?.xp ?? 0);
+
+  // 孵化／動作狀態演一輪（PET_ANIMATION_MS）就回到待機；吃東西依「這份食物有沒有
+  // 專屬動畫、而且已經孵化」決定演多久（petEatingDurationMs）——有專屬動畫的短很多，
+  // 用通用時長的話畫面會定格在最後一格空等。計時器掛在 mood 上而不是寫在 act() 裡：
+  // 連續餵好幾次時每次都會重新計時，不會被前一次的 setTimeout 提早切回待機。
   useEffect(() => {
     if (mood === "idle") return;
-    const timer = setTimeout(() => setMood("idle"), PET_ANIMATION_MS);
+    const duration =
+      mood === "eating" ? petEatingDurationMs(eatingFoodId, effectiveOutfitId(pet?.outfitId ?? "", level.level)) : PET_ANIMATION_MS;
+    const timer = setTimeout(() => setMood("idle"), duration);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mood, feedNonce]);
 
   // 背包裡勾起來的動作狀態。角色待機時每隔一段時間從裡面隨機挑一個演一次——勾了好幾個
@@ -180,7 +325,6 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mood, (pet?.activeStateIds ?? []).join(",")]);
 
-  const level = levelFromXp(pet?.xp ?? 0);
   // 簽到是進頁面就自動結算的，所以 signinStreak > 0 就代表今天已經簽到了（簽到彈窗
   // 自己用這個數字判斷）。
   const streak = pet?.signinStreak ?? 0;
@@ -256,7 +400,12 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
             正中央（50%）站會偏低、貼到下面那排餵食鍵，純置中則因為精靈圖四周留白
             看起來像浮在半空。 */}
         <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2">
-          <PetSprite mood={mood} actionSprite={actionSprite} outfitId={effectiveOutfitId(pet?.outfitId ?? "", level.level)} />
+          <PetSprite
+            mood={mood}
+            actionSprite={actionSprite}
+            outfitId={effectiveOutfitId(pet?.outfitId ?? "", level.level)}
+            foodId={eatingFoodId}
+          />
         </div>
 
         {/* 下半部由下往上疊：入口列在最底、餵食鍵在它上面、動作提示再上面一層。
@@ -272,13 +421,26 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
               pt-1：持有數量的徽章凸出按鈕上緣 2px，overflow-x-auto 會連垂直方向一起裁，
               不留這點上緣留白的話徽章會被切掉。 */}
           <div
-            className="no-scrollbar flex snap-x items-end gap-2 overflow-x-auto pt-1"
-            // 滑鼠滾輪轉成橫向捲動：手機是直接用手指滑，但在寬螢幕上滾輪只會捲垂直方向，
-            // 而這一頁沒有垂直捲軸（場地正好塞滿），結果就是「怎麼轉都不會動」。捲軸本身
-            // 是藏起來的（no-scrollbar），所以也沒有可以拖的東西。
+            ref={foodRowRef}
+            // **故意不用 CSS 的 scroll-snap-type**：試過 `snap-x snap-mandatory` 之後
+            // 量到的行為是——只要 mandatory 開著，瀏覽器會在每一次 `scrollLeft` 改變
+            // 之後立刻把位置拉回最近的吸附點，不分那次改動是放開手之後的收尾、還是
+            // 使用者手指還按著正在拖。結果整條列變成「拖到一半就已經是下一顆的位置」，
+            // 跟拖著一路滑過去完全是兩種手感，正好是這次要修的問題，不是在修別的。
+            // 吸附改成完全交給 JS 自己算（見 useDragScroll 的 settle()）：拖曳、滾輪、
+            // 原生觸控捲動全部共用同一個「停下來才吸附」的邏輯，不會被 CSS 搶拍。
+            className="no-scrollbar flex items-end gap-2 overflow-x-auto pt-1"
+            // touch-action: pan-x——明講「這一列只吃橫向的手勢」，直向交還給外層捲動。
+            // 沒寫的話某些瀏覽器會先觀望方向再決定，第一下常常被判成直向而整列不動。
+            style={{ touchAction: "pan-x" }}
+            // 三種操作都要能滑：手指滑（原生）、滑鼠拖（useDragScroll）、滾輪轉（這裡）。
+            // 滾輪：在寬螢幕上滾輪只會捲垂直方向，而這一頁沒有垂直捲軸（場地正好塞滿），
+            // 結果就是「怎麼轉都不會動」，所以把垂直滾輪轉成橫向捲動——用 scrollBy 的
+            // smooth 模式而不是直接改 scrollLeft，轉一下就滑過去，不是瞬間跳過去；轉完
+            // 之後 useDragScroll 掛的 scroll 監聽也會接手把位置收齊到最近一格。
             onWheel={(e) => {
               if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
-              e.currentTarget.scrollLeft += e.deltaY;
+              e.currentTarget.scrollBy({ left: e.deltaY, behavior: "smooth" });
             }}
           >
             {sortedFoods(pet?.foodCounts ?? {}).map((item) => {
@@ -288,12 +450,18 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
                   key={item.id}
                   type="button"
                   onClick={() => count > 0 && act("feed", item.id)}
-                  disabled={count === 0}
+                  // **不用原生 disabled**：點擊本來就已經在上面那行用 count > 0 擋掉了，
+                  // disabled 只負責擋手滑點到。但手機上觸到一顆原生 disabled 的按鈕會連
+                  // 「這是一次要拖動的手勢」都辨識不出來，整根手指滑過去變成完全沒反應
+                  // ——新帳號一份食物都沒有，每一顆都是 disabled，整排滑鍵從第一天就是
+                  // 死的。改成 aria-disabled（純粹語意、不影響事件），外觀照舊用透明度
+                  // 表示「吃不了」。
+                  aria-disabled={count === 0}
                   // 框裡只放得下食物圖，名字改成掛在 aria-label／title 上——四顆框塞四行
                   // 字會把框本身的插畫擠掉，而食物圖本身已經夠好認了。
                   aria-label={`餵${item.name}（還有 ${count} 份）`}
                   title={`${item.name} ×${count}`}
-                  className={`relative grid aspect-[249/230] w-[calc((100%-2rem)/4.5)] shrink-0 snap-start place-items-center bg-contain bg-center bg-no-repeat transition-transform active:scale-95 ${
+                  className={`relative grid aspect-[249/230] w-[calc((100%-2rem)/4.5)] shrink-0 place-items-center bg-contain bg-center bg-no-repeat transition-transform active:scale-95 ${
                     count === 0 ? "opacity-40" : ""
                   }`}
                   style={{ backgroundImage: `url("${ICON_PATHS.petButtonBox}")` }}
@@ -336,6 +504,14 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
           foodCounts: pet?.foodCounts ?? {},
         }}
         onAct={act}
+      />
+
+      <PetBuyResultModal
+        open={buyResult !== null}
+        item={buyResult ? (petItemById(buyResult.itemId) ?? null) : null}
+        qty={buyResult?.qty ?? 1}
+        totalPrice={buyResult?.totalPrice ?? 0}
+        onClose={() => setBuyResult(null)}
       />
 
       <PetBagModal
