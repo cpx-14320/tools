@@ -51,29 +51,27 @@ const UNIT_LABEL: Record<DataKind, string> = {
   budgets: "筆預算設定",
 };
 
+/** 匯出摘要那一行的欄位說明。只列欄位名稱，細節（格式、哪些欄位可以留空）統一收在
+ *  標題旁邊的問號裡——這一行是讓人確認「等一下下載的檔案長這樣」，不是教學。 */
 const FIELD_HINT: Record<DataKind, string> = {
-  transactions: "欄位：日期,分類,金額,備註,明細,帳戶（薪資那種加項扣項會一起帶出去）",
-  categories: "欄位：名稱,收支類型,顏色,上層分類",
-  budgets: "欄位：分類,生效月份,每月預算（每一列是一次調整，之後的月份沿用到下一次調整）",
+  transactions: "欄位：日期、分類、金額、備註、明細、帳戶",
+  categories: "欄位：名稱、收支類型、顏色、上層分類",
+  budgets: "欄位：分類、生效月份、每月預算",
 };
 
+/** 選檔案之前的格式提示。刻意只留「欄位順序」跟一句最容易踩到的規則，其餘寫在問號裡。 */
 const FORMAT_HINT: Record<DataKind, string[]> = {
   transactions: [
-    "欄位順序：日期,分類,金額,備註,明細,帳戶",
-    "日期用 2026-09-05；Excel 存成 2026/9/5 也收",
-    "分類欄可以填完整路徑（例如「餐飲 › 早餐」）或只填分類名稱，分類必須已經存在",
-    "明細欄可留空，有填用「本薪:+50000;勞健保:-6000」這種格式（冒號可省略），加減起來要等於金額欄",
-    "帳戶欄可留空；要指定就填帳戶名稱（例如「銀行帳戶」），帳戶必須已經存在",
+    "欄位順序：日期、分類、金額、備註、明細、帳戶",
+    "日期用 2026-09-05；分類與帳戶需先建立",
   ],
   categories: [
-    "欄位順序：名稱,收支類型,顏色,上層分類",
-    "收支類型填「支出」或「收入」；上層分類留空＝大分類，填名稱＝那個大分類的子分類",
-    "顏色填 a～f，留空預設 a。圖示不走 CSV，匯入後在畫面上挑一張就好",
+    "欄位順序：名稱、收支類型、顏色、上層分類",
+    "收支類型填「支出」或「收入」；上層分類留空即為大分類",
   ],
   budgets: [
-    "欄位順序：分類,生效月份,每月預算",
-    "一列是一次調整：從生效月份（YYYY-MM）開始套用，之後的月份沿用到下一次調整",
-    "分類必須已經存在；金額填 0 代表「從這個月起取消預算」",
+    "欄位順序：分類、生效月份、每月預算",
+    "從生效月份起套用，之後沿用；金額 0 表示取消預算",
   ],
 };
 
@@ -254,21 +252,21 @@ function ExportPanel({
       {/* 完整備份：三份檔案一次下載，省得自己切三次分頁、也不會漏掉其中一份。
           一次觸發多個下載，瀏覽器可能會問「是否允許下載多個檔案」，這是正常的。 */}
       <Card>
-        <CardBody className="flex flex-col gap-3">
+        <CardBody className="flex flex-col items-start gap-3">
           <div>
             <p className={text.body}>完整備份</p>
-            <p className={`mt-0.5 ${text.faint}`}>一次下載分類、預算設定、全部消費紀錄共 3 個檔案</p>
+            <p className={`mt-0.5 ${text.faint}`}>一次下載消費分類、預算設定、全部消費紀錄共 3 個檔案</p>
           </div>
-          <Button onClick={handleFullBackup}>
-            ⬇ 下載完整備份（3 個檔）
-          </Button>
+          {/* items-start＋按鈕自己的 inline-flex：不加的話 flex 直欄的 stretch 會把按鈕
+              拉成整張卡片的寬度，一顆只有六個字的按鈕佔滿一整列看起來像一塊色條。 */}
+          <Button onClick={handleFullBackup}>下載完整備份</Button>
         </CardBody>
       </Card>
 
       <Card>
-        <CardBody className="flex flex-col gap-4">
+        <CardBody className="flex flex-col items-start gap-4">
           {kind === "transactions" && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid w-full grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={`font-medium ${text.muted}`}>起始月份</span>
                 <DateField value={start} onChange={setStartOverride} granularity="month" />
@@ -280,7 +278,7 @@ function ExportPanel({
             </div>
           )}
 
-          <div className="rounded-xl bg-[#F9F7FE] p-4">
+          <div className="w-full rounded-xl bg-[#F9F7FE] p-4">
             {kind === "transactions" && (
               <>
                 <p className={text.muted}>
@@ -306,9 +304,9 @@ function ExportPanel({
           </div>
 
           <Button onClick={handleExport} disabled={count === 0}>
-            ⬇ 下載 CSV（{count} 筆）
+            下載 CSV（{count} 筆）
           </Button>
-          {count === 0 && <p className={`text-center ${text.muted}`}>目前沒有可以匯出的資料。</p>}
+          {count === 0 && <p className={text.muted}>目前沒有可以匯出的資料</p>}
         </CardBody>
       </Card>
     </div>
@@ -519,19 +517,17 @@ function ImportPanel({
         {skipped.length > 0 && (
           <Card>
             <CardBody>
-              <p className={text.body}>
-                有 {skipped.length} 列系統裡已經有了，會自動略過
-              </p>
+              <p className={text.body}>有 {skipped.length} 列系統裡已經有了，會自動略過</p>
               <p className={`mt-1 ${text.faint}`}>{skipped.slice(0, 8).map((r) => r.error).join("、")}{skipped.length > 8 ? " …" : ""}</p>
             </CardBody>
           </Card>
         )}
 
         <div className="flex gap-3">
-          <Button variant="secondary" onClick={reset} className="flex-1">
+          <Button variant="secondary" onClick={reset}>
             重新選擇
           </Button>
-          <Button onClick={handleConfirmImport} disabled={validCount === 0} className="flex-1">
+          <Button onClick={handleConfirmImport} disabled={validCount === 0}>
             確認匯入 {validCount} 筆
           </Button>
         </div>
@@ -542,13 +538,12 @@ function ImportPanel({
   if (stage === "done") {
     return (
       <Card>
-        <CardBody className="flex flex-col items-center gap-3 py-10 text-center">
-          <span className="text-3xl">✅</span>
+        <CardBody className="flex flex-col items-start gap-3">
           <p className={text.body}>
             已匯入 {importedCount} {unitLabel}
           </p>
-          {duplicateCount > 0 && <p className={text.faint}>其中 {duplicateCount} 筆跟現有紀錄完全相同，已自動略過</p>}
-          <div className="mt-2 flex gap-3">
+          {duplicateCount > 0 && <p className={text.faint}>其中 {duplicateCount} 筆與現有紀錄完全相同，已自動略過</p>}
+          <div className="flex gap-3">
             <Button variant="secondary" onClick={reset}>
               再匯入一次
             </Button>
@@ -561,8 +556,9 @@ function ImportPanel({
 
   return (
     <Card>
-      <CardBody className="flex flex-col items-center gap-4 py-10 text-center">
-        <span className="text-3xl">📥</span>
+      {/* items-start＋靠左：這張卡是「準備要做一件事」的說明，不是成果頁。置中又配
+          一顆大圖示會讓它看起來像空狀態插圖，而且說明文字一置中就很難掃讀。 */}
+      <CardBody className="flex flex-col items-start gap-4">
         <div>
           <p className={text.body}>選擇 CSV 檔案</p>
           <div className={`mt-1 flex flex-col gap-0.5 ${text.faint}`}>
@@ -571,14 +567,14 @@ function ImportPanel({
             ))}
           </div>
         </div>
-        <Button onClick={() => fileRef.current?.click()}>
-          選擇檔案
-        </Button>
-        {/* 還沒有任何資料時，先下載範本在試算表裡排好再匯入，比在手機上一個一個
-            點彈窗建立快得多；範本裡的範例列可以直接改成自己的資料。 */}
-        <button type="button" onClick={handleDownloadTemplate} className="text-xs font-medium text-[#6F5FD6] hover:underline">
-          下載 {KINDS.find((k) => k.value === kind)?.label} 範本 CSV
-        </button>
+        <div className="flex items-center gap-4">
+          <Button onClick={() => fileRef.current?.click()}>選擇檔案</Button>
+          {/* 還沒有任何資料時，先下載範本在試算表裡排好再匯入，比在手機上一個一個
+              點彈窗建立快得多；範本裡的範例列可以直接改成自己的資料。 */}
+          <button type="button" onClick={handleDownloadTemplate} className="text-xs font-medium text-[#6F5FD6] hover:underline">
+            下載範本 CSV
+          </button>
+        </div>
         <input
           ref={fileRef}
           type="file"

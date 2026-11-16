@@ -312,10 +312,10 @@ export function DashboardView({
           一個——這是記帳本本體的頁面，不是養成頁那種插畫畫面，沒有理由換一套視覺。 */}
       <ConfirmModal
         open={demoNoticeOpen}
-        title="目前看到的是示範資料"
-        message="這些收支紀錄、預算、存錢目標都是系統準備的範例，讓你先逛逛記帳本長什麼樣子，不是你自己記的帳。想開始記自己的帳，到「設定」把這些示範資料清掉就可以了，分類、帳戶這些基本設定不會被清掉。"
+        title="目前顯示的是示範資料"
+        message="帳本中的收支紀錄、預算與存錢目標皆為系統預先建立的範例，用於呈現各項功能的實際樣貌。開始記錄前，請至「設定」清除示範資料；收支分類、帳戶類型等基本設定不會一併清除。"
         danger={false}
-        confirmLabel="前往設定清除"
+        confirmLabel="前往設定"
         cancelLabel="知道了"
         onConfirm={() => router.push("/tools/expenses/more")}
         onClose={() => setDemoNoticeOpen(false)}
