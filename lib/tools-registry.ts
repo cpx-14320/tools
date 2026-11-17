@@ -8,6 +8,10 @@ export interface ToolMeta {
   icon: string;
   /** 真的有插畫圖示檔案時才填，沒有的工具先用上面的 emoji icon 墊著顯示。 */
   iconImage?: string;
+  /** 還沒有插畫、但在入口頁／登入頁想指定一個像樣的線條圖示時填 Font Awesome 的名字
+   *  （不填就是通用的 `shapes`）。那兩頁的圖示一律走 Font Awesome、不用表情符號，
+   *  理由見 components/ui.tsx 的 FaIcon。 */
+  faIcon?: string;
   href: string;
 }
 
@@ -27,5 +31,13 @@ export const TOOLS_REGISTRY: ToolMeta[] = [
     icon: "💰",
     iconImage: "/hub/expenses.png",
     href: "/tools/expenses",
+  },
+  {
+    toolId: "compress",
+    name: "圖片壓縮",
+    description: "把照片、截圖壓到夠小再存下來，圖片不會離開你的裝置。",
+    icon: "🖼️",
+    faIcon: "image",
+    href: "/tools/compress",
   },
 ];

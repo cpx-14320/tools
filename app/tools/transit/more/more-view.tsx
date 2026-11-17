@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { TOOLS_REGISTRY } from "@/lib/tools-registry";
+import { FaIcon } from "@/components/transit/fa-icon";
 import { ImageSlot } from "@/components/transit/image-slot";
 import { DividedRowsSkeleton } from "@/components/transit/skeleton";
 import { loadSkeletonCount, saveSkeletonCount } from "@/components/transit/skeleton-count";
@@ -229,7 +230,11 @@ export function MoreView() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={tool.iconImage} alt={tool.name} className="size-10 shrink-0 object-contain" />
                   ) : (
-                    <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#F3EFFC] text-lg">{tool.icon}</span>
+                    // 還沒有插畫的工具墊一個線條圖示，不要直接印 tool.icon 那個表情符號——
+                    // 表情符號的長相由作業系統字型決定，跟旁邊幾列的插畫不是同一種畫風。
+                    <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#F3EFFC]">
+                      <FaIcon icon={tool.faIcon ?? "shapes"} size={16} className="text-[#6F5FD6]" />
+                    </span>
                   )}
                   <span className={`flex-1 ${text.body}`}>{tool.name}</span>
                   <span aria-hidden className="text-[#C7BFE6]">

@@ -54,7 +54,7 @@ export function AuthPanel({
                 <img src={tool.iconImage} alt="" className="size-9 shrink-0 object-contain" />
               ) : (
                 <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
-                  <i aria-hidden className="fa-solid fa-shapes text-sm" />
+                  <i aria-hidden className={`fa-solid fa-${tool.faIcon ?? "shapes"} text-sm`} />
                 </span>
               )}
               <span className="min-w-0">

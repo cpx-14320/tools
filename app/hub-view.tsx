@@ -80,7 +80,7 @@ export function HubView() {
               <img src={tool.iconImage} alt="" className={`size-10 object-contain ${dim ? "grayscale" : ""}`} />
             ) : (
               // 還沒有插畫的工具用線條圖示墊著，不要用表情符號——理由見 ui.tsx 的 FaIcon。
-              <IconTile icon="shapes" />
+              <IconTile icon={tool.faIcon ?? "shapes"} />
             );
 
             return (

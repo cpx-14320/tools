@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
+import { FaIcon } from "@/components/expenses/fa-icon";
 import { IconAvatar } from "@/components/expenses/icon-avatar";
 import { ICON_PATHS } from "@/components/expenses/icon-paths";
 import { ConfirmModal } from "@/components/expenses/confirm-modal";
@@ -171,8 +172,16 @@ export function MoreView({
             <ListCard>
               {otherTools.map((tool) => (
                 <Link key={tool.toolId} href={tool.href} className="flex items-center gap-3 px-4 py-3.5 active:bg-[#F3EFFC]">
-                  {/* 有真圖就不墊底色方塊，只有表情符號的工具才需要一塊底色撐住版面。 */}
-                  <IconAvatar icon={tool.iconImage || tool.icon} plain={!!tool.iconImage} />
+                  {/* 有真圖就不墊底色方塊；沒有插畫的工具墊一塊底色＋線條圖示，不要印
+                      tool.icon 那個表情符號——表情符號的長相由作業系統字型決定，跟其他
+                      幾列的插畫不是同一種畫風。 */}
+                  {tool.iconImage ? (
+                    <IconAvatar icon={tool.iconImage} plain />
+                  ) : (
+                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#F3EFFC]">
+                      <FaIcon icon={tool.faIcon ?? "shapes"} size={16} className="text-[#6F5FD6]" />
+                    </span>
+                  )}
                   <span className={`min-w-0 flex-1 ${text.body}`}>{tool.name}</span>
                   <span aria-hidden className="text-[#C7BFE6]">
                     ›
