@@ -13,7 +13,13 @@
 // 保有透明通道。
 
 /** 輸出格式的選項。`keep` 是「保留原格式」，`auto` 是推薦值（見 targetMime）。 */
-export type OutputFormat = "auto" | "webp" | "jpeg" | "keep";
+export type OutputFormat = "auto" | "webp" | "jpeg" | "png" | "keep";
+
+/** 這個格式吃不吃「品質」這個參數。PNG 是無損的，瀏覽器的 PNG 編碼器沒有品質可調——
+ *  選了 PNG 還讓品質滑桿能動的話，拉半天檔案大小一個 byte 都不會變。 */
+export function usesQuality(format: OutputFormat): boolean {
+  return format !== "png";
+}
 
 export interface CompressOptions {
   format: OutputFormat;
@@ -50,10 +56,15 @@ export const ACCEPTED_MIMES = ["image/png", "image/jpeg", "image/webp", "image/g
 /** `<input accept>` 用的字串。同時寫 MIME 跟副檔名：有些 Android 的檔案選擇器只認副檔名。 */
 export const ACCEPT_ATTR = [...ACCEPTED_MIMES, ".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".avif"].join(",");
 
-/** 一次最多幾張、單張最大多少。這兩個上限是為了「不要讓瀏覽器分頁被自己打死」：
- *  每張圖解碼後在記憶體裡是 寬 × 高 × 4 bytes，手機上同時攤開十幾張就會被系統收掉。 */
-export const MAX_FILES = 30;
-export const MAX_FILE_BYTES = 25 * 1024 * 1024;
+// 張數與單張大小都刻意**沒有**上限。
+//
+// 張數：壓縮是一張壓完才壓下一張（見 compress-view 的 processPending），同一時間只有
+// 一張圖被解開成點陣資料；排隊中的項目只佔一個 File 參考，內容還在磁碟上。
+//
+// 單張大小：擋不擋得住跟檔案大小沒什麼關係——真正吃記憶體的是解碼後的像素量
+// （寬 × 高 × 4 bytes），而一張 3MB 的 PNG 可能比 20MB 的 JPEG 還大張。與其用一個猜的
+// 數字先拒絕使用者，不如讓它真的去壓：壓得動就壓，解不開會拋錯、壓太久會逾時，兩種
+// 情況都有看得懂的錯誤訊息（見 processPending 的 catch），而且只有那一張受影響。
 
 export function isAcceptedFile(file: File): boolean {
   // type 空字串是常態（某些來源的檔案沒有 MIME），這時退回看副檔名。
@@ -87,11 +98,16 @@ export function savedPercent(originalBytes: number, nextBytes: number): number {
  *  `auto`：JPEG 留 JPEG（照片轉 WebP 的額外收益不大，但換副檔名會讓人意外），其他一律
  *  轉 WebP——PNG／GIF／BMP 轉過去通常小一個級距，而且透明通道還在。
  *
+ *  `png`：無損，而且是唯一「一定留得住透明」的選項。但照片轉 PNG 幾乎一定比原檔大
+ *  （無損編碼存不下照片那種連續色調），所以它是給截圖、純色圖、要再進修圖軟體的圖用的，
+ *  不是拿來讓檔案變小的——這一點在介面上要寫清楚，不要讓人選了才發現變大。
+ *
  *  `keep`：原格式不是 canvas 編得出來的（GIF／BMP／AVIF）時沒辦法真的「保留」，有透明
  *  就退 PNG、沒透明就退 JPEG。 */
 export function targetMime(sourceMime: string, format: OutputFormat, hasAlpha: boolean): string {
   if (format === "webp") return "image/webp";
   if (format === "jpeg") return "image/jpeg";
+  if (format === "png") return "image/png";
   if (format === "keep") return ENCODABLE.has(sourceMime) ? sourceMime : hasAlpha ? "image/png" : "image/jpeg";
   return sourceMime === "image/jpeg" ? "image/jpeg" : "image/webp";
 }

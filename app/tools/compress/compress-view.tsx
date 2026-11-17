@@ -4,15 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Badge, Button, FaIcon, ListCard, SectionLabel } from "@/components/ui";
 import {
   ACCEPT_ATTR,
-  MAX_FILES,
-  MAX_FILE_BYTES,
   type CompressOptions,
   type OutputFormat,
   compressImage,
   formatBytes,
   isAcceptedFile,
   savedPercent,
+  usesQuality,
 } from "@/lib/compress/image";
+import { ZipTooLargeError, buildZip } from "@/lib/compress/zip";
 
 /** 圖片壓縮——選圖、壓、下載，全部在這一頁完成。
  *
@@ -42,6 +42,9 @@ interface OutputInfo {
   usedOriginal: boolean;
   flattened: boolean;
   firstFrameOnly: boolean;
+  /** 這張實際壓了多久。用來事後提醒「這張很慢，設個長邊上限會快很多」——與其猜圖多大
+   *  算門檻，不如直接看它真的讓使用者等了幾秒。 */
+  elapsedMs: number;
 }
 
 interface Item {
@@ -59,6 +62,7 @@ const FORMAT_OPTIONS: { value: OutputFormat; label: string }[] = [
   { value: "auto", label: "自動" },
   { value: "webp", label: "WebP" },
   { value: "jpeg", label: "JPEG" },
+  { value: "png", label: "PNG" },
   { value: "keep", label: "原格式" },
 ];
 
@@ -74,6 +78,36 @@ function optsKey(o: CompressOptions): string {
   return `${o.format}|${o.quality}|${o.maxEdge ?? 0}`;
 }
 
+/** 單張的上限。瀏覽器的編碼器對上千萬像素的圖本來就慢（6000×6000 轉 WebP 在桌機要十秒），
+ *  所以這個數字訂得很寬鬆——它不是「正常情況的等待時間」，而是「真的卡死了」的那條線：
+ *  沒有它的話，一張解不開的圖會讓整個佇列永遠停在壓縮中，後面排隊的圖也跟著不動。 */
+const COMPRESS_TIMEOUT_MS = 60_000;
+
+/** 慢到該提醒使用者「可以用長邊上限換速度」的門檻。 */
+const SLOW_MS = 3_000;
+
+class TimeoutError extends Error {}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new TimeoutError()), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
+function formatSeconds(ms: number): string {
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+
 export function CompressView() {
   const [format, setFormat] = useState<OutputFormat>("auto");
   const [quality, setQuality] = useState(0.75);
@@ -82,9 +116,16 @@ export function CompressView() {
   const [dragging, setDragging] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
+  /** 現在正在壓哪一張、從什麼時候開始。null ＝ 沒有在壓。 */
+  const [processing, setProcessing] = useState<{ id: string; startedAt: number } | null>(null);
+  /** 只為了讓「已經壓了幾秒」那個數字會跳動而存在的時鐘。 */
+  const [now, setNow] = useState(0);
+  /** 正在打包 ZIP 的進度。null ＝ 沒有在打包。 */
+  const [zipping, setZipping] = useState<{ done: number; total: number } | null>(null);
 
   const opts: CompressOptions = { format, quality, maxEdge };
   const currentKey = optsKey(opts);
+  const qualityApplies = usesQuality(format);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   // state 的 items 在 async 迴圈裡讀不到最新值（閉包抓的是那一次 render 的快照），
@@ -130,6 +171,14 @@ export function CompressView() {
     };
   }, []);
 
+  // 壓縮中的那一列要顯示「已經等了幾秒」，所以有圖在壓的時候每 100ms 推一次時鐘。
+  // 沒在壓的時候不要留著這個 interval——一個閒置的頁面不該每秒重繪十次。
+  useEffect(() => {
+    if (!processing) return;
+    const timer = setInterval(() => setNow(Date.now()), 100);
+    return () => clearInterval(timer);
+  }, [processing]);
+
   /** 掃出所有「結果不是用現在這組設定壓的」項目，一張一張壓。一次只壓一張是故意的：
    *  手機上同時解開三十張圖的點陣資料會直接被系統收掉分頁，排隊慢一點但不會死。 */
   const processPending = useCallback(
@@ -140,12 +189,22 @@ export function CompressView() {
       for (;;) {
         if (run !== runRef.current) return;
         const target = itemsRef.current.find((it) => it.appliedKey !== key);
-        if (!target) return;
+        if (!target) {
+          setProcessing(null);
+          return;
+        }
+
+        // 哪一張正在壓、從什麼時候開始——畫面要能回答「它到底還在不在動」。一張
+        // 6000×6000 的圖在原尺寸下光編碼就要十秒，只寫「壓縮中…」看起來就是當掉了。
+        setProcessing({ id: target.id, startedAt: Date.now() });
+        setNow(Date.now());
 
         const previousUrl = target.out?.url;
+        const startedAt = performance.now();
         try {
-          const result = await compressImage(target.file, runOpts);
+          const result = await withTimeout(compressImage(target.file, runOpts), COMPRESS_TIMEOUT_MS);
           if (run !== runRef.current) return;
+          const elapsedMs = Math.round(performance.now() - startedAt);
           const url = createUrl(result.blob);
           writeItems((prev) =>
             prev.map((it) =>
@@ -166,6 +225,7 @@ export function CompressView() {
                       usedOriginal: result.usedOriginal,
                       flattened: result.flattened,
                       firstFrameOnly: result.firstFrameOnly,
+                      elapsedMs,
                     },
                   }
                 : it,
@@ -173,12 +233,14 @@ export function CompressView() {
           );
           // 舊結果的 URL 等新的寫進畫面才還——反過來會有一瞬間縮圖指向已經失效的 URL。
           releaseUrl(previousUrl);
-        } catch {
+        } catch (error) {
           if (run !== runRef.current) return;
           // 失敗也要蓋上 appliedKey，不然上面那個迴圈會一直挑到同一張，變成無窮迴圈。
-          writeItems((prev) =>
-            prev.map((it) => (it.id === target.id ? { ...it, appliedKey: key, error: "這張圖讀不出來，可能格式不符或檔案損壞" } : it)),
-          );
+          const message =
+            error instanceof TimeoutError
+              ? "這張圖太大，壓超過一分鐘還沒好，已經停下來——設一個長邊上限再試一次。"
+              : "這張圖讀不出來，可能格式不符或檔案損壞";
+          writeItems((prev) => prev.map((it) => (it.id === target.id ? { ...it, appliedKey: key, error: message } : it)));
         }
       }
     },
@@ -191,18 +253,15 @@ export function CompressView() {
       const rejected: string[] = [];
       const accepted: File[] = [];
 
+      // 只擋「這根本不是我們能解的圖」。大小不擋——理由見 lib/compress/image.ts 那段：
+      // 壓不動的圖會自己拋錯或逾時，訊息比事前用一個猜的位元組數拒絕掉更有用。
       for (const file of list) {
-        if (!isAcceptedFile(file)) rejected.push(`${file.name}（不支援的格式）`);
-        else if (file.size > MAX_FILE_BYTES) rejected.push(`${file.name}（超過 ${formatBytes(MAX_FILE_BYTES)}）`);
-        else accepted.push(file);
+        if (isAcceptedFile(file)) accepted.push(file);
+        else rejected.push(`${file.name}（不支援的格式）`);
       }
 
-      const room = MAX_FILES - itemsRef.current.length;
-      const taken = accepted.slice(0, Math.max(0, room));
-      if (accepted.length > taken.length) rejected.push(`一次最多 ${MAX_FILES} 張，其餘沒有加入`);
-
-      if (taken.length > 0) {
-        const newItems: Item[] = taken.map((file) => ({
+      if (accepted.length > 0) {
+        const newItems: Item[] = accepted.map((file) => ({
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           file,
           originalUrl: createUrl(file),
@@ -282,6 +341,8 @@ export function CompressView() {
     writeItems([]);
     setPreviewId(null);
     setNotice(null);
+    // 沒有下一輪會接手把它蓋掉，所以這裡要自己收：不收的話清空之後頁首還會寫著「壓縮中」。
+    setProcessing(null);
     previous.forEach((it) => {
       releaseUrl(it.originalUrl);
       releaseUrl(it.out?.url);
@@ -292,6 +353,8 @@ export function CompressView() {
   const working = items.filter((it) => it.appliedKey !== currentKey);
   const originalTotal = done.reduce((sum, it) => sum + it.file.size, 0);
   const compressedTotal = done.reduce((sum, it) => sum + (it.out?.size ?? 0), 0);
+  /** 正數 ＝ 省下來的量，負數 ＝ 比原檔多出來的量（選 PNG 輸出照片時會這樣）。 */
+  const totalDelta = originalTotal - compressedTotal;
   const preview = items.find((it) => it.id === previewId) ?? null;
 
   const downloadOne = (filename: string, url: string) => {
@@ -303,13 +366,38 @@ export function CompressView() {
     anchor.remove();
   };
 
-  const downloadAll = async () => {
+  const downloadEach = async () => {
     // 一張一張隔開 300ms 送：連續觸發下載瀏覽器會判定成彈出式視窗濫用，只存到第一張。
-    // （不打包成 zip 是為了不為了一顆按鈕多一個前端壓縮套件的相依。）
     for (const it of done) {
       if (!it.out) continue;
       downloadOne(it.out.filename, it.out.url);
       await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+  };
+
+  const downloadZip = async () => {
+    const entries = done.flatMap((it) => (it.out ? [{ name: it.out.filename, blob: it.out.blob }] : []));
+    if (entries.length === 0) return;
+
+    setZipping({ done: 0, total: entries.length });
+    try {
+      const zip = await buildZip(entries, (count, total) => setZipping({ done: count, total }));
+      const stamp = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const name = `compressed-${stamp.getFullYear()}${pad(stamp.getMonth() + 1)}${pad(stamp.getDate())}-${pad(stamp.getHours())}${pad(stamp.getMinutes())}.zip`;
+      const url = URL.createObjectURL(zip);
+      downloadOne(name, url);
+      // 不要馬上 revoke：瀏覽器是在點下去之後才去讀這個 URL，太早收回會變成「下載失敗」。
+      // 這顆 URL 不進 urlsRef——它跟某一張圖無關，離開頁面時也不需要跟著清。
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (error) {
+      setNotice(
+        error instanceof ZipTooLargeError
+          ? `${error.message}，請改用「逐張下載」。`
+          : "打包失敗了，請改用「逐張下載」。",
+      );
+    } finally {
+      setZipping(null);
     }
   };
 
@@ -318,7 +406,7 @@ export function CompressView() {
       <div>
         <h1 className="text-xl font-bold tracking-tight text-ink">圖片壓縮</h1>
         <p className="mt-1 text-xs leading-relaxed text-muted">
-          圖片在你的裝置裡壓縮，不會上傳到伺服器。一次最多 {MAX_FILES} 張，單張 {formatBytes(MAX_FILE_BYTES)} 以內。
+          圖片在你的裝置裡壓縮，不會上傳到伺服器。張數跟大小都沒有限制，一張壓完換下一張。
         </p>
       </div>
 
@@ -362,10 +450,18 @@ export function CompressView() {
             <Segmented options={FORMAT_OPTIONS} value={format} onChange={setFormat} />
           </Field>
 
+          {/* 選了 PNG 就把滑桿關起來，不是放著讓它能拉——PNG 是無損的，拉了只會讓整批圖
+              重壓一輪（大圖一張要十秒）然後大小一個 byte 都沒變。 */}
           <Field
             label="品質"
-            value={`${Math.round(quality * 100)}%`}
-            hint={format === "keep" ? "PNG 沒有品質參數可以調，要變小只能縮尺寸。" : "70%～80% 通常看不出差別，再往下調臉會開始糊。"}
+            value={qualityApplies ? `${Math.round(quality * 100)}%` : "不適用"}
+            hint={
+              !qualityApplies
+                ? "PNG 是無損格式，沒有品質可以調——要變小只能靠下面的長邊上限。"
+                : format === "keep"
+                  ? "70%～80% 通常看不出差別。原格式是 PNG 的圖不吃這個設定（PNG 無損），只能靠縮尺寸。"
+                  : "70%～80% 通常看不出差別，再往下調臉會開始糊。"
+            }
           >
             <input
               type="range"
@@ -373,8 +469,9 @@ export function CompressView() {
               max={95}
               step={5}
               value={Math.round(quality * 100)}
+              disabled={!qualityApplies}
               onChange={(event) => setQuality(Number(event.target.value) / 100)}
-              className="h-9 w-full accent-brand"
+              className="h-9 w-full accent-brand disabled:opacity-40"
             />
           </Field>
 
@@ -388,7 +485,11 @@ export function CompressView() {
         <div>
           <SectionLabel>
             {done.length} / {items.length} 張已完成
-            {working.length > 0 && <span className="ml-1.5 text-brand">壓縮中…</span>}
+            {working.length > 0 && (
+              <span className="ml-1.5 text-brand">
+                壓縮中{working.length > 1 && `（還有 ${working.length} 張）`}
+              </span>
+            )}
           </SectionLabel>
 
           {done.length > 0 && (
@@ -399,11 +500,13 @@ export function CompressView() {
                 boxShadow: "0 16px 32px -16px rgba(111,95,214,0.9)",
               }}
             >
-              <p className="text-xs font-medium text-white/70">總共省下</p>
+              {/* 變大的時候要說變大，不要把負數夾成 0 顯示「省下 0 B」——選 PNG 輸出照片
+                  就是會變大（而且是好幾倍），那時候寫「省下 0」等於在騙人。 */}
+              <p className="text-xs font-medium text-white/70">{totalDelta >= 0 ? "總共省下" : "總共多了"}</p>
               <p className="mt-0.5 text-2xl font-bold tabular-nums tracking-tight">
-                {formatBytes(Math.max(0, originalTotal - compressedTotal))}
+                {formatBytes(Math.abs(totalDelta))}
                 <span className="ml-1.5 text-sm font-semibold text-white/80">
-                  （{Math.max(0, savedPercent(originalTotal, compressedTotal))}%）
+                  （{Math.abs(savedPercent(originalTotal, compressedTotal))}%）
                 </span>
               </p>
               <p className="mt-1 text-xs text-white/80 tabular-nums">
@@ -417,6 +520,10 @@ export function CompressView() {
               const pending = it.appliedKey !== currentKey;
               const out = it.out;
               const saved = out ? savedPercent(it.file.size, out.size) : 0;
+              // 正在壓的是「這一張」還是「排在前面那張」——兩種都還沒好，但訊息完全不同：
+              // 一個要告訴使用者它在動（而且已經動了幾秒），另一個只要說還在排隊。
+              const active = processing?.id === it.id;
+              const waitedMs = active ? Math.max(0, now - processing.startedAt) : 0;
 
               return (
                 <div key={it.id} className="flex items-center gap-3 px-3.5 py-3">
@@ -428,11 +535,16 @@ export function CompressView() {
                     disabled={!out}
                     className="relative size-12 shrink-0 overflow-hidden rounded-xl border border-line bg-surface-2"
                   >
+                    {/* loading="lazy"：清單沒有張數上限，一次丟幾百張時這些縮圖才是真正
+                        的記憶體壓力（每張都要解碼成點陣資料，即使只畫 48px）。沒捲到的
+                        就不要先解。 */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={out?.url ?? it.originalUrl} alt="" className="size-full object-cover" />
+                    <img src={out?.url ?? it.originalUrl} alt="" loading="lazy" className="size-full object-cover" />
                     {pending && (
-                      <span className="absolute inset-0 grid place-items-center bg-white/70 text-brand">
-                        <FaIcon icon="spinner" size={14} className="animate-spin" />
+                      // 轉圈只給正在壓的那一張。排隊中的也轉的話，畫面上會有五個都在轉的
+                      // 圈圈，但實際上只有一張在動——那正是「看起來當掉了」的來源。
+                      <span className={`absolute inset-0 grid place-items-center text-brand ${active ? "bg-white/70" : "bg-white/50"}`}>
+                        {active ? <FaIcon icon="spinner" size={14} className="animate-spin" /> : <FaIcon icon="ellipsis" size={14} />}
                       </span>
                     )}
                   </button>
@@ -460,9 +572,25 @@ export function CompressView() {
                           {out.flattened && <Badge tone="negative">透明已填白</Badge>}
                           {out.firstFrameOnly && <Badge tone="negative">只留第一格</Badge>}
                         </div>
+                        {/* 這張讓人等很久，而且是在「原尺寸」等的——與其讓他下次再等一次，
+                            不如直接說哪個設定可以換到速度。 */}
+                        {out.elapsedMs >= SLOW_MS && maxEdge === null && (
+                          <p className="mt-1 text-[11px] leading-snug text-muted">
+                            這張 {out.sourceWidth}×{out.sourceHeight} 壓了 {formatSeconds(out.elapsedMs)}，設個長邊上限會快很多。
+                          </p>
+                        )}
                       </>
                     ) : (
-                      <p className="mt-0.5 text-xs text-muted tabular-nums">{formatBytes(it.file.size)}</p>
+                      <p className="mt-0.5 text-xs tabular-nums text-muted">
+                        {formatBytes(it.file.size)}
+                        {active ? (
+                          // 秒數是這裡最重要的東西：大圖在原尺寸下要十幾秒，沒有這個數字
+                          // 跳動，使用者沒辦法分辨「還在壓」跟「當掉了」。
+                          <span className="ml-1.5 font-semibold text-brand">壓縮中 {formatSeconds(waitedMs)}</span>
+                        ) : (
+                          <span className="ml-1.5 text-[#C7BFE6]">排隊中</span>
+                        )}
+                      </p>
                     )}
                   </div>
 
@@ -491,18 +619,28 @@ export function CompressView() {
             })}
           </ListCard>
 
+          {/* 打包是主要路徑（一個檔案、一次對話框），逐張留著當備案：有人就是想直接拿到
+              那幾張圖、不想再解壓縮，而且 zip 真的太大時也要有退路。 */}
           <div className="mt-3 flex gap-2">
-            <Button onClick={() => void downloadAll()} disabled={done.length === 0} className="flex-1">
-              <FaIcon icon="arrow-down" size={12} />
-              下載全部（{done.length}）
+            <Button onClick={() => void downloadZip()} disabled={done.length === 0 || zipping !== null} className="flex-1">
+              <FaIcon icon={zipping ? "spinner" : "file-zipper"} size={12} className={zipping ? "animate-spin" : ""} />
+              {zipping ? `打包中 ${zipping.done}/${zipping.total}` : `打包成 ZIP（${done.length}）`}
             </Button>
-            <Button variant="secondary" onClick={clearAll}>
+            <Button variant="secondary" onClick={clearAll} disabled={zipping !== null}>
               清空
             </Button>
           </div>
+          <div className="mt-2 text-center">
+            <Button variant="ghost" onClick={() => void downloadEach()} disabled={done.length === 0 || zipping !== null}>
+              <FaIcon icon="arrow-down" size={11} />
+              改成逐張下載
+            </Button>
+          </div>
           {done.length > 1 && (
-            <p className="mt-2 px-1 text-center text-xs leading-relaxed text-muted">
-              「下載全部」會一張一張存，瀏覽器可能會先問你要不要允許一次下載多個檔案。
+            <p className="mt-1 px-1 text-center text-xs leading-relaxed text-muted">
+              ZIP 不會再壓一次（圖片本來就壓好了，再壓也省不到），只是把 {done.length} 張裝進同一個檔案。
+              <br />
+              逐張下載則是一張一張存，瀏覽器可能會先問你要不要允許一次下載多個檔案。
             </p>
           )}
         </div>
@@ -525,6 +663,7 @@ const FORMAT_HINT: Record<OutputFormat, string> = {
   auto: "JPG 留 JPG，其他一律轉 WebP——同畫質下最小，而且透明會留著。",
   webp: "最小，現在的瀏覽器跟手機都看得開；要給很舊的軟體用才需要換。",
   jpeg: "相容性最好，但不支援透明，透明的地方會被填成白色。",
+  png: "無損、一定留得住透明，但照片轉 PNG 幾乎都會比原檔大。適合截圖、純色圖、要再編輯的圖。",
   keep: "副檔名不變。GIF／BMP／AVIF 編不回原格式，會退成 PNG 或 JPG。",
 };
 
