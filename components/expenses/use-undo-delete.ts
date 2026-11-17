@@ -31,7 +31,7 @@ export function useUndoDelete() {
       return;
     }
     showToast(message, {
-      label: "復原",
+      label: "還原",
       onAction: async () => {
         // 逐筆依序還原，不是併發：還原分類時會去改交易的 categoryId，兩個請求同時進來
         // 改同一批交易的結果不保證。順序做完最後的狀態才是對的。
@@ -47,7 +47,7 @@ export function useUndoDelete() {
               body: JSON.stringify({ action: "restore", id }),
             })
               .then((r) => r.json())
-              .catch(() => ({ error: "復原失敗" }));
+              .catch(() => ({ error: "還原失敗" }));
             if (data.error) failed++;
             if (data.renamedTo) renamedTo = data.renamedTo;
             droppedRefs += data.droppedRefs ?? 0;
@@ -56,11 +56,11 @@ export function useUndoDelete() {
         });
 
         // 還原時可能動過兩件事，都要讓使用者知道，不要默默改掉。
-        if (failed === ids.length) showToast("復原失敗，到「設定 › 最近刪除」看看");
-        else if (failed > 0) showToast(`復原了 ${ids.length - failed} 項，有 ${failed} 項失敗`);
-        else if (renamedTo) showToast(`已復原，因為名稱重複所以改成「${renamedTo}」`);
-        else if (droppedRefs) showToast("已復原，但原本掛的帳戶已經不在了");
-        else showToast(ids.length > 1 ? `已復原 ${ids.length} 項` : "已復原");
+        if (failed === ids.length) showToast("還原失敗，到「設定 › 最近刪除」看看");
+        else if (failed > 0) showToast(`還原了 ${ids.length - failed} 項，有 ${failed} 項失敗`);
+        else if (renamedTo) showToast(`已還原，因為名稱重複所以改成「${renamedTo}」`);
+        else if (droppedRefs) showToast("已還原，但原本掛的帳戶已經不在了");
+        else showToast(ids.length > 1 ? `已還原 ${ids.length} 項` : "已還原");
       },
     });
   };

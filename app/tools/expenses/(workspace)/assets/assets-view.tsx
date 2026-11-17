@@ -384,12 +384,12 @@ export function AssetsView({
                     orphanOnly ? "border-[#D1517E] bg-[#FDEEF0] text-[#D1517E]" : "border-[#ECE4FA] bg-white text-[#9C94C4]"
                   }`}
                 >
-                  對不到帳戶 {orphanTransfers.length}
+                  缺少轉出或轉入帳戶（{orphanTransfers.length} 筆）
                 </button>
               )}
             </div>
             {transferGroups.length === 0 ? (
-              <EmptyListCard>{orphanOnly ? "沒有對不到帳戶的轉帳。" : "還沒有任何轉帳紀錄"}</EmptyListCard>
+              <EmptyListCard>{orphanOnly ? "沒有對不到帳戶的轉帳。" : "還沒有任何轉帳紀錄，點右下角的圖示新增"}</EmptyListCard>
             ) : (
               <>
                 <div className="flex flex-col gap-5">

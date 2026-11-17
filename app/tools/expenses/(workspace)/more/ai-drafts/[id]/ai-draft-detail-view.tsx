@@ -97,7 +97,7 @@ export function AiDraftDetailView({
 
       {unclassified.length > 0 && (
         <p className="rounded-2xl bg-[#FDF4E7] px-4 py-3 text-xs leading-relaxed text-[#9A7430]">
-          還有 {unclassified.length} 筆沒分類，點那一列補上之後才能寫入。不想記的話按「略過」。
+          有 {unclassified.length} 筆待補分類。點該筆選擇分類，或按「略過」。
         </p>
       )}
 

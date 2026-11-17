@@ -188,7 +188,7 @@ export function TrashView({ initialItems }: { initialItems: TrashItemDTO[] }) {
 
           {/* 切到某個分頁但那個分頁剛好沒東西（例如垃圾桶裡只有分類，切去「帳戶」）：
               講清楚是「這個分頁沒有」，不要整塊空白讓人以為沒反應。 */}
-          {visible.length === 0 && <p className={`px-1 ${text.faint}`}>還沒有任何資料。</p>}
+          {visible.length === 0 && <p className={`px-1 ${text.faint}`}>此分頁沒有已刪除的項目。</p>}
 
           {/* 依「刪除日期」分組，日期當小標題——跟明細頁的消費清單同一種排法。
               一天刪好幾次是常有的事，沒有分組的話整串看起來就是一長條，要找「我昨天
@@ -271,7 +271,7 @@ export function TrashView({ initialItems }: { initialItems: TrashItemDTO[] }) {
         open={renameConfirm !== null}
         title="有同名的分類還在"
         danger={false}
-        confirmLabel="還原並改名"
+        confirmLabel="還原並套用新名稱"
         message={
           <>
             還原之後這{(renameConfirm?.length ?? 0) > 1 ? ` ${renameConfirm?.length} 項` : "一項"}會自動加上序號，因為目前的清單裡已經有同名的：

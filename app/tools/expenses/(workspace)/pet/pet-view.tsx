@@ -482,7 +482,7 @@ export function PetView({ initialPet }: { initialPet: PetState | null }) {
           <div className="flex items-start gap-1 rounded-2xl bg-white/80 px-1 py-1 backdrop-blur">
             <StageNavButton label="簽到" icon={ICON_PATHS.petNavCheckin} onClick={() => setSigninOpen(true)} />
             <StageNavButton label="商店" icon={ICON_PATHS.petNavShop} onClick={() => setShopOpen(true)} />
-            <StageNavButton label="衣服" icon={ICON_PATHS.petNavOutfit} onClick={() => openBag("服裝")} />
+            <StageNavButton label="服裝" icon={ICON_PATHS.petNavOutfit} onClick={() => openBag("服裝")} />
             <StageNavButton label="背景" icon={ICON_PATHS.petNavBackground} onClick={() => openBag("背景")} />
           </div>
         </div>

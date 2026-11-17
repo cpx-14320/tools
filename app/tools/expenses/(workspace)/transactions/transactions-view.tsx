@@ -499,7 +499,7 @@ export function TransactionsView({
 
         {isSearching ? (
           <p className={`px-1 ${text.muted}`}>
-            「{query.trim()}」在所有時間的{kind}紀錄中共 {rows.length} 筆符合，不受上方日期篩選影響
+            已翻過所有日期，找到 {rows.length} 筆「{query.trim()}」的{kind}紀錄。
           </p>
         ) : (
           rows.length > 0 && (
@@ -517,7 +517,7 @@ export function TransactionsView({
             <CardBody className={`py-10 text-center ${text.muted}`}>
               {/* 有條件在作用時不能寫成「這段期間還沒有支出紀錄」——剛批次改完帳戶的人
                   會以為資料被改不見了，其實只是不符合「只看未指定帳戶」了。 */}
-              {isSearching ? "沒有符合的紀錄。" : filterLabels.length > 0 ? "沒有符合篩選條件的紀錄。" : `這段期間還沒有${kind}紀錄。`}
+              {isSearching ? "找不到符合的紀錄，試試其他關鍵字。" : filterLabels.length > 0 ? "沒有符合篩選條件的紀錄。" : `這段期間還沒有${kind}紀錄。`}
             </CardBody>
           </Card>
         ) : (

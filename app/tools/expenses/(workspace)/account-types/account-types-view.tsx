@@ -102,7 +102,7 @@ export function AccountTypesView({
     // 單筆刪除也要有「處理中」：以前只有批次那條路有，單筆按下去畫面完全沒反應。
     const { blockedCount, totalInUse } = await runBusy("刪除中…", () => tryDeleteTypes([modal.id]));
     setModal(null);
-    if (blockedCount > 0) setBlockedInfo({ message: `還有 ${totalInUse} 個帳戶掛著選取的類型，無法刪除。請先把這些帳戶改成別的類型，再回來刪除。` });
+    if (blockedCount > 0) setBlockedInfo({ message: `有 ${totalInUse} 個帳戶使用選取的類型。先為這些帳戶改選類型，再刪除。` });
   }
 
   function handleBulkDelete() {
@@ -115,7 +115,7 @@ export function AccountTypesView({
     const { blockedCount, totalInUse } = await runBusy("刪除中…", () => tryDeleteTypes(deleteConfirm));
     setDeleteConfirm(null);
     selection.exit();
-    if (blockedCount > 0) setBlockedInfo({ message: `還有 ${totalInUse} 個帳戶掛著選取的類型，無法刪除。請先把這些帳戶改成別的類型，再回來刪除。` });
+    if (blockedCount > 0) setBlockedInfo({ message: `有 ${totalInUse} 個帳戶使用選取的類型。先為這些帳戶改選類型，再刪除。` });
   }
 
   // 批次新增：逐筆依序 POST（不是 Promise.all 併發），理由跟分類批次新增一樣——

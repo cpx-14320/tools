@@ -167,7 +167,7 @@ export function GoalModal({
               </button>
             </Field>
             <p className={`-mt-1 ${text.faint}`}>
-              進度會直接看這個帳戶的餘額，存錢之後不用再回來更新。同一個帳戶綁兩個目標的話，兩邊的進度會是同一個數字。
+              以所選帳戶的餘額計算進度。多個目標綁定同一帳戶時，各自使用相同餘額。
             </p>
           </>
         ) : (
@@ -182,7 +182,7 @@ export function GoalModal({
               placeholder="NT$ 0"
             />
             <p className={`-mt-1 ${text.faint}`}>
-              又存了一筆就把這個數字改成新的總額。下面的鍵盤吃算式，所以直接打「現在的金額＋這次存的」也可以。
+              輸入目前累積的總金額。可直接用鍵盤計算。
             </p>
           </>
         )}
@@ -198,7 +198,7 @@ export function GoalModal({
             <DateField value={targetDate} onChange={setTargetDate} placeholder="不設期限" />
           </Field>
         </div>
-        <p className={`-mt-1 ${text.faint}`}>兩個都可以不填。開始日期純顯示用，目標日期會用來算「平均每週要存多少」。</p>
+        <p className={`-mt-1 ${text.faint}`}>兩欄皆可留空。目標日期會用來估算每週所需存款。</p>
       </Modal>
 
       {/* 挑帳戶：不顯示餘額——這裡問的是「錢放在哪個戶頭」，選完之後整個進度條就是那個

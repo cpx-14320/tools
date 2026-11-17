@@ -79,7 +79,7 @@ export function BudgetBatchModal({
 
       <p className={`${text.muted} leading-relaxed`}>
         從 <span className="font-semibold text-[#4A3B7C]">{formatYearMonth(yearMonth)}</span> 起每個月都用這些金額，直到設下一筆新的為止。
-        填 0 表示不編預算，空著的分類這次不會被改到。
+        填 0 表示停止設定預算，空著的分類這次不會被改到。
       </p>
 
       {/* 「全部設成同一個金額」本來規劃成另一顆批次動作、另一個彈窗，但它跟這裡只差在

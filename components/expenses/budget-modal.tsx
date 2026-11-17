@@ -57,7 +57,7 @@ export function BudgetModal({
       </Field>
 
       <p className={`${text.muted} leading-relaxed`}>
-        從 <span className="font-semibold text-[#4A3B7C]">{formatYearMonth(yearMonth)}</span> 起每個月都用這個金額，直到你設下一筆新的為止。填 0 表示不編預算。
+        從 <span className="font-semibold text-[#4A3B7C]">{formatYearMonth(yearMonth)}</span> 起每個月都用這個金額，直到你設下一筆新的為止。填 0 表示停止設定預算。
       </p>
     </Modal>
   );

@@ -103,7 +103,7 @@ function AiKeyModalBody({ open, onClose }: { open: boolean; onClose: () => void 
           </a>{" "}
           建立一組，記得確認帳戶還有可用額度。
         </li>
-        <li>你輸入的文字會送到 OpenAI 進行判讀，敏感內容請自行斟酌。</li>
+        <li>目前文字使用工具內的模擬解析。實際模型連接後，再提供傳送內容與計費資訊。</li>
       </ul>
 
       {/* 現在還沒接真模型，講清楚比讓人貼了金鑰之後才發現沒用好。 */}

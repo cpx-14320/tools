@@ -132,10 +132,10 @@ export function TransferModal({
       {/* 轉出／轉入並排成一列：這兩欄是一組「從哪裡到哪裡」，上下排開反而要掃兩次才
           看得出方向；而且各佔一整列會把彈窗拉長到要捲動。 */}
       <div className="grid grid-cols-2 gap-3">
-        <Field label="從（轉出帳戶）" required>
+        <Field label="轉出帳戶" required>
           <SelectField value={accountLabel(fromAccountId, accounts)} placeholder="選擇帳戶" onClick={() => setPickingFrom(true)} />
         </Field>
-        <Field label="到（轉入帳戶）" required>
+        <Field label="轉入帳戶" required>
           <SelectField value={accountLabel(toAccountId, accounts)} placeholder="選擇帳戶" onClick={() => setPickingTo(true)} />
         </Field>
       </div>
@@ -145,7 +145,7 @@ export function TransferModal({
       <AmountField label="轉帳金額" required value={amountNum} active={target === "amount"} onFocus={() => setTarget("amount")} placeholder="" />
       <AmountField label="手續費" value={feeNum} active={target === "fee"} onFocus={() => setTarget("fee")} />
       <p className={`-mt-1 ${text.faint}`}>
-        跨行轉帳、ATM 提款被扣的錢。轉帳本身不影響淨資產，但手續費是真的花掉了，所以會另外記一筆掛在「手續費」分類的支出，從轉出帳戶扣。
+        轉帳是把錢搬到另一個帳戶。若有手續費，系統會從轉出帳戶扣掉並記成支出。
       </p>
 
       <Field label="日期" required>

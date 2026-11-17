@@ -321,7 +321,7 @@ export function DashboardView({
         onClose={() => setDemoNoticeOpen(false)}
       />
 
-      <PageHeader flush title="收支總覽" actions={<MonthFilterPicker filter={filter} onChange={setFilter} />} />
+      <PageHeader flush title="這個月的錢" actions={<MonthFilterPicker filter={filter} onChange={setFilter} />} />
 
       <Card>
         <CardBody className="grid grid-cols-2 gap-3 p-3">
@@ -396,7 +396,7 @@ export function DashboardView({
           // 一個預算都沒編的時候不要畫「NT$ 0 / NT$ 0　剩 26 天　0%」：那一行每一個數字
           // 都是真的（沒有分母所以是 0），但擺在一起看起來像「這個月還沒開始花」，而底下
           // 「尚未設定預算」那張卡明明列著花掉的錢。沒有分母就不要畫分母，直接講要做什麼。
-          <EmptyListCard>還沒設定任何預算</EmptyListCard>
+          <EmptyListCard>先替常花的分類訂個上限吧！到「設定 › 預算設定」開始。</EmptyListCard>
         ) : (
           <ListCard>
             <div className="px-4 py-3.5">

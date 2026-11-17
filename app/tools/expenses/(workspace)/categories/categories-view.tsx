@@ -266,7 +266,7 @@ export function CategoriesView({
     // 失敗要講出來。本來不管結果都報「改好了」，所以這個功能壞掉（打到不存在的 PATCH、
     // 回 405）整整一版都沒人發現——畫面上看起來成功，重新整理才知道沒變。
     if (!data.categories) {
-      showToast(data.error ?? "改不動，再試一次");
+      showToast(data.error ?? "未能更新預設帳戶，請重試。");
       return;
     }
     setCategories(data.categories);
@@ -350,7 +350,7 @@ export function CategoriesView({
       <PageHeader
         flush
         title="收支分類"
-        help="分類底下可以再開子分類，報表會分開統計；設了預設帳戶的分類，記帳時會自動帶出那個帳戶"
+        help="主分類可再分子分類。記帳時選子分類，報表仍會合計到主分類。主分類可設定預設帳戶。"
         actions={
           <LineIconButton
             icon="filter"
@@ -480,7 +480,7 @@ export function CategoriesView({
         message={[
           (deleteConfirm?.subCount ?? 0) > 0 ? `底下的 ${deleteConfirm?.subCount} 個子分類也會一起刪除。` : "",
           (deleteConfirm?.inUseCount ?? 0) > 0
-            ? `共 ${deleteConfirm?.inUseCount} 筆交易掛在上面，刪除後會自動歸類到「未分類」，紀錄本身不會被刪掉。`
+            ? "原本使用這些分類的紀錄會改到「未分類」。可到「收支明細」重新歸類。"
             : "已經記過的交易如果有掛到這些分類，會自動歸類到「未分類」，不會被刪除。",
           TRASH_RESTORE_NOTE,
         ]

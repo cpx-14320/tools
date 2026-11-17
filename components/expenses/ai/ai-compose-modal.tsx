@@ -88,7 +88,7 @@ export function AiComposeModal({
     const invoice = await scanInvoiceQr(file).catch(() => null);
     if (!invoice) {
       setScanning(false);
-      setError("這張圖裡找不到統一發票的 QR code。拍的時候讓兩個方塊都清楚入鏡，或改用上面的文字／語音輸入。");
+      setError("找不到發票 QR 碼。請重新拍攝，讓兩個方形碼清晰入鏡，或改用文字輸入。");
       return;
     }
     const res = await fetch("/api/expenses/ai/parse", {
@@ -271,7 +271,11 @@ export function AiComposeModal({
               <div className="flex items-center justify-between gap-3">
                 <span className="min-w-0">
                   <span className={`block ${text.body}`}>語音輸入</span>
-                  <span className={`block ${text.muted}`}>用講的，講到金額就自動算一筆</span>
+                  <span className={`block ${text.muted}`}>
+                    {speech.listening
+                      ? "聆聽中。說完請按「停止收音」，系統會嘗試依金額分筆。請確認辨識文字。"
+                      : "用講的，講到金額就自動算一筆"}
+                  </span>
                 </span>
                 <Button
                   variant="ghost"
@@ -286,7 +290,7 @@ export function AiComposeModal({
           )}
 
           <p className={`${text.faint} leading-relaxed`}>
-            一次最多 20 筆。用逗號或換行分開每一筆，日期可以講「昨天」「前天」，沒講就當作今天。收入或支出會看分類自己判斷。
+            最多 20 筆。每筆用逗號或換行分開。可用「昨天」或「前天」，未填日期時使用今天。請確認解析出的分類。
           </p>
           {/* 沒金鑰不擋著不讓用——目前本來就是模擬解析。但要讓人找得到設定的地方。 */}
           <button type="button" onClick={onOpenKeyModal} className="self-start text-xs font-medium text-[#6F5FD6]">
@@ -312,7 +316,7 @@ export function AiComposeModal({
 
           {unclassified.length > 0 && (
             <p className="rounded-2xl bg-[#FDF4E7] px-4 py-3 text-xs leading-relaxed text-[#9A7430]">
-              還有 {unclassified.length} 筆沒分類，點那一列補上之後才能寫入。不想記的話按「略過」。
+              有 {unclassified.length} 筆待補分類。點該筆選擇分類，或按「略過」。
             </p>
           )}
         </>

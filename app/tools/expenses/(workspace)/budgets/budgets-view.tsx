@@ -152,7 +152,7 @@ export function BudgetsView({ initialCategories, initialRules }: { initialCatego
         <PageHeader
           flush
           title="預算設定"
-          help="點分類設定「從哪個月起每月多少」，之後的月份會沿用；要調整時再設一筆新的，之前的月份不會被追溯蓋掉"
+          help="選擇分類、起始月份和每月金額。之後沿用到下一次調整，過去月份保留原金額。"
           actions={
             expenseCategories.length > 0 ? (
               <SelectionToggle selecting={selection.selecting} onToggle={selection.toggleMode} />
@@ -173,7 +173,7 @@ export function BudgetsView({ initialCategories, initialRules }: { initialCatego
       </StickyToolbar>
 
       {expenseCategories.length === 0 ? (
-        <p className={text.faint}>還沒有任何支出分類，先去「收支分類」建立分類才能編預算</p>
+        <p className={text.faint}>沒有可設定預算的支出分類。先到「收支分類」新增。</p>
       ) : (
         <div className="flex flex-col gap-3">
           {expenseCategories.map((c) => {
@@ -190,7 +190,7 @@ export function BudgetsView({ initialCategories, initialRules }: { initialCatego
                   // 設在未來的月份，那筆現在還沒生效。
                   right={
                     <span className={current && current > 0 ? "tabular-nums text-sm font-semibold text-[#4A3B7C]" : `text-sm ${text.faint}`}>
-                      {current === undefined ? "未設定" : current > 0 ? formatCurrency(current) : "不編預算"}
+                      {current === undefined ? "未設定" : current > 0 ? formatCurrency(current) : "停止設定預算"}
                     </span>
                   }
                   onClick={() => (selection.selecting ? selection.toggle(c.id) : setEditing({ category: c }))}
@@ -217,7 +217,7 @@ export function BudgetsView({ initialCategories, initialRules }: { initialCatego
                           >
                             <span className={text.body}>{legacy ? "改版前的設定" : `${formatYearMonth(rule.effectiveFrom)} 起`}</span>
                             <span className="shrink-0 tabular-nums text-sm font-medium text-[#4A3B7C]">
-                              {rule.amount > 0 ? formatCurrency(rule.amount) : "不編預算"}
+                              {rule.amount > 0 ? formatCurrency(rule.amount) : "停止設定預算"}
                             </span>
                           </button>
                           {legacy && <span className={`shrink-0 text-xs ${text.faint}`}>沿用中</span>}

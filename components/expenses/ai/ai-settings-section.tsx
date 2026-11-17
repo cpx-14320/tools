@@ -64,7 +64,7 @@ export function AiSettingsSection({
           <IconAvatar icon={ICON_PATHS.settingAi} plain />
           <span className="min-w-0 flex-1">
             <span className={`block ${text.body}`}>顯示 AI 記帳入口</span>
-            <span className={`block ${text.muted}`}>開啟 AI 按鈕，打一句話自動新增記帳</span>
+            <span className={`block ${text.muted}`}>在收支總覽與明細顯示 AI 記帳入口。解析結果會先列入待確認。</span>
           </span>
           <Switch checked={enabled} onChange={toggle} label="顯示 AI 記帳入口" />
         </label>

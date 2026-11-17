@@ -146,7 +146,7 @@ export function AiDraftsView({ initialDrafts }: { initialDrafts: AiDraftDTO[] })
       <ConfirmModal
         open={deleteBatch}
         title={chosen.length > 1 ? `刪除 ${chosen.length} 批` : "刪除這一批"}
-        message={`勾起來的${chosen.length > 1 ? `這 ${chosen.length} 批` : "這一批"}解析結果會被刪掉，不會寫進消費紀錄，也不會進「最近刪除」。已經寫入的那幾筆不受影響。`}
+        message="將永久刪除選取的草稿批次。已入帳的紀錄會保留。"
         confirmLabel="刪除"
         onConfirm={async () => {
           // 逐批送出：API 一次只收一個 draftId，而且每次都回傳最新的完整清單。

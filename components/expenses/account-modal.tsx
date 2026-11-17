@@ -136,7 +136,7 @@ export function AccountModal({
           onExprChange={setOpeningBalanceExpr}
           // 還沒選類型時（剛轉換完類別、或剛切分頁）用分頁那一邊，不要退回「期初餘額」
           // ——人已經切到負債那一頁了，標籤卻還寫餘額，看起來像沒切成功。
-          label={(selectedKind ?? typeKindTab) === "liability" ? "期初欠款（輸入正數）" : "期初餘額"}
+          label={(selectedKind ?? typeKindTab) === "liability" ? "開始記帳時的欠款（填正數）" : "期初餘額"}
         />
       }
       footer={

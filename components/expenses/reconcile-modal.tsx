@@ -67,7 +67,7 @@ export function ReconcileModal({
           ——按鈕該講「按下去會發生什麼」，不是講機制。按鈕收短成「核對餘額」，機制挪到
           這裡，使用者真的打開彈窗要動手時才看到。 */}
       <p className={`${text.muted} leading-relaxed`}>
-        對一下銀行 App／錢包裡真正有多少，差額會自動補成一筆調整紀錄，不用回頭翻整份紀錄找是哪裡少記。
+        輸入實際金額比對。確認後，系統會新增一筆差額調整。
       </p>
 
       <div className="rounded-2xl bg-[#F9F7FE] p-4">

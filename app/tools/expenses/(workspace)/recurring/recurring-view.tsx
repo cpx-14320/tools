@@ -264,7 +264,7 @@ export function RecurringView({
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader flush title="固定收支" help="房租、電話費這種每期重複的收支。到期不會自動入帳，而是列進「待確認」等你確認——金額每期不同時可以先改再確認，這期不想記就略過" />
+      <PageHeader flush title="固定收支" help="設定重複的收入、支出或轉帳。到期後先列入待確認，你可以修改本期金額、確認入帳或略過。" />
 
       {/* 新增搬到右下角的浮動按鈕，跟首頁新增交易、消費分類頁同一招。 */}
       {/* 等資料回來才出現：它是 fixed、不佔版面，所以不需要骨架，但資料還沒回來就先浮在
@@ -330,7 +330,7 @@ export function RecurringView({
       <ConfirmModal
         open={deleteConfirm !== null}
         title="確定要刪除固定收支嗎？"
-        message={`刪除後這${(deleteConfirm?.length ?? 0) > 1 ? ` ${deleteConfirm?.length} 條` : "條"}規則不會再自動入帳，但已經入帳過的交易紀錄不會被刪除，會繼續留著。規則本身刪掉就沒了，不會進「最近刪除」。`}
+        message="將永久刪除所選規則。之後不再產生待確認項目，已入帳紀錄會保留。"
         onConfirm={handleConfirmedDelete}
         onClose={() => setDeleteConfirm(null)}
       />

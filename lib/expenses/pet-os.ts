@@ -36,7 +36,7 @@ export type PetOsMood = "idle" | "overBudget" | "spike" | "bigTicket" | "income"
 /** 每一種狀態對應的句子池。 */
 const LINES: Record<PetOsMood, string[]> = {
   idle: [
-    "今天還沒有任何紀錄…是沒花錢，還是忘了記？",
+    "今天的帳本還是空白，從一杯咖啡開始記吧。",
     "錢包今天安靜得有點可疑",
     "空白的一頁，先從一杯咖啡開始記吧",
     "先記一筆看看，之後的數字才有東西可以比",

@@ -38,7 +38,7 @@ const GROUPS: { heading: string; items: SettingItem[] }[] = [
     heading: "目標與排程",
     items: [
       { href: "/tools/expenses/goals", label: "存錢目標", desc: "設定目標、追蹤進度", icon: ICON_PATHS.settingGoals },
-      { href: "/tools/expenses/recurring", label: "固定收支", desc: "房租、電話費這種週期性收支", icon: ICON_PATHS.settingRecurring },
+      { href: "/tools/expenses/recurring", label: "固定收支", desc: "設定重複收支或轉帳，到期後再確認入帳", icon: ICON_PATHS.settingRecurring },
     ],
   },
   {
@@ -200,7 +200,7 @@ export function MoreView({
           <p className={`mb-2 px-1 ${text.label}`}>清除資料</p>
           <ListCard>
             <button type="button" onClick={() => setResetScope("records")} className="px-4 py-3.5 text-left active:bg-[#FDEEF0]">
-              <span className="block text-sm font-medium text-[#D1517E]">清除所有消費紀錄</span>
+              <span className="block text-sm font-medium text-[#D1517E]">清除所有交易與轉帳</span>
               <span className={`block ${text.muted}`}>只刪交易與轉帳，分類、帳戶、目標都保留</span>
             </button>
             <button type="button" onClick={() => setResetScope("all")} className="px-4 py-3.5 text-left active:bg-[#FDEEF0]">
@@ -215,11 +215,11 @@ export function MoreView({
 
       <ConfirmModal
         open={resetScope !== null}
-        title={resetScope === "all" ? "清除全部資料" : "清除所有消費紀錄"}
+        title={resetScope === "all" ? "清除全部資料" : "清除所有交易與轉帳"}
         message={
           resetScope === "all"
-            ? "會把記帳本底下的東西清空：交易、轉帳、你自己新增的分類／帳戶／帳戶類型、存錢目標、固定收支、預算。系統預設的分類跟「現金錢包」「銀行帳戶」會保留下來。養成進度（星星幣、等級、買過的服裝背景）預設不會動，要一起清的話勾下面那一項。刪掉就沒了，沒有還原機制，建議先去「匯出資料」備份一份。"
-            : "會刪掉所有交易與轉帳紀錄，分類、帳戶、帳戶類型、目標、固定收支、預算都會保留。養成進度也不會動。刪掉就沒了，沒有還原機制，建議先去「匯出資料」備份一份。"
+            ? "將永久清除交易、轉帳、自訂分類、自訂帳戶、自訂帳戶類型、目標、固定收支與預算。系統預設資料會保留。養成進度僅在勾選下方選項時清除。"
+            : "將永久刪除所有收入、支出和轉帳紀錄。分類、帳戶、預算、目標、固定收支與養成資料會保留。"
         }
         option={
           resetScope === "all"

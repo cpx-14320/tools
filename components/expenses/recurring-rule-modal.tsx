@@ -228,14 +228,14 @@ export function RecurringRuleModal({
           {/* 轉出／轉入並排，跟新增轉帳彈窗一樣：這兩欄是一組「從哪裡到哪裡」，上下排
               要掃兩次才看得出方向。 */}
           <div className="grid grid-cols-2 gap-3">
-            <Field label="從（轉出帳戶）" required>
+            <Field label="轉出帳戶" required>
               <SelectField
                 value={accounts.find((a) => a.id === fromAccountId)?.name}
                 placeholder="選擇帳戶"
                 onClick={() => setPicking("from")}
               />
             </Field>
-            <Field label="到（轉入帳戶）" required>
+            <Field label="轉入帳戶" required>
               <SelectField value={accounts.find((a) => a.id === toAccountId)?.name} placeholder="選擇帳戶" onClick={() => setPicking("to")} />
             </Field>
           </div>
@@ -288,7 +288,7 @@ export function RecurringRuleModal({
           <input type="number" min={1} value={cycleCount} onChange={(e) => setCycleCount(e.target.value)} className={fieldInputClass} />
         </Field>
       </div>
-      <p className={`-mt-1 ${text.faint}`}>間隔是「每隔幾個單位來一次」（每 2 週就填 2）。循環次數留空＝無限期循環，房租這種沒有結束日的就不用填。</p>
+      <p className={`-mt-1 ${text.faint}`}>間隔決定每幾天、週或月重複一次。總期數留空會持續重複。</p>
 
       <Field label="開始日期" required>
         <DateField value={startDate} onChange={setStartDate} />
@@ -305,7 +305,7 @@ export function RecurringRuleModal({
       </Field>
 
       {kind === "收入" && goals.length > 0 && (
-        <Field label="同時存入目標——「週期存錢」就是在這裡選一個目標">
+        <Field label="確認入帳時增加目標已存金額（選填）">
           {/* 這幾顆本來是手刻的，跟「項目」那一排長一樣卻各寫一份；換成共用的 OptionChip。
               目標的 icon 存的是圖片路徑（例如 /expenses/expenses-category-travel.png），
               本來直接 `{g.icon} {g.name}` 印出來，畫面上就是一整串路徑文字接著名稱。

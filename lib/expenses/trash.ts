@@ -14,7 +14,7 @@
  *  垃圾桶做出來之前，那些彈窗寫的是「刪掉之後沒辦法復原」——現在已經不是事實了，
  *  而且那句話會讓人在該刪的時候不敢刪。真正不可逆的是垃圾桶裡的「永久刪除」跟
  *  「清空垃圾桶」，那兩個地方才該強調沒有退路。 */
-export const TRASH_RESTORE_NOTE = "刪掉的東西會先進「設定 › 最近刪除」，之後還可以還原。";
+export const TRASH_RESTORE_NOTE = "刪除後可到「設定 › 最近刪除」還原。";
 
 import type { CategoryColor } from "./categories";
 

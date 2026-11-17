@@ -67,7 +67,7 @@ export function PetSigninModal({
       open={open}
       onClose={onClose}
       title="每日簽到"
-      subtitle="每天回來，累積小小成長"
+      subtitle="每天來打個招呼，星星幣就一天天多起來"
       footer={
         <PetModalButton tone={signedInToday ? "secondary" : "primary"} disabled={signedInToday} onClick={onSignIn}>
           {signedInToday ? "今日已簽到" : "今日簽到"}

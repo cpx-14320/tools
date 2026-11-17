@@ -130,7 +130,7 @@ export function DataView({
 
             <p className={text.sectionHeading}>換手機、還原備份的順序</p>
             <p className={`${text.muted} leading-relaxed`}>
-              1. 先到「設定 › 帳戶類型」把帳戶類型跟帳戶建好——這兩種不走 CSV，而消費紀錄的帳戶欄是用名稱對應的，對不到就會掛不上去。
+              1. 先在「帳戶類型」和「帳戶總表」建立原帳戶類型與帳戶。匯入時以帳戶名稱對應。
             </p>
             <p className={`${text.muted} leading-relaxed`}>2. 匯入消費分類。</p>
             <p className={`${text.muted} leading-relaxed`}>
@@ -139,7 +139,7 @@ export function DataView({
 
             <p className={text.sectionHeading}>怎麼匯入</p>
             <p className={`${text.muted} leading-relaxed`}>
-              切到「匯入」、選資料種類，然後選檔案或直接把 CSV 內容貼上。送出之前會先跑一次預覽，一列一列標出哪幾列有問題（分類找不到、日期格式不對…），確認沒問題再按匯入。預覽階段不會動到任何資料。
+              選擇資料類型和 CSV 檔案，先查看預覽。確認匯入後才會寫入可匯入的資料列。
             </p>
 
             <p className={text.sectionHeading}>重複匯入會怎樣</p>
@@ -499,7 +499,7 @@ function ImportPanel({
         {problems.length > 0 && (
           <Card>
             <CardBody>
-              <p className="text-sm font-semibold text-[#D1517E]">以下列格式有問題，不會匯入</p>
+              <p className="text-sm font-semibold text-[#D1517E]">以下列無法匯入。請依各列提示修正檔案後重試。</p>
               <ul className="mt-2 flex flex-col divide-y divide-[#F2EEFA]">
                 {problems.map((r) => (
                   <li key={r.row} className="py-2 text-sm text-[#4A3B7C]">

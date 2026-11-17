@@ -11,7 +11,7 @@ import { DateField } from "./date-field";
 
 const OPTIONS: { value: CompareMode; label: string; hint: string }[] = [
   { value: "previous", label: "上一期", hint: "月模式比上個月、年模式比去年、日模式比前一天" },
-  { value: "lastYear", label: "去年同期", hint: "看的是 2026 年 10 月就比 2025 年 10 月" },
+  { value: "lastYear", label: "去年同期", hint: "與去年相同日期範圍比較。" },
   { value: "year", label: "指定年份同期", hint: "挑一個基準年，一直拿它跟現在看的這段比" },
   { value: "custom", label: "自訂年月", hint: "自己挑一個年月，把現在看的這段平移過去比" },
   { value: "none", label: "不比較", hint: "隱藏所有漲跌百分比" },

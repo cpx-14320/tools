@@ -348,7 +348,7 @@ export function AccountDetailView({
           現在看的是哪一個，再往下看數字。長相跟彈窗裡的帳戶欄位一致（SelectField），
           點了開的也是同一個 AccountPickerModal——那份清單本來就列了每個帳戶的餘額，
           等於順手看得到別的戶頭現在有多少。 */}
-      <Field label="切換資產">
+      <Field label="切換帳戶">
         <SelectField value={account.name} placeholder="選擇帳戶" aria-label="切換帳戶" chevron onClick={() => setSwitchOpen(true)} />
       </Field>
 
@@ -394,7 +394,7 @@ export function AccountDetailView({
 
       <ConfirmModal
         open={deleteConfirm !== null}
-        title="這個帳戶還有東西掛著"
+        title="刪除前請確認帳戶影響"
         // 一行一種，各自講自己的後果——全部混成一句「還有 N 筆紀錄」的話，使用者判斷
         // 不了該不該刪（被暫停的固定收支跟一筆會變成「不指定」的交易，嚴重程度差很多）。
         message={
@@ -471,8 +471,8 @@ export function AccountDetailView({
               「收入／支出」：轉帳也算在裡面，它既不是收入也不是支出，但確實是錢進出
               這個戶頭。 */}
           <p className={`mt-2 ${text.muted}`}>
-            這段期間 進 <span className="font-medium tabular-nums text-[#2FAE82]">＋{formatCurrency(periodIn)}</span> 出{" "}
-            <span className="font-medium tabular-nums text-[#D1517E]">－{formatCurrency(periodOut)}</span>
+            期間進帳 <span className="font-medium tabular-nums text-[#2FAE82]">{formatCurrency(periodIn)}</span>／出帳{" "}
+            <span className="font-medium tabular-nums text-[#D1517E]">{formatCurrency(periodOut)}</span>（含轉帳）
           </p>
           <button
             type="button"

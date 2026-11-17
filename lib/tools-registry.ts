@@ -23,7 +23,7 @@ export const TOOLS_REGISTRY: ToolMeta[] = [
   {
     toolId: "expenses",
     name: "記帳本",
-    description: "記錄家庭收支、拆分帳本成員，追蹤每月預算跟存錢目標。",
+    description: "記下每一筆收支，月底回頭看看錢花在哪、目標存了多少。",
     icon: "💰",
     iconImage: "/hub/expenses.png",
     href: "/tools/expenses",
