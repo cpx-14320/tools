@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui";
-import { AuthField, AuthPanel, authInputClass } from "@/components/auth-panel";
+import { AuthField, AuthPanel, AuthSwitchLink, authInputClass } from "@/components/auth-panel";
 
 export function RegisterView() {
   const router = useRouter();
@@ -47,10 +46,7 @@ export function RegisterView() {
       description="註冊一次，底下的工具都能切換使用。"
       footer={
         <>
-          已經有帳號了？{" "}
-          <Link href="/login" className="font-medium text-brand">
-            登入
-          </Link>
+          已經有帳號了？ <AuthSwitchLink href="/login">登入</AuthSwitchLink>
         </>
       }
     >
@@ -90,7 +86,14 @@ export function RegisterView() {
           />
         </AuthField>
 
-        {error && <p className="text-xs text-negative">{error}</p>}
+        {/* 錯誤訊息做成一塊淡紅底的提示，不是一行小紅字——表單裡一行小字很容易被當成
+            欄位說明忽略掉。 */}
+        {error && (
+          <p className="flex items-center gap-2 rounded-xl bg-negative-soft px-3 py-2.5 text-xs font-medium text-negative">
+            <i aria-hidden className="fa-solid fa-circle-exclamation" />
+            {error}
+          </p>
+        )}
 
         <Button type="submit" disabled={submitting} className="mt-1 w-full">
           {submitting ? "註冊中…" : "註冊"}

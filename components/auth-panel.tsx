@@ -1,19 +1,18 @@
-"use client";
-
+import Link from "next/link";
 import type { ReactNode } from "react";
+import { BrandMark } from "@/components/brand-mark";
+import { Card, CardBody, SectionLabel } from "@/components/ui";
 import { TOOLS_REGISTRY } from "@/lib/tools-registry";
-import { Card, CardBody } from "@/components/ui";
 
 /** 登入／註冊兩頁共用的版型。
  *
- *  **手機跟桌機是兩種操作**：
- *    手機  打開就是要登入，所以整個畫面只有一張表單卡，標題一行帶過，手指一路往下填完。
- *    桌機  左邊放「這裡是什麼、有哪些工具」，右邊才是表單。桌機使用者多半是第一次從
- *          瀏覽器開這個網址，螢幕也有的是空間，光一張 400px 的表單浮在中間，看不出
- *          這是什麼服務。
+ *  **一種版型**：原本是「手機＝只有一張表單卡／桌機＝左邊介紹右邊表單」兩欄版型。外殼
+ *  改成不分寬度都是 430px 的 App 卡片之後（見 site-shell.tsx），兩欄版型沒有地方可以
+ *  攤開，而且桌機使用者想知道的「這是什麼服務」改用同一份東西解決：標記＋標題在最上面，
+ *  表單底下再列出「登入後可以用什麼」——那份清單在手機上也看得到，不是只有桌機有。
  *
- *  左邊那欄是純文字、沒有任何輸入框，所以直接用 `hidden lg:block` 藏起來就好——表單
- *  本身從頭到尾只有一份，不會變成兩組 input 搶自動填入跟焦點。 */
+ *  表單本體（`children`）由呼叫端自己的 <form> 提供，從頭到尾只有一份，不會像畫兩套
+ *  版型時那樣變成兩組 input 搶自動填入跟焦點。 */
 export function AuthPanel({
   title,
   description,
@@ -28,40 +27,43 @@ export function AuthPanel({
   footer: ReactNode;
 }) {
   return (
-    <div className="lg:grid lg:min-h-[520px] lg:grid-cols-[1fr_minmax(0,400px)] lg:items-center lg:gap-16">
-      <div className="hidden lg:block">
-        <h1 className="text-3xl font-bold tracking-tight text-ink">{title}</h1>
-        <p className="mt-2 text-sm text-muted">{description}</p>
-        <ul className="mt-8 flex flex-col gap-3">
-          {TOOLS_REGISTRY.map((tool) => (
-            <li key={tool.toolId} className="flex items-center gap-3">
-              {tool.iconImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={tool.iconImage} alt="" className="size-10 shrink-0 object-contain" />
-              ) : (
-                <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-surface-2 text-xl">{tool.icon}</span>
-              )}
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold text-ink">{tool.name}</span>
-                <span className="block text-xs text-muted">{tool.description}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
+    <div className="flex flex-1 flex-col gap-5">
+      <div className="flex flex-col items-center gap-3 pt-2 text-center">
+        <BrandMark size={56} />
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-ink">{title}</h1>
+          <p className="mt-1 text-xs leading-relaxed text-muted">{description}</p>
+        </div>
       </div>
 
-      <div className="mx-auto w-full max-w-sm lg:mx-0 lg:max-w-none">
-        {/* 手機版的標題：桌機已經在左欄講過同一句，這裡就收起來，不要同一頁出現兩次。 */}
-        <div className="mb-6 text-center lg:hidden">
-          <h1 className="text-xl font-bold tracking-tight text-ink">{title}</h1>
-          <p className="mt-1 text-sm text-muted">{description}</p>
+      <Card>
+        <CardBody className="p-5">{children}</CardBody>
+      </Card>
+
+      <p className="text-center text-sm text-muted">{footer}</p>
+
+      {/* 登入後有什麼可以用——第一次開這個網址的人只看到兩個輸入框的話，看不出這是什麼
+          服務。純展示的清單，沒有連結（還沒登入，點了也只會被擋回來）。 */}
+      <div className="mt-auto pt-2">
+        <SectionLabel>登入後可以使用</SectionLabel>
+        <div className="flex flex-col gap-2">
+          {TOOLS_REGISTRY.map((tool) => (
+            <div key={tool.toolId} className="flex items-center gap-3 rounded-2xl border border-line bg-surface/70 px-3.5 py-2.5">
+              {tool.iconImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={tool.iconImage} alt="" className="size-9 shrink-0 object-contain" />
+              ) : (
+                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
+                  <i aria-hidden className="fa-solid fa-shapes text-sm" />
+                </span>
+              )}
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-medium text-ink">{tool.name}</span>
+                <span className="block truncate text-xs text-muted">{tool.description}</span>
+              </span>
+            </div>
+          ))}
         </div>
-
-        <Card>
-          <CardBody>{children}</CardBody>
-        </Card>
-
-        <p className="mt-4 text-center text-sm text-muted">{footer}</p>
       </div>
     </div>
   );
@@ -88,5 +90,16 @@ export function AuthField({
   );
 }
 
+/** 輸入框——淡紫底、聚焦時換成白底＋紫框，比照記帳本彈窗裡的輸入框手感。
+ *  focus 的記號不要只靠邊框顏色（1px 的顏色變化在手機上幾乎看不到），加一圈淡紫光暈。 */
 export const authInputClass =
-  "rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink outline-none placeholder:text-muted focus:border-brand";
+  "rounded-xl border border-line bg-surface-2/60 px-3.5 py-3 text-sm text-ink outline-none transition-colors placeholder:text-muted focus:border-brand focus:bg-surface focus:ring-2 focus:ring-brand/20";
+
+/** 登入／註冊頁最下面那行切換連結（「還沒有帳號？註冊」）裡的那顆連結。 */
+export function AuthSwitchLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link href={href} className="font-semibold text-brand">
+      {children}
+    </Link>
+  );
+}
