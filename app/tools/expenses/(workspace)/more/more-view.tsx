@@ -29,7 +29,7 @@ const GROUPS: { heading: string; items: SettingItem[] }[] = [
     // 設定頁只處理設定，看餘額跟淨資產是資產頁的事，底部導覽列本來就有入口。
     heading: "分類、預算與帳戶",
     items: [
-      { href: "/tools/expenses/categories", label: "收支分類", desc: "管理支出與收入的分類、子分類", icon: ICON_PATHS.settingCategories },
+      { href: "/tools/expenses/categories", label: "收支分類", desc: "管理支出與收入的分類、子項目", icon: ICON_PATHS.settingCategories },
       { href: "/tools/expenses/budgets", label: "預算設定", desc: "依月份設定各分類的預算", icon: ICON_PATHS.settingBudgets },
       { href: "/tools/expenses/account-types", label: "帳戶類型", desc: "管理資產、負債帳戶類型", icon: ICON_PATHS.settingAccountTypes },
     ],

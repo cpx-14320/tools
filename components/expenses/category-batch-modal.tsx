@@ -96,7 +96,7 @@ export function CategoryBatchModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={isSubcategory ? "新增子分類" : "新增分類"}
+      title={isSubcategory ? "新增子項目" : "新增分類"}
       footer={
         <ModalFooter
           onClose={onClose}

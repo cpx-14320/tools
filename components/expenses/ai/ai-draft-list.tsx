@@ -56,7 +56,7 @@ export function AiDraftList({
                       {item.categoryId ? (
                         categoryPath(categories, item.categoryId)
                       ) : (
-                        <span className="font-medium text-[#E0A33E]">{hint ? `${hint.name} › 點一下選項目` : "尚未分類，點一下補上"}</span>
+                        <span className="font-medium text-[#E0A33E]">{hint ? `${hint.name} › 點一下選子項目` : "尚未分類，點一下補上"}</span>
                       )}
                       <span className={`ml-1.5 ${text.faint}`}>{formatDate(item.date)}</span>
                     </>

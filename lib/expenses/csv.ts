@@ -288,7 +288,7 @@ export function parseTransactionsCSV(
     const accountName = (accountText ?? "").trim();
     const account = accountName ? accounts.find((a) => a.name === accountName) : undefined;
     if (accountName && !account) {
-      return { row: rowNum, ok: false, error: `找不到帳戶「${accountName}」，請先在「資產總表」建立` };
+      return { row: rowNum, ok: false, error: `找不到帳戶「${accountName}」，請先在「帳戶總表」建立` };
     }
 
     return {

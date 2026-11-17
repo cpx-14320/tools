@@ -34,7 +34,7 @@ export async function PATCH(request: Request) {
       const categories = await listCategories(userId);
       if (!categories.some((c) => c.id === categoryId)) return NextResponse.json({ error: "找不到這個分類" }, { status: 400 });
       // 有子項目的大分類不能直接記帳，補分類時一樣要擋。
-      if (needsSubcategory(categories, categoryId)) return NextResponse.json({ error: "這個分類底下還有項目，要選到項目" }, { status: 400 });
+      if (needsSubcategory(categories, categoryId)) return NextResponse.json({ error: "這個分類底下還有子項目，要選到子項目" }, { status: 400 });
     }
     patch.categoryId = categoryId || null;
   }

@@ -563,7 +563,7 @@ export function TransactionsView({
                               subtitle={categoryPath(categories, t.categoryId)}
                             />
                             {/* 只有金額，不再掛「記完之後帳戶剩多少」那行小字：那是
-                                帳戶的餘額，要看哪個戶頭剩多少去資產總表，列在每一筆
+                                帳戶的餘額，要看哪個戶頭剩多少去帳戶總表，列在每一筆
                                 消費旁邊只是讓每一列都多一行雜訊。 */}
                             <span className={`shrink-0 tabular-nums font-semibold text-[#4A3B7C] ${kind === "收入" ? "text-[#2FAE82]" : ""}`}>
                               {kind === "收入" ? "＋" : "－"}

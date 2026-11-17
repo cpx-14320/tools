@@ -41,7 +41,7 @@ const MODES: { value: Mode; label: string }[] = [
 
 const KINDS: { value: DataKind; label: string }[] = [
   { value: "transactions", label: "消費紀錄" },
-  { value: "categories", label: "消費分類" },
+  { value: "categories", label: "收支分類" },
   { value: "budgets", label: "預算設定" },
 ];
 
@@ -125,14 +125,14 @@ export function DataView({
         help={
           <>
             <p className={`${text.muted} leading-relaxed`}>
-              三種資料各自一份 CSV：消費紀錄、消費分類、預算設定。想備份就三種都匯出存起來，用 Excel 或任何試算表都打得開。
+              三種資料各自一份 CSV：消費紀錄、收支分類、預算設定。想備份就三種都匯出存起來，用 Excel 或任何試算表都打得開。
             </p>
 
             <p className={text.sectionHeading}>換手機、還原備份的順序</p>
             <p className={`${text.muted} leading-relaxed`}>
               1. 先在「帳戶類型」和「帳戶總表」建立原帳戶類型與帳戶。匯入時以帳戶名稱對應。
             </p>
-            <p className={`${text.muted} leading-relaxed`}>2. 匯入消費分類。</p>
+            <p className={`${text.muted} leading-relaxed`}>2. 匯入收支分類。</p>
             <p className={`${text.muted} leading-relaxed`}>
               3. 再匯入預算設定跟消費紀錄。這兩種都要分類已經存在才掛得上去，順序顛倒會整批失敗。
             </p>
@@ -147,7 +147,7 @@ export function DataView({
               <span className="font-semibold text-[#4A3B7C]">消費紀錄</span>：日期、分類、金額、備註、明細、帳戶全都一樣的會被當成已經有了，自動略過，所以同一份檔案重匯兩次不會變成兩筆。
             </p>
             <p className={`${text.muted} leading-relaxed`}>
-              <span className="font-semibold text-[#4A3B7C]">消費分類</span>：同名的分類會跳過不建。
+              <span className="font-semibold text-[#4A3B7C]">收支分類</span>：同名的分類會跳過不建。
             </p>
             <p className={`${text.muted} leading-relaxed`}>
               <span className="font-semibold text-[#4A3B7C]">預算設定</span>：同一個「分類＋生效月份」是覆蓋舊的，不會變成兩筆。
@@ -226,7 +226,7 @@ function ExportPanel({
   function handleFullBackup() {
     const allTx = [...transactions].sort((a, b) => (a.date < b.date ? -1 : 1));
     const files: [string, string][] = [
-      [`${backupStamp}_消費分類.csv`, categoriesToCSV(categories)],
+      [`${backupStamp}_收支分類.csv`, categoriesToCSV(categories)],
       [`${backupStamp}_預算設定.csv`, budgetRulesToCSV(budgetRules, nameById)],
       [`${backupStamp}_消費紀錄.csv`, transactionsToCSV(allTx, categories, accounts)],
     ];
@@ -239,7 +239,7 @@ function ExportPanel({
     if (kind === "transactions") {
       downloadCSV(`消費紀錄_${rangeStart}_至_${rangeEnd}.csv`, transactionsToCSV(rows, categories, accounts));
     } else if (kind === "categories") {
-      downloadCSV("消費分類.csv", categoriesToCSV(categories));
+      downloadCSV("收支分類.csv", categoriesToCSV(categories));
     } else {
       downloadCSV("預算設定.csv", budgetRulesToCSV(budgetRules, nameById));
     }
@@ -255,7 +255,7 @@ function ExportPanel({
         <CardBody className="flex flex-col items-start gap-3">
           <div>
             <p className={text.body}>完整備份</p>
-            <p className={`mt-0.5 ${text.faint}`}>一次下載消費分類、預算設定、全部消費紀錄共 3 個檔案</p>
+            <p className={`mt-0.5 ${text.faint}`}>一次下載收支分類、預算設定、全部消費紀錄共 3 個檔案</p>
           </div>
           {/* items-start＋按鈕自己的 inline-flex：不加的話 flex 直欄的 stretch 會把按鈕
               拉成整張卡片的寬度，一顆只有六個字的按鈕佔滿一整列看起來像一塊色條。 */}
@@ -292,7 +292,7 @@ function ExportPanel({
             )}
             {kind === "categories" && (
               <p className="text-sm text-[#4A3B7C]">
-                共 <span className="font-semibold tabular-nums">{categories.length}</span> 個分類（含子分類）
+                共 <span className="font-semibold tabular-nums">{categories.length}</span> 個分類（含子項目）
               </p>
             )}
             {kind === "budgets" && (

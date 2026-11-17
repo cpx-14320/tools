@@ -35,7 +35,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "找不到這個分類" }, { status: 400 });
     }
     if (needsSubcategory(categories, categoryId)) {
-      return NextResponse.json({ error: "這個分類底下還有項目，要選到項目才能套用" }, { status: 400 });
+      return NextResponse.json({ error: "這個分類底下還有子項目，要選到子項目才能套用" }, { status: 400 });
     }
     set.categoryId = categoryId;
   }

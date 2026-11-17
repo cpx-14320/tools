@@ -116,7 +116,7 @@ export function TransactionModal({
   const missingHint = !categoryId
     ? "先選一個分類"
     : needsSubcategory(categories, categoryId)
-      ? "請選擇一個子分類"
+      ? "請選擇一個子項目"
       : !breakdownValid
         ? "明細的名稱跟金額都要填"
         : !(Number.isFinite(amountNum) && amountNum > 0)

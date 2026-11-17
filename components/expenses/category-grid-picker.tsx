@@ -71,7 +71,7 @@ export function CategoryGridPicker({
               紅字，看起來像錯誤訊息（其實只是還沒選）。真的按不下儲存時，底部按鈕旁邊
               的 disabledHint 會講得更清楚。 */}
           <span className={text.label}>
-            項目
+            子項目
             {subcategories.length > 0 && <RequiredMark />}
           </span>
           <div className="flex flex-wrap gap-2">

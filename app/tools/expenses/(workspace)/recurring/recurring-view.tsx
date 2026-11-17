@@ -268,7 +268,7 @@ export function RecurringView({
 
       {/* 新增搬到右下角的浮動按鈕，跟首頁新增交易、消費分類頁同一招。 */}
       {/* 等資料回來才出現：它是 fixed、不佔版面，所以不需要骨架，但資料還沒回來就先浮在
-          一片灰條上面很突兀（跟首頁、資產總表同一個處理）。 */}
+          一片灰條上面很突兀（跟首頁、帳戶總表同一個處理）。 */}
       <FloatingAddButton onClick={() => setModal({ mode: "create" })} label="新增固定收支" />
 
       {/* 整塊釘在卡片頂端（含選取工具列），理由見 StickyToolbar。 */}

@@ -275,7 +275,7 @@ export function CategoriesView({
     const skipped = selection.selectedIds.size - targets.length;
     const what = accountId ? `「${accountName(accountId)}」` : "不指定帳戶";
     const n = data.updated ?? targets.length;
-    showToast(skipped > 0 ? `${n} 個主分類已改為${what}（子分類沿用主分類，不另外設）` : `${n} 個分類已改為${what}`);
+    showToast(skipped > 0 ? `${n} 個主分類已改為${what}（子項目沿用主分類，不另外設）` : `${n} 個分類已改為${what}`);
     setPendingAccount(null);
     selection.exit();
   }
@@ -350,7 +350,7 @@ export function CategoriesView({
       <PageHeader
         flush
         title="收支分類"
-        help="主分類可再分子分類。記帳時選子分類，報表仍會合計到主分類。主分類可設定預設帳戶。"
+        help="主分類可再分子項目。記帳時選子項目，報表仍會合計到主分類。主分類可設定預設帳戶。"
         actions={
           <LineIconButton
             icon="filter"
@@ -364,7 +364,7 @@ export function CategoriesView({
 
       {/* 新增搬到右下角的浮動按鈕（跟首頁新增交易、帳戶類型頁同一招），標題列空出來。 */}
       {/* 等資料回來才出現：它是 fixed、不佔版面，所以不需要骨架，但資料還沒回來就先浮在
-          一片灰條上面很突兀（跟首頁、資產總表同一個處理）。 */}
+          一片灰條上面很突兀（跟首頁、帳戶總表同一個處理）。 */}
       <FloatingAddButton onClick={() => setBatchTarget({})} label="新增分類" />
 
       <CategoryModal
@@ -472,13 +472,13 @@ export function CategoriesView({
         // 標題講「刪什麼、幾個」；會連帶刪掉子分類是最需要先看到的那件事，所以它優先。
         title={
           (deleteConfirm?.subCount ?? 0) > 0
-            ? "會連子分類一起刪除"
+            ? "會連子項目一起刪除"
             : (deleteConfirm?.ids.length ?? 0) > 1
               ? `刪除 ${deleteConfirm?.ids.length} 個分類`
               : "刪除分類"
         }
         message={[
-          (deleteConfirm?.subCount ?? 0) > 0 ? `底下的 ${deleteConfirm?.subCount} 個子分類也會一起刪除。` : "",
+          (deleteConfirm?.subCount ?? 0) > 0 ? `底下的 ${deleteConfirm?.subCount} 個子項目也會一起刪除。` : "",
           (deleteConfirm?.inUseCount ?? 0) > 0
             ? "原本使用這些分類的紀錄會改到「未分類」。可到「收支明細」重新歸類。"
             : "已經記過的交易如果有掛到這些分類，會自動歸類到「未分類」，不會被刪除。",
@@ -657,7 +657,7 @@ export function CategoriesView({
                       onClick={() => setBatchTarget({ parentId: c.id })}
                       className="text-xs font-medium text-[#6F5FD6] hover:underline"
                     >
-                      ＋ 新增子分類
+                      ＋ 新增子項目
                     </button>
                   </div>
                 )}

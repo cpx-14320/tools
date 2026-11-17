@@ -61,7 +61,7 @@ export function CategoryModal({
   const [accountPickerOpen, setAccountPickerOpen] = useState(false);
 
   const selectedAccount = accounts.find((a) => a.id === defaultAccountId);
-  const title = initial ? "編輯分類" : isSubcategory ? "新增子分類" : "新增分類";
+  const title = initial ? "編輯分類" : isSubcategory ? "新增子項目" : "新增分類";
   const isDuplicate = categoryNameTaken(categories, name, { kind, parentId }, excludeId);
   // 子分類只填名稱，圖示由父分類決定，不能拿它當必填條件。
   const canSave = name.trim().length > 0 && (isSubcategory || icon.trim().length > 0) && !isDuplicate;

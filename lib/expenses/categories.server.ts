@@ -90,7 +90,7 @@ export async function createCategory(
   let color = input.color;
   if (input.parentId) {
     const parent = await col.findOne({ _id: new ObjectId(input.parentId), userId, parentId: null });
-    if (!parent) return { error: "找不到要新增子分類的父分類" };
+    if (!parent) return { error: "找不到要新增子項目的父分類" };
     parentId = parent._id;
     kind = parent.kind;
     icon = parent.icon;
@@ -353,7 +353,7 @@ export async function deleteCategory(
       label: mainDoc.name,
       icon: mainDoc.icon,
       color: mainDoc.color,
-      sublabel: [mainDoc.kind, subCount > 0 ? `含 ${subCount} 個子分類` : null, budgetDocs.length > 0 ? `含 ${budgetDocs.length} 筆預算` : null]
+      sublabel: [mainDoc.kind, subCount > 0 ? `含 ${subCount} 個子項目` : null, budgetDocs.length > 0 ? `含 ${budgetDocs.length} 筆預算` : null]
         .filter(Boolean)
         .join(" · "),
       entries: [

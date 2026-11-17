@@ -181,7 +181,7 @@ export function AccountTypesView({
         <p className={`mb-2 px-1 ${text.sectionHeading}`}>{title}</p>
         {/* 只有圖示跟名稱，右邊不掛任何數字：這一頁是管理類型本身（名稱、圖示、顏色、
             資產還是負債），那是跟月份無關的定義。「這個類型有多少錢、佔多少比例」是
-            分析，在資產總表看（那裡有月份、佔比進度條，還連著底下是哪幾個帳戶）。 */}
+            分析，在帳戶總表看（那裡有月份、佔比進度條，還連著底下是哪幾個帳戶）。 */}
         <ListCard>
           {types.map((t, i) => (
             <ListRow
