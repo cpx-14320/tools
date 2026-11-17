@@ -42,14 +42,50 @@ export async function markHasOwnData(userId: ObjectId): Promise<void> {
   await meta.updateOne({ userId }, { $set: { hasOwnData: true } }, { upsert: true });
 }
 
-/** 首頁那個「目前是示範資料」的提示要不要出現：鋪過示範資料、使用者還沒清過、也還沒
+/** 範例資料是鋪好之後一次寫進去的，整批的 createdAt 都等於鋪設當下那個時間點（見
+ *  seedDemoTransactions 的 `now`）。所以「這個使用者有沒有自己的資料」可以直接問資料庫：
+ *  有沒有任何一筆是在鋪設之後才建的。
+ *
+ *  留一段寬限時間而不是直接比 presetsSeededAt：標記文件跟範例資料是前後兩個 new Date()，
+ *  差幾毫秒，直接比的話整批範例資料都會被當成「使用者自己建的」。10 分鐘遠大於鋪資料
+ *  需要的時間，而真的在開通 10 分鐘內就記第一筆帳的人，markHasOwnData 本來就會把旗標
+ *  寫好，走不到這個備援判斷。 */
+const SEED_GRACE_MS = 10 * 60 * 1000;
+
+/** 哪些 collection 算「使用者自己的資料」——跟 markHasOwnData 的呼叫端同一組：記一筆帳、
+ *  一筆轉帳、設一個預算、建一個目標。分類、帳戶不算（建一個分類不代表已經在用）。 */
+const OWN_DATA_COLLECTIONS = ["expenses.transactions", "expenses.transfers", "expenses.budgets", "expenses.goals"];
+
+async function hasDataCreatedAfterSeeding(userId: ObjectId, seededAt: Date): Promise<boolean> {
+  const db = await getDb();
+  const after = new Date(seededAt.getTime() + SEED_GRACE_MS);
+  // limit: 1 ——只要知道「有沒有」，不用真的數完幾千筆交易。
+  const counts = await Promise.all(
+    OWN_DATA_COLLECTIONS.map((name) => db.collection(name).countDocuments({ userId, createdAt: { $gt: after } }, { limit: 1 })),
+  );
+  return counts.some((count) => count > 0);
+}
+
+/** 首頁那個「目前顯示的是範例資料」的提示要不要出現：鋪過範例資料、使用者還沒清過、也還沒
  *  自己動手記過帳，三個條件同時成立才出現。沒有另外存一個「使用者關掉過提示」的旗標
  *  ——只要這三個條件還成立，代表帳本裡還是那份系統鋪的假資料，每次進首頁都該提醒，
- *  不是關掉一次就永遠不再講。 */
+ *  不是關掉一次就永遠不再講。
+ *
+ *  **hasOwnData 旗標比它要判斷的事情晚出現**：在那之前就開始記帳的帳號（例如 cpx1104）
+ *  資料庫裡沒有這個旗標，帳本明明已經在用了卻每次進首頁都被提醒一次，而唯一的關掉方法
+ *  是去按「清除資料」——為了關掉提示把自己真正的紀錄刪掉，顯然不是我們要的。所以旗標
+ *  不在時改去問資料庫有沒有鋪設之後才建的資料，有的話當場把旗標補上，下次就不用再查。 */
 export async function shouldShowDemoDataNotice(userId: ObjectId): Promise<boolean> {
   const meta = await metaCollection();
   const doc = await meta.findOne({ userId });
-  return !!doc?.presetsSeededAt && !doc.hasClearedData && !doc.hasOwnData;
+  if (!doc?.presetsSeededAt) return false;
+  if (doc.hasClearedData || doc.hasOwnData) return false;
+
+  if (await hasDataCreatedAfterSeeding(userId, doc.presetsSeededAt)) {
+    await markHasOwnData(userId);
+    return false;
+  }
+  return true;
 }
 
 /** 新帳號第一次進記帳本時，把預設的分類、帳戶類型、帳戶一次建好。
