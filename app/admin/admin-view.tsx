@@ -311,7 +311,7 @@ export function AdminView() {
             {/* 把名字列出來再問一次：選取模式下勾了什麼很容易記錯，而這個動作沒有還原。 */}
             <p className="mt-2 text-xs leading-relaxed text-ink">{selected.map((u) => u.name).join("、")}</p>
             <p className="mt-2 text-xs leading-relaxed text-muted">
-              這些帳號在各工具底下存的資料也會一併刪除，無法復原。
+              將永久刪除這些帳號，以及它們在各工具底下存的資料，無法還原。
             </p>
             <div className="mt-4 flex gap-2">
               <Button variant="secondary" className="flex-1" disabled={deleting} onClick={() => setConfirmOpen(false)}>

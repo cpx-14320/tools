@@ -164,7 +164,7 @@ export function GoalsView({
       <ConfirmModal
         open={deleteConfirm !== null}
         title="確定要刪除目標嗎？"
-        message={`刪除後這${(deleteConfirm?.length ?? 0) > 1 ? ` ${deleteConfirm?.length} 個` : "個"}目標跟累積進度就不會再出現在清單上。還有固定收支連著的話，連動也會一併解除。目標刪掉就沒了，不會進「最近刪除」。`}
+        message="將永久刪除所選目標與累積進度。連動的固定收支會解除連動，已入帳的紀錄會保留。"
         onConfirm={handleConfirmedDelete}
         onClose={() => setDeleteConfirm(null)}
       />
