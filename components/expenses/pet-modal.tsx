@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 /** 養成頁專用的彈窗外觀——跟記帳本其他地方那個從底部滑上來的白色 Modal（modal.tsx）
  *  刻意不共用：養成頁是一整張遊戲畫面，彈出一塊方方正正的白色表單會像是跳到另一個 App。
- *  這裡用的是那組插畫 UI 素材（pet-modal-*.png／pet-button-*.png），置中彈出、四周是
+ *  這裡用的是那組插畫 UI 素材（pet-modal-*.png），置中彈出、四周是
  *  畫出來的框。
  *
  *  框是九張切片拼出來的（pet-modal-{top,center,bottom}-{left,center,right}.png），排成
@@ -119,23 +119,22 @@ export function PetModal({
   );
 }
 
-/** 按鈕高度（px）。端點切片的寬度跟著它等比算，見下面的 CAP_RATIO。 */
+/** 按鈕高度（px）。 */
 const BUTTON_H = 44;
-/** 端點切片原圖是 30×60（寬是高的一半），所以端點寬度＝按鈕高度的一半。 */
-const CAP_RATIO = 0.5;
-/** 描邊粗細（px）。素材本身那圈深色描邊大約就是這個比例，太細會在深色背景上糊掉。 */
-const BORDER = 3;
 
-/** 彈窗底部那顆大按鈕。
+/** 彈窗底部那幾顆按鈕（取消／確認／知道了／立即簽到）。
  *
- *  **形狀用三張切片，顏色用 CSS**：以前整顆是一張畫好的膠囊圖（pet-button-primary.png
- *  ／-secondary.png）直接 `background-size: 100% 100%` 拉到需要的寬度——按鈕只要不是
- *  原圖那個比例，兩頭的圓弧跟亮面就會被拉扁，而且想多一種顏色就得多畫一張圖。
+ *  **純 CSS，不用圖**：這顆的演進是「一整張畫好的膠囊圖」→「三張切片當遮罩、顏色用
+ *  CSS 填」→ 現在的「完全不碰圖」。中間那一版其實已經沒有在用圖的長相了（切片只剩
+ *  形狀，而那個形狀就是一顆圓角膠囊），卻還是要為了一顆按鈕去載三張 PNG、算遮罩的
+ *  位置與尺寸，而且兩層遮罩疊出來的描邊在不同縮放比例下粗細會跳。
  *
- *  現在改成跟養成頁狀態列同一招（見 pet-view.tsx 的 pillBackground）：左端貼左、右端
- *  貼右、中間那張補滿剩下的寬度，只有中間會被拉伸，所以膠囊兩頭永遠不變形。顏色則是
- *  把那三張切片當**遮罩**（mask）、底下鋪 CSS 漸層，要幾種顏色就幾種，不用再出圖。
- *  遮罩鋪在一層獨立的 span 上而不是按鈕本身——mask 會連子元素一起遮，文字會跟著被切掉。 */
+ *  改成 border ＋ 漸層之後：描邊就是 border（粗細固定）、底色就是 background-image 的
+ *  漸層、圓角就是 rounded-full，寬高怎麼變都不會變形，也少三個圖片請求。顏色仍然照
+ *  原本那組插畫色票走（粉紫／淡紫白），所以在遊戲畫面裡看起來還是同一套 UI。
+ *
+ *  **為什麼還留一層內陰影**：原本的素材上緣有一道亮面，拿掉之後按鈕會變得很平。用
+ *  inset 的白色陰影補一道同樣位置的亮邊，不另外多一個元素。 */
 export function PetModalButton({
   children,
   onClick,
@@ -147,19 +146,6 @@ export function PetModalButton({
   tone?: "primary" | "secondary";
   disabled?: boolean;
 }) {
-  const cap = Math.round(BUTTON_H * CAP_RATIO);
-  const slices = ["pet-level-left", "pet-level-right", "pet-level-leftcenter"].map((n) => `url("/expenses/${n}.png")`).join(", ");
-  const maskStyle = {
-    maskImage: slices,
-    WebkitMaskImage: slices,
-    maskPosition: `left center, right center, ${cap}px center`,
-    WebkitMaskPosition: `left center, right center, ${cap}px center`,
-    maskSize: `${cap}px 100%, ${cap}px 100%, calc(100% - ${cap * 2}px) 100%`,
-    WebkitMaskSize: `${cap}px 100%, ${cap}px 100%, calc(100% - ${cap * 2}px) 100%`,
-    maskRepeat: "no-repeat",
-    WebkitMaskRepeat: "no-repeat",
-  } as const;
-
   // 主要動作是粉紫漸層（跟養成頁那組插畫同一個色系），次要是淡紫白底。停用時整顆降彩度，
   // 不是調透明度——透明度會讓底下的插畫背景透出來，看起來像沒畫完。
   const fill = disabled
@@ -167,10 +153,6 @@ export function PetModalButton({
     : tone === "primary"
       ? "linear-gradient(180deg, #FF9ECB, #ED5C9B)"
       : "linear-gradient(180deg, #FFFFFF, #EFE4FB)";
-
-  // 描邊顏色。素材本身（pet-level-*.png）就是一圈深色描邊＋裡面一層亮色，只用一層遮罩
-  // 填色會把那圈描邊一起吃掉，按鈕看起來就「少了一層」。所以疊兩層同樣形狀的遮罩：
-  // 外層整塊填描邊色，內層往內縮 BORDER px 填主色，中間露出來的那一圈就是描邊。
   const border = disabled ? "#B9A8CF" : tone === "primary" ? "#C9437C" : "#C3AEE4";
 
   return (
@@ -178,14 +160,17 @@ export function PetModalButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`relative grid w-full place-items-center text-sm font-bold transition-transform ${
+      className={`grid w-full place-items-center rounded-full border-[3px] text-sm font-bold transition-transform ${
         disabled ? "text-[#8E7DAE]" : tone === "primary" ? "text-white" : "text-[#6B4FA8]"
       } ${disabled ? "" : "active:scale-[0.98]"}`}
-      style={{ height: BUTTON_H }}
+      style={{
+        height: BUTTON_H,
+        borderColor: border,
+        backgroundImage: fill,
+        boxShadow: disabled ? "none" : "inset 0 2px 0 rgba(255,255,255,0.45)",
+      }}
     >
-      <span aria-hidden className="absolute inset-0" style={{ ...maskStyle, backgroundColor: border }} />
-      <span aria-hidden className="absolute" style={{ inset: BORDER, ...maskStyle, backgroundImage: fill }} />
-      <span className="relative">{children}</span>
+      {children}
     </button>
   );
 }

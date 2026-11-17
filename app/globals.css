@@ -122,6 +122,23 @@ body {
   }
 }
 
+/* 滑鼠移到可以按的東西上要變成手指。
+   瀏覽器原生的 <button> 游標是箭頭（只有 <a href> 才是手指），Tailwind v3 的 preflight
+   以前會幫忙補上 cursor: pointer，v4 拿掉了——所以整個 App 的按鈕（浮動新增鈕、彈窗按鈕、
+   膠囊、頁籤…）看起來都不像可以點。這裡補回來，一條規則蓋掉全部，不用每顆按鈕各自加一個
+   class（漏掉一顆就是一顆不一致）。
+   :disabled 不給手指：那顆現在按不動，給手指等於騙人。<label> 只挑包著 checkbox／radio
+   的那種——那是真的可以點的開關，純標示用的 label 點了沒事發生。 */
+@layer base {
+  button:not(:disabled),
+  summary,
+  [role="button"]:not([aria-disabled="true"]),
+  label:has(> input[type="checkbox"]:not(:disabled)),
+  label:has(> input[type="radio"]:not(:disabled)) {
+    cursor: pointer;
+  }
+}
+
 /* 可以捲、但不畫捲軸。
    報表的趨勢圖期數一多就左右捲，長條本來就會在右邊被切掉半根——那半根已經是「還有，
    可以滑」最清楚的提示了，再疊一條捲軸只是多一條橫線壓在月份標籤上。

@@ -8,7 +8,8 @@
  *    新帳號預設資料 → 分類（含子分類、刪除/還原、強制刪除改掛未分類）→ 帳戶類型／帳戶
  *    （含刪除被擋）→ 交易（含拆明細）→ 轉帳（含手續費）→ 預算 → 存錢目標（含連動固定收支）
  *    → 固定收支（含待確認／略過／轉帳規則／帳戶刪除後暫停）→ 垃圾桶機制（撞名改名、
- *    永久刪除、清空垃圾桶）。
+ *    永久刪除、清空垃圾桶）→ 交易批次編輯／批次刪除 → CSV 匯出入 → AI 待確認草稿 →
+ *    養成（簽到／買／餵／換裝）→ 偏好設定 → 範例資料提示 → 預算的生效月份沿用。
  *
  *  不管中間有沒有測試失敗，最後一定會把這個測試帳號本身跟它在 expenses.* 底下留下的
  *  所有資料清乾淨（finally 區塊），不會在資料庫裡留下測試垃圾、也不會留著一個可登入
@@ -44,6 +45,12 @@ const budgetsSrv = await import("../lib/expenses/budgets.server");
 const goalsSrv = await import("../lib/expenses/goals.server");
 const recurringSrv = await import("../lib/expenses/recurring-rules.server");
 const trashSrv = await import("../lib/expenses/trash.server");
+const aiDraftsSrv = await import("../lib/expenses/ai-drafts.server");
+const aiDraftsLib = await import("../lib/expenses/ai-drafts");
+const petSrv = await import("../lib/expenses/pet.server");
+const settingsSrv = await import("../lib/expenses/settings.server");
+const csvLib = await import("../lib/expenses/csv");
+const budgetsLib = await import("../lib/expenses/budgets");
 
 // ── 建一個真的測試帳號（users collection）───────────────────────────────────
 // 跟 lib/auth.ts 的 createUser 做一樣的事：雜湊密碼、從 toolsRegistry 撈目前所有工具
@@ -538,6 +545,237 @@ try {
     const countAfter = await trashSrv.countTrash(userId);
     check("清空垃圾桶後筆數歸零", countAfter === 0, `實際 ${countAfter}`);
   });
+  // ── 十、交易批次編輯／批次刪除 ───────────────────────────────────────────────
+  await run("交易：批次改分類／改帳戶、批次刪除各自進垃圾桶", async () => {
+    const cats = await categoriesSrv.listCategories(userId);
+    const from = cats.find((c) => c.kind === "支出" && !c.parentId);
+    const to = cats.find((c) => c.kind === "支出" && !c.parentId && c.id !== from?.id);
+    const accounts = await accountsSrv.listAccounts(userId);
+    if (!from || !to || accounts.length === 0) return check("前置資料不足（分類／帳戶），跳過", false);
+
+    const made: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const created = await transactionsSrv.createTransaction(userId, {
+        categoryId: from.id,
+        amount: 100 + i,
+        date: todayISO,
+        note: `B-批次 ${i}`,
+        accountId: accounts[0].id,
+      });
+      made.push(created.transaction.id);
+    }
+
+    const bulk = await transactionsSrv.bulkUpdateTransactions(userId, made, { categoryId: to.id, accountId: null });
+    check("批次改到的筆數＝選取的筆數", bulk.updated === 3, `updated=${bulk.updated}`);
+    const changed = bulk.transactions.filter((t) => made.includes(t.id));
+    check("三筆的分類都換成新的那個", changed.length === 3 && changed.every((t) => t.categoryId === to.id));
+    check("三筆的帳戶都被清成「不指定」", changed.every((t) => !t.accountId));
+
+    // 批次刪除＝一筆一筆刪、每一筆各自進垃圾桶（前端的「復原」就是把這一批一起還原）。
+    const trashIds: string[] = [];
+    for (const id of made) {
+      const deleted = await transactionsSrv.deleteTransaction(userId, id);
+      if (deleted.trashId) trashIds.push(deleted.trashId);
+    }
+    check("刪掉的三筆都各自進了垃圾桶", trashIds.length === 3, `trashIds=${trashIds.length}`);
+    const left = await transactionsSrv.listTransactions(userId);
+    check("清單上看不到那三筆了", made.every((id) => !left.some((t) => t.id === id)));
+    for (const trashId of trashIds) await trashSrv.purgeTrashItem(userId, trashId);
+  });
+
+  // ── 十一、CSV 匯出 → 解析 → 匯入 ────────────────────────────────────────────
+  await run("CSV：匯出的檔案自己解析得回來、壞掉的列會被標出來", async () => {
+    const cats = await categoriesSrv.listCategories(userId);
+    const sub = cats.find((c) => !!c.parentId);
+    const accounts = await accountsSrv.listAccounts(userId);
+    if (!sub || accounts.length === 0) return check("前置資料不足（子分類／帳戶），跳過", false);
+
+    const lookupCats = cats.map((c) => ({ id: c.id, name: c.name, parentId: c.parentId ?? undefined }));
+    const lookupAccounts = accounts.map((a) => ({ id: a.id, name: a.name }));
+    const row = {
+      date: todayISO,
+      categoryId: sub.id,
+      amount: 1000,
+      note: "C-匯出測試",
+      breakdown: [
+        { label: "本薪", kind: "加項" as const, amount: 1200 },
+        { label: "折扣", kind: "扣項" as const, amount: 200 },
+      ],
+      accountId: accounts[0].id,
+    };
+    const csv = csvLib.transactionsToCSV([row], lookupCats, lookupAccounts);
+    check("匯出的 CSV 是標題列＋一列資料", csv.trim().split("\n").length === 2, csv.replace(/\n/g, "⏎"));
+    check("子分類匯出成「大分類 › 子分類」路徑", csv.includes("›"), csv.split("\n")[1]);
+
+    const parsed = csvLib.parseTransactionsCSV(csv, lookupCats, lookupAccounts);
+    check("自己匯出的檔案解析得回來，沒有壞掉的列", parsed.validCount === 1 && parsed.invalidCount === 0, JSON.stringify(parsed.results));
+    const back = parsed.results[0]?.transaction;
+    check("解析回來的分類對得上原本那個子分類", back?.categoryId === sub.id);
+    check("解析回來的帳戶對得上", back?.accountId === accounts[0].id);
+    check("明細的加項／扣項都還在", (back?.breakdown ?? []).length === 2);
+
+    if (back) {
+      const inserted = await transactionsSrv.commitImportedTransactions(userId, [back]);
+      check("匯入寫進去一筆", inserted === 1, `inserted=${inserted}`);
+      const list = await transactionsSrv.listTransactions(userId);
+      const imported = list.find((t) => t.note === "C-匯出測試");
+      // 有明細時金額一律以明細淨額為準（1200 - 200 = 1000），不信 CSV 的金額欄。
+      check("匯入的金額以明細淨額為準", imported?.amount === 1000, `amount=${imported?.amount}`);
+      if (imported) await transactionsSrv.deleteTransaction(userId, imported.id).then((d) => (d.trashId ? trashSrv.purgeTrashItem(userId, d.trashId) : undefined));
+    }
+
+    const bad = csvLib.parseTransactionsCSV(
+      ["日期,分類,金額,備註", "2026-13-45,不存在的分類,abc,", `${todayISO},${sub.name},250,好的那一列`].join("\n"),
+      lookupCats,
+      lookupAccounts,
+    );
+    check("壞掉的那一列被標成失敗", bad.invalidCount === 1, JSON.stringify(bad.results));
+    check("壞掉的列不會擋住同一份檔案裡好的列", bad.validCount === 1);
+  });
+
+  // ── 十二、AI 待確認草稿 ─────────────────────────────────────────────────────
+  await run("AI 草稿：建立 → 補分類 → 整批寫入 → 清掉已處理", async () => {
+    const cats = await categoriesSrv.listCategories(userId);
+    const target = cats.find((c) => c.kind === "支出" && !c.parentId);
+    if (!target) return check("找不到支出分類，跳過", false);
+
+    const inputText = "午餐 120、咖啡 65";
+    const draft = await aiDraftsSrv.createAiDraft(userId, {
+      source: "text",
+      inputSummary: inputText,
+      inputText,
+      model: "mock",
+      items: [
+        { key: "a", categoryId: target.id, amount: 120, date: todayISO, state: "pending" },
+        { key: "b", categoryId: null, amount: 65, date: todayISO, state: "pending" },
+      ],
+    });
+    check("草稿建立後是待確認狀態、兩筆都在", draft.status === "pending" && draft.items.length === 2);
+    check("沒分類的那一筆被認出來（擋住寫入）", aiDraftsLib.unclassifiedItems(draft).length === 1);
+
+    const patched = await aiDraftsSrv.updateAiDraftItem(userId, draft.id, "b", { categoryId: target.id });
+    check("補上分類之後就沒有未分類的了", !!patched && aiDraftsLib.unclassifiedItems(patched).length === 0);
+
+    const again = await aiDraftsSrv.findRecentAiDraft(userId, inputText);
+    check("同一段輸入短時間內重送會拿回同一批，不重複解析", again?.id === draft.id);
+
+    await aiDraftsSrv.closeAiDraft(userId, draft.id, "committed");
+    const closed = await aiDraftsSrv.getAiDraft(userId, draft.id);
+    check("整批標成已寫入，裡面還沒決定的那幾筆一起收尾", closed?.status === "committed" && !!closed?.items.every((i) => i.state === "committed"));
+
+    const removed = await aiDraftsSrv.deleteClosedAiDrafts(userId);
+    check("「清掉已處理的」會把這一批刪掉", removed === 1, `removed=${removed}`);
+    check("清完之後待確認清單是空的", (await aiDraftsSrv.listAiDrafts(userId)).length === 0);
+  });
+
+  // ── 十三、養成：簽到、買、餵、換裝 ──────────────────────────────────────────
+  await run("養成：簽到不能重複、買食物扣星星幣、餵食加經驗、服裝買過才能換", async () => {
+    const today = petSrv.todayInTaipei();
+    const first = await petSrv.signInToday(userId, today);
+    check("第一次簽到成功", !("error" in first));
+    const second = await petSrv.signInToday(userId, today);
+    check("同一天再簽一次被擋下", "error" in second);
+
+    // 直接灌星星幣：正常是記帳、簽到慢慢賺的，這裡只是要測買／餵的邏輯。
+    await db0.collection("expenses.pet").updateOne({ userId }, { $set: { coins: 10000 } });
+
+    const poorBuy = await petSrv.buyFood(userId, "food-yuzu-not-exist");
+    check("買不存在的食物會被擋下", "error" in poorBuy);
+
+    const bought = await petSrv.buyFood(userId, "food-cookies");
+    check("買食物成功、背包多一份", !("error" in bought) && (bought as { foodCounts: Record<string, number> }).foodCounts["food-cookies"] === 1);
+    check("星星幣被扣掉餅乾的價格（50）", !("error" in bought) && (bought as { coins: number }).coins === 9950, JSON.stringify(bought));
+
+    const xpBefore = (bought as { xp: number }).xp;
+    const fed = await petSrv.feedPet(userId, "food-cookies");
+    check("餵食成功，經驗值加上食物的 xp（50）", !("error" in fed) && (fed as { xp: number }).xp === xpBefore + 50);
+    check("餵完之後背包那份被吃掉", !("error" in fed) && !((fed as { foodCounts: Record<string, number> }).foodCounts["food-cookies"] > 0));
+    const fedAgain = await petSrv.feedPet(userId, "food-cookies");
+    check("背包沒有了就餵不動（不會扣成負的）", "error" in fedAgain);
+
+    const equipUnowned = await petSrv.equipWearable(userId, "outfit-plushroom");
+    check("沒買過的服裝換不上去", "error" in equipUnowned);
+    const buyOutfit = await petSrv.buyWearable(userId, "outfit-plushroom");
+    check("買服裝成功（還沒到等級也買得到，先收進背包）", !("error" in buyOutfit), JSON.stringify(buyOutfit));
+    const equipTooEarly = await petSrv.equipWearable(userId, "outfit-plushroom");
+    check("買了但等級還沒到，換不上去", "error" in equipTooEarly, JSON.stringify(equipTooEarly));
+
+    // 灌經驗值到孵化等級（正常是餵食餵上去的），再換一次。
+    await db0.collection("expenses.pet").updateOne({ userId }, { $set: { xp: 999999 } });
+    const equipped = await petSrv.equipWearable(userId, "outfit-plushroom");
+    check("到了孵化等級就換得上去", !("error" in equipped) && (equipped as { outfitId: string }).outfitId === "outfit-plushroom");
+
+    const badCode = await petSrv.redeemCode(userId, "這組序號不存在");
+    check("亂打的活動序號會被擋下", "error" in badCode);
+  });
+
+  // ── 十四、記帳本偏好設定 ────────────────────────────────────────────────────
+  await run("設定：AI 記帳入口的開關（預設開、關掉會記住）", async () => {
+    const initial = await settingsSrv.getExpensesSettings(userId);
+    check("沒設定過時預設是開著的", initial.aiEnabled === true);
+    const off = await settingsSrv.setExpensesSettings(userId, { aiEnabled: false });
+    check("關掉之後讀回來是關的", off.aiEnabled === false);
+    check("重新讀一次仍然是關的（有存進資料庫）", (await settingsSrv.getExpensesSettings(userId)).aiEnabled === false);
+    const on = await settingsSrv.setExpensesSettings(userId, { aiEnabled: true });
+    check("再打開又是開的", on.aiEnabled === true);
+  });
+
+  // ── 十五、首頁「目前顯示的是範例資料」提示 ──────────────────────────────────
+  await run("範例資料提示：自己記過帳就不再出現；舊帳號沒有旗標時用資料判斷", async () => {
+    const meta = db0.collection("expenses.meta");
+
+    // (1) 剛鋪好範例資料、還沒自己記帳的新帳號 → 要提示。
+    //     這個測試帳號前面已經記過帳了，所以先把兩個旗標拿掉、模擬「剛註冊完」。
+    await meta.updateOne({ userId }, { $unset: { hasOwnData: "", hasClearedData: "" }, $set: { presetsSeededAt: new Date() } });
+    check("新帳號（剛鋪完範例資料）要看到提示", (await presets.shouldShowDemoDataNotice(userId)) === true);
+
+    // (2) 自己記一筆帳 → markHasOwnData 寫下旗標 → 不再提示。
+    const cats = await categoriesSrv.listCategories(userId);
+    const target = cats.find((c) => c.kind === "支出" && !c.parentId);
+    if (!target) return check("找不到支出分類，跳過", false);
+    const own = await transactionsSrv.createTransaction(userId, { categoryId: target.id, amount: 88, date: todayISO, note: "D-自己記的" });
+    check("自己記過一筆之後就不再提示", (await presets.shouldShowDemoDataNotice(userId)) === false);
+
+    // (3) 舊帳號：旗標是後來才加的，在那之前就開始記帳的人資料庫裡沒有這個欄位。
+    //     把旗標拿掉、把鋪設時間推回一小時前（讓剛剛那筆交易落在寬限期之後），
+    //     應該靠「有鋪設之後才建立的資料」判斷出來，而且順便把旗標補回去。
+    await meta.updateOne({ userId }, { $unset: { hasOwnData: "" }, $set: { presetsSeededAt: new Date(Date.now() - 60 * 60 * 1000) } });
+    check("旗標不在、但有自己的資料 → 一樣不提示", (await presets.shouldShowDemoDataNotice(userId)) === false);
+    const backfilled = await meta.findOne({ userId });
+    check("判斷完會把旗標補回去（下次不用再查一次）", backfilled?.hasOwnData === true);
+
+    // (4) 清過資料的人也不提示。
+    await meta.updateOne({ userId }, { $unset: { hasOwnData: "" }, $set: { hasClearedData: true } });
+    check("按過「清除資料」的人不提示", (await presets.shouldShowDemoDataNotice(userId)) === false);
+
+    await transactionsSrv.deleteTransaction(userId, own.transaction.id).then((d) => (d.trashId ? trashSrv.purgeTrashItem(userId, d.trashId) : undefined));
+  });
+
+  // ── 十六、預算的「生效月份」沿用規則 ────────────────────────────────────────
+  await run("預算：設了之後每個月沿用，改了只影響之後的月份，0＝停止設定預算", async () => {
+    // 自己開一個新分類來測：範例資料已經幫幾個預設分類設過預算（從前年一月起生效），
+    // 借用那些分類的話「第一筆規則之前的月份」永遠已經有值，測不到沿用規則的邊界。
+    const made = await categoriesSrv.createCategory(userId, { name: "E-預算測試", icon: "🧪", color: "a", kind: "支出" });
+    if (!("category" in made)) return check("建分類失敗，跳過", false);
+    const target = made.category;
+
+    await budgetsSrv.upsertBudgetRule(userId, { categoryId: target.id, effectiveFrom: "2026-01", amount: 2000 });
+    const rules = await budgetsSrv.upsertBudgetRule(userId, { categoryId: target.id, effectiveFrom: "2026-07", amount: 3000 });
+
+    check("一月設的 2000，三月沒設也沿用", budgetsLib.budgetForMonth(rules, target.id, "2026-03") === 2000);
+    check("七月改成 3000 之後，八月是 3000", budgetsLib.budgetForMonth(rules, target.id, "2026-08") === 3000);
+    check("回頭看六月仍然是 2000（不被之後的調整追溯蓋掉）", budgetsLib.budgetForMonth(rules, target.id, "2026-06") === 2000);
+    check("第一筆規則生效之前的月份沒有預算", budgetsLib.budgetForMonth(rules, target.id, "2025-12") === undefined);
+
+    const stopped = await budgetsSrv.upsertBudgetRule(userId, { categoryId: target.id, effectiveFrom: "2026-10", amount: 0 });
+    check("金額 0 是「停止設定預算」，不是沒設定", budgetsLib.budgetForMonth(stopped, target.id, "2026-11") === 0);
+
+    const mine = budgetsLib.rulesForCategory(stopped, target.id);
+    check("這個分類的規則照月份排好（一月、七月、十月）", mine.length === 3 && mine[0].effectiveFrom === "2026-01" && mine[2].effectiveFrom === "2026-10");
+    for (const rule of mine) await budgetsSrv.deleteBudgetRule(userId, rule.id);
+    check("刪光之後這個分類沒有任何預算規則", budgetsLib.rulesForCategory(await budgetsSrv.listBudgetRules(userId), target.id).length === 0);
+    await categoriesSrv.deleteCategory(userId, target.id, { force: true }).catch(() => {});
+  });
 } finally {
   // ── 清乾淨：不管前面測試結果如何，把這個測試帳號跟它留下的所有 expenses 資料清掉 ──────
   section("清理測試資料");
@@ -553,6 +791,9 @@ try {
     "expenses.goals",
     "expenses.budgets",
     "expenses.trash",
+    "expenses.aiDrafts",
+    "expenses.pet",
+    "expenses.settings",
   ];
   let totalDeleted = 0;
   for (const coll of COLLECTIONS) {
