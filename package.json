@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "check:expenses": "tsx scripts/expenses-feature-check.mts"
+    "check:expenses": "tsx scripts/expenses-feature-check.mts",
+    "check:freshwise": "tsx scripts/freshwise-feature-check.mts",
+    "sync:freshwise": "tsx scripts/freshwise-sync.mts"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.3.1",

@@ -33,6 +33,14 @@ export const TOOLS_REGISTRY: ToolMeta[] = [
     href: "/tools/expenses",
   },
   {
+    toolId: "freshwise",
+    name: "菜鳥不買貴",
+    description: "查今天的蔬果魚肉蛋行情，順便記住你常買的那幾樣。",
+    icon: "🥬",
+    faIcon: "carrot",
+    href: "/tools/freshwise",
+  },
+  {
     toolId: "compress",
     name: "圖片壓縮",
     description: "把照片、截圖壓到夠小再存下來，圖片不會離開你的裝置。",

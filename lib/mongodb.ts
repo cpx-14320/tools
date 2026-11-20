@@ -42,6 +42,20 @@ async function ensureIndexes(db: Db): Promise<void> {
     // 快取文件自動清掉，不用另外寫排程清理。
     db.collection("transit.tdxCache").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
 
+    // 菜鳥不買貴（freshwise.*）——這幾個集合裡**沒有任何使用者資料**，全部是從農業部與
+    // 臺中市的開放資料整理出來的公開行情，所以沒有 userId。使用者自己的偏好與菜籃目前
+    // 還存在瀏覽器的 localStorage。
+    //
+    // sourceCache 是原始回應的快取，TTL index 負責把過期的自動清掉（跟搭乘車的
+    // transit.tdxCache 同一個做法，不用另外寫排程）。
+    db.collection("freshwise.sourceCache").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    // 一天一個場所一份快照。查詢一律是「某場所、某日期之前最近的一筆」，所以複合索引的
+    // 順序是 venue 再 date（date 要能倒序掃）。
+    db.collection("freshwise.snapshots").createIndex({ venue: 1, date: -1 }),
+    // 走勢是用 `${venue}:${code}` 當 _id 直接查的，不需要額外索引；updatedAt 只是給
+    // 人工檢查「資料多久沒更新」用。
+    db.collection("freshwise.series").createIndex({ updatedAt: -1 }),
+
     // 記帳本（expenses.*）——目前是個人範圍（只用 userId 隔離），還沒有帳本／成員共用的概念。
     db.collection("expenses.categories").createIndex({ userId: 1, kind: 1, parentId: 1, order: 1 }),
     db.collection("expenses.transactions").createIndex({ userId: 1, date: 1 }),
