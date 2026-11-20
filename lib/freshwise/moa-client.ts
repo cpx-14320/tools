@@ -136,8 +136,17 @@ function cached<T>(key: string, ttlMs: number, fetcher: () => Promise<T>, option
   return promise;
 }
 
+/** 單一外部請求的逾時。開放資料的伺服器偶爾會很慢（查多天的行情實測過要好幾分鐘），
+ *  沒有逾時的話一個慢掉的上游就能把整個 serverless function 卡到被平台砍掉。
+ *  20 秒夠臺中那份 5MB 的檔案跑完，也不至於讓呼叫端等太久。 */
+const REQUEST_TIMEOUT_MS = 20_000;
+
 async function getJson<T>(url: string): Promise<T> {
-  const res = await fetch(url, { cache: "no-store", headers: { Accept: "application/json" } });
+  const res = await fetch(url, {
+    cache: "no-store",
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
   if (!res.ok) throw new Error(`開放資料請求失敗：HTTP ${res.status} ${url}`);
   return (await res.json()) as T;
 }

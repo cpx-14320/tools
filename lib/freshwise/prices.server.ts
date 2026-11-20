@@ -453,6 +453,28 @@ async function markRan(marker: string): Promise<void> {
   await coll.updateOne({ _id: marker }, { $set: { at: new Date() } }, { upsert: true });
 }
 
+/** 同步失敗時把標記清掉，下一次請求才會重試（不然要等整個 TTL 過完才會再試一次）。 */
+async function clearMark(marker: string): Promise<void> {
+  const coll = await markers();
+  await coll.deleteOne({ _id: marker }).catch(() => {});
+}
+
+/**
+ * 跑一個同步任務。**標記在開始之前就寫**，不是做完才寫——正式環境是 serverless，同一
+ * 時間可能有好幾個請求進來，標記寫在後面的話它們會各自判定「該同步了」然後同時去抓同一
+ * 份 5MB 的檔案。先寫標記等於一個很粗但夠用的鎖；失敗再把標記清掉讓下一次重試。
+ */
+async function runSync(marker: string, maxAgeMs: number, work: () => Promise<void>): Promise<void> {
+  if (!(await shouldRun(marker, maxAgeMs))) return;
+  await markRan(marker);
+  try {
+    await work();
+  } catch (error) {
+    await clearMark(marker);
+    console.warn(`[freshwise] ${marker} 同步失敗：`, error);
+  }
+}
+
 /**
  * 確保資料是新的。頁面算繪時會呼叫，所以**必須便宜**：
  * - 批發：只補最近 RECENT_DAYS 天（兩三次分頁請求），而且四小時內只做一次。
@@ -462,39 +484,50 @@ async function markRan(marker: string): Promise<void> {
  * 任何一個來源失敗都不會讓整頁壞掉——有舊資料就用舊的，畫面上會顯示資料日期。
  */
 export async function ensureFresh(): Promise<void> {
-  const tasks: Promise<unknown>[] = [];
+  await Promise.all([
+    runSync("wholesale", 4 * 60 * 60 * 1000, async () => {
+      const end = todayISO();
+      await persist(await buildWholesaleSnapshots(addDays(end, -(RECENT_DAYS - 1)), end));
+    }),
+    runSync("retail", 6 * 60 * 60 * 1000, async () => {
+      await persist(await buildRetailSnapshots());
+    }),
+    runSync("origin", 6 * 60 * 60 * 1000, async () => {
+      await persist(await buildOriginSnapshots());
+      await pruneSnapshots();
+    }),
+  ]);
+}
 
-  if (await shouldRun("wholesale", 4 * 60 * 60 * 1000)) {
-    tasks.push(
-      (async () => {
-        const end = todayISO();
-        const docs = await buildWholesaleSnapshots(addDays(end, -(RECENT_DAYS - 1)), end);
-        await persist(docs);
-        await markRan("wholesale");
-      })().catch((error) => console.warn("[freshwise] 批發行情同步失敗：", error)),
-    );
+/**
+ * 頁面要資料時走這一支，不要直接 await ensureFresh()。
+ *
+ * **已經有資料的時候絕對不要讓使用者等外部 API。** 一次完整的同步要抓臺中那份 5MB 的
+ * 檔案加上農業部的幾支 API，實測約 20 秒——正式環境是 Vercel 的 serverless function，
+ * 那會直接撞到執行時間上限，變成使用者看到 504。而且那段等待完全沒必要：資料庫裡已經
+ * 有今天（或最近一天）的快照可以先回答。
+ *
+ * 所以分兩種情況：
+ * - **有資料**：立刻用現有的快照回應，同步排到回應送出之後才跑（Next.js 的 `after`）。
+ *   使用者這一次看到的可能是幾小時前抓的資料（畫面上本來就會標資料日期），下一個人就
+ *   會拿到更新後的。
+ * - **完全沒有資料**（第一次部署、或資料庫被清掉）：只能等，不然畫面是空的。
+ *
+ * `after` 只能在請求情境裡用，所以 scripts/freshwise-sync.mts 那種 standalone 腳本呼叫
+ * 時會落到 catch，那邊本來就是直接 await ensureFresh()，不走這一支。
+ */
+async function refreshInBackground(hasData: boolean): Promise<void> {
+  if (!hasData) {
+    await ensureFresh();
+    return;
   }
-
-  if (await shouldRun("retail", 6 * 60 * 60 * 1000)) {
-    tasks.push(
-      (async () => {
-        await persist(await buildRetailSnapshots());
-        await markRan("retail");
-      })().catch((error) => console.warn("[freshwise] 臺中零售行情同步失敗：", error)),
-    );
+  try {
+    const { after } = await import("next/server");
+    after(() => ensureFresh());
+  } catch {
+    // 不在請求情境（例如腳本直接呼叫 getPriceBook）就什麼都不做——那種情況下資料已經
+    // 夠用了，而且腳本自己會呼叫 ensureFresh。
   }
-
-  if (await shouldRun("origin", 6 * 60 * 60 * 1000)) {
-    tasks.push(
-      (async () => {
-        await persist(await buildOriginSnapshots());
-        await pruneSnapshots();
-        await markRan("origin");
-      })().catch((error) => console.warn("[freshwise] 產地價同步失敗：", error)),
-    );
-  }
-
-  await Promise.all(tasks);
 }
 
 /**
@@ -734,9 +767,12 @@ function readQuote(
 
 /** 清單頁用：一次把整份目錄在這個場所的報價組好（不含各市場明細，省傳輸量）。 */
 export async function getPriceBook(venue: VenueKey, today: string, marketCode = ""): Promise<PriceBook> {
-  await ensureFresh();
   const codes = Object.keys(SOURCE_MAP);
-  const ctx = await loadContext(today, codes);
+  // 先讀資料庫（都是索引查詢，很快），有資料就直接回應、同步排到背景；完全沒有才等。
+  let ctx = await loadContext(today, codes);
+  const hasData = !!(ctx.retail || ctx.wholesale);
+  await refreshInBackground(hasData);
+  if (!hasData) ctx = await loadContext(today, codes);
 
   const quotes: Record<string, PriceQuote> = {};
   for (const code of codes) {
@@ -756,8 +792,10 @@ export async function getPriceBook(venue: VenueKey, today: string, marketCode = 
 
 /** 詳情頁用：單一品項的完整資料（含各市場明細與走勢）。 */
 export async function getItemDetail(code: string, venue: VenueKey, today: string, marketCode = ""): Promise<ItemDetail | null> {
-  await ensureFresh();
-  const ctx = await loadContext(today, [code]);
+  let ctx = await loadContext(today, [code]);
+  const hasData = !!(ctx.retail || ctx.wholesale);
+  await refreshInBackground(hasData);
+  if (!hasData) ctx = await loadContext(today, [code]);
   const quote = readQuote(code, venue, ctx, marketCode, true);
   if (!quote) return null;
 
