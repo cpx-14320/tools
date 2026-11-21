@@ -28,7 +28,7 @@
 
 import type { Collection } from "mongodb";
 import { getDb } from "../mongodb";
-import { findItem, marketsOfVenue, VENUE_MULTIPLIER } from "./catalog";
+import { ESTIMATE_RANGE, findItem, marketsOfVenue, SUPER_OVER_MARKET, VENUE_MULTIPLIER } from "./catalog";
 import { addDays, diffDays, todayISO, weekdayOf } from "./dates";
 import {
   adToISO,
@@ -44,6 +44,7 @@ import {
 import { KG_PER_CATTY } from "./price";
 import { matchesName, RICE_CITIES, SOURCE_MAP, sourceOf } from "./source-map";
 import type {
+  CategoryKey,
   ItemDetail,
   MarketOption,
   MarketQuote,
@@ -196,6 +197,13 @@ function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
+/** 把各市場的成交量加起來。沒有任何市場有成交量（零售訪價）時回 null，不要回 0——
+ *  0 看起來像「今天沒成交」，null 才是「這個來源沒有這個數字」。 */
+function sumVolume(markets: MarketQuote[]): number | null {
+  const total = markets.reduce((sum, m) => sum + (typeof m.volumeKg === "number" ? m.volumeKg : 0), 0);
+  return total > 0 ? Math.round(total) : null;
+}
+
 /** 離群值判斷。基準價是目錄裡的 baseKg（批發價的量級），所以零售／超市要先換算回批發級。 */
 function isOutlier(code: string, priceKg: number, venue: VenueKey): boolean {
   const item = findItem(code);
@@ -212,6 +220,8 @@ interface RawMarketRow {
   city: string;
   avgKg: number;
   highKg: number;
+  /** 中價。批發行情有，零售訪價沒有。 */
+  midKg?: number | null;
   lowKg: number;
   volumeKg?: number;
 }
@@ -233,12 +243,19 @@ function buildEntry(rows: RawMarketRow[], code: string, venue: VenueKey, source:
   const markets: MarketQuote[] = [...byMarket.values()].map((list) => {
     const avgKg = round1(representativePrice(list.map((r) => ({ value: r.avgKg, weight: r.volumeKg }))));
     const volume = list.reduce((sum, r) => sum + (r.volumeKg ?? 0), 0);
+    // 中價跟平均價一樣用代表價的算法合併（同一個市場可能有好幾個品種）；沒有中價的
+    // 來源（零售訪價）就留 null，畫面上那一欄顯示「—」。
+    const mids = list.filter((r) => typeof r.midKg === "number" && r.midKg > 0);
     return {
       marketCode: list[0].marketCode,
       marketName: list[0].marketName,
       city: list[0].city,
       avgKg,
       highKg: round1(Math.max(...list.map((r) => r.highKg))),
+      midKg:
+        mids.length > 0
+          ? round1(representativePrice(mids.map((r) => ({ value: r.midKg as number, weight: r.volumeKg }))))
+          : null,
       lowKg: round1(Math.min(...list.map((r) => r.lowKg))),
       volumeKg: volume > 0 ? Math.round(volume) : undefined,
     };
@@ -309,6 +326,7 @@ async function buildWholesaleSnapshots(startISO: string, endISO: string): Promis
         city: WHOLESALE_CITY.get(marketName) ?? "",
         avgKg,
         highKg: toPositiveNumber(row.上價) ?? avgKg,
+        midKg: toPositiveNumber(row.中價),
         lowKg: toPositiveNumber(row.下價) ?? avgKg,
         volumeKg: toPositiveNumber(row.交易量) ?? undefined,
       });
@@ -338,6 +356,7 @@ async function buildWholesaleSnapshots(startISO: string, endISO: string): Promis
         city: "",
         avgKg,
         highKg: toPositiveNumber(row.上價) ?? avgKg,
+        midKg: toPositiveNumber(row.中價),
         lowKg: toPositiveNumber(row.下價) ?? avgKg,
         volumeKg: toPositiveNumber(row.交易量) ?? undefined,
       });
@@ -869,11 +888,6 @@ function mergeSnapshots(docs: (SnapshotDoc | null)[]): SnapshotDoc | null {
   };
 }
 
-/** 場所之間的推估係數。零售沒有訪價的品項從批發推估、超市一律從零售推估。 */
-function deriveMultiplier(from: VenueKey, to: VenueKey): number {
-  return VENUE_MULTIPLIER[to] / VENUE_MULTIPLIER[from];
-}
-
 /** 從一份快照裡把出現過的市場收集起來。 */
 function marketOptionsOf(snap: SnapshotDoc | null): MarketOption[] {
   if (!snap) return [];
@@ -904,6 +918,64 @@ interface ReadContext {
   wholesale: SnapshotDoc | null;
   wholesalePrev: SnapshotDoc | null;
   stats: Map<string, SeriesStats>;
+  /** 每個分類「零售 ÷ 批發」的實際倍數區間，從當天同時有兩種價格的品項回推出來。 */
+  ratios: Map<CategoryKey, { low: number; high: number }>;
+}
+
+/**
+ * 回推每個分類的「零售 ÷ 批發」倍數區間。
+ *
+ * 用當天**同時有零售訪價與批發行情**的品項算：每一項算出自己的倍數，再取同分類的
+ * 最小值與最大值。臺中有訪價的品項約四十個，分散在各分類，足以當成同分類其他品項的
+ * 參考範圍。
+ *
+ * 為什麼要即時算、不寫死：倍數會隨季節與行情變（產季時批發價跌得比零售快，倍數就放大）。
+ * 寫死一組數字過一季就不準了。算不出來（例如零售資料整批缺）才退回 catalog.ts 的
+ * ESTIMATE_RANGE。
+ *
+ * **用四分位距（P25～P75）而不是最小值／最大值。** 一開始取 min/max，結果青椒的區間是
+ * 「34～141 元/台斤」——四倍寬的區間對使用者毫無幫助，它只是告訴他「我們不知道」。
+ * 四分位距代表「一般情況落在哪裡」，會窄得多（同一項變成 43～68），而且仍然誠實：
+ * 它不宣稱精確，只是不再被一兩個極端值撐開。
+ */
+function estimateRatios(retail: SnapshotDoc | null, wholesale: SnapshotDoc | null): Map<CategoryKey, { low: number; high: number }> {
+  const result = new Map<CategoryKey, { low: number; high: number }>();
+  if (!retail || !wholesale) return result;
+
+  const byCategory = new Map<CategoryKey, number[]>();
+  for (const [code, retailEntry] of Object.entries(retail.byCode)) {
+    const wholesaleEntry = wholesale.byCode[code];
+    const item = findItem(code);
+    if (!wholesaleEntry || !item || wholesaleEntry.avgKg <= 0 || retailEntry.avgKg <= 0) continue;
+    const ratio = retailEntry.avgKg / wholesaleEntry.avgKg;
+    // 倍數小於 1（零售比批發便宜）一定是資料有問題，不要讓它污染區間。
+    if (ratio < 1 || ratio > 8) continue;
+    const list = byCategory.get(item.category) ?? [];
+    list.push(ratio);
+    byCategory.set(item.category, list);
+  }
+
+  for (const [category, ratios] of byCategory) {
+    // 至少要三個樣本才敢拿來推估別的品項，不然一兩個特例會決定整個分類的範圍。
+    if (ratios.length < 3) continue;
+    const sorted = [...ratios].sort((a, b) => a - b);
+    result.set(category, {
+      low: Math.round(percentile(sorted, 0.25) * 10) / 10,
+      high: Math.round(percentile(sorted, 0.75) * 10) / 10,
+    });
+  }
+  return result;
+}
+
+/** 排序好的陣列取第 p 分位（線性插值）。樣本很少時四分位會退化成接近中位數，
+ *  那是可接受的——樣本少的時候本來就不該給很寬的區間。 */
+function percentile(sorted: number[], p: number): number {
+  if (sorted.length === 0) return 0;
+  if (sorted.length === 1) return sorted[0];
+  const pos = (sorted.length - 1) * p;
+  const lower = Math.floor(pos);
+  const upper = Math.ceil(pos);
+  return lower === upper ? sorted[lower] : sorted[lower] + (sorted[upper] - sorted[lower]) * (pos - lower);
 }
 
 async function loadContext(todayDate: string, codes: string[]): Promise<ReadContext> {
@@ -936,6 +1008,7 @@ async function loadContext(todayDate: string, codes: string[]): Promise<ReadCont
     wholesale,
     wholesalePrev,
     stats: new Map(docs.map((d) => [d._id, d.stats])),
+    ratios: estimateRatios(retail, wholesale),
   };
 }
 
@@ -999,38 +1072,67 @@ function readQuote(
         source: hit.entry.source ?? direct.fallbackSource,
         estimated: false,
         historyDays: stats?.days ?? 1,
+        // 總成交量跟著報價走（不只放在市場明細裡），清單頁才能按成交量排序。
+        volumeKg: sumVolume(hit.entry.markets),
         markets: withMarkets ? hit.entry.markets : [],
       };
     }
   }
 
-  // 2. 退而求其次：從別的場所推估。超市先找零售、再找批發；傳統市場只找批發。
-  const fallbacks: VenueKey[] = venue === "super" ? ["market", "wholesale"] : venue === "market" ? ["wholesale"] : [];
-  for (const from of fallbacks) {
-    const snap = from === "market" ? ctx.retail : ctx.wholesale;
-    const prevSnap = from === "market" ? ctx.retailPrev : ctx.wholesalePrev;
-    // 推估時不套用市場篩選：市場清單是分場所的，拿別的場所的某個市場來推估沒有意義。
-    const entry = snap?.byCode[code];
-    if (!snap || !entry) continue;
+  // 2. 沒有實測價：從別的場所推估，而且**給一個區間，不給一個假的精確數字**。
+  //
+  //    傳統市場 ← 批發 × 該分類實際觀察到的倍數區間
+  //    超市／大賣場 ← 傳統市場（實測或推估）× 一般認知的 1.1～1.35 倍
+  //
+  //    倍數區間的來歷見 estimateRatios 與 catalog.ts 的 ESTIMATE_RANGE：實測回推發現
+  //    「零售 ÷ 批發」在 1.2～4.5 倍之間，用單一係數套會錯到讓人買錯。
+  const item = findItem(code);
+  if (!item) return null;
+  const categoryRange = ctx.ratios.get(item.category) ?? ESTIMATE_RANGE[item.category];
 
-    const k = deriveMultiplier(from, venue);
-    const stats = ctx.stats.get(`${from}:${code}`);
-    const prevEntry = prevSnap?.byCode[code];
+  /** 把一筆基準報價乘上倍數區間，變成一筆推估報價。 */
+  function estimateFrom(base: PriceQuote, range: { low: number; high: number }): PriceQuote {
+    const mid = (range.low + range.high) / 2;
     return {
       code,
-      date: snap.date,
+      date: base.date,
       venue,
-      avgKg: round1(entry.avgKg * k),
-      prevKg: prevEntry ? round1(prevEntry.avgKg * k) : null,
-      yearLowKg: round1((stats?.lowKg ?? entry.avgKg) * k),
-      yearHighKg: round1((stats?.highKg ?? entry.avgKg) * k),
-      yearAvgKg: round1((stats?.avgKg ?? entry.avgKg) * k),
+      // 區間的中點當代表值：排序、漲跌、划算度都要一個單一數字才算得下去。
+      avgKg: round1(base.avgKg * mid),
+      rangeLowKg: round1(base.avgKg * range.low),
+      rangeHighKg: round1(base.avgKg * range.high),
+      prevKg: base.prevKg === null ? null : round1(base.prevKg * mid),
+      yearLowKg: round1(base.yearLowKg * mid),
+      yearHighKg: round1(base.yearHighKg * mid),
+      yearAvgKg: round1(base.yearAvgKg * mid),
       source: "derived",
       estimated: true,
-      historyDays: stats?.days ?? 1,
+      historyDays: base.historyDays,
+      // 成交量是批發市場的事實，推估的零售價不該帶著它——那會讓人以為這個價格有那麼多
+      // 成交量支撐。
+      volumeKg: null,
       // 推估值沒有「各市場明細」可言——那是別的場所的市場。
       markets: [],
     };
+  }
+
+  if (venue === "market") {
+    // 傳統市場沒有實測 → 從批發推估。
+    const base = readQuote(code, "wholesale", ctx, "", false);
+    return base ? estimateFrom(base, categoryRange) : null;
+  }
+
+  if (venue === "super") {
+    // 超市一律從傳統市場推估（傳統市場本身可能也是推估的，區間會疊起來）。
+    const base = readQuote(code, "market", ctx, "", false);
+    if (!base) return null;
+    const estimate = estimateFrom(base, SUPER_OVER_MARKET);
+    // 基準本身就是區間的話，區間要疊上去，不是只乘中點。
+    if (base.rangeLowKg !== undefined && base.rangeHighKg !== undefined) {
+      estimate.rangeLowKg = round1(base.rangeLowKg * SUPER_OVER_MARKET.low);
+      estimate.rangeHighKg = round1(base.rangeHighKg * SUPER_OVER_MARKET.high);
+    }
+    return estimate;
   }
 
   return null;
@@ -1061,11 +1163,24 @@ export async function getPriceBook(venue: VenueKey, today: string, marketCode = 
   return { dataDate, quotes, markets };
 }
 
+/** 有標章的成交量至少要佔當天的這個比例，那個均價才有代表性。 */
+const MIN_CERTIFIED_SHARE = 5;
+
 /** 「有標章 vs 一般」的比較。只有蔬果、而且那五個回報的市場當天有成交才有。 */
 async function readTraced(code: string, onOrBefore: string): Promise<TracedCompare | undefined> {
   const doc = await (await tracedColl()).findOne({ date: { $lte: onOrBefore } }, { sort: { date: -1 } });
   const cell = doc?.byCode[code];
   if (!doc || !cell || cell.plainKg <= 0) return undefined;
+
+  // 有標章的成交量佔比太低時不顯示。實際遇過甘藍「有標章 31 元 vs 一般 10 元」——
+  // 貴 209%，但有標章的只佔當天成交量 1%，那個均價可能只是一兩批特殊規格的貨。
+  // 與其顯示一個加註「代表性有限」的荒謬數字，不如不顯示。
+  if (cell.certifiedShare < MIN_CERTIFIED_SHARE) return undefined;
+
+  // 倍數離譜（三倍以上或反而便宜三分之二以上）同樣是樣本太少造成的，不顯示。
+  const ratio = cell.certifiedKg / cell.plainKg;
+  if (ratio > 3 || ratio < 0.34) return undefined;
+
   return {
     date: doc.date,
     certifiedKg: cell.certifiedKg,
@@ -1084,10 +1199,12 @@ export async function getItemDetail(code: string, venue: VenueKey, today: string
   const quote = readQuote(code, venue, ctx, marketCode, true);
   if (!quote) return null;
 
-  // 走勢取自己場所的；推估出來的場所就拿來源場所的點乘係數，曲線形狀才跟報價一致。
+  // 走勢取自己場所的。推估出來的場所沒有自己的走勢，所以拿來源場所的點**乘上同一個
+  // 倍數中點**，曲線的形狀才跟上面那個報價一致——不然走勢圖的數字跟卡片上的對不起來。
   const sourceVenue: VenueKey = quote.source === "derived" ? (ctx.retail?.byCode[code] ? "market" : "wholesale") : venue === "super" ? "market" : venue;
   const doc = await (await seriesColl()).findOne({ _id: `${sourceVenue}:${code}` });
-  const k = quote.source === "derived" ? deriveMultiplier(sourceVenue, venue) : 1;
+  const sourceQuote = quote.source === "derived" ? readQuote(code, sourceVenue, ctx, "", false) : null;
+  const k = sourceQuote && sourceQuote.avgKg > 0 ? quote.avgKg / sourceQuote.avgKg : 1;
   const series: PricePoint[] = (doc?.points ?? []).map(([date, avgKg]) => ({ date, avgKg: round1(avgKg * k) }));
 
   const venues = (["market", "super", "wholesale"] as VenueKey[]).map((v) => ({

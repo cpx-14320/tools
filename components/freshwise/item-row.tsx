@@ -62,11 +62,20 @@ export function ItemRow({
       </div>
 
       <div className="flex shrink-0 flex-col items-end gap-1">
-        <PriceText priceKg={quote.avgKg} unit={unit} size="row" showUnit={false} />
-        <TrendBadge trend={trend} />
+        <PriceText
+          priceKg={quote.avgKg}
+          rangeLowKg={quote.rangeLowKg}
+          rangeHighKg={quote.rangeHighKg}
+          unit={unit}
+          size="row"
+          showUnit={false}
+        />
+        {/* 推估的品項不顯示漲跌與划算度：那是把批發的變化乘上一個倍數得到的，講的其實是
+            批發的漲跌，標在「傳統市場」那一列會誤導。 */}
+        {!quote.estimated && <TrendBadge trend={trend} />}
         {/* 漲跌持平時 TrendBadge 不畫任何東西，這時候補一個划算度徽章，右欄才不會空一塊。
             歷史不夠長的品項判不出划算度（見 price.ts 的 MIN_HISTORY_DAYS），就什麼都不放。 */}
-        {trend.direction === "flat" && reliable && <ValueBadge value={value} />}
+        {!quote.estimated && trend.direction === "flat" && reliable && <ValueBadge value={value} />}
       </div>
     </>
   );
@@ -112,6 +121,11 @@ export function ItemRow({
  * 12%」、這一列什麼都沒有，會以為是壞了。講清楚原因比留白好。
  */
 function defaultMeta(row: PriceRow): string {
+  // 推估的品項先講「這是推估的範圍」——它沒有實測價，講划算度沒有意義（區間的中點
+  // 跟它自己的歷史比，比出來的是倍數的變化不是行情的變化）。
+  if (row.quote.estimated && row.quote.rangeLowKg !== undefined) {
+    return `沒有實測價，依批發價推估的範圍`;
+  }
   if (row.reliable) {
     const abs = Math.abs(row.value.percent);
     const base = historyLabel(row.quote.historyDays);

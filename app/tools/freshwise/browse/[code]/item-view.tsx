@@ -61,6 +61,9 @@ const SOURCE_LABEL: Record<PriceSource, string> = {
 export function ItemView({ code, today, detail }: { code: string; today: string; detail: ItemDetail | null }) {
   const { prefs, basket, toggleBasket, setPrefs } = useFreshwise();
   const [rangeKey, setRangeKey] = useState("30");
+  // 完整行情表預設收起來：五欄數字對「不懂買菜價格的人」是雜訊，但要自己判讀的人一定
+  // 要看得到，所以給一個切換而不是二選一。
+  const [showFullTable, setShowFullTable] = useState(false);
 
   const item = itemOrPlaceholder(code);
   const month = monthOf(today);
@@ -139,16 +142,31 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
 
         <div className="flex items-end justify-between gap-3">
           <div>
-            <PriceText priceKg={quote.avgKg} unit={prefs.unit} size="big" showUnit={false} />
+            <PriceText
+              priceKg={quote.avgKg}
+              rangeLowKg={quote.rangeLowKg}
+              rangeHighKg={quote.rangeHighKg}
+              unit={prefs.unit}
+              size="big"
+              showUnit={false}
+            />
             <span className={`ml-1.5 ${text.meta}`}>{unitLabel(prefs.unit)}</span>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <TrendBadge trend={trend} showFlat />
-            {reliable && <ValueBadge value={value} showFair />}
+            {/* 推估的品項不顯示漲跌與划算度：那是把批發的變化乘上一個固定倍數得到的，
+                講的其實是批發的漲跌，標在「傳統市場」上會誤導。 */}
+            {!quote.estimated && <TrendBadge trend={trend} showFlat />}
+            {!quote.estimated && reliable && <ValueBadge value={value} showFair />}
           </div>
         </div>
 
-        {reliable ? (
+        {quote.estimated && quote.rangeLowKg !== undefined ? (
+          <Note>
+            {prefs.venue === "super"
+              ? "超市與大賣場沒有公開的架上價資料。這個區間是用傳統市場價加上一般認知的價差（貴一到三成）推估的，只能當參考。"
+              : `這一項在臺中的零售市場沒有訪價，所以用批發價推估。倍數取自同類別實際觀察到的範圍，所以給的是區間不是單一數字。`}
+          </Note>
+        ) : reliable ? (
           <Note>{valueSentence(value, quote.historyDays)}</Note>
         ) : (
           <Note>
@@ -158,7 +176,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
 
         {/* 近一年的價格區間指示條：今天的價格落在這一年的哪個位置，一眼就看得出來。
             歷史不夠長的時候不畫——只有幾天資料的「區間」沒有意義。 */}
-        {reliable && (
+        {reliable && !quote.estimated && (
           <div className="flex flex-col gap-1.5">
             <div className="relative h-2 rounded-full" style={{ background: `linear-gradient(90deg, ${colors.downBg}, ${colors.upBg})` }}>
               <span
@@ -229,7 +247,14 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
                 </span>
                 <span className="shrink-0 text-right">
                   {venueQuote ? (
-                    <PriceText priceKg={venueQuote.avgKg} unit={prefs.unit} size="row" showUnit={false} />
+                    <PriceText
+                      priceKg={venueQuote.avgKg}
+                      rangeLowKg={venueQuote.rangeLowKg}
+                      rangeHighKg={venueQuote.rangeHighKg}
+                      unit={prefs.unit}
+                      size="row"
+                      showUnit={false}
+                    />
                   ) : (
                     <span className={text.hint}>—</span>
                   )}
@@ -295,10 +320,23 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
         </ListCard>
       </section>
 
-      {/* ── 各市場今日價 ───────────────────────────────────── */}
+      {/* ── 完整行情表（上/中/下/平均/量）───────────────────────
+          這是菜價查詢的標準格式：農業部行情站與市面上的菜價網站都是這五欄，看得懂行情
+          的人要的就是這張表。上面那張卡是給「不懂買菜價格的人」的結論，這張表是給要自己
+          判讀的人的原始數字，兩種人都要照顧到。 */}
       {markets.length > 0 && (
         <section className="flex flex-col gap-2">
-          <SectionTitle leaf>各{copy.market}今天的價格</SectionTitle>
+          <SectionTitle
+            leaf
+            action={
+              <LinkButton onClick={() => setShowFullTable((v) => !v)}>
+                {showFullTable ? "簡化顯示" : "完整行情表"}
+              </LinkButton>
+            }
+          >
+            各{copy.market}今天的價格
+          </SectionTitle>
+
           {/* 代表價怎麼算出來的要寫清楚——使用者會拿下面的清單去對上面那個數字，對不起來
               的時候要有地方解釋。零售訪價沒有成交量可以加權，取中位數才不會被單一攤位的
               異常價格拉走（見 prices.server.ts 的 representativePrice）。 */}
@@ -307,30 +345,84 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
               ? "上面的代表價是各市場的成交量加權平均。"
               : "上面的代表價是各市場的中位數——訪價沒有成交量可以加權，取中位數才不會被單一攤位的異常價格拉走。"}
           </Note>
-          <DividedCard>
-            {markets.map((market, index) => (
-              <DividedRow key={market.marketCode}>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5">
-                    <span className={`truncate ${text.bodyStrong}`}>{market.marketName}</span>
-                    {index === 0 && markets.length > 1 && (
-                      <span className={text.badge} style={{ color: colors.down }}>
-                        最低
-                      </span>
-                    )}
+
+          {showFullTable ? (
+            // 表格一定要能自己橫向捲動：五欄數字在 430px 寬的手機上塞不進去，讓整頁
+            // 左右捲會把底部導覽列也拖走。
+            <div className="overflow-x-auto rounded-2xl bg-white" style={{ boxShadow: shadow.card }}>
+              <table className="w-full min-w-[420px] border-collapse">
+                <thead>
+                  <tr>
+                    {["市場", "上價", "中價", "下價", "平均", "交易量"].map((h, i) => (
+                      <th
+                        key={h}
+                        className={`whitespace-nowrap px-2.5 py-2 ${text.label} ${i === 0 ? "text-left" : "text-right"}`}
+                        style={{ backgroundColor: colors.surfaceSoft }}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {markets.map((market) => (
+                    <tr key={market.marketCode} className="border-t" style={{ borderColor: colors.borderSoft }}>
+                      <td className={`whitespace-nowrap px-2.5 py-2 ${text.body}`}>{market.marketName}</td>
+                      {/* 數字欄位用 tabular-nums，位數才會對齊成一直線。 */}
+                      <td className={`px-2.5 py-2 text-right tabular-nums ${text.body}`}>
+                        {formatPriceIn(market.highKg, prefs.unit)}
+                      </td>
+                      <td className={`px-2.5 py-2 text-right tabular-nums ${text.body}`}>
+                        {typeof market.midKg === "number" ? formatPriceIn(market.midKg, prefs.unit) : "—"}
+                      </td>
+                      <td className={`px-2.5 py-2 text-right tabular-nums ${text.body}`}>
+                        {formatPriceIn(market.lowKg, prefs.unit)}
+                      </td>
+                      <td className={`px-2.5 py-2 text-right font-semibold tabular-nums ${text.body}`}>
+                        {formatPriceIn(market.avgKg, prefs.unit)}
+                      </td>
+                      <td className={`whitespace-nowrap px-2.5 py-2 text-right tabular-nums ${text.meta}`}>
+                        {typeof market.volumeKg === "number" && market.volumeKg > 0
+                          ? `${market.volumeKg.toLocaleString("en-US")} kg`
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <DividedCard>
+              {markets.map((market, index) => (
+                <DividedRow key={market.marketCode}>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-1.5">
+                      <span className={`truncate ${text.bodyStrong}`}>{market.marketName}</span>
+                      {index === 0 && markets.length > 1 && (
+                        <span className={text.badge} style={{ color: colors.down }}>
+                          最低
+                        </span>
+                      )}
+                    </span>
+                    <span className={`block ${text.meta}`}>
+                      {market.city && `${market.city}・`}
+                      {market.highKg > market.lowKg
+                        ? `上下價 ${formatPriceIn(market.lowKg, prefs.unit)}～${formatPriceIn(market.highKg, prefs.unit)}`
+                        : "單一訪價"}
+                      {typeof market.volumeKg === "number" && market.volumeKg > 0 &&
+                        `・成交 ${market.volumeKg.toLocaleString("en-US")} 公斤`}
+                    </span>
                   </span>
-                  <span className={`block ${text.meta}`}>
-                    {market.city && `${market.city}・`}
-                    {market.highKg > market.lowKg
-                      ? `上下價 ${formatPriceIn(market.lowKg, prefs.unit)}～${formatPriceIn(market.highKg, prefs.unit)}`
-                      : "單一訪價"}
-                    {typeof market.volumeKg === "number" && market.volumeKg > 0 && `・成交 ${market.volumeKg.toLocaleString("en-US")} 公斤`}
-                  </span>
-                </span>
-                <PriceText priceKg={market.avgKg} unit={prefs.unit} size="row" showUnit={false} />
-              </DividedRow>
-            ))}
-          </DividedCard>
+                  <PriceText priceKg={market.avgKg} unit={prefs.unit} size="row" showUnit={false} />
+                </DividedRow>
+              ))}
+            </DividedCard>
+          )}
+
+          <Hint>
+            上價／中價／下價是當天成交的高、中、低價，價差反映品質與規格的落差。
+            {quote.source !== "wholesale" && "零售訪價每個市場只記一個數字，所以沒有中價與交易量。"}
+          </Hint>
         </section>
       )}
 

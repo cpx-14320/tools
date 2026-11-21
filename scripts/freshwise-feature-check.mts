@@ -152,7 +152,18 @@ run("市場與場所", () => {
   // 超市量販是推估值，一定要被標成 estimated，不然畫面上不會出現「估算」徽章。
   check("超市量販被標成推估值", catalog.venueMeta("super").estimated === true);
   check("傳統市場與批發行情不是推估值", !catalog.venueMeta("market").estimated && !catalog.venueMeta("wholesale").estimated);
-  check("批發行情預設用公斤、傳統市場預設用台斤", catalog.venueDefaultUnit("wholesale") === "kg" && catalog.venueDefaultUnit("market") === "catty");
+  check("批發市場預設用公斤、傳統市場預設用台斤", catalog.venueDefaultUnit("wholesale") === "kg" && catalog.venueDefaultUnit("market") === "catty");
+
+  // 場所的命名要照使用者會講的地點（市場／大賣場／超市），不要用業界詞。
+  check("場所名稱是地點而不是資料名稱", catalog.venueName("wholesale") === "批發市場" && catalog.venueName("super") === "超市／大賣場");
+
+  // 推估倍數必須是「區間」而且下限不小於 1——零售比批發便宜是不可能的，那種倍數出現
+  // 代表資料或邏輯有問題。
+  const ranges = Object.values(catalog.ESTIMATE_RANGE);
+  check("每個分類都有推估倍數區間", ranges.length === catalog.CATEGORIES.length);
+  check("推估倍數的下限都不小於 1", ranges.every((r) => r.low >= 1));
+  check("推估倍數的上限都大於下限", ranges.every((r) => r.high > r.low));
+  check("超市相對傳統市場的倍數是貴一到三成多", catalog.SUPER_OVER_MARKET.low >= 1 && catalog.SUPER_OVER_MARKET.high <= 1.5);
 });
 
 // ── 2. 日期工具 ──────────────────────────────────────────────────────────
@@ -412,6 +423,41 @@ run("排序", () => {
 
   const rise = search.sortRows(rows, "rise");
   check("漲最多排前面", rise.every((r, i) => i === 0 || rise[i - 1].trend.percent >= r.trend.percent));
+
+  // 成交量排序：沒有成交量的（零售訪價、推估）要排到後面，不要跟「成交量 0」混在一起。
+  const byVolume = search.sortRows(rows, "volumeDesc");
+  check(
+    "成交量多的排前面",
+    byVolume.every((r, i) => i === 0 || (byVolume[i - 1].quote.volumeKg ?? -1) >= (r.quote.volumeKg ?? -1)),
+  );
+  check(
+    "沒有成交量的排在最後",
+    (() => {
+      const firstMissing = byVolume.findIndex((r) => typeof r.quote.volumeKg !== "number");
+      const lastPresent = byVolume.map((r) => typeof r.quote.volumeKg === "number").lastIndexOf(true);
+      return firstMissing === -1 || lastPresent < firstMissing;
+    })(),
+  );
+
+  // 依名稱排序是「先分類分群、再在分類內照中文字典序」，不是把所有品項混在一起排。
+  const byName = search.sortRows(rows, "name");
+  check("依名稱排序後筆數不變", byName.length === rows.length);
+  check(
+    "依名稱排序會先照分類分群",
+    (() => {
+      const order = catalog.CATEGORIES.map((c) => c.key);
+      const seen = byName.map((r) => order.indexOf(r.item.category));
+      return seen.every((v, i) => i === 0 || seen[i - 1] <= v);
+    })(),
+  );
+  check(
+    "同一個分類內照中文字典序",
+    (() => {
+      const collator = new Intl.Collator("zh-TW");
+      const veg = byName.filter((r) => r.item.category === "veg").map((r) => r.item.name);
+      return veg.every((n, i) => i === 0 || collator.compare(veg[i - 1], n) <= 0);
+    })(),
+  );
 
   const cheapest = search.sortRows(rows, "cheapest");
   check("最划算排前面", cheapest.every((r, i) => i === 0 || cheapest[i - 1].value.percent <= r.value.percent));

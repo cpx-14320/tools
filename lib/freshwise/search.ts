@@ -5,11 +5,14 @@
 // 而不是讓清單元件自己對每一列各算一次。理由是這幾件事在首頁、行情頁、我的菜籃、詳情頁
 // 都會一起出現，分開算的話同一套判定邏輯會散在四個檔案裡，門檻一改就會有地方漏改。
 
-import { itemOrPlaceholder, TRACKED_CATALOG } from "./catalog";
+import { CATEGORIES, itemOrPlaceholder, TRACKED_CATALOG } from "./catalog";
 import { isInSeason } from "./catalog";
 import { monthOf } from "./dates";
 import { hasReliableHistory, trendOf, valueOf, type Trend, type ValueJudgement } from "./price";
 import type { CatalogItem, CategoryKey, PriceQuote } from "./types";
+
+/** 分類的顯示順序（依名稱排序時先照這個分群）。 */
+const CATEGORY_ORDER = CATEGORIES.map((c) => c.key);
 
 export interface PriceRow {
   item: CatalogItem;
@@ -88,7 +91,15 @@ export function filterRows(rows: PriceRow[], filter: RowFilter): PriceRow[] {
 
 /* ───────────────────── 排序 ───────────────────── */
 
-export type SortKey = "recommended" | "cheapest" | "priceAsc" | "priceDesc" | "drop" | "rise";
+export type SortKey =
+  | "recommended"
+  | "cheapest"
+  | "priceAsc"
+  | "priceDesc"
+  | "drop"
+  | "rise"
+  | "volumeDesc"
+  | "name";
 
 export const SORT_OPTIONS: readonly { key: SortKey; label: string }[] = [
   { key: "recommended", label: "推薦" },
@@ -97,12 +108,23 @@ export const SORT_OPTIONS: readonly { key: SortKey; label: string }[] = [
   { key: "rise", label: "漲最多" },
   { key: "priceAsc", label: "價格低→高" },
   { key: "priceDesc", label: "價格高→低" },
+  { key: "volumeDesc", label: "成交量多→少" },
+  { key: "name", label: "依名稱" },
 ];
 
-/** 划算度排序用的分數。歷史不夠長的品項不該參加「最划算」的排名（它的「平常價」只是
- *  幾天的平均），一律排到後面去。 */
+/** 中文排序要用字典序（`zh-TW` 的 collator），不是字碼順序——字碼順序排出來的中文清單
+ *  在使用者眼裡是亂的。Intl.Collator 建一次重複用，不要每次比較都 new 一個。 */
+const NAME_COLLATOR = new Intl.Collator("zh-TW");
+
+/** 划算度排序用的分數。歷史不夠長、或價格是推估的品項不該參加「最划算」的排名，
+ *  一律排到後面去。 */
 function valueScore(row: PriceRow): number {
-  return row.reliable ? row.value.percent : 999;
+  return row.reliable && !row.quote.estimated ? row.value.percent : 999;
+}
+
+/** 漲跌排序用的分數。推估的品項排到最後（`worst` 決定「最後」是哪個方向）。 */
+function trendScore(row: PriceRow, worst: 1 | -1): number {
+  return row.quote.estimated ? worst * 9999 : row.trend.percent;
 }
 
 /**
@@ -124,11 +146,26 @@ export function sortRows(rows: PriceRow[], sort: SortKey): PriceRow[] {
     case "priceDesc":
       sorted.sort((a, b) => b.quote.avgKg - a.quote.avgKg);
       break;
+    // 漲跌排序只排「有實測價」的品項。推估值的漲跌是批發的漲跌乘上一個固定倍數，
+    // 把它混進「傳統市場今天跌最多」的排名裡，使用者會以為那是零售真的跌了。
     case "drop":
-      sorted.sort((a, b) => a.trend.percent - b.trend.percent);
+      sorted.sort((a, b) => trendScore(a, 1) - trendScore(b, 1));
       break;
     case "rise":
-      sorted.sort((a, b) => b.trend.percent - a.trend.percent);
+      sorted.sort((a, b) => trendScore(b, -1) - trendScore(a, -1));
+      break;
+    case "volumeDesc":
+      // 成交量只有批發行情有。沒有成交量的（零售訪價、推估）一律排到後面，不要讓它們
+      // 跟「成交量 0」混在一起——那是兩件不同的事。
+      sorted.sort((a, b) => (b.quote.volumeKg ?? -1) - (a.quote.volumeKg ?? -1));
+      break;
+    case "name":
+      // 先照分類分群、再在分類內照名稱排——使用者說的「同類名稱排序」是這個意思，
+      // 不是把所有品項混在一起照筆畫排。
+      sorted.sort((a, b) => {
+        const byCategory = CATEGORY_ORDER.indexOf(a.item.category) - CATEGORY_ORDER.indexOf(b.item.category);
+        return byCategory !== 0 ? byCategory : NAME_COLLATOR.compare(a.item.name, b.item.name);
+      });
       break;
     case "recommended":
     default:
