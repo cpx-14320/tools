@@ -35,13 +35,25 @@ import {
   fetchAquaticRows,
   fetchFarmRows,
   fetchPoultryRows,
+  fetchRiceRows,
   fetchTaichungRetail,
+  fetchTracedRows,
   rocToISO,
   toPositiveNumber,
 } from "./moa-client";
 import { KG_PER_CATTY } from "./price";
-import { matchesName, SOURCE_MAP, sourceOf } from "./source-map";
-import type { ItemDetail, MarketOption, MarketQuote, PriceBook, PriceQuote, PricePoint, PriceSource, VenueKey } from "./types";
+import { matchesName, RICE_CITIES, SOURCE_MAP, sourceOf } from "./source-map";
+import type {
+  ItemDetail,
+  MarketOption,
+  MarketQuote,
+  PriceBook,
+  PriceQuote,
+  PricePoint,
+  PriceSource,
+  TracedCompare,
+  VenueKey,
+} from "./types";
 
 /** 頁面算繪時最多確保幾天的批發資料。8 天足夠算出「今天」與「上一個交易日」
  *  （含週一休市與連假），又只要兩三次分頁請求。 */
@@ -67,6 +79,10 @@ interface SnapshotEntry {
   avgKg: number;
   highKg: number;
   lowKg: number;
+  /** 這一筆是哪個來源訪的價。**不能只看場所來推**——同一個「傳統市場」場所裡，蔬果魚肉蛋
+   *  來自臺中訪價、米來自全國糧價，標錯會讓使用者以為米價也只是臺中一地的數字。
+   *  舊資料沒有這個欄位，所以是選填，讀取時有預設值。 */
+  source?: PriceSource;
   markets: MarketQuote[];
 }
 
@@ -78,7 +94,31 @@ interface SnapshotEntry {
  * 於是「最近一份 wholesale 快照」會查到只含雞蛋跟白肉雞的那一份，所有蔬果的批發價整個
  * 消失。分開存、讀的時候再合併，兩種來源才不會互相覆蓋。
  */
-type SnapshotScope = VenueKey | "origin";
+type SnapshotScope = VenueKey | "origin" | "riceRetail" | "riceWholesale";
+
+/**
+ * 讀某個「場所」時要把哪幾份快照合起來。
+ *
+ * 每個來源都存成自己的 scope，不要寫進同一個 `${venue}:${date}`——`persist` 是用
+ * replaceOne 寫的，兩個 builder 寫同一個 id 會互相覆蓋（產地價就是這樣把蔬果的批發價
+ * 整份蓋掉過）。各存各的、讀的時候才合併，彼此不會踩到。
+ */
+/** 每個 scope 的資料在走勢（series）裡要歸到哪個場所。 */
+const SERIES_VENUE_OF_SCOPE: Record<SnapshotScope, VenueKey> = {
+  market: "market",
+  super: "super",
+  wholesale: "wholesale",
+  origin: "wholesale",
+  riceRetail: "market",
+  riceWholesale: "wholesale",
+};
+
+const SCOPES_OF_VENUE: Record<VenueKey, SnapshotScope[]> = {
+  market: ["market", "riceRetail"],
+  wholesale: ["wholesale", "origin", "riceWholesale"],
+  // 超市量販沒有任何來源，一律從零售推估（見 readQuote 的 fallback）。
+  super: [],
+};
 
 interface SnapshotDoc {
   _id: string; // `${scope}:${date}`
@@ -124,18 +164,32 @@ async function markers(): Promise<Collection<SyncMarkerDoc>> {
 
 /* ───────────────────── 聚合工具 ───────────────────── */
 
-/** 交易量加權平均。批發行情有交易量，用它加權才是「今天成交的菜平均多少錢」；
- *  沒有交易量（零售訪價）的話退回算術平均。 */
-function weightedAverage(values: { value: number; weight?: number | null }[]): number {
-  // weight 可能是 null（Mongo 把 undefined 存成 null），所以直接檢查「是不是正數」，
+/**
+ * 把多個市場的價格合成一個代表價。**兩種情況用兩種算法，這不是偷懶而是必要的：**
+ *
+ * - **有交易量（批發行情）→ 交易量加權平均。** 那才是「今天成交的菜平均多少錢」，而且
+ *   加權本身就會壓低離群值的影響（某個市場一小批貨賣了怪價格，權重很小）。
+ * - **沒有交易量（零售訪價、糧價）→ 中位數，不是算術平均。** 訪價是「每個市場記一個
+ *   數字」，沒有權重可以參考，一筆填錯的資料會整個把平均拉走。實際遇過：臺中合作市場
+ *   的香蕉標 100 元/台斤，同一天其他五個市場是 27～41——算術平均會變成 44，中位數是 34，
+ *   後者才接近「你去市場大概付多少」。中位數也不需要我們去判斷那筆到底是錯誤還是真的
+ *   有攤位賣那麼貴（分不出來，而且不必分）。
+ */
+function representativePrice(values: { value: number; weight?: number | null }[]): number {
+  if (values.length === 0) return 0;
+
+  // weight 可能是 null（Mongo 把 undefined 存成 null），所以檢查「是不是正數」，
   // 不要只比對 undefined。
   const weighted = values.filter((v) => typeof v.weight === "number" && v.weight > 0);
   if (weighted.length > 0) {
     const total = weighted.reduce((sum, v) => sum + (v.weight as number), 0);
     return weighted.reduce((sum, v) => sum + v.value * (v.weight as number), 0) / total;
   }
-  if (values.length === 0) return 0;
-  return values.reduce((sum, v) => sum + v.value, 0) / values.length;
+
+  const sorted = values.map((v) => v.value).sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  // 偶數筆取中間兩個的平均，奇數筆取正中間那個。
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
 }
 
 function round1(n: number): number {
@@ -164,8 +218,9 @@ interface RawMarketRow {
 
 /** 把某一天的原始列（已經依品項過濾過）合併成一筆快照。同一個市場有多個品種時先合併
  *  成一列，再用各市場的交易量加權算出代表價。 */
-function buildEntry(rows: RawMarketRow[], code: string, venue: VenueKey): SnapshotEntry | null {
-  const clean = rows.filter((r) => r.avgKg > 0 && !isOutlier(code, r.avgKg, venue));
+function buildEntry(rows: RawMarketRow[], code: string, venue: VenueKey, source: PriceSource): SnapshotEntry | null {
+  const withinRange = rows.filter((r) => r.avgKg > 0 && !isOutlier(code, r.avgKg, venue));
+  const clean = dropMarketOutliers(withinRange);
   if (clean.length === 0) return null;
 
   const byMarket = new Map<string, RawMarketRow[]>();
@@ -176,7 +231,7 @@ function buildEntry(rows: RawMarketRow[], code: string, venue: VenueKey): Snapsh
   }
 
   const markets: MarketQuote[] = [...byMarket.values()].map((list) => {
-    const avgKg = round1(weightedAverage(list.map((r) => ({ value: r.avgKg, weight: r.volumeKg }))));
+    const avgKg = round1(representativePrice(list.map((r) => ({ value: r.avgKg, weight: r.volumeKg }))));
     const volume = list.reduce((sum, r) => sum + (r.volumeKg ?? 0), 0);
     return {
       marketCode: list[0].marketCode,
@@ -189,13 +244,34 @@ function buildEntry(rows: RawMarketRow[], code: string, venue: VenueKey): Snapsh
     };
   });
 
-  const avgKg = round1(weightedAverage(markets.map((m) => ({ value: m.avgKg, weight: m.volumeKg }))));
+  const avgKg = round1(representativePrice(markets.map((m) => ({ value: m.avgKg, weight: m.volumeKg }))));
   return {
     avgKg,
     highKg: round1(Math.max(...markets.map((m) => m.highKg))),
     lowKg: round1(Math.min(...markets.map((m) => m.lowKg))),
+    source,
     markets,
   };
+}
+
+/**
+ * 同一天、同一個品項，把跟「當天其他市場的中位數」差太多的那幾個市場丟掉。
+ *
+ * 為什麼需要這一層：`isOutlier` 比的是目錄裡寫死的基準價，容忍度必須放得很寬（青蔥真的
+ * 會一天漲五倍），所以擋不掉「單一市場填錯一個位數」這種錯。實際看到過合作市場的香蕉
+ * 標 100 元/台斤，而同一天其他五個市場是 27～41——那一筆把均價整個拉高。
+ *
+ * 用中位數而不是平均數當基準：離群值本身會把平均數拉過去，中位數不會。市場數少於四個
+ * 時不做（三個數字的中位數太容易被一個錯誤值帶走，寧可留著）。
+ */
+function dropMarketOutliers(rows: RawMarketRow[]): RawMarketRow[] {
+  if (rows.length < 4) return rows;
+  const sorted = [...rows].map((r) => r.avgKg).sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  if (median <= 0) return rows;
+  // 3 倍是刻意寬鬆的：同一天不同市場的價差本來就可能到兩倍（品質、規格差異），
+  // 三倍以上才當成填錯。
+  return rows.filter((r) => r.avgKg <= median * 3 && r.avgKg >= median / 3);
 }
 
 /** 市場代號／縣市：批發行情的回應本身就帶市場代號與名稱，縣市則從 catalog 的清單補
@@ -274,7 +350,7 @@ async function buildWholesaleSnapshots(startISO: string, endISO: string): Promis
   for (const [date, perCode] of farmByDate) {
     const byCode: Record<string, SnapshotEntry> = {};
     for (const [code, rows] of perCode) {
-      const entry = buildEntry(rows, code, "wholesale");
+      const entry = buildEntry(rows, code, "wholesale", "wholesale");
       if (entry) byCode[code] = entry;
     }
     if (Object.keys(byCode).length > 0) {
@@ -332,7 +408,7 @@ async function buildRetailSnapshots(): Promise<SnapshotDoc[]> {
   for (const [date, perCode] of byDate) {
     const byCode: Record<string, SnapshotEntry> = {};
     for (const [code, list] of perCode) {
-      const entry = buildEntry(list, code, "market");
+      const entry = buildEntry(list, code, "market", "retail");
       if (entry) byCode[code] = entry;
     }
     if (Object.keys(byCode).length > 0) {
@@ -340,6 +416,161 @@ async function buildRetailSnapshots(): Promise<SnapshotDoc[]> {
     }
   }
   return docs;
+}
+
+/* ───────────────────── 糧價（米）───────────────────── */
+
+/**
+ * 糧價 → 零售與批發兩份快照。
+ *
+ * 這是唯一一份**全國各縣市、每天更新的零售價**，所以米不受「零售只有臺中」那個限制。
+ * 一支請求就回約一年半的歷史（20 縣市 × 約 500 天），走勢與划算度一開始就是滿的。
+ *
+ * 單位：零售欄位是元/公斤（直接用）、批發欄位是元/100 公斤（要除以 100）。
+ */
+async function buildRiceSnapshots(): Promise<SnapshotDoc[]> {
+  const rows = await fetchRiceRows();
+  const cutoff = addDays(todayISO(), -MAX_HISTORY_DAYS);
+
+  /** date → scope → code → 各縣市的列 */
+  const byDate = new Map<string, Map<"riceRetail" | "riceWholesale", Map<string, RawMarketRow[]>>>();
+
+  for (const row of rows) {
+    const date = rocToISO(String(row.pt_date_day ?? ""));
+    if (!date || date < cutoff) continue;
+    const cityCode = String(row.CityName ?? "");
+    const cityName = RICE_CITIES[cityCode];
+    // 對不到名稱的縣市代碼就跳過——寧可少一個縣市，也不要在畫面上顯示一串數字當市場名。
+    if (!cityName) continue;
+
+    for (const [code, ref] of Object.entries(SOURCE_MAP)) {
+      if (!ref.rice) continue;
+      const retail = toPositiveNumber(row[`pt_1${ref.rice}_price`]);
+      const wholesalePer100 = toPositiveNumber(row[`pt_2${ref.rice}_price`]);
+
+      const scopes = byDate.get(date) ?? new Map();
+      const push = (scope: "riceRetail" | "riceWholesale", avgKg: number) => {
+        const perCode = scopes.get(scope) ?? new Map<string, RawMarketRow[]>();
+        const list = perCode.get(code) ?? [];
+        list.push({
+          marketCode: `RC-${cityCode}`,
+          marketName: cityName,
+          city: cityName,
+          avgKg,
+          highKg: avgKg,
+          lowKg: avgKg,
+        });
+        perCode.set(code, list);
+        scopes.set(scope, perCode);
+      };
+
+      if (retail !== null) push("riceRetail", retail);
+      if (wholesalePer100 !== null) push("riceWholesale", wholesalePer100 / 100);
+      byDate.set(date, scopes);
+    }
+  }
+
+  const docs: SnapshotDoc[] = [];
+  for (const [date, scopes] of byDate) {
+    for (const [scope, perCode] of scopes) {
+      const byCode: Record<string, SnapshotEntry> = {};
+      for (const [code, list] of perCode) {
+        const entry = buildEntry(list, code, scope === "riceRetail" ? "market" : "wholesale", "grain");
+        if (entry) byCode[code] = entry;
+      }
+      if (Object.keys(byCode).length > 0) {
+        docs.push({ _id: `${scope}:${date}`, venue: scope, date, byCode, builtAt: new Date() });
+      }
+    }
+  }
+  return docs;
+}
+
+/* ───────────────────── 產銷履歷與有機 ───────────────────── */
+
+interface TracedDoc {
+  _id: string; // date
+  date: string;
+  byCode: Record<string, { certifiedKg: number; plainKg: number; certifiedShare: number }>;
+  builtAt: Date;
+}
+
+async function tracedColl(): Promise<Collection<TracedDoc>> {
+  return (await getDb()).collection<TracedDoc>("freshwise.traced");
+}
+
+/**
+ * 產銷履歷與有機蔬果行情 → 「有標章 vs 一般」的單價比較。
+ *
+ * 來源只給交易金額與交易量，單價要自己用「金額 ÷ 量」算——那剛好就是成交加權平均，
+ * 比挑某一筆更有代表性。`溯源代號` 是 `X` 的算「一般」，其他代號全部算「有標章」
+ * （代碼表沒公開，分不出是有機還是產銷履歷，所以不宣稱種類）。
+ *
+ * 兩邊都要有成交才有比較的意義，只有一邊的那天就不寫。
+ */
+async function buildTracedPrices(dateISO: string): Promise<TracedDoc[]> {
+  // **一天一個請求。** 這支跟農產品那支一樣「查區間就慢得不可接受」：實測單日查詢
+  // 6～12 秒、三天的查詢 37 秒（會撞到請求逾時）。而標章比較只需要最新一天的數字、
+  // 不畫走勢，所以一天一天查剛好。
+  const settled = diffDays(dateISO, todayISO()) > 2;
+  const rows = await fetchTracedRows(dateISO, dateISO, settled);
+
+  /** date → code → { certified: [金額, 量], plain: [金額, 量] } */
+  const acc = new Map<string, Map<string, { c: [number, number]; p: [number, number] }>>();
+
+  for (const row of rows) {
+    const name = typeof row.作物名稱 === "string" ? row.作物名稱 : "";
+    if (!name) continue;
+    // **這一支的交易日期是西元 `20261120`，不是民國**（同一個平台第四種日期格式）。
+    // 先試西元再退回民國：八位數字只可能是西元，民國那種是七位，不會互相誤判。
+    // 搞錯方向的話 2026 會被再加 1911 變成 3937 年，而且不會報錯——那段資料會因為
+    // 「日期在未來」而永遠查不到，畫面上只是那一區塊不出現。
+    const raw = String(row.交易日期 ?? "");
+    const date = adToISO(raw) ?? rocToISO(raw);
+    if (!date) continue;
+    const amount = toPositiveNumber(row.交易金額_元);
+    const volume = toPositiveNumber(row.交易量_公斤);
+    if (amount === null || volume === null) continue;
+    const certified = String(row.溯源代號 ?? "X").toUpperCase() !== "X";
+
+    for (const [code, ref] of Object.entries(SOURCE_MAP)) {
+      if (!ref.farm || !matchesName(name, ref.farm)) continue;
+      const perCode = acc.get(date) ?? new Map();
+      const cell = perCode.get(code) ?? { c: [0, 0] as [number, number], p: [0, 0] as [number, number] };
+      const target = certified ? cell.c : cell.p;
+      target[0] += amount;
+      target[1] += volume;
+      perCode.set(code, cell);
+      acc.set(date, perCode);
+    }
+  }
+
+  const docs: TracedDoc[] = [];
+  for (const [date, perCode] of acc) {
+    const byCode: TracedDoc["byCode"] = {};
+    for (const [code, cell] of perCode) {
+      if (cell.c[1] <= 0 || cell.p[1] <= 0) continue;
+      const certifiedKg = round1(cell.c[0] / cell.c[1]);
+      const plainKg = round1(cell.p[0] / cell.p[1]);
+      if (isOutlier(code, certifiedKg, "wholesale") || isOutlier(code, plainKg, "wholesale")) continue;
+      byCode[code] = {
+        certifiedKg,
+        plainKg,
+        certifiedShare: Math.round((cell.c[1] / (cell.c[1] + cell.p[1])) * 100),
+      };
+    }
+    if (Object.keys(byCode).length > 0) docs.push({ _id: date, date, byCode, builtAt: new Date() });
+  }
+  return docs;
+}
+
+async function persistTraced(docs: TracedDoc[]): Promise<void> {
+  if (docs.length === 0) return;
+  const coll = await tracedColl();
+  await coll.bulkWrite(
+    docs.map((doc) => ({ replaceOne: { filter: { _id: doc._id }, replacement: doc, upsert: true } })),
+    { ordered: false },
+  );
 }
 
 /* ───────────────────── 產地價（雞蛋、白肉雞）───────────────────── */
@@ -365,6 +596,7 @@ async function buildOriginSnapshots(): Promise<SnapshotDoc[]> {
         avgKg,
         highKg: avgKg,
         lowKg: avgKg,
+        source: "origin",
         // 產地價是全國一個數字，沒有分市場。
         markets: [{ marketCode: "ORIGIN", marketName: "全國產地價", city: "", avgKg, highKg: avgKg, lowKg: avgKg }],
       };
@@ -400,11 +632,15 @@ async function persist(docs: SnapshotDoc[]): Promise<void> {
     { ordered: false },
   );
 
-  // 收集每個 (場所, 品項) 這批新增的點。產地價的走勢歸到 wholesale 底下——對使用者來說
-  // 「批發行情」那一欄顯示的就是雞蛋的產地價，走勢圖也該是同一條線。
+  // 收集每個 (場所, 品項) 這批新增的點。走勢是按「使用者看到的場所」存的，所以輔助來源
+  // 要先折回它所屬的場所——產地價與米的批發價都歸到 wholesale、米的零售價歸到 market。
+  // 對使用者來說「批發行情」那一欄顯示的就是雞蛋的產地價、米的批發價，走勢圖該是同一條線。
   const incoming = new Map<string, Map<string, number>>();
   for (const doc of docs) {
-    const seriesVenue: VenueKey = doc.venue === "origin" ? "wholesale" : doc.venue;
+    const seriesVenue = SERIES_VENUE_OF_SCOPE[doc.venue];
+    // 對不到場所的 scope 就跳過。寫出去的話會變成一條永遠不會被讀到的走勢（讀取端只查
+    // `${venue}:${code}`），資料看起來有、畫面上卻是空的——這種「孤兒資料」很難發現。
+    if (!seriesVenue) continue;
     for (const [code, entry] of Object.entries(doc.byCode)) {
       const key = `${seriesVenue}:${code}`;
       const perDate = incoming.get(key) ?? new Map<string, number>();
@@ -488,6 +724,21 @@ export async function ensureFresh(): Promise<void> {
     runSync("wholesale", 4 * 60 * 60 * 1000, async () => {
       const end = todayISO();
       await persist(await buildWholesaleSnapshots(addDays(end, -(RECENT_DAYS - 1)), end));
+    }),
+    runSync("rice", 6 * 60 * 60 * 1000, async () => {
+      await persist(await buildRiceSnapshots());
+    }),
+    runSync("traced", 6 * 60 * 60 * 1000, async () => {
+      // 從今天往回找，第一天有資料就停。那五個市場週一休市、當天的資料也常常晚上才上來，
+      // 所以不能只查今天；但也不用抓一整段（見 buildTracedPrices 的說明）。
+      const end = todayISO();
+      for (let back = 0; back < 4; back++) {
+        const docs = await buildTracedPrices(addDays(end, -back));
+        if (docs.length > 0) {
+          await persistTraced(docs);
+          return;
+        }
+      }
     }),
     runSync("retail", 6 * 60 * 60 * 1000, async () => {
       await persist(await buildRetailSnapshots());
@@ -596,19 +847,25 @@ async function snapshotBefore(scope: SnapshotScope, before: string): Promise<Sna
 }
 
 /**
- * 把批發行情與產地價合成一份「批發」快照。
+ * 把同一個場所的幾份快照合成一份。
  *
- * 兩者的日期不一定相同（家禽行情常常比批發市場早一天），所以日期取比較新的那個，而品項
- * 則是各自補上——產地價只有雞蛋與白肉雞，其餘全部來自批發市場。產地價不覆蓋批發市場
- * 已經有的品項（白肉雞兩邊都有的話，批發市場的成交行情比產地價更接近消費者）。
+ * 各來源的日期不一定相同（家禽行情常常比批發市場早一天、糧價又是另一條線），所以日期
+ * 取最新的那一個，品項則各自補上。**前面的來源優先**：同一個品項兩邊都有的時候，排在
+ * 前面的那一份勝出（例如白肉雞批發市場與產地價都有，批發市場的成交行情比較接近消費者）。
  */
-function mergeWholesale(wholesale: SnapshotDoc | null, origin: SnapshotDoc | null): SnapshotDoc | null {
-  if (!wholesale) return origin;
-  if (!origin) return wholesale;
+function mergeSnapshots(docs: (SnapshotDoc | null)[]): SnapshotDoc | null {
+  const present = docs.filter((doc): doc is SnapshotDoc => !!doc);
+  if (present.length === 0) return null;
+  if (present.length === 1) return present[0];
+
+  const byCode: Record<string, SnapshotEntry> = {};
+  // 從後往前疊，前面的來源就會覆蓋後面的。
+  for (const doc of [...present].reverse()) Object.assign(byCode, doc.byCode);
+
   return {
-    ...wholesale,
-    date: wholesale.date >= origin.date ? wholesale.date : origin.date,
-    byCode: { ...origin.byCode, ...wholesale.byCode },
+    ...present[0],
+    date: present.reduce((latest, doc) => (doc.date > latest ? doc.date : latest), present[0].date),
+    byCode,
   };
 }
 
@@ -628,7 +885,13 @@ function marketOptionsOf(snap: SnapshotDoc | null): MarketOption[] {
         code: market.marketCode,
         name: market.marketName,
         city: market.city,
-        group: market.marketCode.startsWith("AQ-") ? "魚市場" : market.marketCode.startsWith("TC-") ? "臺中市公有零售市場" : "蔬果批發市場",
+        group: market.marketCode.startsWith("AQ-")
+          ? "魚市場"
+          : market.marketCode.startsWith("TC-")
+            ? "臺中市公有零售市場"
+            : market.marketCode.startsWith("RC-")
+              ? "各縣市糧價（米）"
+              : "蔬果批發市場",
       });
     }
   }
@@ -644,19 +907,21 @@ interface ReadContext {
 }
 
 async function loadContext(todayDate: string, codes: string[]): Promise<ReadContext> {
-  const [retail, wholesaleRaw, originRaw] = await Promise.all([
-    latestSnapshot("market", todayDate),
-    latestSnapshot("wholesale", todayDate),
-    latestSnapshot("origin", todayDate),
-  ]);
-  const wholesale = mergeWholesale(wholesaleRaw, originRaw);
+  /** 一個場所要讀的幾份快照（今天那份與前一份）。 */
+  async function load(venue: VenueKey) {
+    const scopes = SCOPES_OF_VENUE[venue];
+    const latest = await Promise.all(scopes.map((scope) => latestSnapshot(scope, todayDate)));
+    const prev = await Promise.all(
+      latest.map((doc, i) => (doc ? snapshotBefore(scopes[i], doc.date) : Promise.resolve(null))),
+    );
+    return { now: mergeSnapshots(latest), before: mergeSnapshots(prev) };
+  }
 
-  const [retailPrev, wholesalePrevRaw, originPrevRaw] = await Promise.all([
-    retail ? snapshotBefore("market", retail.date) : Promise.resolve(null),
-    wholesaleRaw ? snapshotBefore("wholesale", wholesaleRaw.date) : Promise.resolve(null),
-    originRaw ? snapshotBefore("origin", originRaw.date) : Promise.resolve(null),
-  ]);
-  const wholesalePrev = mergeWholesale(wholesalePrevRaw, originPrevRaw);
+  const [marketSnaps, wholesaleSnaps] = await Promise.all([load("market"), load("wholesale")]);
+  const retail = marketSnaps.now;
+  const retailPrev = marketSnaps.before;
+  const wholesale = wholesaleSnaps.now;
+  const wholesalePrev = wholesaleSnaps.before;
 
   // 統計只讀 stats，不讀 points——清單頁一次要九十幾個品項，把一年的點都搬回來會是
   // 幾百 KB，而畫面上只用到最低／最高／平均／天數四個數字。
@@ -705,8 +970,14 @@ function readQuote(
     };
   }
 
-  const direct: { venue: VenueKey; source: PriceSource } | null =
-    venue === "market" ? { venue: "market", source: "retail" } : venue === "wholesale" ? { venue: "wholesale", source: ref.poultry ? "origin" : "wholesale" } : null;
+  // 來源以快照自己記的為準（同一個場所裡不同品項可能來自不同來源），舊資料沒記的話
+  // 才退回按場所猜。
+  const direct: { venue: VenueKey; fallbackSource: PriceSource } | null =
+    venue === "market"
+      ? { venue: "market", fallbackSource: "retail" }
+      : venue === "wholesale"
+        ? { venue: "wholesale", fallbackSource: ref.poultry ? "origin" : "wholesale" }
+        : null;
 
   // 1. 這個場所本身有資料嗎
   if (direct) {
@@ -725,7 +996,7 @@ function readQuote(
         yearLowKg: stats?.lowKg ?? hit.entry.avgKg,
         yearHighKg: stats?.highKg ?? hit.entry.avgKg,
         yearAvgKg: stats?.avgKg ?? hit.entry.avgKg,
-        source: direct.source,
+        source: hit.entry.source ?? direct.fallbackSource,
         estimated: false,
         historyDays: stats?.days ?? 1,
         markets: withMarkets ? hit.entry.markets : [],
@@ -790,6 +1061,20 @@ export async function getPriceBook(venue: VenueKey, today: string, marketCode = 
   return { dataDate, quotes, markets };
 }
 
+/** 「有標章 vs 一般」的比較。只有蔬果、而且那五個回報的市場當天有成交才有。 */
+async function readTraced(code: string, onOrBefore: string): Promise<TracedCompare | undefined> {
+  const doc = await (await tracedColl()).findOne({ date: { $lte: onOrBefore } }, { sort: { date: -1 } });
+  const cell = doc?.byCode[code];
+  if (!doc || !cell || cell.plainKg <= 0) return undefined;
+  return {
+    date: doc.date,
+    certifiedKg: cell.certifiedKg,
+    plainKg: cell.plainKg,
+    percent: Math.round(((cell.certifiedKg - cell.plainKg) / cell.plainKg) * 100),
+    certifiedShare: cell.certifiedShare,
+  };
+}
+
 /** 詳情頁用：單一品項的完整資料（含各市場明細與走勢）。 */
 export async function getItemDetail(code: string, venue: VenueKey, today: string, marketCode = ""): Promise<ItemDetail | null> {
   let ctx = await loadContext(today, [code]);
@@ -812,6 +1097,6 @@ export async function getItemDetail(code: string, venue: VenueKey, today: string
     quote: readQuote(code, v, ctx, "", false),
   }));
 
-  return { quote, series, venues };
+  return { quote, series, venues, traced: await readTraced(code, today) };
 }
 

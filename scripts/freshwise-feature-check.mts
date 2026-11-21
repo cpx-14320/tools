@@ -703,13 +703,34 @@ run("開放資料的對應表", () => {
     "每一項至少有一個來源",
     mapped.every((code) => {
       const ref = sourceMap.SOURCE_MAP[code];
-      return !!(ref.farm || ref.aquatic || ref.taichung || ref.poultry);
+      return !!(ref.farm || ref.aquatic || ref.taichung || ref.poultry || ref.rice);
     }),
   );
 
   // 同一個臺中欄位被對到兩個品項的話，那一欄的價格會同時出現在兩樣菜上。
   const columns = mapped.flatMap((code) => sourceMap.SOURCE_MAP[code].taichung ?? []);
   check("臺中的欄位沒有被重複對應", new Set(columns).size === columns.length);
+
+  // 米是唯一全國各縣市都有每日零售價的來源，欄位後綴不能重複對應（不然兩種米會共用
+  // 同一欄的價格）。
+  const riceFields = mapped.map((code) => sourceMap.SOURCE_MAP[code].rice).filter(Boolean);
+  check("米的欄位後綴沒有重複", new Set(riceFields).size === riceFields.length, `${riceFields.length} 種米`);
+  check("糧食分類的品項都對到糧價來源", catalog
+    .itemsOfCategory("grain")
+    .every((item) => !!sourceMap.SOURCE_MAP[item.code]?.rice));
+  check("縣市代碼對照表有 20 個縣市", Object.keys(sourceMap.RICE_CITIES).length === 20);
+  check("縣市代碼對到的是名稱不是數字", Object.values(sourceMap.RICE_CITIES).every((n) => /[一-鿿]/.test(n)));
+
+  // 產銷履歷那支只有蔬果會回報標章，所以「有標章 vs 一般」只可能出現在有 farm 來源的
+  // 品項上。肉、蛋、米不會有，畫面上也就不會出現那個區塊。
+  const tracedCapable = mapped.filter((code) => !!sourceMap.SOURCE_MAP[code].farm);
+  check("有標章比較只適用於有批發蔬果來源的品項", tracedCapable.length > 0, `${tracedCapable.length} 項`);
+  check(
+    "肉類與糧食不會有標章比較",
+    catalog.CATALOG.filter((i) => i.category === "meat" || i.category === "grain").every(
+      (i) => !sourceMap.SOURCE_MAP[i.code]?.farm,
+    ),
+  );
 
   // 名稱比對：exclude 一定要贏過 match，不然「虱目魚肚」會被當成「虱目魚」。
   check("比對命中", sourceMap.matchesName("甘藍-初秋", { match: ["甘藍"] }));
@@ -734,10 +755,17 @@ run("開放資料的對應表", () => {
 });
 
 run("開放資料的欄位清理", () => {
-  // 民國年：農產品是 115.11.20、漁產品是 1151120，兩種都要吃。
+  // 民國年有三種格式：農產品 115.11.20（帶點補零）、漁產品 1151120（不帶點）、
+  // 糧價 115.9.9（帶點但**不補零**）。最後那種原本會被整批丟掉，症狀是「每個月的
+  // 1～9 日都沒有米價」，而且不會報錯。
   check("民國年帶點", moaClient.rocToISO("115.11.20") === "2026-11-20");
   check("民國年不帶點", moaClient.rocToISO("1151120") === "2026-11-20");
+  check("民國年帶點但不補零（糧價）", moaClient.rocToISO("115.9.9") === "2026-09-09");
+  check("月份不補零、日補零", moaClient.rocToISO("115.9.19") === "2026-09-19");
+  check("月份補零、日不補零", moaClient.rocToISO("115.11.9") === "2026-11-09");
   check("太短的日期回 null", moaClient.rocToISO("115") === null);
+  check("月份超出範圍回 null", moaClient.rocToISO("115.13.1") === null);
+  check("段數不對回 null", moaClient.rocToISO("115.11") === null);
   check("西元斜線", moaClient.adToISO("2026/11/18") === "2026-11-18");
   check("西元純數字", moaClient.adToISO("20261118") === "2026-11-18");
   check("長度不對回 null", moaClient.adToISO("2026/11") === null);

@@ -5,7 +5,7 @@
 // 行情那幾欄），所以從原始資料到畫面之間不需要再轉一層名字。
 
 /** 品項大分類。使用者在行情頁用這個切分頁，首頁的分類快捷也是這五個。 */
-export type CategoryKey = "veg" | "fruit" | "seafood" | "meat" | "egg";
+export type CategoryKey = "veg" | "fruit" | "seafood" | "meat" | "egg" | "grain";
 
 /**
  * 購買場所。這是整個工具的核心維度——同一樣菜在這三種地方的價差可以到兩倍以上，
@@ -100,10 +100,12 @@ export interface MarketQuote {
  *
  * - `retail`：臺中市公有零售市場的實際訪價（元/台斤）。最貼近「我在市場付多少」。
  * - `wholesale`：農業部批發市場的拍賣行情（元/公斤）。菜販的進貨成本。
- * - `origin`：產地價（目前只有雞蛋與白肉雞，來自家禽交易行情）。
+ * - `origin`：產地價（雞蛋、白肉雞，來自家禽交易行情）。
+ * - `grain`：糧價（白米）。**這是唯一全國各縣市都有每日零售價的來源**，所以米的零售價
+ *   不是臺中訪價，標錯會讓使用者以為那是臺中一地的價格。
  * - `derived`：**沒有這個場所的實際資料，是從別的場所乘係數推估的。**
  */
-export type PriceSource = "retail" | "wholesale" | "origin" | "derived";
+export type PriceSource = "retail" | "wholesale" | "origin" | "grain" | "derived";
 
 /** 某品項在某個場所、某一天的整合行情（已經把各市場合併成一個代表數字）。 */
 export interface PriceQuote {
@@ -182,6 +184,27 @@ export interface PriceBook {
   markets: MarketOption[];
 }
 
+/**
+ * 「有標章」與「一般」的批發行情比較，回答「有機／產銷履歷要多付多少」。
+ *
+ * 資料來自農業部的「產銷履歷與有機蔬果行情」，只有五個批發市場會回報，而且只有蔬果。
+ * 標章的種類分不出來（來源的代碼表沒有公開），所以只分「有標章／一般」兩類——不要在
+ * 畫面上宣稱那是有機還是產銷履歷。
+ */
+export interface TracedCompare {
+  /** 資料日期。 */
+  date: string;
+  /** 有標章的成交加權均價（元/公斤）。 */
+  certifiedKg: number;
+  /** 沒有標章的成交加權均價（元/公斤）。 */
+  plainKg: number;
+  /** 有標章比一般貴多少 %（負數代表反而便宜）。 */
+  percent: number;
+  /** 有標章的成交量佔比（%）——只有一兩筆成交的話那個均價不太有代表性，畫面上要讓
+   *  使用者看得到這件事。 */
+  certifiedShare: number;
+}
+
 /** 詳情頁要的一整包：今日報價（含各市場明細）、歷史走勢、三個場所的比價。 */
 export interface ItemDetail {
   quote: PriceQuote;
@@ -189,6 +212,8 @@ export interface ItemDetail {
   series: PricePoint[];
   /** 三個場所的今日價。沒有行情的場所 quote 是 null，畫面上顯示「這個場所沒有這一項」。 */
   venues: { venue: VenueKey; quote: PriceQuote | null }[];
+  /** 有標章 vs 一般的比較。只有蔬果、而且那五個市場今天有成交才有。 */
+  traced?: TracedCompare;
 }
 
 /** 市場選擇器的一個選項。**從實際資料裡長出來的**，不是寫死的清單——哪些市場今天真的

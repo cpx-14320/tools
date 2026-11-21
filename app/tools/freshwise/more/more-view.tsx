@@ -64,6 +64,16 @@ const DATA_SOURCES: readonly { name: string; detail: string; status: "live" | "n
     status: "live",
   },
   {
+    name: "糧價（農業部）",
+    detail: "白米的零售價與批發價，20 個縣市、每日更新——這是唯一一份全國各地都有的零售價。",
+    status: "live",
+  },
+  {
+    name: "產銷履歷與有機蔬果行情（農業部）",
+    detail: "五個批發市場會回報有無標章，用來算「有機／產銷履歷要多付多少」。",
+    status: "live",
+  },
+  {
     name: "公有零售市場每日蔬果價格（臺中市）",
     detail: "14 個公有零售市場的實際零售訪價，含魚蝦、豬牛雞鴨肉與蛋，元/台斤，滾動一年。",
     status: "live",

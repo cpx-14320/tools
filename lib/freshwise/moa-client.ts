@@ -73,6 +73,27 @@ export interface PoultryRow {
   [field: string]: string;
 }
 
+export interface TracedRow {
+  交易日期: string;
+  作物代號: string;
+  作物名稱: string;
+  市場代號: string;
+  市場名稱: string;
+  交易金額_元: string;
+  交易量_公斤: string;
+  /** 溯源代號。`X` 是沒有標章，其他代號是有標章（代碼表沒公開，見 fetchTracedRows）。 */
+  溯源代號: string;
+}
+
+/** 糧價的一列。欄位名稱的意思見 fetchRiceRows。 */
+export interface RiceRow {
+  /** 縣市代碼（內政部的行政區代碼，例如 63000 臺北市）。 */
+  CityName: string;
+  /** 民國年、**不補零**，例如 `115.9.9`。 */
+  pt_date_day: string;
+  [field: string]: string | number;
+}
+
 /** 臺中零售的一列：市場名稱 ＋ 訪價日期 ＋ 幾十個品項欄位（值是字串價格）。 */
 export interface TaichungRow {
   市場名稱: string;
@@ -136,10 +157,11 @@ function cached<T>(key: string, ttlMs: number, fetcher: () => Promise<T>, option
   return promise;
 }
 
-/** 單一外部請求的逾時。開放資料的伺服器偶爾會很慢（查多天的行情實測過要好幾分鐘），
- *  沒有逾時的話一個慢掉的上游就能把整個 serverless function 卡到被平台砍掉。
- *  20 秒夠臺中那份 5MB 的檔案跑完，也不至於讓呼叫端等太久。 */
-const REQUEST_TIMEOUT_MS = 20_000;
+/** 單一外部請求的逾時。開放資料的伺服器很慢：實測單日的行情查詢 6～12 秒、臺中那份
+ *  5MB 的檔案約 14 秒、而查三天的區間要 37 秒。沒有逾時的話一個慢掉的上游就能把整個
+ *  serverless function 卡到被平台砍掉，所以設一個上限；25 秒容得下上面那些正常情況，
+ *  又不會讓背景同步卡住太久。**要查一段期間的話一天一個請求**，不要靠加大這個數字。 */
+const REQUEST_TIMEOUT_MS = 25_000;
 
 async function getJson<T>(url: string): Promise<T> {
   const res = await fetch(url, {
@@ -212,6 +234,43 @@ export function fetchTaichungRetail(): Promise<TaichungRow[]> {
   return cached(`taichung:retail`, TTL.retailFile, () => getJson<TaichungRow[]>(TAICHUNG_RETAIL_URL));
 }
 
+/**
+ * 產銷履歷與有機蔬果行情（AMIS）。**只有五個批發市場回報**（台北一、台北二、三重區、
+ * 台中市、板橋區），每天晚上更新。
+ *
+ * 回傳的是交易金額與交易量，沒有單價——單價要自己用「金額 ÷ 量」算（這也是最誠實的
+ * 算法，等於成交加權平均）。`溯源代號` 的代碼表沒有公開，但實測比對過：同一天同市場
+ * 同作物的交易量加總幾乎等於農產品交易行情的總量，所以 `X` 就是「沒有標章」、其他代號
+ * 是「有產銷履歷／有機之類的標章」。因為對不出哪個代號是哪一種標章，畫面上只分「有標章
+ * ／一般」兩類，不宣稱是哪一種驗證。
+ *
+ * 日期參數跟農產品那支一樣是民國年帶點。
+ */
+export function fetchTracedRows(startISO: string, endISO: string, settled = false): Promise<TracedRow[]> {
+  const start = toROC(startISO);
+  const end = toROC(endISO);
+  return cached(`traced:${start}:${end}`, settled ? TTL.settled : TTL.recent, () =>
+    getAllPages<TracedRow>(`${MOA_BASE}/TAPData.aspx?StartDate=${start}&EndDate=${end}`),
+  );
+}
+
+/**
+ * 糧價（白米與稻穀）。**這是唯一一份全國各縣市、每天更新的零售價**——其他品項的零售訪價
+ * 只有臺中市有，米是例外。
+ *
+ * 沒有日期參數，一次回最新的 9,999 筆（20 個縣市 × 約 500 天，等於一年半的歷史），
+ * 所以一支請求就有完整歷史可以算走勢與划算度。
+ *
+ * 欄位命名要解釋一下：`pt_1*` 是零售價（元/公斤）、`pt_2*` 是批發價（**元/100 公斤**，
+ * 要除以 100）、`pt_4*` 是稻穀價（溼穀，消費者買不到，不用）。後面那一段是米種：
+ * jap＝蓬萊（梗米）、tsait＝在來硬、sangt＝在來軟、glutrt＝圓糯、glutlt＝長糯。
+ */
+export function fetchRiceRows(): Promise<RiceRow[]> {
+  return cached(`rice:all`, TTL.recent, () =>
+    getJson<RiceRow[]>(`${MOA_BASE}/RicepriceData.aspx?IsTransData=1&UnitId=266&$top=${PAGE_SIZE}`),
+  );
+}
+
 /* ───────────────────── 清理工具 ───────────────────── */
 
 /** 開放資料裡的數值有時候是字串、有時候是 0 當缺值。轉不出正數就回 null（不要回 0——
@@ -221,11 +280,31 @@ export function toPositiveNumber(value: unknown): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-/** 民國年日期 → ISO。吃 `115.11.20` 與 `1151120` 兩種格式（兩支 API 各用一種）。 */
+/**
+ * 民國年日期 → ISO。**同一個平台有三種格式**，三種都要吃：
+ *   - `115.11.20`　農產品交易行情（有點、補零）
+ *   - `1151120`　　漁產品交易行情（無點、固定長度）
+ *   - `115.9.9`　　糧價（有點、**不補零**）
+ *
+ * 不補零那種是後來接糧價才發現的：原本一律把非數字去掉再按固定長度切，`115.9.9` 會變成
+ * 五個數字 `11599`、長度不足而被整批丟掉——症狀是「每個月的 1～9 日都沒有米價」，而且
+ * 不會報錯。所以有點的格式一律按點切，不要用長度猜。
+ */
 export function rocToISO(roc: string): string | null {
-  const digits = roc.replace(/\D/g, "");
+  const text = String(roc ?? "").trim();
+
+  if (text.includes(".")) {
+    const parts = text.split(".");
+    if (parts.length !== 3) return null;
+    const [y, m, d] = parts.map((part) => Number(part));
+    if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
+    if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+    return `${y + 1911}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  }
+
+  const digits = text.replace(/\D/g, "");
   if (digits.length < 7) return null;
-  // 民國年可能是 3 位（115）或 2 位（99 年以前），這裡的資料都是 3 位。
+  // 民國年可能是 3 位（115）或 2 位（99 年以前），固定長度的那種資料都是 3 位。
   const year = Number(digits.slice(0, digits.length - 4)) + 1911;
   const month = digits.slice(-4, -2);
   const day = digits.slice(-2);

@@ -19,6 +19,7 @@ export const CATEGORIES: CategoryMeta[] = [
   { key: "seafood", name: "漁產", icon: "fish" },
   { key: "meat", name: "肉類", icon: "drumstick-bite" },
   { key: "egg", name: "蛋品", icon: "egg" },
+  { key: "grain", name: "糧食", icon: "wheat-awn" },
 ];
 
 export function categoryName(key: CategoryKey): string {
@@ -261,6 +262,15 @@ export const CATALOG: CatalogItem[] = [
   { code: "EA4", name: "鵪鶉蛋", category: "egg", aliases: [], icon: "egg", baseKg: 125, season: ALL_YEAR },
   { code: "EA5", name: "皮蛋", category: "egg", aliases: [], icon: "egg", baseKg: 145, season: ALL_YEAR },
   { code: "EA6", name: "鹹鴨蛋", category: "egg", aliases: ["鹹蛋"], icon: "egg", baseKg: 135, season: ALL_YEAR },
+
+  // ── 糧食 ──────────────────────────────────────────────────
+  // 米是唯一「全國各縣市都有每日零售價」的品項（糧價那支 API），其他品項的零售訪價
+  // 只有臺中市。baseKg 填的是批發價的量級，跟其他品項一致。
+  { code: "RA1", name: "蓬萊米", category: "grain", aliases: ["白米", "梗米", "稉米"], icon: "wheat-awn", baseKg: 38, season: ALL_YEAR, note: "一包 2 公斤約 100 元上下" },
+  { code: "RA2", name: "在來米", category: "grain", aliases: ["秈米", "在來硬"], icon: "wheat-awn", baseKg: 40, season: ALL_YEAR, note: "蘿蔔糕、碗粿用的米" },
+  { code: "RA3", name: "在來米（軟）", category: "grain", aliases: ["在來軟"], icon: "wheat-awn", baseKg: 42, season: ALL_YEAR },
+  { code: "RA4", name: "圓糯米", category: "grain", aliases: ["糯米", "圓糯"], icon: "wheat-awn", baseKg: 48, season: ALL_YEAR, note: "湯圓、油飯用的米" },
+  { code: "RA5", name: "長糯米", category: "grain", aliases: ["長糯"], icon: "wheat-awn", baseKg: 48, season: ALL_YEAR, note: "粽子、米糕用的米" },
 ];
 
 /**

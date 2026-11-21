@@ -54,6 +54,7 @@ const SOURCE_LABEL: Record<PriceSource, string> = {
   retail: "臺中市公有零售市場實際訪價",
   wholesale: "農業部批發市場成交行情",
   origin: "農業部家禽交易行情（產地價）",
+  grain: "農業部糧價（20 個縣市的訪價）",
   derived: "由其他場所的行情推估",
 };
 
@@ -179,7 +180,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
         <div className="flex items-center gap-2 border-t pt-3" style={{ borderColor: colors.borderSoft }}>
           <Hint className="flex-1">
             {formatShortDate(quote.date)}・{venueMeta(prefs.venue).name}
-            {prefs.marketCode ? `・${quote.markets[0]?.marketName ?? ""}` : markets.length > 1 ? `・${markets.length} 個市場平均` : ""}
+            {prefs.marketCode ? `・${quote.markets[0]?.marketName ?? ""}` : markets.length > 1 ? `・${markets.length} 個市場的代表價` : ""}
           </Hint>
           <PrimaryButton icon={starred ? "check" : "plus"} onClick={() => toggleBasket(code, item.name)}>
             {starred ? `已在${copy.basket}` : `加入${copy.basket}`}
@@ -242,6 +243,39 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
         </Note>
       </section>
 
+      {/* ── 有機／產銷履歷要多付多少 ───────────────────────────
+          只有蔬果、而且那五個會回報標章的批發市場當天有成交才出現。這是「超市的有機
+          蔬菜貴一倍」之外，少數有公開資料可以回答的問題。 */}
+      {detail.traced && (
+        <section className="flex flex-col gap-2">
+          <SectionTitle leaf>有機／產銷履歷要多付多少</SectionTitle>
+          <ListCard className="flex flex-col gap-3">
+            <div className="flex items-stretch gap-2">
+              <TracedTile
+                label="有標章"
+                priceKg={detail.traced.certifiedKg}
+                unit={prefs.unit}
+                highlight={detail.traced.percent > 0}
+              />
+              <TracedTile label="一般" priceKg={detail.traced.plainKg} unit={prefs.unit} />
+            </div>
+            <Note>
+              {detail.traced.percent === 0
+                ? "這一天有標章與一般的批發價幾乎一樣。"
+                : detail.traced.percent > 0
+                  ? `有產銷履歷／有機標章的批發價貴 ${detail.traced.percent}%。`
+                  : `有標章的批發價反而便宜 ${Math.abs(detail.traced.percent)}%（通常是當天的到貨品質或規格差異造成）。`}
+            </Note>
+            <Hint>
+              {formatShortDate(detail.traced.date)}・五個會回報標章的批發市場・有標章的佔當天成交量 {detail.traced.certifiedShare}%
+              {detail.traced.certifiedShare < 5 && "（佔比很低，這個均價的代表性有限）"}
+            </Hint>
+            {/* 來源的代碼表沒有公開，分不出是有機還是產銷履歷，所以不能宣稱種類。 */}
+            <Hint>資料來源沒有區分是哪一種標章（有機、產銷履歷…），這裡只分「有標章」與「一般」。</Hint>
+          </ListCard>
+        </section>
+      )}
+
       {/* ── 走勢 ─────────────────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
         <SectionTitle leaf>價格走勢</SectionTitle>
@@ -265,6 +299,14 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
       {markets.length > 0 && (
         <section className="flex flex-col gap-2">
           <SectionTitle leaf>各{copy.market}今天的價格</SectionTitle>
+          {/* 代表價怎麼算出來的要寫清楚——使用者會拿下面的清單去對上面那個數字，對不起來
+              的時候要有地方解釋。零售訪價沒有成交量可以加權，取中位數才不會被單一攤位的
+              異常價格拉走（見 prices.server.ts 的 representativePrice）。 */}
+          <Note>
+            {quote.source === "wholesale"
+              ? "上面的代表價是各市場的成交量加權平均。"
+              : "上面的代表價是各市場的中位數——訪價沒有成交量可以加權，取中位數才不會被單一攤位的異常價格拉走。"}
+          </Note>
           <DividedCard>
             {markets.map((market, index) => (
               <DividedRow key={market.marketCode}>
@@ -367,6 +409,29 @@ function BackRow({ unit, onUnitChange }: { unit: UnitKey; onUnitChange: (unit: U
         value={unit}
         onChange={(key) => onUnitChange(key as UnitKey)}
       />
+    </div>
+  );
+}
+
+/** 有標章／一般的兩格對照。 */
+function TracedTile({
+  label,
+  priceKg,
+  unit,
+  highlight = false,
+}: {
+  label: string;
+  priceKg: number;
+  unit: UnitKey;
+  highlight?: boolean;
+}) {
+  return (
+    <div
+      className="flex flex-1 flex-col gap-1 rounded-2xl px-3 py-2.5"
+      style={{ backgroundColor: highlight ? colors.warningBg : colors.surfaceSoft }}
+    >
+      <span className={text.meta}>{label}</span>
+      <PriceText priceKg={priceKg} unit={unit} size="row" showUnit={false} />
     </div>
   );
 }
