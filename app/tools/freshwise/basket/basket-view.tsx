@@ -1,6 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useCompanion } from "@/components/freshwise/companion-store";
+import { PetArtwork } from "@/components/freshwise/game-art";
+import { QuestSlip } from "@/components/freshwise/companion-widgets";
+import { newlyFilledQuantity } from "@/lib/freshwise/companions";
 import {
   AddButton,
   Callout,
@@ -43,6 +47,7 @@ import type { BasketEntry, BasketGroup, PriceBook, PriceQuote, UnitKey } from "@
 
 export function BasketView({ today, book }: { today: string; book: PriceBook }) {
   const { prefs, basketReady, basket, setBasket, toast } = useFreshwise();
+  const { record, state: companion } = useCompanion();
   const month = monthOf(today);
 
   // 開著哪一個彈窗。三個彈窗（分類編輯、項目編輯、品項選擇）各自需要知道「在哪個分類
@@ -70,7 +75,7 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
   const cost = useMemo(
     () =>
       basketCost(
-        basket.entries.map((entry) => ({ qtyCatty: entry.qtyCatty, priceKg: quotes.get(entry.code)?.avgKg ?? 0 })),
+        basket.entries.filter((entry) => quotes.has(entry.code)).map((entry) => ({ qtyCatty: entry.qtyCatty, priceKg: quotes.get(entry.code)!.avgKg })),
       ),
     [basket.entries, quotes],
   );
@@ -83,7 +88,7 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
   );
 
   return (
-    <div className="flex flex-col gap-4 px-4 pb-6 pt-5">
+    <div className="fw-page fw-basket-page">
       <PageTitle
         actions={
           <IconButton icon="plus" tone="soft" aria-label={`新增${copy.group}`} onClick={() => setGroupEditing("new")} />
@@ -94,10 +99,11 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
 
       {/* 這一籃今天大概要花多少錢。這是菜籃頁存在的理由——分開看每一樣菜多少錢沒有感覺，
           加起來的數字才有。 */}
-      <ListCard strong className="flex flex-col gap-1.5">
+      <ListCard strong className="fw-basket-summary flex flex-col gap-1.5">
+        {companion.enabled && <PetArtwork id="radish" size={100} className="fw-basket-pet" />}
         <div className="flex items-end justify-between gap-3">
           <div>
-            <Hint>今天買整籃大概要</Hint>
+            <Hint>今天買整籃大概要 · 估算</Hint>
             <p className="mt-0.5">
               <span className={text.priceBig}>{cost.counted > 0 ? formatMoney(cost.total) : "—"}</span>
               <span className={`ml-1.5 ${text.meta}`}>元</span>
@@ -115,6 +121,7 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
           </div>
         </div>
         {cost.counted === 0 && <Note>幫項目填上常買的份量（例如 2 {unitShort("catty")}），這裡就會估算整籃的金額。</Note>}
+        {basketReady && basket.entries.some((entry) => !quotes.has(entry.code)) && <Note>沒有行情的項目不計入總額，不會當成 0 元。</Note>}
       </ListCard>
 
       {/* ready 之前不要畫空狀態：localStorage 還沒讀完，這時候 basket 是預設值，先閃一次
@@ -153,7 +160,7 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
                 }
               >
                 <span className="flex items-center gap-1.5">
-                  <FaIcon icon={group.icon} size={12} color={colors.brand} />
+                  <FaIcon icon={group.icon} size={48} color={colors.brand} />
                   {group.name}
                   <span className={text.meta}>{entries.length} 項</span>
                 </span>
@@ -178,6 +185,7 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
         <AddButton onClick={() => setGroupEditing("new")}>{`新增${copy.group}`}</AddButton>
       )}
 
+      <QuestSlip />
       <Callout icon="database" tone="neutral">
         {copy.sourceNote}
       </Callout>
@@ -219,7 +227,9 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
         onClose={() => setEntryEditing(null)}
         onSave={(qtyCatty, groupId) => {
           if (entryEditing) {
-            setBasket(updateEntry(basket, entryEditing.id, { qtyCatty, groupId }));
+            const next = updateEntry(basket, entryEditing.id, { qtyCatty, groupId });
+            if (newlyFilledQuantity(basket.entries, next.entries) && book.quotes[entryEditing.code]) record({ type: "basket" });
+            setBasket(next);
             toast(copy.saved);
           }
           setEntryEditing(null);

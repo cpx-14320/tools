@@ -1,6 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useCompanion } from "@/components/freshwise/companion-store";
+import { PetArtwork } from "@/components/freshwise/game-art";
+import { QuestSlip } from "@/components/freshwise/companion-widgets";
 import Link from "next/link";
 import {
   Callout,
@@ -60,6 +63,8 @@ const SOURCE_LABEL: Record<PriceSource, string> = {
 
 export function ItemView({ code, today, detail }: { code: string; today: string; detail: ItemDetail | null }) {
   const { prefs, basket, toggleBasket, setPrefs } = useFreshwise();
+  const { record, state: companion } = useCompanion();
+  useEffect(() => { if (detail) record({ type: "view", code }); }, [code, detail, record]);
   const [rangeKey, setRangeKey] = useState("30");
   // 完整行情表預設收起來：五欄數字對「不懂買菜價格的人」是雜訊，但要自己判讀的人一定
   // 要看得到，所以給一個切換而不是二選一。
@@ -120,11 +125,12 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
   const markets = [...quote.markets].sort((a, b) => a.avgKg - b.avgKg);
 
   return (
-    <div className="flex flex-col gap-5 px-4 pb-6 pt-5">
+    <div className="fw-page fw-detail-page">
       <BackRow unit={prefs.unit} onUnitChange={(unit) => setPrefs({ unit })} />
 
       {/* ── 今日價 ─────────────────────────────────────────── */}
-      <ListCard strong className="flex flex-col gap-3">
+      <ListCard strong className="fw-detail-hero flex flex-col gap-3">
+        {companion.enabled && <PetArtwork id={companion.active} size={100} className="fw-detail-pet" />}
         <div className="flex items-start gap-3">
           <ItemIcon src={itemImage(item.code)} fallbackIcon={item.icon} alt={item.name} size={22} boxSize={48} />
           <div className="min-w-0 flex-1">
@@ -304,7 +310,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
       {/* ── 走勢 ─────────────────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
         <SectionTitle leaf>價格走勢</SectionTitle>
-        <SegmentedTabs items={RANGES} value={rangeKey} onChange={setRangeKey} />
+        <SegmentedTabs items={RANGES} value={rangeKey} onChange={(key) => { setRangeKey(key); if (key !== rangeKey && detail.series.length > 1) record({ type: "chart" }); }} />
         <ListCard className="flex flex-col gap-2">
           <PriceChart points={series} unit={prefs.unit} averageKg={reliable ? quote.yearAvgKg : undefined} />
           <div className="grid grid-cols-3 gap-2 border-t pt-2.5" style={{ borderColor: colors.borderSoft }}>
@@ -320,6 +326,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
         </ListCard>
       </section>
 
+      <QuestSlip />
       {/* ── 完整行情表（上/中/下/平均/量）───────────────────────
           這是菜價查詢的標準格式：農業部行情站與市面上的菜價網站都是這五欄，看得懂行情
           的人要的就是這張表。上面那張卡是給「不懂買菜價格的人」的結論，這張表是給要自己
@@ -475,9 +482,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
       </Callout>
 
       <div className="flex justify-center">
-        <Link href="/tools/freshwise/basket">
-          <LinkButton>去看{copy.basket} →</LinkButton>
-        </Link>
+        <Link href="/tools/freshwise/basket" className="fw-leaf-link">去看{copy.basket} →</Link>
       </div>
     </div>
   );

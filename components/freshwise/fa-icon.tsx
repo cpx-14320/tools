@@ -1,33 +1,5 @@
-/** 通用小圖示一律走 Font Awesome 的圖示字體（已經在 app/layout.tsx 全站引入），不另外
- *  準備 PNG——向量圖示可以直接用 CSS color／font-size 控制顏色與大小，不用每種顏色、
- *  每個尺寸各準備一張圖。
- *
- *  顏色有兩種給法，不要同時給：
- *   - `className`（預設 `text-[#6F947E]`，也就是 theme 的 muted）：顏色寫死在 Tailwind
- *     class 裡的情況，例如 `text-white`、`text-current`（跟著父層的文字顏色走）。
- *   - `color`：顏色是執行期才知道的值（例如依漲跌查 theme 的色票）。
- *
- *  刻意不沿用搭乘車那邊的 `text-icon` 預設值——那是 globals.css 的紫色變數，在這個綠色
- *  工具裡會突兀。
- *
- *  純裝飾用途（旁邊都有看得懂意思的文字標籤），所以 aria-hidden，不讀給螢幕報讀軟體聽。 */
-export function FaIcon({
-  icon,
-  size = 14,
-  className = "text-[#6F947E]",
-  color,
-}: {
-  /** Font Awesome 的圖示名稱（不含 fa- 前綴），例如 "carrot"、"store"。 */
-  icon: string;
-  size?: number;
-  className?: string;
-  color?: string;
-}) {
-  return (
-    <i
-      aria-hidden="true"
-      className={`fa-solid fa-${icon} ${className}`}
-      style={{ fontSize: size, lineHeight: 1, color }}
-    />
-  );
-}
+import { GameIcon, type GameIconName } from "./game-art";
+const ALIASES:Record<string,GameIconName>={house:"home","list-ul":"market",store:"market","cart-shopping":"market","truck-ramp-box":"market","basket-shopping":"basket",gear:"settings",leaf:"leaf",carrot:"veg","apple-whole":"fruit",fish:"seafood",shrimp:"seafood","drumstick-bite":"meat",egg:"egg","wheat-awn":"grain","magnifying-glass":"search",sliders:"filter",tag:"filter",plus:"seed",seedling:"leaf",pen:"pencil","pen-to-square":"pencil","calendar-xmark":"calendar",database:"book","circle-info":"book","triangle-exclamation":"notice","clipboard-check":"book",folder:"book","location-dot":"market","cloud-arrow-down":"notice","rotate-left":"leaf"};
+const GLYPHS:Record<string,string>={"chevron-left":"‹","chevron-right":"›","chevron-down":"⌄","arrow-up":"↑","arrow-trend-up":"↑","arrow-trend-down":"↓","circle-xmark":"×",check:"✓","grip-vertical":"⠿"};
+/** 舊元件介面相容層，現在使用圖片與 HTML 操作符號。 */
+export function FaIcon({icon,size=24,className="",color}:{icon:string;size?:number;className?:string;color?:string}){const legacy:Record<string,GameIconName>={"book-open":"book","watering-can":"water","bowl-food":"grain","fire-burner":"water",utensils:"basket","bread-slice":"grain","mug-hot":"water"};return GLYPHS[icon]?<span aria-hidden="true" className={`fw-functional-glyph ${className}`} style={{fontSize:Math.max(size,20),color}}>{GLYPHS[icon]}</span>:<GameIcon name={ALIASES[icon]??legacy[icon]??"leaf"} size={Math.max(24,Math.min(size,48))} className={className}/>}

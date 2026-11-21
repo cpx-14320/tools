@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { colors } from "./theme";
 
@@ -37,35 +37,64 @@ export function BottomSheetModal({
 }) {
   // createPortal 需要 document，SSR 時還沒有，掛載後才真的 portal 出去。
   const [mounted, setMounted] = useState(false);
+  const dialog = useRef<HTMLDivElement>(null);
+  const closeCallback = useRef(onClose);
+  const titleId = useId();
+  useEffect(() => { closeCallback.current = onClose; }, [onClose]);
   useEffect(() => {
     /* eslint-disable-next-line react-hooks/set-state-in-effect */
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (!open || !mounted) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const panel = dialog.current;
+    panel?.focus();
+    const keydown = (event: KeyboardEvent) => {
+      const dialogs = document.querySelectorAll('.fw-modal-paper');
+      if (dialogs[dialogs.length - 1] !== panel) return;
+      if (event.key === 'Escape') { event.preventDefault(); closeCallback.current(); }
+      if (event.key !== 'Tab') return;
+      const focusable = Array.from(panel?.querySelectorAll<HTMLElement>('button:not(:disabled),a[href],input:not(:disabled),[tabindex="0"]') ?? []).filter((element) => element.getClientRects().length);
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (!first) { event.preventDefault(); panel?.focus(); }
+      else if (event.shiftKey && (document.activeElement === first || document.activeElement === panel)) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && (document.activeElement === last || document.activeElement === panel)) { event.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', keydown);
+    return () => { document.removeEventListener('keydown', keydown); if (previous?.isConnected) previous.focus(); };
+  }, [open, mounted]);
+
   if (!open || !mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/30" />
+    <div className="fw-modal fixed inset-0 z-50" onClick={onClose}>
+      <div className="fw-modal-backdrop absolute inset-0 bg-black/30" />
       {/* 這一層刻意複製手機框容器本身的版面公式（justify-center、px-0/sm:px-4、
           h-dvh／sm:h-[850px]），不是量測卡片位置來算座標——彈窗 portal 到 body 之後，
           單純的 fixed inset-0 只會貼齊瀏覽器視窗，貼不齊卡片。兩邊用同一套公式，不管
           視窗多大，算出來的框永遠跟卡片疊在一起。 */}
-      <div className="relative flex h-full w-full justify-center px-0 py-0 sm:px-4 sm:py-6">
-        <div className="flex h-dvh w-full max-w-[430px] items-end sm:h-[850px]">
+      <div className="fw-modal-align relative flex h-full w-full justify-center px-0 py-0 sm:px-4 sm:py-6">
+        <div className="fw-modal-frame flex h-dvh w-full max-w-[430px] items-end sm:h-[850px]">
           <div
-            className={`flex max-h-[80%] w-full ${maxWidthClassName} flex-col overflow-y-auto rounded-t-[1.75rem] bg-white`}
+            ref={dialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
+            className={`fw-modal-paper flex max-h-[90%] w-full ${maxWidthClassName} flex-col overflow-y-auto rounded-t-[1.75rem] bg-white`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: colors.border }}>
-              <p className="text-base font-semibold" style={{ color: colors.ink }}>
+            <div data-modal-heading className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: colors.border }}>
+              <p id={titleId} data-modal-title className="text-base font-semibold" style={{ color: colors.ink }}>
                 {title}
               </p>
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="關閉"
-                className="grid size-8 place-items-center rounded-full transition-colors hover:bg-[#EFF7F1]"
+                className="fw-modal-close grid size-8 place-items-center rounded-full transition-colors hover:bg-[#F6EEDB]"
                 style={{ color: colors.muted }}
               >
                 ✕

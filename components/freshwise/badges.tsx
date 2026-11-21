@@ -44,7 +44,6 @@ export function ValueBadge({ value, showFair = false }: { value: ValueJudgement;
   const palette = VALUE_PALETTE[value.level];
   return (
     <Badge style={{ backgroundColor: palette.bg, color: palette.fg }}>
-      {value.level === "cheap" ? "👍 " : ""}
       {VALUE_LABEL[value.level]}
     </Badge>
   );

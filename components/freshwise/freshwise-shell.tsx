@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { FreshwiseMobileShell } from "./freshwise-mobile-shell";
 import { FreshwiseProvider } from "./store";
 import { freshwisePrefs } from "@/lib/freshwise/page-data.server";
+import { CompanionProvider } from "./companion-store";
+import "./game.css";
 
 /** 這個工具的外框：手機外觀的卡片 ＋ 客戶端狀態（偏好／菜籃／提示）的 Provider。
  *
@@ -11,8 +13,8 @@ import { freshwisePrefs } from "@/lib/freshwise/page-data.server";
 export async function FreshwiseShell({ children }: { children: ReactNode }) {
   const prefs = await freshwisePrefs();
   return (
-    <FreshwiseProvider initialPrefs={prefs}>
+    <CompanionProvider><FreshwiseProvider initialPrefs={prefs}>
       <FreshwiseMobileShell>{children}</FreshwiseMobileShell>
-    </FreshwiseProvider>
+    </FreshwiseProvider></CompanionProvider>
   );
 }

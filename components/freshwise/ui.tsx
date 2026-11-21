@@ -16,7 +16,7 @@ import { FaIcon } from "./fa-icon";
 /** 每一頁最上方的標題列（h1 ＋ 右側可選的操作區）。 */
 export function PageTitle({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-3">
+    <div className="fw-page-title flex items-start justify-between gap-3">
       <h1 className={text.pageTitle}>{children}</h1>
       {actions}
     </div>
@@ -37,8 +37,8 @@ export function SectionTitle({
   className?: string;
 }) {
   return (
-    <div className={`flex items-center gap-1.5 ${text.sectionTitle} ${className}`}>
-      {leaf && <FaIcon icon="leaf" size={11} className="text-[#5EC183]" />}
+    <div className={`fw-section-title flex items-center gap-1.5 ${text.sectionTitle} ${className}`}>
+      {leaf && <FaIcon icon="leaf" size={48} className="text-[#ADC774]" />}
       {children}
       {action && <span className="ml-auto shrink-0">{action}</span>}
     </div>
@@ -84,7 +84,7 @@ export function Callout({
       ? { bg: colors.warningBg, fg: colors.warning }
       : { bg: colors.surfaceSoft, fg: colors.muted };
   return (
-    <div className="flex items-start gap-2 rounded-2xl px-3 py-2.5" style={{ backgroundColor: palette.bg }}>
+    <div className="fw-callout flex items-start gap-2 rounded-2xl px-3 py-2.5" style={{ backgroundColor: palette.bg }}>
       <FaIcon icon={icon} size={12} className="mt-0.5 shrink-0" color={palette.fg} />
       <p className="text-xs leading-relaxed" style={{ color: palette.fg }}>
         {children}
@@ -120,7 +120,7 @@ export function PrimaryButton({
   return (
     <button
       type="button"
-      className={`shrink-0 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60 ${sizeCls} ${className}`}
+      className={`fw-primary shrink-0 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60 ${sizeCls} ${className}`}
       style={{ background: gradient.primary, boxShadow: shadow.cta }}
       {...rest}
     >
@@ -134,7 +134,7 @@ export function PrimaryButton({
 /** 次要行動（取消）——純文字按鈕。 */
 export function GhostButton({ children, className = "", ...rest }: { children: ReactNode; className?: string } & ButtonBaseProps) {
   return (
-    <button type="button" className={`px-4 py-2 text-sm text-[#6F947E] transition-colors hover:text-[#3C9A62] ${className}`} {...rest}>
+    <button type="button" className={`px-4 py-2 text-sm text-[#836A54] transition-colors hover:text-[#6E8C41] ${className}`} {...rest}>
       {children}
     </button>
   );
@@ -153,7 +153,7 @@ export function DangerButton({
   className?: string;
 } & ButtonBaseProps) {
   return (
-    <button type="button" className={`font-medium text-[#C94F6D] ${size === "sm" ? "text-xs" : "text-sm"} ${className}`} {...rest}>
+    <button type="button" className={`font-medium text-[#AE4F4A] ${size === "sm" ? "text-xs" : "text-sm"} ${className}`} {...rest}>
       {children}
     </button>
   );
@@ -164,7 +164,7 @@ export function PillButton({ children, className = "", ...rest }: { children: Re
   return (
     <button
       type="button"
-      className={`shrink-0 rounded-full bg-[#EFF7F1] px-3 py-1.5 text-xs font-medium text-[#3C9A62] ${className}`}
+      className={`shrink-0 rounded-full bg-[#F6EEDB] px-3 py-1.5 text-xs font-medium text-[#6E8C41] ${className}`}
       {...rest}
     >
       {children}
@@ -175,7 +175,7 @@ export function PillButton({ children, className = "", ...rest }: { children: Re
 /** 文字連結樣式的小按鈕。 */
 export function LinkButton({ children, className = "", ...rest }: { children: ReactNode; className?: string } & ButtonBaseProps) {
   return (
-    <button type="button" className={`shrink-0 text-xs font-medium text-[#3C9A62] ${className}`} {...rest}>
+    <button type="button" className={`shrink-0 text-xs font-medium text-[#6E8C41] ${className}`} {...rest}>
       {children}
     </button>
   );
@@ -186,7 +186,7 @@ export function AddButton({ children, className = "", ...rest }: { children: Rea
   return (
     <button
       type="button"
-      className={`w-full rounded-xl border border-dashed border-[#B9D2C2] py-2.5 text-sm font-medium text-[#3C9A62] ${className}`}
+      className={`fw-add-button w-full rounded-xl border border-dashed border-[#B3A081] py-2.5 text-sm font-medium text-[#6E8C41] ${className}`}
       {...rest}
     >
       ＋ {children}
@@ -216,14 +216,14 @@ export function IconButton({
 } & ButtonBaseProps) {
   const toneCls =
     tone === "soft"
-      ? "bg-[#EFF7F1]"
+      ? "bg-[#F6EEDB]"
       : tone === "white"
         ? "border border-white/50 bg-white/85 shadow-sm backdrop-blur"
         : "";
   return (
     <button
       type="button"
-      className={`grid shrink-0 place-items-center rounded-full text-[#3C9A62] ${toneCls} ${className}`}
+      className={`fw-icon-button grid shrink-0 place-items-center rounded-full text-[#6E8C41] ${toneCls} ${className}`}
       style={{ width: size, height: size }}
       {...rest}
     >
@@ -258,21 +258,22 @@ export function SegmentedTabs<T extends string>({
   scroll?: boolean;
   className?: string;
 }) {
-  const container = tone === "solid" ? "bg-white" : "bg-[#EFF7F1]";
+  const container = tone === "solid" ? "bg-white" : "bg-[#F6EEDB]";
   return (
     <div
-      className={`${scroll ? "no-scrollbar flex max-w-full overflow-x-auto" : "inline-flex"} items-center gap-1 rounded-full p-1 ${container} ${className}`}
+      className={`fw-segmented-tabs ${scroll ? "no-scrollbar flex max-w-full overflow-x-auto" : "inline-flex"} items-center gap-1 rounded-full p-1 ${container} ${className}`}
     >
       {items.map((item) => {
         const active = ready && value === item.key;
-        const activeCls = tone === "solid" ? "bg-[#3C9A62] text-white" : "bg-white text-[#3C9A62]";
+        const activeCls = tone === "solid" ? "bg-[#6E8C41] text-white" : "bg-white text-[#6E8C41]";
         return (
           <button
             key={item.key}
             type="button"
             onClick={() => onChange(item.key)}
+            aria-pressed={active}
             className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-              active ? activeCls : "text-[#6F947E]"
+              active ? activeCls : "text-[#836A54]"
             }`}
             style={active ? { boxShadow: shadow.pill } : undefined}
           >
@@ -297,7 +298,7 @@ export function Badge({
   style?: CSSProperties;
 }) {
   return (
-    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 ${text.badge} ${className}`} style={style}>
+    <span className={`fw-badge inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 ${text.badge} ${className}`} style={style}>
       {children}
     </span>
   );
@@ -334,12 +335,12 @@ export function Field({
   );
 }
 
-const FIELD_SHELL = "flex items-center gap-2 rounded-2xl border border-[#E0EFE5] bg-white px-3 py-3 text-left";
+const FIELD_SHELL = "fw-field flex items-center gap-2 rounded-2xl border border-[#D7C3A0] bg-white px-3 py-3 text-left";
 
 export function TextInput({ className = "", ...rest }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className={`rounded-2xl border border-[#E0EFE5] bg-white px-4 py-3 text-sm font-medium text-[#2A4A36] outline-none transition-colors placeholder:text-[#B9D2C2] focus:border-[#3C9A62] ${className}`}
+      className={`fw-input rounded-2xl border border-[#D7C3A0] bg-white px-4 py-3 text-sm font-medium text-[#624839] outline-none transition-colors placeholder:text-[#B3A081] focus:border-[#6E8C41] ${className}`}
       {...rest}
     />
   );
@@ -361,8 +362,8 @@ export function SearchInput({
   autoFocus?: boolean;
 }) {
   return (
-    <div className={FIELD_SHELL}>
-      <FaIcon icon="magnifying-glass" size={13} className="text-[#9BB9A6]" />
+    <div className={`${FIELD_SHELL} fw-search-field`}>
+      <FaIcon icon="magnifying-glass" size={13} className="text-[#8C7864]" />
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -370,12 +371,13 @@ export function SearchInput({
           if (e.key === "Enter" && onSubmit) onSubmit();
         }}
         placeholder={placeholder}
+        aria-label={placeholder}
         autoFocus={autoFocus}
-        className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[#2A4A36] outline-none placeholder:text-[#B9D2C2]"
+        className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[#624839] outline-none placeholder:text-[#B3A081]"
       />
       {value && (
         <button type="button" onClick={() => onChange("")} aria-label="清除" className="shrink-0">
-          <FaIcon icon="circle-xmark" size={14} className="text-[#B9D2C2]" />
+          <FaIcon icon="circle-xmark" size={14} className="text-[#B3A081]" />
         </button>
       )}
     </div>
@@ -408,9 +410,9 @@ export function SelectButton({
 }) {
   return (
     <button type="button" onClick={onClick} className={`${FIELD_SHELL} ${className}`}>
-      {icon && <FaIcon icon={icon} size={13} className="text-[#6F947E]" />}
+      {icon && <FaIcon icon={icon} size={13} className="text-[#836A54]" />}
       {children ?? <span className={`flex-1 truncate ${value ? text.bodyStrong : text.placeholder}`}>{value || placeholder}</span>}
-      {chevron && <FaIcon icon="chevron-down" size={12} className="text-[#B9D2C2]" />}
+      {chevron && <FaIcon icon="chevron-down" size={12} className="text-[#B3A081]" />}
     </button>
   );
 }
@@ -429,7 +431,7 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className="relative h-6 w-10 shrink-0 rounded-full transition-colors"
+      className="fw-switch relative h-6 w-10 shrink-0 rounded-full transition-colors"
       style={{ backgroundColor: checked ? colors.brand : colors.border }}
     >
       <span
@@ -455,7 +457,7 @@ export function ListCard({
   strong?: boolean;
 } & Omit<HTMLAttributes<HTMLDivElement>, "className" | "children" | "style">) {
   return (
-    <div className={`rounded-2xl bg-white p-3 ${className}`} style={{ boxShadow: strong ? shadow.cardStrong : shadow.card }} {...rest}>
+    <div className={`fw-paper rounded-2xl bg-white p-3 ${className}`} style={{ boxShadow: strong ? shadow.cardStrong : shadow.card }} {...rest}>
       {children}
     </div>
   );
@@ -465,7 +467,7 @@ export function ListCard({
 export function DividedCard({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={`flex flex-col divide-y divide-[#EEF7F0] overflow-hidden rounded-2xl bg-white ${className}`}
+      className={`fw-notebook flex flex-col divide-y divide-[#E9DFC8] overflow-hidden rounded-2xl bg-white ${className}`}
       style={{ boxShadow: shadow.card }}
     >
       {children}
@@ -483,7 +485,7 @@ export function DividedRow({
   onClick?: () => void;
   className?: string;
 }) {
-  const cls = `flex w-full items-center gap-3 px-4 py-3 text-left ${onClick ? "transition-colors hover:bg-[#F6FBF7]" : ""} ${className}`;
+  const cls = `flex w-full items-center gap-3 px-4 py-3 text-left ${onClick ? "transition-colors hover:bg-[#FCF7EB]" : ""} ${className}`;
   if (!onClick) return <div className={cls}>{children}</div>;
   return (
     <button type="button" onClick={onClick} className={cls}>
@@ -495,7 +497,7 @@ export function DividedRow({
 /** 有外框、可內部捲動的清單盒（品項選擇、市場清單）。 */
 export function ScrollList({ children, className = "", divided = false }: { children: ReactNode; className?: string; divided?: boolean }) {
   return (
-    <div className={`flex flex-col overflow-y-auto rounded-2xl border border-[#EEF7F0] ${divided ? "divide-y divide-[#EEF7F0]" : ""} ${className}`}>
+    <div className={`flex flex-col overflow-y-auto rounded-2xl border border-[#E9DFC8] ${divided ? "divide-y divide-[#E9DFC8]" : ""} ${className}`}>
       {children}
     </div>
   );
@@ -507,7 +509,7 @@ export function ScrollListRow({ children, onClick, className = "" }: { children:
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center justify-between gap-2 px-4 py-2.5 text-left transition-colors hover:bg-[#F6FBF7] ${className}`}
+      className={`flex items-center justify-between gap-2 px-4 py-2.5 text-left transition-colors hover:bg-[#FCF7EB] ${className}`}
     >
       {children}
     </button>
@@ -524,7 +526,7 @@ export function EmptyState({ icon, title, description, action }: { icon: string;
   return (
     <div className="flex flex-col items-center gap-2.5 px-6 py-10 text-center">
       <div className="grid size-14 place-items-center rounded-2xl" style={{ backgroundColor: colors.surfaceSoft }}>
-        <FaIcon icon={icon} size={22} className="text-[#9BB9A6]" />
+        <FaIcon icon={icon} size={22} className="text-[#8C7864]" />
       </div>
       <p className={text.sectionTitle}>{title}</p>
       {description && <Hint center>{description}</Hint>}
@@ -535,7 +537,7 @@ export function EmptyState({ icon, title, description, action }: { icon: string;
 
 /** 彈窗裡「一則／一組」的外框。 */
 export function EditorItemCard({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`flex flex-col gap-2.5 rounded-2xl border border-[#EEF7F0] p-3 ${className}`}>{children}</div>;
+  return <div className={`flex flex-col gap-2.5 rounded-2xl border border-[#E9DFC8] p-3 ${className}`}>{children}</div>;
 }
 
 /** 彈窗裡每一則的標題列：左邊「第 N 項」、右邊刪除，中間可放拖曳握把。 */
@@ -572,7 +574,7 @@ export function DragHandle({ label, ...rest }: { label: string } & ButtonHTMLAtt
     <button
       type="button"
       aria-label={label}
-      className="grid size-7 shrink-0 place-items-center rounded-lg text-[#B9D2C2] transition-colors hover:bg-[#EFF7F1] hover:text-[#3C9A62]"
+      className="fw-drag-handle grid size-7 shrink-0 place-items-center rounded-lg text-[#B3A081] transition-colors hover:bg-[#F6EEDB] hover:text-[#6E8C41]"
       {...rest}
     >
       <FaIcon icon="grip-vertical" size={13} className="text-current" />

@@ -5,7 +5,8 @@ import type { ReactNode } from "react";
 import { ItemIcon } from "./item-icon";
 import { PriceText } from "./price-text";
 import { EstimatedBadge, SeasonBadge, TrendBadge, ValueBadge } from "./badges";
-import { colors, shadow, text } from "./theme";
+import { shadow, text } from "./theme";
+import { GameIcon } from "./game-art";
 import { itemImage } from "@/lib/freshwise/catalog";
 import { historyLabel } from "@/lib/freshwise/price";
 import type { PriceRow } from "@/lib/freshwise/search";
@@ -50,15 +51,15 @@ export function ItemRow({
       {/* 圖片還沒放進 public/freshwise/items/ 之前，會自動顯示 Font Awesome 的向量圖示。 */}
       <ItemIcon src={itemImage(item.code)} fallbackIcon={item.icon} alt={item.name} size={20} boxSize={40} />
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
+      <div className="fw-item-copy min-w-0 flex-1">
+        <div className="fw-item-name flex items-center gap-1.5">
           <span className={`truncate ${text.cardTitle}`}>{item.name}</span>
           {inSeason && <SeasonBadge />}
           {quote.estimated && <EstimatedBadge />}
         </div>
         {/* 說明文字：呼叫端沒指定時自動產生。不要留空——空的那一行會讓每一列高度不一樣，
             清單看起來像壞掉。 */}
-        <div className={`mt-0.5 truncate ${text.meta}`}>{meta ?? defaultMeta(row)}</div>
+        <div className={`fw-item-meta mt-0.5 ${text.meta}`}>{meta ?? defaultMeta(row)}</div>
       </div>
 
       <div className="flex shrink-0 flex-col items-end gap-1">
@@ -81,7 +82,7 @@ export function ItemRow({
   );
 
   return (
-    <div className="flex items-center gap-1.5 rounded-2xl bg-white px-3 py-3" style={{ boxShadow: shadow.card }}>
+    <div className="fw-item-row flex items-center gap-1.5" style={{ boxShadow: shadow.card }}>
       {leading}
       {href ? (
         <Link href={href} className="flex min-w-0 flex-1 items-center gap-3">
@@ -99,15 +100,13 @@ export function ItemRow({
           type="button"
           onClick={onToggleStar}
           aria-label={starred ? `將${item.name}從菜籃移除` : `把${item.name}加入菜籃`}
-          className="grid size-9 shrink-0 place-items-center rounded-full transition-colors hover:bg-[#EFF7F1]"
+          className="fw-item-toggle"
+          aria-pressed={starred}
         >
           {/* 實心星＝已在菜籃、空心星＝還沒加。只用顏色區分的話（都是實心星，一個綠一個
               灰）在淺色底上很難一眼分辨，也對色弱使用者不友善，所以連形狀一起換。 */}
-          <i
-            aria-hidden="true"
-            className={starred ? "fa-solid fa-star" : "fa-regular fa-star"}
-            style={{ fontSize: 15, color: starred ? colors.brand : colors.placeholder }}
-          />
+          <GameIcon name={starred ? "basket" : "seed"} size={32} />
+          <small aria-hidden="true">{starred ? "✓" : "+"}</small>
         </button>
       )}
     </div>

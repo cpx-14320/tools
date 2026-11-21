@@ -1,179 +1,43 @@
 "use client";
-
-import { useMemo, useState } from "react";
-import { Callout, EmptyState, GhostButton, Hint, LinkButton, PageTitle, SearchInput, SegmentedTabs } from "@/components/freshwise/ui";
-import { ItemRow } from "@/components/freshwise/item-row";
-import { GoTopButton } from "@/components/freshwise/go-top-button";
-import { MarketPickerModal } from "@/components/freshwise/market-picker-modal";
-import { useFreshwise } from "@/components/freshwise/store";
-import { colors, copy, text } from "@/components/freshwise/theme";
-import { FaIcon } from "@/components/freshwise/fa-icon";
-import { isInBasket } from "@/lib/freshwise/basket";
-import { CATEGORIES, VENUES, venueMeta } from "@/lib/freshwise/catalog";
-import { formatShortDate } from "@/lib/freshwise/dates";
-import { filterRows, rowsFromBook, sortRows, SORT_OPTIONS, type SortKey } from "@/lib/freshwise/search";
-import { unitLabel } from "@/lib/freshwise/price";
-import type { CategoryKey, PriceBook, VenueKey } from "@/lib/freshwise/types";
-
-const VENUE_TABS = VENUES.map((v) => ({ key: v.key, label: v.name, icon: v.icon }));
-const CATEGORY_TABS: readonly { key: CategoryKey | ""; label: string }[] = [
-  { key: "", label: "全部" },
-  ...CATEGORIES.map((c) => ({ key: c.key as CategoryKey | "", label: c.name })),
-];
-
-/** 清單超過這個長度才顯示「回到頂部」。短清單按鈕只是多一個擋住內容的圓圈。 */
-const GO_TOP_THRESHOLD = 8;
-
-export function BrowseView({
-  today,
-  book,
-  initialKeyword,
-  initialCategory,
-}: {
-  today: string;
-  book: PriceBook;
-  initialKeyword: string;
-  initialCategory: CategoryKey | "";
-}) {
-  const { prefs, setVenue, setMarket, basket, toggleBasket } = useFreshwise();
-
-  const [keyword, setKeyword] = useState(initialKeyword);
-  const [category, setCategory] = useState<CategoryKey | "">(initialCategory);
-  const [sort, setSort] = useState<SortKey>("recommended");
-  const [inSeasonOnly, setInSeasonOnly] = useState(false);
-  const [cheapOnly, setCheapOnly] = useState(false);
-  const [measuredOnly, setMeasuredOnly] = useState(false);
-  const [marketPickerOpen, setMarketPickerOpen] = useState(false);
-
-  const venue = venueMeta(prefs.venue);
-
-  // 價格是伺服器端算好的，這裡只做攤平、篩選與排序——打字搜尋不會重新向伺服器要資料。
-  const allRows = useMemo(() => rowsFromBook(book.quotes, today), [book.quotes, today]);
-  const rows = useMemo(
-    () => sortRows(filterRows(allRows, { category, keyword, inSeasonOnly, cheapOnly, measuredOnly }), sort),
-    [allRows, category, keyword, inSeasonOnly, cheapOnly, measuredOnly, sort],
-  );
-
-  const filtering = inSeasonOnly || cheapOnly || measuredOnly || !!keyword.trim() || !!category;
-  const estimatedCount = allRows.filter((row) => row.quote.estimated).length;
-
-  return (
-    <div className="flex flex-col gap-4 px-4 pb-6 pt-5">
-      <PageTitle>行情</PageTitle>
-
-      <SegmentedTabs items={VENUE_TABS} value={prefs.venue} onChange={(key: VenueKey) => setVenue(key)} tone="solid" scroll />
-
-      <div className="flex items-center justify-between gap-2">
-        <Hint>
-          {formatShortDate(book.dataDate)}・{venue.name}・{unitLabel(prefs.unit)}
-        </Hint>
-        <LinkButton onClick={() => setMarketPickerOpen(true)}>
-          {prefs.marketCode ? (book.markets.find((m) => m.code === prefs.marketCode)?.name ?? "全部市場") : "全部市場"} ⌄
-        </LinkButton>
-      </div>
-
-      {prefs.venue === "super" && <Callout icon="triangle-exclamation">{copy.estimatedNote}</Callout>}
-      {prefs.venue === "market" && estimatedCount > 0 && (
-        <Callout icon="triangle-exclamation">{copy.retailCoverageNote}</Callout>
-      )}
-
-      <SearchInput value={keyword} onChange={setKeyword} placeholder="搜尋品項（高麗菜、虱目魚…）" />
-
-      <SegmentedTabs items={CATEGORY_TABS} value={category} onChange={setCategory} scroll />
-
-      {/* 排序與篩選開關。排序用分頁、篩選用可開關的膠囊——兩者的差別是「排序永遠只有一個
-          生效、篩選可以同時生效」，形狀不同使用者才不會誤以為篩選也是互斥的。 */}
-      <div className="flex flex-col gap-2">
-        <SegmentedTabs items={SORT_OPTIONS} value={sort} onChange={setSort} scroll />
-        <div className="no-scrollbar flex items-center gap-2 overflow-x-auto">
-          <FilterPill icon="leaf" label="只看當季" active={inSeasonOnly} onClick={() => setInSeasonOnly((v) => !v)} />
-          <FilterPill icon="tag" label="只看划算" active={cheapOnly} onClick={() => setCheapOnly((v) => !v)} />
-          {/* 「只看實際訪價」是這個工具特有的篩選：使用者如果不想看推估值，應該有辦法
-              把它們藏起來，而不是只能自己認那個「估算」徽章。 */}
-          <FilterPill icon="clipboard-check" label="只看實際訪價" active={measuredOnly} onClick={() => setMeasuredOnly((v) => !v)} />
-          {filtering && (
-            <GhostButton
-              className="ml-auto shrink-0 !px-2 !text-xs"
-              onClick={() => {
-                setKeyword("");
-                setCategory("");
-                setInSeasonOnly(false);
-                setCheapOnly(false);
-                setMeasuredOnly(false);
-              }}
-            >
-              清除條件
-            </GhostButton>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <Hint>
-          共 {rows.length} 項{filtering && allRows.length !== rows.length ? `（全部 ${allRows.length} 項）` : ""}
-        </Hint>
-        {/* 星星的意思要寫出來一次。只放一顆圖示的話，使用者得自己猜那是收藏、評分還是
-            「推薦」。 */}
-        <Hint>按 ☆ 加進{copy.basket}</Hint>
-      </div>
-
-      <div className="flex flex-col gap-2.5">
-        {rows.length === 0 ? (
-          <EmptyState
-            icon="magnifying-glass"
-            title={allRows.length === 0 ? "這個場所今天還沒有行情" : "沒有符合條件的品項"}
-            description={
-              allRows.length === 0
-                ? "資料來源可能還沒更新，或這個市場今天沒有交易。換個場所或市場看看。"
-                : keyword.trim()
-                  ? `找不到「${keyword.trim()}」，換個說法或清掉其他條件試試。`
-                  : "把篩選條件放寬一點試試。"
-            }
-          />
-        ) : (
-          rows.map((row) => (
-            <ItemRow
-              key={row.item.code}
-              row={row}
-              unit={prefs.unit}
-              href={`/tools/freshwise/browse/${row.item.code}`}
-              starred={isInBasket(basket, row.item.code)}
-              onToggleStar={() => toggleBasket(row.item.code, row.item.name)}
-            />
-          ))
-        )}
-      </div>
-
-      <GoTopButton visible={rows.length >= GO_TOP_THRESHOLD} />
-
-      <MarketPickerModal
-        open={marketPickerOpen}
-        venue={prefs.venue}
-        value={prefs.marketCode}
-        markets={book.markets}
-        onClose={() => setMarketPickerOpen(false)}
-        onConfirm={(marketCode) => {
-          setMarket(marketCode);
-          setMarketPickerOpen(false);
-        }}
-      />
-    </div>
-  );
+import {useMemo,useState} from "react";
+import {Callout,EmptyState,GhostButton,Hint,PageTitle,SearchInput,SegmentedTabs} from "@/components/freshwise/ui";
+import {ItemRow} from "@/components/freshwise/item-row";
+import {GameIcon} from "@/components/freshwise/game-art";
+import {MarketContext} from "@/components/freshwise/market-context";
+import {GoTopButton} from "@/components/freshwise/go-top-button";
+import {useFreshwise} from "@/components/freshwise/store";
+import {colors,copy,text} from "@/components/freshwise/theme";
+import {isInBasket} from "@/lib/freshwise/basket";
+import {CATEGORIES} from "@/lib/freshwise/catalog";
+import {filterRows,rowsFromBook,sortRows,SORT_OPTIONS,type SortKey} from "@/lib/freshwise/search";
+import {unitLabel} from "@/lib/freshwise/price";
+import type {CategoryKey,PriceBook} from "@/lib/freshwise/types";
+export function BrowseView({today,book,initialKeyword,initialCategory}:{today:string;book:PriceBook;initialKeyword:string;initialCategory:CategoryKey|""}){
+ const {prefs,basket,toggleBasket}=useFreshwise();
+ const [keyword,setKeyword]=useState(initialKeyword),[category,setCategory]=useState<CategoryKey|"">(initialCategory),[sort,setSort]=useState<SortKey>("recommended");
+ const [inSeasonOnly,setInSeasonOnly]=useState(false),[cheapOnly,setCheapOnly]=useState(false),[measuredOnly,setMeasuredOnly]=useState(false),[filtersOpen,setFiltersOpen]=useState(false),[sortOpen,setSortOpen]=useState(false);
+ const allRows=useMemo(()=>rowsFromBook(book.quotes,today),[book.quotes,today]);
+ const rows=useMemo(()=>sortRows(filterRows(allRows,{category,keyword,inSeasonOnly,cheapOnly,measuredOnly}),sort),[allRows,category,keyword,inSeasonOnly,cheapOnly,measuredOnly,sort]);
+ const activeFilters=Number(inSeasonOnly)+Number(cheapOnly)+Number(measuredOnly);
+ const filtering=!!activeFilters||!!keyword.trim()||!!category;
+ const estimatedCount=allRows.filter(row=>row.quote.estimated).length;
+ function clear(){setKeyword("");setCategory("");setInSeasonOnly(false);setCheapOnly(false);setMeasuredOnly(false)}
+ return <div className="fw-page fw-browse-page">
+ <PageTitle>逛逛行情</PageTitle><p className="fw-helper-note">先看看，再決定今天買什麼。</p>
+ <SearchInput value={keyword} onChange={setKeyword} placeholder="搜尋食材或常用名稱"/>
+ <MarketContext book={book} today={today}/>
+ <div className="fw-category-shelf" role="group" aria-label="食材分類"><button type="button" aria-pressed={!category} onClick={()=>setCategory("")}><GameIcon name="book" size={40}/><span>全部</span></button>{CATEGORIES.map(c=><button key={c.key} type="button" aria-pressed={category===c.key} onClick={()=>setCategory(c.key)}><GameIcon name={c.key} size={40}/><span>{c.name}</span></button>)}</div>
+ <div className="fw-list-toolbar"><button type="button" className="fw-filter-toggle" aria-expanded={sortOpen} onClick={()=>setSortOpen(!sortOpen)}><GameIcon name="pencil" size={28}/>{SORT_OPTIONS.find(s=>s.key===sort)?.label} ⌄</button><button type="button" className="fw-filter-toggle" aria-expanded={filtersOpen} onClick={()=>setFiltersOpen(!filtersOpen)}><GameIcon name="filter" size={32}/>篩選{activeFilters? ` ${activeFilters}`:""}</button></div>
+ {sortOpen&&<SegmentedTabs items={SORT_OPTIONS} value={sort} onChange={value=>{setSort(value);setSortOpen(false)}} scroll/>}
+ {filtersOpen&&<div className="fw-filter-panel"><div className="fw-filter-pills"><FilterPill label="只看當季" active={inSeasonOnly} onClick={()=>setInSeasonOnly(!inSeasonOnly)}/><FilterPill label="只看划算" active={cheapOnly} onClick={()=>setCheapOnly(!cheapOnly)}/><FilterPill label="只看實際訪價" active={measuredOnly} onClick={()=>setMeasuredOnly(!measuredOnly)}/></div>{filtering&&<GhostButton onClick={clear}>清除條件</GhostButton>}</div>}
+ {prefs.venue==="super"&&<Callout>{copy.estimatedNote}</Callout>}
+ {prefs.venue==="market"&&estimatedCount>0&&<Callout>{copy.retailCoverageNote}</Callout>}
+ <div className="flex items-center justify-between gap-2"><h2 className={text.sectionTitle}>{category?CATEGORIES.find(c=>c.key===category)?.name:"食材"}行情</h2><Hint>共 {rows.length} 項 · {unitLabel(prefs.unit)}</Hint></div>
+ {filtering&&<div className="flex items-center justify-between"><Hint>正在套用查詢條件</Hint><GhostButton onClick={clear}>清除條件</GhostButton></div>}
+ <div className="fw-price-list">{rows.length?rows.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`} starred={isInBasket(basket,row.item.code)} onToggleStar={()=>toggleBasket(row.item.code,row.item.name)}/>):<EmptyState icon="magnifying-glass" title={allRows.length?"沒有符合條件的食材":"這個場所目前還沒有行情"} description={allRows.length?"試試其他名稱，或放寬分類和篩選條件。":"資料來源可能尚未更新，換個場所或市場看看。"}/>}</div>
+ <p className="fw-helper-note flex items-center gap-2"><GameIcon name="seed" size={30}/>點種子袋，加入我的菜籃。</p>
+ <Callout icon="database" tone="neutral">{copy.sourceNote}</Callout>
+ <GoTopButton visible={rows.length>=8}/>
+ </div>
 }
-
-/** 可開關的篩選膠囊。選中是品牌綠填滿，沒選中是淡綠底——跟 SegmentedTabs 的選中態長得
- *  不一樣，使用者才分得出「這是開關」不是「這是分頁」。 */
-function FilterPill({ icon, label, active, onClick }: { icon: string; label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 ${text.badge}`}
-      style={{ backgroundColor: active ? colors.brand : colors.surfaceSoft, color: active ? "#fff" : colors.muted }}
-    >
-      <FaIcon icon={icon} size={11} className="" color={active ? "#fff" : colors.faint} />
-      {label}
-    </button>
-  );
-}
+function FilterPill({label,active,onClick}:{label:string;active:boolean;onClick:()=>void}){return <button type="button" onClick={onClick} aria-pressed={active} className={`rounded-full px-3 py-1.5 ${text.badge}`} style={{backgroundColor:colors.surfaceSoft,color:colors.ink}}>{label}{active?" ✓":""}</button>}

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { CompanionOptions } from "@/components/freshwise/companion-widgets";
+import { useCompanion } from "@/components/freshwise/companion-store";
 import Link from "next/link";
 import {
   Callout,
@@ -95,14 +97,16 @@ export function MoreView({
   itemCount: number;
 }) {
   const { prefs, setPrefs, setVenue, setMarket, setBasket } = useFreshwise();
+  const { reset: resetCompanions } = useCompanion();
   const [marketPickerOpen, setMarketPickerOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
 
   const venue = venueMeta(prefs.venue);
 
   return (
-    <div className="flex flex-col gap-5 px-4 pb-6 pt-5">
-      <PageTitle>設定</PageTitle>
+    <div className="fw-page fw-settings-page">
+      <PageTitle>我的小手帳</PageTitle>
+      <CompanionOptions />
 
       {/* ── 預設看哪裡的價格 ───────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
@@ -195,7 +199,7 @@ export function MoreView({
         <SectionTitle leaf>這個工具的資料</SectionTitle>
         <ListCard className="flex flex-col gap-2.5">
           <Note>
-            {copy.basket}目前存在這台裝置的瀏覽器裡，換裝置或清掉瀏覽器資料就不見了。偏好設定存在 cookie（所以伺服器算價格時就知道你要看哪個場所）。
+            {copy.basket}與夥伴進度目前保存在這台裝置，換裝置不會自動同步。
           </Note>
           <div className="flex items-center gap-3">
             <button
@@ -252,7 +256,7 @@ export function MoreView({
       <EditorSheet
         open={resetOpen}
         title="清除全部資料"
-        description={`${copy.basket}與偏好設定都會被清掉，回到第一次使用的狀態。這個動作沒辦法復原。`}
+        description={`${copy.basket}、夥伴進度與偏好設定都會被清掉，回到第一次使用的狀態。這個動作沒辦法復原。`}
         onClose={() => setResetOpen(false)}
         footer={
           <>
@@ -264,6 +268,7 @@ export function MoreView({
               onClick={() => {
                 // 菜籃（localStorage）跟偏好（cookie）都清掉，再把記憶體裡的狀態設回預設值。
                 clearFreshwiseStorage();
+                resetCompanions();
                 setBasket(defaultBasket());
                 setVenue("market");
                 setPrefs({ unit: "catty", alertPercent: 15, showAdvice: true });

@@ -13,53 +13,53 @@
 
 export const colors = {
   /** 主要文字、標題、價格數字 */
-  ink: "#2A4A36",
+  ink: "#624839",
   /** 次要說明文字、欄位小標 */
-  muted: "#6F947E",
+  muted: "#836A54",
   /** 更淡的輔助文字：空狀態、載入中、列表附註 */
-  faint: "#9BB9A6",
+  faint: "#8C7864",
   /** placeholder、箭頭等「還沒填 / 純裝飾」的文字 */
-  placeholder: "#B9D2C2",
+  placeholder: "#B3A081",
   /** 一般邊框（輸入框、選擇器、彈窗標題列分隔線） */
-  border: "#E0EFE5",
+  border: "#D7C3A0",
   /** 卡片內部的淡分隔線 */
-  borderSoft: "#EEF7F0",
+  borderSoft: "#E9DFC8",
   /** 虛線「新增」按鈕的邊框 */
-  borderDashed: "#B9D2C2",
+  borderDashed: "#B3A081",
   /** 淡綠底：pill 選單底、hover 底、列尾小按鈕底 */
-  surfaceSoft: "#EFF7F1",
+  surfaceSoft: "#F6EEDB",
   /** 選中態底色 */
-  surfaceActive: "#E4F2E9",
+  surfaceActive: "#E1EDC4",
   /** 更淡的 hover 底（清單列） */
-  surfaceHover: "#F6FBF7",
+  surfaceHover: "#FCF7EB",
   /** 品牌綠 */
-  brand: "#3C9A62",
+  brand: "#6E8C41",
   /** 品牌綠漸層亮端 */
-  brandLight: "#5EC183",
+  brandLight: "#ADC774",
   /** 骨架色塊 */
   skeleton: "#DCECE1",
 
   /** 漲價——台灣看盤習慣漲紅跌綠，買菜的人看到紅色就知道「這個今天貴」。刻意不用正紅，
    *  用偏磚紅的橘紅，跟底下的刪除紅（negative）分得開。 */
-  up: "#D4553F",
-  upBg: "#FBEAE4",
+  up: "#B5503E",
+  upBg: "#FBE9DE",
   /** 跌價——對買菜的人是好消息。這個綠比品牌綠更深、彩度更低，不會跟按鈕的品牌綠搞混。 */
-  down: "#2E8F6B",
-  downBg: "#E2F3EA",
+  down: "#4F762F",
+  downBg: "#E9F0D3",
 
   /** 提醒：當季標籤、休市公告、估算值說明。 */
-  warning: "#B5812B",
-  warningBg: "#FAF1DD",
+  warning: "#92611D",
+  warningBg: "#FFF0C7",
   /** 破壞性操作（刪除分類／項目）與錯誤訊息。 */
-  negative: "#C94F6D",
-  negativeBg: "#FCEDF1",
+  negative: "#AE4F4A",
+  negativeBg: "#FBE9DF",
 } as const;
 
 export const gradient = {
   /** 主要行動按鈕的漸層 */
-  primary: `linear-gradient(90deg, ${colors.brandLight}, ${colors.brand})`,
+  primary: "linear-gradient(180deg, #E7EFBF, #C7DA91)",
   /** 首頁主視覺卡（今日快報）的底色 */
-  hero: "linear-gradient(135deg, #4FB278 0%, #3C9A62 52%, #2F7F55 100%)",
+  hero: "linear-gradient(135deg, #4FB278 0%, #6E8C41 52%, #2F7F55 100%)",
 } as const;
 
 export const shadow = {
@@ -110,21 +110,21 @@ export const radius = {
  */
 export const text = {
   heroTitle: "text-2xl font-bold leading-snug",
-  pageTitle: "text-xl font-bold text-[#2A4A36]",
-  priceBig: "text-[28px] font-bold leading-none text-[#2A4A36]",
-  priceRow: "text-[17px] font-bold leading-none text-[#2A4A36]",
-  sectionTitle: "text-sm font-semibold text-[#2A4A36]",
-  cardTitle: "text-sm font-semibold text-[#2A4A36]",
-  body: "text-sm text-[#2A4A36]",
-  bodyStrong: "text-sm font-medium text-[#2A4A36]",
-  label: "text-xs font-medium text-[#6F947E]",
-  note: "text-xs text-[#6F947E]",
-  hint: "text-xs text-[#9BB9A6]",
-  error: "text-xs text-[#C94F6D]",
-  meta: "text-[11px] text-[#6F947E]",
-  badge: "text-[11px] font-medium",
-  micro: "text-[10px]",
-  placeholder: "text-sm text-[#B9D2C2]",
+  pageTitle: "text-[26px] font-bold leading-snug text-[#624839]",
+  priceBig: "text-[38px] font-bold leading-none text-[#624839]",
+  priceRow: "text-[22px] font-bold leading-none text-[#624839]",
+  sectionTitle: "text-[20px] font-semibold text-[#624839]",
+  cardTitle: "text-base font-semibold text-[#624839]",
+  body: "text-base text-[#624839]",
+  bodyStrong: "text-base font-medium text-[#624839]",
+  label: "text-[13px] font-medium text-[#836A54]",
+  note: "text-[13px] text-[#836A54]",
+  hint: "text-[13px] text-[#8C7864]",
+  error: "text-xs text-[#AE4F4A]",
+  meta: "text-xs text-[#836A54]",
+  badge: "text-xs font-medium",
+  micro: "text-[11px]",
+  placeholder: "text-sm text-[#B3A081]",
 } as const;
 
 /** 間距規範——不要每個頁面自己湊 gap-2／gap-3／gap-5。 */
@@ -178,7 +178,7 @@ export const copy = {
   estimatedNote: "超市量販沒有公開訪價資料，這個數字是依零售價推估的參考值。",
   closedNote: "批發市場週一休市，顯示的是上一個交易日的行情。",
   /** 每一頁底部都放一次，讓使用者知道數字是誰訪的價。 */
-  sourceNote: "行情來自農業部「農產品／漁產品／家禽交易行情」與臺中市公有零售市場每日訪價，每天更新一次。",
+  sourceNote: "行情來自農業部蔬果、漁產、家禽、糧價與標章行情，以及臺中市公有零售市場訪價，依各來源更新。",
   /** 零售訪價只有臺中市公開完整資料，這件事要在設定頁與詳情頁說清楚。 */
-  retailCoverageNote: "全台目前只有臺中市公開完整的零售市場訪價，其他縣市的傳統市場價格是用批發價推估的。",
+  retailCoverageNote: "蔬果、魚肉與蛋品的零售訪價以臺中市為主；糧食另有 20 個縣市的訪價。標示「估算」的是推估區間，並非實際報價。",
 } as const;

@@ -1,0 +1,3375 @@
+{
+  "version": 2,
+  "generatedOn": "2026-11-21",
+  "generator": "built-in image_gen",
+  "reference": "UIUX示意設計稿/FreshWise_V2_蔬果夥伴",
+  "htmlText": "All labels, prices, sources, dates, progress, buttons and charts remain HTML/SVG; no baked text.",
+  "assets": [
+    {
+      "file": "companions/collection-companion-atlas.png",
+      "width": 1536,
+      "height": 1024,
+      "cornerAlpha": 0,
+      "bytes": 2399135,
+      "region": "companion-collection",
+      "columns": 3,
+      "rows": 2,
+      "maxCssWidth": 76,
+      "nativeToCssRatio": 6.74,
+      "meets6x": true
+    },
+    {
+      "file": "companions/pet-cabbage-tuantuan.png",
+      "width": 1254,
+      "height": 1254,
+      "cornerAlpha": 0,
+      "bytes": 1552685,
+      "region": "companions",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 200,
+      "nativeToCssRatio": 6.27,
+      "meets6x": true
+    },
+    {
+      "file": "companions/pet-corn-nuannuan.png",
+      "width": 1254,
+      "height": 1254,
+      "cornerAlpha": 0,
+      "bytes": 1410282,
+      "region": "companions",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 200,
+      "nativeToCssRatio": 6.27,
+      "meets6x": true
+    },
+    {
+      "file": "companions/pet-eggplant-bobo.png",
+      "width": 1254,
+      "height": 1254,
+      "cornerAlpha": 0,
+      "bytes": 1542579,
+      "region": "companions",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 200,
+      "nativeToCssRatio": 6.27,
+      "meets6x": true
+    },
+    {
+      "file": "companions/pet-pumpkin-manman.png",
+      "width": 1254,
+      "height": 1254,
+      "cornerAlpha": 1,
+      "bytes": 1235915,
+      "region": "companions",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 200,
+      "nativeToCssRatio": 6.27,
+      "meets6x": true
+    },
+    {
+      "file": "companions/pet-radish-bengbeng.png",
+      "width": 1254,
+      "height": 1254,
+      "cornerAlpha": 0,
+      "bytes": 1340644,
+      "region": "companions",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 200,
+      "nativeToCssRatio": 6.27,
+      "meets6x": true
+    },
+    {
+      "file": "companions/pet-strawberry-jiujiu.png",
+      "width": 1254,
+      "height": 1254,
+      "cornerAlpha": 0,
+      "bytes": 1312549,
+      "region": "companions",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 200,
+      "nativeToCssRatio": 6.27,
+      "meets6x": true
+    },
+    {
+      "file": "items/item-catalog-atlas-01.png",
+      "width": 1536,
+      "height": 1024,
+      "cornerAlpha": 0,
+      "bytes": 2641685,
+      "region": "items",
+      "columns": 6,
+      "rows": 4,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "meets6x": true
+    },
+    {
+      "file": "items/item-catalog-atlas-02.png",
+      "width": 1536,
+      "height": 1024,
+      "cornerAlpha": 0,
+      "bytes": 2808720,
+      "region": "items",
+      "columns": 6,
+      "rows": 4,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "meets6x": true
+    },
+    {
+      "file": "items/item-catalog-atlas-03.png",
+      "width": 1536,
+      "height": 1024,
+      "cornerAlpha": 2,
+      "bytes": 2744032,
+      "region": "items",
+      "columns": 6,
+      "rows": 4,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "meets6x": true
+    },
+    {
+      "file": "items/item-catalog-atlas-04.png",
+      "width": 1536,
+      "height": 1024,
+      "cornerAlpha": 0,
+      "bytes": 2422371,
+      "region": "items",
+      "columns": 6,
+      "rows": 4,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "meets6x": true
+    },
+    {
+      "file": "scene/garden-day-background.png",
+      "width": 1448,
+      "height": 1086,
+      "cornerAlpha": 255,
+      "bytes": 2764209,
+      "region": "home-and-companion-stage",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 430,
+      "nativeToCssRatio": 3.37,
+      "meets6x": false
+    },
+    {
+      "file": "ui/ui-illustrated-icon-atlas.png",
+      "width": 1536,
+      "height": 1024,
+      "cornerAlpha": 0,
+      "bytes": 2449855,
+      "region": "navigation-and-functions",
+      "columns": 6,
+      "rows": 4,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "meets6x": true
+    },
+    {
+      "file": "ui/ui-paper-texture.png",
+      "width": 1254,
+      "height": 1254,
+      "cornerAlpha": 255,
+      "bytes": 1919516,
+      "region": "ui-texture",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 128,
+      "nativeToCssRatio": 9.8,
+      "meets6x": true
+    },
+    {
+      "file": "home/home-price-tag-board.png",
+      "width": 1145,
+      "height": 1374,
+      "cornerAlpha": 0,
+      "bytes": 2140201,
+      "region": "home-price-tag",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 184,
+      "maxCssHeight": 218,
+      "nativeToCssRatio": 6.22,
+      "meets6x": true
+    },
+    {
+      "file": "ui/simple/ui-home.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 70859
+    },
+    {
+      "file": "ui/simple/ui-market.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 63078
+    },
+    {
+      "file": "ui/simple/ui-companions.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 68886
+    },
+    {
+      "file": "ui/simple/ui-basket.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 74283
+    },
+    {
+      "file": "ui/simple/ui-settings.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 54577
+    },
+    {
+      "file": "ui/simple/ui-dew.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 39710
+    },
+    {
+      "file": "ui/simple/ui-veg.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 63646
+    },
+    {
+      "file": "ui/simple/ui-fruit.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 59714
+    },
+    {
+      "file": "ui/simple/ui-seafood.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 52703
+    },
+    {
+      "file": "ui/simple/ui-meat.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 45708
+    },
+    {
+      "file": "ui/simple/ui-egg.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 48992
+    },
+    {
+      "file": "ui/simple/ui-grain.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 61936
+    },
+    {
+      "file": "ui/simple/ui-search.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 51822
+    },
+    {
+      "file": "ui/simple/ui-filter.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 53023
+    },
+    {
+      "file": "ui/simple/ui-seed.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 59877
+    },
+    {
+      "file": "ui/simple/ui-water.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 57897
+    },
+    {
+      "file": "ui/simple/ui-play.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 55598
+    },
+    {
+      "file": "ui/simple/ui-letter.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 56287
+    },
+    {
+      "file": "ui/simple/ui-book.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 58980
+    },
+    {
+      "file": "ui/simple/ui-pencil.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 35230
+    },
+    {
+      "file": "ui/simple/ui-leaf.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 51489
+    },
+    {
+      "file": "ui/simple/ui-calendar.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 59150
+    },
+    {
+      "file": "ui/simple/ui-chart.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 56992
+    },
+    {
+      "file": "ui/simple/ui-notice.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 48,
+      "nativeToCssRatio": 5.33,
+      "cornerAlpha": 0,
+      "bytes": 59212
+    },
+    {
+      "file": "items/simple/item-FA1.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 78945
+    },
+    {
+      "file": "items/simple/item-FA2.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 74378
+    },
+    {
+      "file": "items/simple/item-FA3.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 71964
+    },
+    {
+      "file": "items/simple/item-FA4.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 73689
+    },
+    {
+      "file": "items/simple/item-FA5.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 74860
+    },
+    {
+      "file": "items/simple/item-FA6.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 74088
+    },
+    {
+      "file": "items/simple/item-FA7.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 69636
+    },
+    {
+      "file": "items/simple/item-FA8.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 79182
+    },
+    {
+      "file": "items/simple/item-FA9.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 74342
+    },
+    {
+      "file": "items/simple/item-FB1.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 73400
+    },
+    {
+      "file": "items/simple/item-FB2.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 58906
+    },
+    {
+      "file": "items/simple/item-FB3.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 60239
+    },
+    {
+      "file": "items/simple/item-FB4.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 57900
+    },
+    {
+      "file": "items/simple/item-FB5.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 67012
+    },
+    {
+      "file": "items/simple/item-FB6.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 64974
+    },
+    {
+      "file": "items/simple/item-FB7.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 73924
+    },
+    {
+      "file": "items/simple/item-FB8.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 64319
+    },
+    {
+      "file": "items/simple/item-FB9.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 66449
+    },
+    {
+      "file": "items/simple/item-FC2.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 70865
+    },
+    {
+      "file": "items/simple/item-FC3.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 77896
+    },
+    {
+      "file": "items/simple/item-FC4.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 65790
+    },
+    {
+      "file": "items/simple/item-FC5.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 79239
+    },
+    {
+      "file": "items/simple/item-FC6.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 66643
+    },
+    {
+      "file": "items/simple/item-FC7.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 70200
+    },
+    {
+      "file": "items/simple/item-FC8.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 74574
+    },
+    {
+      "file": "items/simple/item-FC9.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 62262
+    },
+    {
+      "file": "items/simple/item-FD1.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 71797
+    },
+    {
+      "file": "items/simple/item-FD2.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 70862
+    },
+    {
+      "file": "items/simple/item-FD3.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 75433
+    },
+    {
+      "file": "items/simple/item-FD4.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 64867
+    },
+    {
+      "file": "items/simple/item-FD5.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 76847
+    },
+    {
+      "file": "items/simple/item-FD6.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 54731
+    },
+    {
+      "file": "items/simple/item-FD7.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 55052
+    },
+    {
+      "file": "items/simple/item-FD8.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 68515
+    },
+    {
+      "file": "items/simple/item-FD9.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 64687
+    },
+    {
+      "file": "items/simple/item-FE1.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 65013
+    },
+    {
+      "file": "items/simple/item-FE2.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 61388
+    },
+    {
+      "file": "items/simple/item-FE3.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 75823
+    },
+    {
+      "file": "items/simple/item-FE4.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 74231
+    },
+    {
+      "file": "items/simple/item-GA1.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 60577
+    },
+    {
+      "file": "items/simple/item-GA2.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 73106
+    },
+    {
+      "file": "items/simple/item-GA3.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 74986
+    },
+    {
+      "file": "items/simple/item-GA4.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 73747
+    },
+    {
+      "file": "items/simple/item-GA5.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 74681
+    },
+    {
+      "file": "items/simple/item-GA6.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 70971
+    },
+    {
+      "file": "items/simple/item-GA7.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 75195
+    },
+    {
+      "file": "items/simple/item-GA8.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 75147
+    },
+    {
+      "file": "items/simple/item-GA9.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 73767
+    },
+    {
+      "file": "items/simple/item-GB1.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 75769
+    },
+    {
+      "file": "items/simple/item-GB2.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 83727
+    },
+    {
+      "file": "items/simple/item-GB3.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 92062
+    },
+    {
+      "file": "items/simple/item-GB4.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 85144
+    },
+    {
+      "file": "items/simple/item-GB5.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 84922
+    },
+    {
+      "file": "items/simple/item-GB6.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 76221
+    },
+    {
+      "file": "items/simple/item-GB7.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 84194
+    },
+    {
+      "file": "items/simple/item-GB8.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 79204
+    },
+    {
+      "file": "items/simple/item-GB9.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 74396
+    },
+    {
+      "file": "items/simple/item-GC1.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 82139
+    },
+    {
+      "file": "items/simple/item-GC2.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 77567
+    },
+    {
+      "file": "items/simple/item-GC3.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 77012
+    },
+    {
+      "file": "items/simple/item-GC4.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 79251
+    },
+    {
+      "file": "items/simple/item-GC5.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 75034
+    },
+    {
+      "file": "items/simple/item-GC6.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 77916
+    },
+    {
+      "file": "items/simple/item-HA1.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 59326
+    },
+    {
+      "file": "items/simple/item-HA2.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 47017
+    },
+    {
+      "file": "items/simple/item-HA3.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 53628
+    },
+    {
+      "file": "items/simple/item-HA4.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 53952
+    },
+    {
+      "file": "items/simple/item-HA5.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 47798
+    },
+    {
+      "file": "items/simple/item-HA6.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 64103
+    },
+    {
+      "file": "items/simple/item-HA7.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 43471
+    },
+    {
+      "file": "items/simple/item-HA8.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 32725
+    },
+    {
+      "file": "items/simple/item-HB1.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 47674
+    },
+    {
+      "file": "items/simple/item-HB2.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 66417
+    },
+    {
+      "file": "items/simple/item-HB3.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 75015
+    },
+    {
+      "file": "items/simple/item-HB4.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 72592
+    },
+    {
+      "file": "items/simple/item-HB5.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 78902
+    },
+    {
+      "file": "items/simple/item-HB6.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 60157
+    },
+    {
+      "file": "items/simple/item-HB7.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 63436
+    },
+    {
+      "file": "items/simple/item-MA1.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 59067
+    },
+    {
+      "file": "items/simple/item-MA2.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 64941
+    },
+    {
+      "file": "items/simple/item-MA3.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 64306
+    },
+    {
+      "file": "items/simple/item-MB1.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 69405
+    },
+    {
+      "file": "items/simple/item-MB2.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 62393
+    },
+    {
+      "file": "items/simple/item-MB3.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 62235
+    },
+    {
+      "file": "items/simple/item-MC4.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 65882
+    },
+    {
+      "file": "items/simple/item-MC5.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 67017
+    },
+    {
+      "file": "items/simple/item-MC6.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 61358
+    },
+    {
+      "file": "items/simple/item-MC7.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 70240
+    },
+    {
+      "file": "items/simple/item-EA1.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 58105
+    },
+    {
+      "file": "items/simple/item-EA3.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 55804
+    },
+    {
+      "file": "items/simple/item-RA1.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 56581
+    },
+    {
+      "file": "items/simple/item-RA2.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 57561
+    },
+    {
+      "file": "items/simple/item-RA3.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 53931
+    },
+    {
+      "file": "items/simple/item-RA4.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 53306
+    },
+    {
+      "file": "items/simple/item-RA5.png",
+      "width": 256,
+      "height": 256,
+      "region": "simple-v3",
+      "columns": 1,
+      "rows": 1,
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "cornerAlpha": 0,
+      "bytes": 55140
+    }
+  ],
+  "icons": [
+    {
+      "name": "nav-home",
+      "file": "ui/simple/ui-home.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 0,
+        "column": 0,
+        "row": 0
+      }
+    },
+    {
+      "name": "nav-market",
+      "file": "ui/simple/ui-market.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 1,
+        "column": 1,
+        "row": 0
+      }
+    },
+    {
+      "name": "nav-companions",
+      "file": "ui/simple/ui-companions.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 2,
+        "column": 2,
+        "row": 0
+      }
+    },
+    {
+      "name": "nav-basket",
+      "file": "ui/simple/ui-basket.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 3,
+        "column": 3,
+        "row": 0
+      }
+    },
+    {
+      "name": "nav-settings",
+      "file": "ui/simple/ui-settings.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 4,
+        "column": 4,
+        "row": 0
+      }
+    },
+    {
+      "name": "resource-dew",
+      "file": "ui/simple/ui-dew.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 5,
+        "column": 5,
+        "row": 0
+      }
+    },
+    {
+      "name": "category-veg",
+      "file": "ui/simple/ui-veg.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 6,
+        "column": 0,
+        "row": 1
+      }
+    },
+    {
+      "name": "category-fruit",
+      "file": "ui/simple/ui-fruit.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 7,
+        "column": 1,
+        "row": 1
+      }
+    },
+    {
+      "name": "category-seafood",
+      "file": "ui/simple/ui-seafood.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 8,
+        "column": 2,
+        "row": 1
+      }
+    },
+    {
+      "name": "category-meat",
+      "file": "ui/simple/ui-meat.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 9,
+        "column": 3,
+        "row": 1
+      }
+    },
+    {
+      "name": "category-egg",
+      "file": "ui/simple/ui-egg.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 10,
+        "column": 4,
+        "row": 1
+      }
+    },
+    {
+      "name": "category-grain",
+      "file": "ui/simple/ui-grain.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 11,
+        "column": 5,
+        "row": 1
+      }
+    },
+    {
+      "name": "function-search",
+      "file": "ui/simple/ui-search.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 12,
+        "column": 0,
+        "row": 2
+      }
+    },
+    {
+      "name": "function-filter",
+      "file": "ui/simple/ui-filter.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 13,
+        "column": 1,
+        "row": 2
+      }
+    },
+    {
+      "name": "function-add-item",
+      "file": "ui/simple/ui-seed.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 14,
+        "column": 2,
+        "row": 2
+      }
+    },
+    {
+      "name": "care-water",
+      "file": "ui/simple/ui-water.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 15,
+        "column": 3,
+        "row": 2
+      }
+    },
+    {
+      "name": "care-play",
+      "file": "ui/simple/ui-play.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 16,
+        "column": 4,
+        "row": 2
+      }
+    },
+    {
+      "name": "reward-letter",
+      "file": "ui/simple/ui-letter.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 17,
+        "column": 5,
+        "row": 2
+      }
+    },
+    {
+      "name": "collection-book",
+      "file": "ui/simple/ui-book.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 18,
+        "column": 0,
+        "row": 3
+      }
+    },
+    {
+      "name": "function-edit",
+      "file": "ui/simple/ui-pencil.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 19,
+        "column": 1,
+        "row": 3
+      }
+    },
+    {
+      "name": "decoration-leaf",
+      "file": "ui/simple/ui-leaf.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 20,
+        "column": 2,
+        "row": 3
+      }
+    },
+    {
+      "name": "data-calendar",
+      "file": "ui/simple/ui-calendar.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 21,
+        "column": 3,
+        "row": 3
+      }
+    },
+    {
+      "name": "data-chart",
+      "file": "ui/simple/ui-chart.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 22,
+        "column": 4,
+        "row": 3
+      }
+    },
+    {
+      "name": "data-notice",
+      "file": "ui/simple/ui-notice.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "ui/ui-illustrated-icon-atlas.png",
+        "index": 23,
+        "column": 5,
+        "row": 3
+      }
+    }
+  ],
+  "items": [
+    {
+      "code": "FA1",
+      "name": "甘藍",
+      "category": "veg",
+      "file": "items/simple/item-FA1.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 0,
+        "column": 0,
+        "row": 0
+      }
+    },
+    {
+      "code": "FA2",
+      "name": "結球白菜",
+      "category": "veg",
+      "file": "items/simple/item-FA2.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 1,
+        "column": 1,
+        "row": 0
+      }
+    },
+    {
+      "code": "FA3",
+      "name": "小白菜",
+      "category": "veg",
+      "file": "items/simple/item-FA3.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 2,
+        "column": 2,
+        "row": 0
+      }
+    },
+    {
+      "code": "FA4",
+      "name": "青江菜",
+      "category": "veg",
+      "file": "items/simple/item-FA4.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 3,
+        "column": 3,
+        "row": 0
+      }
+    },
+    {
+      "code": "FA5",
+      "name": "蕹菜",
+      "category": "veg",
+      "file": "items/simple/item-FA5.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 4,
+        "column": 4,
+        "row": 0
+      }
+    },
+    {
+      "code": "FA6",
+      "name": "菠菜",
+      "category": "veg",
+      "file": "items/simple/item-FA6.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 5,
+        "column": 5,
+        "row": 0
+      }
+    },
+    {
+      "code": "FA7",
+      "name": "地瓜葉",
+      "category": "veg",
+      "file": "items/simple/item-FA7.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 6,
+        "column": 0,
+        "row": 1
+      }
+    },
+    {
+      "code": "FA8",
+      "name": "莧菜",
+      "category": "veg",
+      "file": "items/simple/item-FA8.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 7,
+        "column": 1,
+        "row": 1
+      }
+    },
+    {
+      "code": "FA9",
+      "name": "芹菜",
+      "category": "veg",
+      "file": "items/simple/item-FA9.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 8,
+        "column": 2,
+        "row": 1
+      }
+    },
+    {
+      "code": "FB1",
+      "name": "韭菜",
+      "category": "veg",
+      "file": "items/simple/item-FB1.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 9,
+        "column": 3,
+        "row": 1
+      }
+    },
+    {
+      "code": "FB2",
+      "name": "白蘿蔔",
+      "category": "veg",
+      "file": "items/simple/item-FB2.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 10,
+        "column": 4,
+        "row": 1
+      }
+    },
+    {
+      "code": "FB3",
+      "name": "胡蘿蔔",
+      "category": "veg",
+      "file": "items/simple/item-FB3.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 11,
+        "column": 5,
+        "row": 1
+      }
+    },
+    {
+      "code": "FB4",
+      "name": "青蔥",
+      "category": "veg",
+      "file": "items/simple/item-FB4.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 12,
+        "column": 0,
+        "row": 2
+      }
+    },
+    {
+      "code": "FB5",
+      "name": "洋蔥",
+      "category": "veg",
+      "file": "items/simple/item-FB5.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 13,
+        "column": 1,
+        "row": 2
+      }
+    },
+    {
+      "code": "FB6",
+      "name": "蒜頭",
+      "category": "veg",
+      "file": "items/simple/item-FB6.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 14,
+        "column": 2,
+        "row": 2
+      }
+    },
+    {
+      "code": "FB7",
+      "name": "薑",
+      "category": "veg",
+      "file": "items/simple/item-FB7.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 15,
+        "column": 3,
+        "row": 2
+      }
+    },
+    {
+      "code": "FB8",
+      "name": "馬鈴薯",
+      "category": "veg",
+      "file": "items/simple/item-FB8.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 16,
+        "column": 4,
+        "row": 2
+      }
+    },
+    {
+      "code": "FB9",
+      "name": "甘藷",
+      "category": "veg",
+      "file": "items/simple/item-FB9.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 17,
+        "column": 5,
+        "row": 2
+      }
+    },
+    {
+      "code": "FC2",
+      "name": "竹筍",
+      "category": "veg",
+      "file": "items/simple/item-FC2.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 18,
+        "column": 0,
+        "row": 3
+      }
+    },
+    {
+      "code": "FC3",
+      "name": "番茄",
+      "category": "veg",
+      "file": "items/simple/item-FC3.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 19,
+        "column": 1,
+        "row": 3
+      }
+    },
+    {
+      "code": "FC4",
+      "name": "小番茄",
+      "category": "veg",
+      "file": "items/simple/item-FC4.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 20,
+        "column": 2,
+        "row": 3
+      }
+    },
+    {
+      "code": "FC5",
+      "name": "絲瓜",
+      "category": "veg",
+      "file": "items/simple/item-FC5.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 21,
+        "column": 3,
+        "row": 3
+      }
+    },
+    {
+      "code": "FC6",
+      "name": "胡瓜",
+      "category": "veg",
+      "file": "items/simple/item-FC6.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 22,
+        "column": 4,
+        "row": 3
+      }
+    },
+    {
+      "code": "FC7",
+      "name": "花胡瓜",
+      "category": "veg",
+      "file": "items/simple/item-FC7.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-01.png",
+        "index": 23,
+        "column": 5,
+        "row": 3
+      }
+    },
+    {
+      "code": "FC8",
+      "name": "苦瓜",
+      "category": "veg",
+      "file": "items/simple/item-FC8.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 0,
+        "column": 0,
+        "row": 0
+      }
+    },
+    {
+      "code": "FC9",
+      "name": "茄子",
+      "category": "veg",
+      "file": "items/simple/item-FC9.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 1,
+        "column": 1,
+        "row": 0
+      }
+    },
+    {
+      "code": "FD1",
+      "name": "青椒",
+      "category": "veg",
+      "file": "items/simple/item-FD1.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 2,
+        "column": 2,
+        "row": 0
+      }
+    },
+    {
+      "code": "FD2",
+      "name": "甜椒",
+      "category": "veg",
+      "file": "items/simple/item-FD2.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 3,
+        "column": 3,
+        "row": 0
+      }
+    },
+    {
+      "code": "FD3",
+      "name": "花椰菜",
+      "category": "veg",
+      "file": "items/simple/item-FD3.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 4,
+        "column": 4,
+        "row": 0
+      }
+    },
+    {
+      "code": "FD4",
+      "name": "青花菜",
+      "category": "veg",
+      "file": "items/simple/item-FD4.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 5,
+        "column": 5,
+        "row": 0
+      }
+    },
+    {
+      "code": "FD5",
+      "name": "玉米",
+      "category": "veg",
+      "file": "items/simple/item-FD5.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 6,
+        "column": 0,
+        "row": 1
+      }
+    },
+    {
+      "code": "FD6",
+      "name": "四季豆",
+      "category": "veg",
+      "file": "items/simple/item-FD6.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 7,
+        "column": 1,
+        "row": 1
+      }
+    },
+    {
+      "code": "FD7",
+      "name": "毛豆",
+      "category": "veg",
+      "file": "items/simple/item-FD7.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 8,
+        "column": 2,
+        "row": 1
+      }
+    },
+    {
+      "code": "FD8",
+      "name": "豆芽菜",
+      "category": "veg",
+      "file": "items/simple/item-FD8.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 9,
+        "column": 3,
+        "row": 1
+      }
+    },
+    {
+      "code": "FD9",
+      "name": "金針菇",
+      "category": "veg",
+      "file": "items/simple/item-FD9.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 10,
+        "column": 4,
+        "row": 1
+      }
+    },
+    {
+      "code": "FE1",
+      "name": "香菇",
+      "category": "veg",
+      "file": "items/simple/item-FE1.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 11,
+        "column": 5,
+        "row": 1
+      }
+    },
+    {
+      "code": "FE2",
+      "name": "杏鮑菇",
+      "category": "veg",
+      "file": "items/simple/item-FE2.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 12,
+        "column": 0,
+        "row": 2
+      }
+    },
+    {
+      "code": "FE3",
+      "name": "九層塔",
+      "category": "veg",
+      "file": "items/simple/item-FE3.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 13,
+        "column": 1,
+        "row": 2
+      }
+    },
+    {
+      "code": "FE4",
+      "name": "香菜",
+      "category": "veg",
+      "file": "items/simple/item-FE4.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 14,
+        "column": 2,
+        "row": 2
+      }
+    },
+    {
+      "code": "GA1",
+      "name": "香蕉",
+      "category": "fruit",
+      "file": "items/simple/item-GA1.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 15,
+        "column": 3,
+        "row": 2
+      }
+    },
+    {
+      "code": "GA2",
+      "name": "鳳梨",
+      "category": "fruit",
+      "file": "items/simple/item-GA2.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 16,
+        "column": 4,
+        "row": 2
+      }
+    },
+    {
+      "code": "GA3",
+      "name": "西瓜",
+      "category": "fruit",
+      "file": "items/simple/item-GA3.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 17,
+        "column": 5,
+        "row": 2
+      }
+    },
+    {
+      "code": "GA4",
+      "name": "木瓜",
+      "category": "fruit",
+      "file": "items/simple/item-GA4.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 18,
+        "column": 0,
+        "row": 3
+      }
+    },
+    {
+      "code": "GA5",
+      "name": "番石榴",
+      "category": "fruit",
+      "file": "items/simple/item-GA5.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 19,
+        "column": 1,
+        "row": 3
+      }
+    },
+    {
+      "code": "GA6",
+      "name": "蘋果",
+      "category": "fruit",
+      "file": "items/simple/item-GA6.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 20,
+        "column": 2,
+        "row": 3
+      }
+    },
+    {
+      "code": "GA7",
+      "name": "柳橙",
+      "category": "fruit",
+      "file": "items/simple/item-GA7.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 21,
+        "column": 3,
+        "row": 3
+      }
+    },
+    {
+      "code": "GA8",
+      "name": "椪柑",
+      "category": "fruit",
+      "file": "items/simple/item-GA8.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 22,
+        "column": 4,
+        "row": 3
+      }
+    },
+    {
+      "code": "GA9",
+      "name": "茂谷柑",
+      "category": "fruit",
+      "file": "items/simple/item-GA9.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-02.png",
+        "index": 23,
+        "column": 5,
+        "row": 3
+      }
+    },
+    {
+      "code": "GB1",
+      "name": "葡萄",
+      "category": "fruit",
+      "file": "items/simple/item-GB1.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 0,
+        "column": 0,
+        "row": 0
+      }
+    },
+    {
+      "code": "GB2",
+      "name": "火龍果",
+      "category": "fruit",
+      "file": "items/simple/item-GB2.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 1,
+        "column": 1,
+        "row": 0
+      }
+    },
+    {
+      "code": "GB3",
+      "name": "芒果",
+      "category": "fruit",
+      "file": "items/simple/item-GB3.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 2,
+        "column": 2,
+        "row": 0
+      }
+    },
+    {
+      "code": "GB4",
+      "name": "荔枝",
+      "category": "fruit",
+      "file": "items/simple/item-GB4.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 3,
+        "column": 3,
+        "row": 0
+      }
+    },
+    {
+      "code": "GB5",
+      "name": "龍眼",
+      "category": "fruit",
+      "file": "items/simple/item-GB5.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 4,
+        "column": 4,
+        "row": 0
+      }
+    },
+    {
+      "code": "GB6",
+      "name": "蓮霧",
+      "category": "fruit",
+      "file": "items/simple/item-GB6.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 5,
+        "column": 5,
+        "row": 0
+      }
+    },
+    {
+      "code": "GB7",
+      "name": "棗子",
+      "category": "fruit",
+      "file": "items/simple/item-GB7.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 6,
+        "column": 0,
+        "row": 1
+      }
+    },
+    {
+      "code": "GB8",
+      "name": "梨",
+      "category": "fruit",
+      "file": "items/simple/item-GB8.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 7,
+        "column": 1,
+        "row": 1
+      }
+    },
+    {
+      "code": "GB9",
+      "name": "甜柿",
+      "category": "fruit",
+      "file": "items/simple/item-GB9.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 8,
+        "column": 2,
+        "row": 1
+      }
+    },
+    {
+      "code": "GC1",
+      "name": "文旦",
+      "category": "fruit",
+      "file": "items/simple/item-GC1.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 9,
+        "column": 3,
+        "row": 1
+      }
+    },
+    {
+      "code": "GC2",
+      "name": "檸檬",
+      "category": "fruit",
+      "file": "items/simple/item-GC2.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 10,
+        "column": 4,
+        "row": 1
+      }
+    },
+    {
+      "code": "GC3",
+      "name": "草莓",
+      "category": "fruit",
+      "file": "items/simple/item-GC3.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 11,
+        "column": 5,
+        "row": 1
+      }
+    },
+    {
+      "code": "GC4",
+      "name": "哈密瓜",
+      "category": "fruit",
+      "file": "items/simple/item-GC4.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 12,
+        "column": 0,
+        "row": 2
+      }
+    },
+    {
+      "code": "GC5",
+      "name": "奇異果",
+      "category": "fruit",
+      "file": "items/simple/item-GC5.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 13,
+        "column": 1,
+        "row": 2
+      }
+    },
+    {
+      "code": "GC6",
+      "name": "酪梨",
+      "category": "fruit",
+      "file": "items/simple/item-GC6.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 14,
+        "column": 2,
+        "row": 2
+      }
+    },
+    {
+      "code": "HA1",
+      "name": "吳郭魚",
+      "category": "seafood",
+      "file": "items/simple/item-HA1.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 15,
+        "column": 3,
+        "row": 2
+      }
+    },
+    {
+      "code": "HA2",
+      "name": "虱目魚",
+      "category": "seafood",
+      "file": "items/simple/item-HA2.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 16,
+        "column": 4,
+        "row": 2
+      }
+    },
+    {
+      "code": "HA3",
+      "name": "金目鱸",
+      "category": "seafood",
+      "file": "items/simple/item-HA3.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 17,
+        "column": 5,
+        "row": 2
+      }
+    },
+    {
+      "code": "HA4",
+      "name": "龍虎斑",
+      "category": "seafood",
+      "file": "items/simple/item-HA4.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 18,
+        "column": 0,
+        "row": 3
+      }
+    },
+    {
+      "code": "HA5",
+      "name": "午仔魚",
+      "category": "seafood",
+      "file": "items/simple/item-HA5.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 19,
+        "column": 1,
+        "row": 3
+      }
+    },
+    {
+      "code": "HA6",
+      "name": "白帶魚",
+      "category": "seafood",
+      "file": "items/simple/item-HA6.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 20,
+        "column": 2,
+        "row": 3
+      }
+    },
+    {
+      "code": "HA7",
+      "name": "鯖魚",
+      "category": "seafood",
+      "file": "items/simple/item-HA7.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 21,
+        "column": 3,
+        "row": 3
+      }
+    },
+    {
+      "code": "HA8",
+      "name": "秋刀魚",
+      "category": "seafood",
+      "file": "items/simple/item-HA8.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 22,
+        "column": 4,
+        "row": 3
+      }
+    },
+    {
+      "code": "HB1",
+      "name": "旗魚",
+      "category": "seafood",
+      "file": "items/simple/item-HB1.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-03.png",
+        "index": 23,
+        "column": 5,
+        "row": 3
+      }
+    },
+    {
+      "code": "HB2",
+      "name": "鮭魚",
+      "category": "seafood",
+      "file": "items/simple/item-HB2.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 0,
+        "column": 0,
+        "row": 0
+      }
+    },
+    {
+      "code": "HB3",
+      "name": "白蝦",
+      "category": "seafood",
+      "file": "items/simple/item-HB3.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 1,
+        "column": 1,
+        "row": 0
+      }
+    },
+    {
+      "code": "HB4",
+      "name": "文蛤",
+      "category": "seafood",
+      "file": "items/simple/item-HB4.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 2,
+        "column": 2,
+        "row": 0
+      }
+    },
+    {
+      "code": "HB5",
+      "name": "牡蠣",
+      "category": "seafood",
+      "file": "items/simple/item-HB5.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 3,
+        "column": 3,
+        "row": 0
+      }
+    },
+    {
+      "code": "HB6",
+      "name": "透抽",
+      "category": "seafood",
+      "file": "items/simple/item-HB6.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 4,
+        "column": 4,
+        "row": 0
+      }
+    },
+    {
+      "code": "HB7",
+      "name": "花枝",
+      "category": "seafood",
+      "file": "items/simple/item-HB7.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 5,
+        "column": 5,
+        "row": 0
+      }
+    },
+    {
+      "code": "MA1",
+      "name": "豬里肌",
+      "category": "meat",
+      "file": "items/simple/item-MA1.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 6,
+        "column": 0,
+        "row": 1
+      }
+    },
+    {
+      "code": "MA2",
+      "name": "豬後腿",
+      "category": "meat",
+      "file": "items/simple/item-MA2.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 7,
+        "column": 1,
+        "row": 1
+      }
+    },
+    {
+      "code": "MA3",
+      "name": "豬五花",
+      "category": "meat",
+      "file": "items/simple/item-MA3.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 8,
+        "column": 2,
+        "row": 1
+      }
+    },
+    {
+      "code": "MB1",
+      "name": "牛腱",
+      "category": "meat",
+      "file": "items/simple/item-MB1.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 9,
+        "column": 3,
+        "row": 1
+      }
+    },
+    {
+      "code": "MB2",
+      "name": "牛腩",
+      "category": "meat",
+      "file": "items/simple/item-MB2.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 10,
+        "column": 4,
+        "row": 1
+      }
+    },
+    {
+      "code": "MB3",
+      "name": "牛腿肉",
+      "category": "meat",
+      "file": "items/simple/item-MB3.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 11,
+        "column": 5,
+        "row": 1
+      }
+    },
+    {
+      "code": "MC4",
+      "name": "肉雞",
+      "category": "meat",
+      "file": "items/simple/item-MC4.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 12,
+        "column": 0,
+        "row": 2
+      }
+    },
+    {
+      "code": "MC5",
+      "name": "土雞",
+      "category": "meat",
+      "file": "items/simple/item-MC5.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 13,
+        "column": 1,
+        "row": 2
+      }
+    },
+    {
+      "code": "MC6",
+      "name": "鴨肉",
+      "category": "meat",
+      "file": "items/simple/item-MC6.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 14,
+        "column": 2,
+        "row": 2
+      }
+    },
+    {
+      "code": "MC7",
+      "name": "仿雞",
+      "category": "meat",
+      "file": "items/simple/item-MC7.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 15,
+        "column": 3,
+        "row": 2
+      }
+    },
+    {
+      "code": "EA1",
+      "name": "雞蛋",
+      "category": "egg",
+      "file": "items/simple/item-EA1.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 16,
+        "column": 4,
+        "row": 2
+      }
+    },
+    {
+      "code": "EA3",
+      "name": "鴨蛋",
+      "category": "egg",
+      "file": "items/simple/item-EA3.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 17,
+        "column": 5,
+        "row": 2
+      }
+    },
+    {
+      "code": "RA1",
+      "name": "蓬萊米",
+      "category": "grain",
+      "file": "items/simple/item-RA1.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 18,
+        "column": 0,
+        "row": 3
+      }
+    },
+    {
+      "code": "RA2",
+      "name": "在來米",
+      "category": "grain",
+      "file": "items/simple/item-RA2.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 19,
+        "column": 1,
+        "row": 3
+      }
+    },
+    {
+      "code": "RA3",
+      "name": "在來米（軟）",
+      "category": "grain",
+      "file": "items/simple/item-RA3.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 20,
+        "column": 2,
+        "row": 3
+      }
+    },
+    {
+      "code": "RA4",
+      "name": "圓糯米",
+      "category": "grain",
+      "file": "items/simple/item-RA4.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 21,
+        "column": 3,
+        "row": 3
+      }
+    },
+    {
+      "code": "RA5",
+      "name": "長糯米",
+      "category": "grain",
+      "file": "items/simple/item-RA5.png",
+      "index": 0,
+      "column": 0,
+      "row": 0,
+      "legacyAtlas": {
+        "file": "items/item-catalog-atlas-04.png",
+        "index": 22,
+        "column": 4,
+        "row": 3
+      }
+    }
+  ],
+  "activeVariant": "simple-v3-single-256"
+}

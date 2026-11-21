@@ -83,16 +83,14 @@ export function FreshwiseProvider({ initialPrefs, children }: { initialPrefs: Fr
 
   const applyPrefs = useCallback(
     (patch: Partial<FreshwisePrefs>, refetch: boolean) => {
-      setPrefsState((current) => {
-        const next = { ...current, ...patch };
-        writePrefsCookie(next);
-        // refresh 要在 cookie 寫好之後才呼叫——Server Component 讀的是請求帶上的 cookie，
-        // 順序反了的話伺服器會用舊的偏好重算一次，數字跟畫面對不上。
-        if (refetch) router.refresh();
-        return next;
-      });
+      const next = { ...prefs, ...patch };
+      // Cookie 與路由更新都在事件處理期間執行，避免 React 重跑 state updater
+      // 時觸發 Router 更新。伺服器重新整理前必須先寫好 cookie。
+      writePrefsCookie(next);
+      setPrefsState(next);
+      if (refetch) router.refresh();
     },
-    [router],
+    [prefs, router],
   );
 
   const setPrefs = useCallback((patch: Partial<FreshwisePrefs>) => applyPrefs(patch, false), [applyPrefs]);

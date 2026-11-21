@@ -186,7 +186,7 @@ export function EntryEditorSheet({
               setPickedGroup(group.id);
               setGroupPickerOpen(false);
             }}
-            className="flex items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-[#F6FBF7]"
+            className="flex items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-[#FCF7EB]"
           >
             <span className="grid size-9 shrink-0 place-items-center rounded-xl" style={{ backgroundColor: colors.surfaceSoft }}>
               <FaIcon icon={group.icon} size={14} color={colors.brand} />
