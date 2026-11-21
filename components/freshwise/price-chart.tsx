@@ -21,7 +21,9 @@ import { colors, text } from "./theme";
 const VIEW_W = 320;
 const VIEW_H = 128;
 /** 左右各留一點、上下留出標籤的空間。資料線不要貼著邊框畫，最高點的直接標示會被裁掉。 */
-const PAD = { top: 16, right: 10, bottom: 18, left: 10 };
+// bottom 要留得比 top 多：底下除了日期軸標籤，最低點的數字也畫在點的下方，兩者疊在
+// 一起會變成「30」壓在「10/22」上面（實測 30 天與 7 天兩種區間都會發生）。
+const PAD = { top: 16, right: 10, bottom: 28, left: 10 };
 
 export function PriceChart({
   points,
@@ -199,16 +201,18 @@ export function PriceChart({
 
 /** 最高／最低點旁邊的小數字。放在點的上面或下面，不要擋到資料線。 */
 function PointLabel({ x, y, label, place }: { x: number; y: number; label: string; place: "above" | "below" }) {
+  // 極值落在最左／最右時，置中的標籤會凸出 viewBox 被裁掉，所以貼邊時改成靠邊對齊。
+  const anchor = x <= PAD.left + 12 ? "start" : x >= VIEW_W - PAD.right - 12 ? "end" : "middle";
   return (
     <>
       <circle cx={x} cy={y} r="2.5" fill={colors.brand} opacity="0.5" />
       <text
-        x={x}
+        x={anchor === "start" ? PAD.left : anchor === "end" ? VIEW_W - PAD.right : x}
         y={place === "above" ? y - 6 : y + 11}
         fontSize="8"
         fontWeight="600"
         fill={colors.muted}
-        textAnchor="middle"
+        textAnchor={anchor}
       >
         {label}
       </text>

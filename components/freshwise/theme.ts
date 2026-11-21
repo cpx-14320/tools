@@ -55,6 +55,70 @@ export const colors = {
   negativeBg: "#FBE9DF",
 } as const;
 
+/* ───────────────────── 插畫皮膚的 CSS 變數 ─────────────────────
+ *
+ * game.css 的 `.fw-app,.fw-modal` 定義了一組 `--fw-*`，那裡是**唯一**的色碼與字級來源。
+ * 這裡只是把變數名字抄成可以在 TSX 裡用的字串，值不重複定義——以前元件用 Tailwind 的
+ * `bg-[#F6EEDB]` 寫死一份、game.css 再用 `!important` 蓋掉換成另一份，同一顆按鈕有兩個
+ * 顏色定義在打架，那是 36 個 `!important` 的來源。
+ *
+ * 用法：`style={{ background: v.paper, borderColor: v.lineField }}`。
+ * 上面的 `colors` 留給**必須是真的色碼**的地方（SVG 圖表的 fill／stroke），畫面樣式一律用
+ * 這裡的變數。
+ */
+export const v = {
+  ink: "var(--fw-ink)",
+  muted: "var(--fw-muted)",
+  placeholder: "var(--fw-placeholder)",
+  inkActive: "var(--fw-ink-active)",
+  inkDone: "var(--fw-ink-done)",
+
+  paperHi: "var(--fw-paper-hi)",
+  paperCard: "var(--fw-paper-card)",
+  paper: "var(--fw-paper)",
+  paperSunk: "var(--fw-paper-sunk)",
+  paperDeep: "var(--fw-paper-deep)",
+  sand: "var(--fw-sand)",
+  sandPale: "var(--fw-sand-pale)",
+  butter: "var(--fw-butter)",
+  gold: "var(--fw-gold)",
+
+  peachHi: "var(--fw-peach-hi)",
+  peach: "var(--fw-peach)",
+  peachLine: "var(--fw-peach-line)",
+
+  lineSoft: "var(--fw-line-soft)",
+  line: "var(--fw-line)",
+  lineCard: "var(--fw-line-card)",
+  lineWood: "var(--fw-line-wood)",
+  lineField: "var(--fw-line-field)",
+  lineStrong: "var(--fw-line-strong)",
+  lineDeep: "var(--fw-line-deep)",
+
+  shadowPaper: "var(--fw-shadow-paper)",
+  shadowCard: "var(--fw-shadow-card)",
+
+  leafPale: "var(--fw-leaf-pale)",
+  leafBg: "var(--fw-leaf-bg)",
+  leafSoft: "var(--fw-leaf-soft)",
+  btnHi: "var(--fw-btn-hi)",
+  btnLo: "var(--fw-btn-lo)",
+  btnShadow: "var(--fw-btn-shadow)",
+  leafBright: "var(--fw-leaf-bright)",
+  leafLine: "var(--fw-leaf-line)",
+  green: "var(--fw-green)",
+
+  fsMicro: "var(--fw-fs-micro)",
+  fsMeta: "var(--fw-fs-meta)",
+  fsNote: "var(--fw-fs-note)",
+  fsLabel: "var(--fw-fs-label)",
+  fsBody: "var(--fw-fs-body)",
+  fsLead: "var(--fw-fs-lead)",
+  fsSection: "var(--fw-fs-section)",
+  fsPage: "var(--fw-fs-page)",
+  fsPrice: "var(--fw-fs-price)",
+} as const;
+
 export const gradient = {
   /** 主要行動按鈕的漸層 */
   primary: "linear-gradient(180deg, #E7EFBF, #C7DA91)",

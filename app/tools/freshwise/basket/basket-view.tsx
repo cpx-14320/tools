@@ -47,7 +47,7 @@ import type { BasketEntry, BasketGroup, PriceBook, PriceQuote, UnitKey } from "@
 
 export function BasketView({ today, book }: { today: string; book: PriceBook }) {
   const { prefs, basketReady, basket, setBasket, toast } = useFreshwise();
-  const { record, state: companion } = useCompanion();
+  const { record } = useCompanion();
   const month = monthOf(today);
 
   // 開著哪一個彈窗。三個彈窗（分類編輯、項目編輯、品項選擇）各自需要知道「在哪個分類
@@ -100,7 +100,7 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
       {/* 這一籃今天大概要花多少錢。這是菜籃頁存在的理由——分開看每一樣菜多少錢沒有感覺，
           加起來的數字才有。 */}
       <ListCard strong className="fw-basket-summary flex flex-col gap-1.5">
-        {companion.enabled && <PetArtwork id="radish" size={100} className="fw-basket-pet" />}
+        <PetArtwork id="radish" size={100} className="fw-basket-pet" />
         <div className="flex items-end justify-between gap-3">
           <div>
             <Hint>今天買整籃大概要 · 估算</Hint>
@@ -137,7 +137,7 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
         />
       ) : (
         groups.map((group, groupIndex) => {
-          const entries = entriesOfGroup(basket, group.id);
+          const entries = entriesOfGroup(basket, group.id).sort((a,b) => Number(quotes.has(b.code)) - Number(quotes.has(a.code)));
           return (
             <section
               key={group.id}
@@ -155,11 +155,12 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
                       onClick={() => setGroupEditing(group)}
                     />
                     {/* 只有兩個以上的分類才給握把——只有一個的時候拖曳沒有意義。 */}
-                    {groups.length > 1 && <DragHandle label={`拖曳排序 ${group.name}`} {...groupDrag.handleProps(groupIndex)} />}
+
                   </span>
                 }
               >
                 <span className="flex items-center gap-1.5">
+                  {groups.length > 1 && <DragHandle label={`拖曳排序 ${group.name}`} {...groupDrag.handleProps(groupIndex)} />}
                   <FaIcon icon={group.icon} size={48} color={colors.brand} />
                   {group.name}
                   <span className={text.meta}>{entries.length} 項</span>
@@ -186,7 +187,7 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
       )}
 
       <QuestSlip />
-      <Callout icon="database" tone="neutral">
+      <Callout icon="database">
         {copy.sourceNote}
       </Callout>
 
@@ -318,19 +319,21 @@ function GroupEntries({
         // 靜靜消失的話使用者會以為自己的菜籃被動過了。
         if (!quote) {
           return (
-            <ListCard key={entry.id} className="flex items-center gap-3">
+            <div key={entry.id} ref={drag.rowRef(index)} className={drag.rowClass(index)}><ListCard className="fw-basket-entry-card flex items-center gap-3">
+              {entries.length > 1 && <DragHandle label={`拖曳排序 ${item.name}`} {...drag.handleProps(index)} />}
               <ItemIcon src={itemImage(item.code)} fallbackIcon={item.icon} alt={item.name} size={20} boxSize={40} className="opacity-60" />
               <button type="button" onClick={() => onEdit(entry)} className="min-w-0 flex-1 text-left">
                 <span className={`block truncate ${text.cardTitle}`}>{item.name}</span>
                 <span className={`block ${text.meta}`}>今天這個場所沒有行情</span>
               </button>
-            </ListCard>
+            </ListCard></div>
           );
         }
         const row = toRow(item, quote, month);
         const costOfEntry = entryCost(entry.qtyCatty, quote.avgKg);
         return (
           <div key={entry.id} ref={drag.rowRef(index)} className={drag.rowClass(index)}>
+            <ListCard className="fw-basket-entry-card">
             <ItemRow
               row={row}
               unit={unit}
@@ -344,6 +347,7 @@ function GroupEntries({
                   : `常買 ${entry.qtyCatty} ${unitShort("catty")}・約 ${formatMoney(costOfEntry)} 元`
               }
             />
+            </ListCard>
           </div>
         );
       })}

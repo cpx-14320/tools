@@ -99,7 +99,9 @@ export function MarketPickerModal({
             </p>
             {cities.map(([city, list]) => (
               <div key={city}>
-                {cities.length > 1 && (
+                {/* 縣市標題只在「有多個縣市、而且這個縣市底下不只是一個同名的市場」時才畫。
+                    糧價那一群是一個縣市一筆、名稱就是縣市名，畫了會變成同一個名字連印兩次。 */}
+                {cities.length > 1 && !(list.length === 1 && list[0].name === city) && (
                   <p className={`px-4 py-1 ${text.meta}`} style={{ backgroundColor: colors.surfaceSoft }}>
                     {city}
                   </p>

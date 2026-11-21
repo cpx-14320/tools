@@ -1628,12 +1628,367 @@
       "nativeToCssRatio": 6.4,
       "cornerAlpha": 0,
       "bytes": 55140
+    },
+    {
+      "file": "home/home-price-tag-board-clean.png",
+      "width": 1254,
+      "height": 1254,
+      "maxCssWidth": 174,
+      "nativeToCssRatio": 7.21,
+      "meets6x": true,
+      "region": "home-market-v4",
+      "cornerAlpha": 0
+    },
+    {
+      "file": "ui/market-wood-counter.png",
+      "width": 2172,
+      "height": 724,
+      "maxCssWidth": 406,
+      "nativeToCssRatio": 5.35,
+      "meets6x": false,
+      "region": "home-market-v4",
+      "cornerAlpha": 0
+    },
+    {
+      "file": "ui/task-paper-slip.png",
+      "width": 2172,
+      "height": 724,
+      "maxCssWidth": 390,
+      "nativeToCssRatio": 5.57,
+      "meets6x": false,
+      "region": "home-market-v4",
+      "cornerAlpha": 0
+    },
+    {
+      "file": "home/market-small-price-card.png",
+      "width": 1122,
+      "height": 1402,
+      "maxCssWidth": 92,
+      "nativeToCssRatio": 12.2,
+      "meets6x": true,
+      "region": "home-market-v4",
+      "cornerAlpha": 0
+    },
+    {
+      "file": "ui/textured-v5/ui-home.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 100632
+    },
+    {
+      "file": "ui/textured-v5/ui-market.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 100628
+    },
+    {
+      "file": "ui/textured-v5/ui-companions.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 86368
+    },
+    {
+      "file": "ui/textured-v5/ui-basket.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 94157
+    },
+    {
+      "file": "ui/textured-v5/ui-settings.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 84437
+    },
+    {
+      "file": "ui/textured-v5/ui-dew.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 64811
+    },
+    {
+      "file": "ui/textured-v5/ui-veg.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 88415
+    },
+    {
+      "file": "ui/textured-v5/ui-fruit.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 87868
+    },
+    {
+      "file": "ui/textured-v5/ui-seafood.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 69111
+    },
+    {
+      "file": "ui/textured-v5/ui-meat.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 59243
+    },
+    {
+      "file": "ui/textured-v5/ui-egg.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 73936
+    },
+    {
+      "file": "ui/textured-v5/ui-grain.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 88607
+    },
+    {
+      "file": "ui/textured-v5/ui-search.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 77974
+    },
+    {
+      "file": "ui/textured-v5/ui-filter.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 78823
+    },
+    {
+      "file": "ui/textured-v5/ui-seed.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 94899
+    },
+    {
+      "file": "ui/textured-v5/ui-water.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 74439
+    },
+    {
+      "file": "ui/textured-v5/ui-play.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 86821
+    },
+    {
+      "file": "ui/textured-v5/ui-letter.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 84392
+    },
+    {
+      "file": "ui/textured-v5/ui-book.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 80073
+    },
+    {
+      "file": "ui/textured-v5/ui-pencil.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 50101
+    },
+    {
+      "file": "ui/textured-v5/ui-leaf.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 71160
+    },
+    {
+      "file": "ui/textured-v5/ui-calendar.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 86916
+    },
+    {
+      "file": "ui/textured-v5/ui-chart.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 88257
+    },
+    {
+      "file": "ui/textured-v5/ui-notice.png",
+      "width": 256,
+      "height": 256,
+      "region": "ui-textured-v5",
+      "maxCssWidth": 40,
+      "nativeToCssRatio": 6.4,
+      "columns": 1,
+      "rows": 1,
+      "cornerAlpha": 0,
+      "bytes": 81748
+    },
+    {
+      "file": "ui/task-paper-slip-top.png",
+      "width": 2172,
+      "height": 145,
+      "region": "task-paper-three-slice",
+      "maxCssWidth": 390,
+      "nativeToCssRatio": 5.57,
+      "repeatY": false
+    },
+    {
+      "file": "ui/task-paper-slip-middle.png",
+      "width": 2172,
+      "height": 434,
+      "region": "task-paper-three-slice",
+      "maxCssWidth": 390,
+      "nativeToCssRatio": 5.57,
+      "repeatY": true
+    },
+    {
+      "file": "ui/task-paper-slip-bottom.png",
+      "width": 2172,
+      "height": 145,
+      "region": "task-paper-three-slice",
+      "maxCssWidth": 390,
+      "nativeToCssRatio": 5.57,
+      "repeatY": false
     }
   ],
   "icons": [
     {
       "name": "nav-home",
-      "file": "ui/simple/ui-home.png",
+      "file": "ui/textured-v5/ui-home.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1642,11 +1997,12 @@
         "index": 0,
         "column": 0,
         "row": 0
-      }
+      },
+      "previousSingle": "ui/simple/ui-home.png"
     },
     {
       "name": "nav-market",
-      "file": "ui/simple/ui-market.png",
+      "file": "ui/textured-v5/ui-market.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1655,11 +2011,12 @@
         "index": 1,
         "column": 1,
         "row": 0
-      }
+      },
+      "previousSingle": "ui/simple/ui-market.png"
     },
     {
       "name": "nav-companions",
-      "file": "ui/simple/ui-companions.png",
+      "file": "ui/textured-v5/ui-companions.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1668,11 +2025,12 @@
         "index": 2,
         "column": 2,
         "row": 0
-      }
+      },
+      "previousSingle": "ui/simple/ui-companions.png"
     },
     {
       "name": "nav-basket",
-      "file": "ui/simple/ui-basket.png",
+      "file": "ui/textured-v5/ui-basket.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1681,11 +2039,12 @@
         "index": 3,
         "column": 3,
         "row": 0
-      }
+      },
+      "previousSingle": "ui/simple/ui-basket.png"
     },
     {
       "name": "nav-settings",
-      "file": "ui/simple/ui-settings.png",
+      "file": "ui/textured-v5/ui-settings.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1694,11 +2053,12 @@
         "index": 4,
         "column": 4,
         "row": 0
-      }
+      },
+      "previousSingle": "ui/simple/ui-settings.png"
     },
     {
       "name": "resource-dew",
-      "file": "ui/simple/ui-dew.png",
+      "file": "ui/textured-v5/ui-dew.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1707,11 +2067,12 @@
         "index": 5,
         "column": 5,
         "row": 0
-      }
+      },
+      "previousSingle": "ui/simple/ui-dew.png"
     },
     {
       "name": "category-veg",
-      "file": "ui/simple/ui-veg.png",
+      "file": "ui/textured-v5/ui-veg.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1720,11 +2081,12 @@
         "index": 6,
         "column": 0,
         "row": 1
-      }
+      },
+      "previousSingle": "ui/simple/ui-veg.png"
     },
     {
       "name": "category-fruit",
-      "file": "ui/simple/ui-fruit.png",
+      "file": "ui/textured-v5/ui-fruit.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1733,11 +2095,12 @@
         "index": 7,
         "column": 1,
         "row": 1
-      }
+      },
+      "previousSingle": "ui/simple/ui-fruit.png"
     },
     {
       "name": "category-seafood",
-      "file": "ui/simple/ui-seafood.png",
+      "file": "ui/textured-v5/ui-seafood.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1746,11 +2109,12 @@
         "index": 8,
         "column": 2,
         "row": 1
-      }
+      },
+      "previousSingle": "ui/simple/ui-seafood.png"
     },
     {
       "name": "category-meat",
-      "file": "ui/simple/ui-meat.png",
+      "file": "ui/textured-v5/ui-meat.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1759,11 +2123,12 @@
         "index": 9,
         "column": 3,
         "row": 1
-      }
+      },
+      "previousSingle": "ui/simple/ui-meat.png"
     },
     {
       "name": "category-egg",
-      "file": "ui/simple/ui-egg.png",
+      "file": "ui/textured-v5/ui-egg.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1772,11 +2137,12 @@
         "index": 10,
         "column": 4,
         "row": 1
-      }
+      },
+      "previousSingle": "ui/simple/ui-egg.png"
     },
     {
       "name": "category-grain",
-      "file": "ui/simple/ui-grain.png",
+      "file": "ui/textured-v5/ui-grain.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1785,11 +2151,12 @@
         "index": 11,
         "column": 5,
         "row": 1
-      }
+      },
+      "previousSingle": "ui/simple/ui-grain.png"
     },
     {
       "name": "function-search",
-      "file": "ui/simple/ui-search.png",
+      "file": "ui/textured-v5/ui-search.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1798,11 +2165,12 @@
         "index": 12,
         "column": 0,
         "row": 2
-      }
+      },
+      "previousSingle": "ui/simple/ui-search.png"
     },
     {
       "name": "function-filter",
-      "file": "ui/simple/ui-filter.png",
+      "file": "ui/textured-v5/ui-filter.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1811,11 +2179,12 @@
         "index": 13,
         "column": 1,
         "row": 2
-      }
+      },
+      "previousSingle": "ui/simple/ui-filter.png"
     },
     {
       "name": "function-add-item",
-      "file": "ui/simple/ui-seed.png",
+      "file": "ui/textured-v5/ui-seed.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1824,11 +2193,12 @@
         "index": 14,
         "column": 2,
         "row": 2
-      }
+      },
+      "previousSingle": "ui/simple/ui-seed.png"
     },
     {
       "name": "care-water",
-      "file": "ui/simple/ui-water.png",
+      "file": "ui/textured-v5/ui-water.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1837,11 +2207,12 @@
         "index": 15,
         "column": 3,
         "row": 2
-      }
+      },
+      "previousSingle": "ui/simple/ui-water.png"
     },
     {
       "name": "care-play",
-      "file": "ui/simple/ui-play.png",
+      "file": "ui/textured-v5/ui-play.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1850,11 +2221,12 @@
         "index": 16,
         "column": 4,
         "row": 2
-      }
+      },
+      "previousSingle": "ui/simple/ui-play.png"
     },
     {
       "name": "reward-letter",
-      "file": "ui/simple/ui-letter.png",
+      "file": "ui/textured-v5/ui-letter.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1863,11 +2235,12 @@
         "index": 17,
         "column": 5,
         "row": 2
-      }
+      },
+      "previousSingle": "ui/simple/ui-letter.png"
     },
     {
       "name": "collection-book",
-      "file": "ui/simple/ui-book.png",
+      "file": "ui/textured-v5/ui-book.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1876,11 +2249,12 @@
         "index": 18,
         "column": 0,
         "row": 3
-      }
+      },
+      "previousSingle": "ui/simple/ui-book.png"
     },
     {
       "name": "function-edit",
-      "file": "ui/simple/ui-pencil.png",
+      "file": "ui/textured-v5/ui-pencil.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1889,11 +2263,12 @@
         "index": 19,
         "column": 1,
         "row": 3
-      }
+      },
+      "previousSingle": "ui/simple/ui-pencil.png"
     },
     {
       "name": "decoration-leaf",
-      "file": "ui/simple/ui-leaf.png",
+      "file": "ui/textured-v5/ui-leaf.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1902,11 +2277,12 @@
         "index": 20,
         "column": 2,
         "row": 3
-      }
+      },
+      "previousSingle": "ui/simple/ui-leaf.png"
     },
     {
       "name": "data-calendar",
-      "file": "ui/simple/ui-calendar.png",
+      "file": "ui/textured-v5/ui-calendar.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1915,11 +2291,12 @@
         "index": 21,
         "column": 3,
         "row": 3
-      }
+      },
+      "previousSingle": "ui/simple/ui-calendar.png"
     },
     {
       "name": "data-chart",
-      "file": "ui/simple/ui-chart.png",
+      "file": "ui/textured-v5/ui-chart.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1928,11 +2305,12 @@
         "index": 22,
         "column": 4,
         "row": 3
-      }
+      },
+      "previousSingle": "ui/simple/ui-chart.png"
     },
     {
       "name": "data-notice",
-      "file": "ui/simple/ui-notice.png",
+      "file": "ui/textured-v5/ui-notice.png",
       "index": 0,
       "column": 0,
       "row": 0,
@@ -1941,7 +2319,8 @@
         "index": 23,
         "column": 5,
         "row": 3
-      }
+      },
+      "previousSingle": "ui/simple/ui-notice.png"
     }
   ],
   "items": [
@@ -3371,5 +3750,13 @@
       }
     }
   ],
-  "activeVariant": "simple-v3-single-256"
+  "activeVariant": "simple-v3-single-256",
+  "activeUiVariant": "textured-v5-single-256",
+  "taskPaperSlices": {
+    "top": "ui/task-paper-slip-top.png",
+    "middle": "ui/task-paper-slip-middle.png",
+    "bottom": "ui/task-paper-slip-bottom.png",
+    "capAspectRatio": "2172/145",
+    "layout": "fixed-aspect top/bottom, repeat-y middle; no height stretching"
+  }
 }

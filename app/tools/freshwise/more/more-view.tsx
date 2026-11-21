@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { CompanionOptions } from "@/components/freshwise/companion-widgets";
 import { useCompanion } from "@/components/freshwise/companion-store";
 import Link from "next/link";
 import {
@@ -106,7 +105,6 @@ export function MoreView({
   return (
     <div className="fw-page fw-settings-page">
       <PageTitle>我的小手帳</PageTitle>
-      <CompanionOptions />
 
       {/* ── 預設看哪裡的價格 ───────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
@@ -199,7 +197,7 @@ export function MoreView({
         <SectionTitle leaf>這個工具的資料</SectionTitle>
         <ListCard className="flex flex-col gap-2.5">
           <Note>
-            {copy.basket}與夥伴進度目前保存在這台裝置，換裝置不會自動同步。
+            夥伴與任務進度跟著帳號走，換裝置登入就會在。{copy.basket}目前還存在這台裝置，換裝置不會自動同步。
           </Note>
           <div className="flex items-center gap-3">
             <button

@@ -47,7 +47,7 @@ export function PriceText({
           {formatPriceIn(rangeLowKg as number, unit)}～{formatPriceIn(rangeHighKg as number, unit)}
         </span>
       ) : (
-        <span className={sizeCls}>{formatPriceIn(priceKg, unit)}</span>
+        <span className={`fw-price-amount ${sizeCls}`}>{formatPriceIn(priceKg, unit)}</span>
       )}
       {showUnit && <span className={text.meta}>{unitLabel(unit)}</span>}
     </span>

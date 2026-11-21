@@ -27,9 +27,6 @@ export interface CompanionState {
   basket: boolean;
   played: boolean;
   claimed: QuestId[];
-  enabled: boolean;
-  compact: boolean;
-  reduceMotion: boolean;
 }
 export type CompanionEvent = { type: "view"; code: string } | { type: "chart" } | { type: "basket" };
 export const COMPANION_STORAGE_KEY = "freshwise.companions.v1";
@@ -37,7 +34,7 @@ export function companionDay(now = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
 }
 export function initialCompanionState(day: string): CompanionState {
-  return { version: 1, day, dew: 6, xp: 0, growth: { cabbage: 0, radish: 0, strawberry: 0, pumpkin: 0, eggplant: 0, corn: 0 }, stamps: 0, active: "cabbage", visited: [], chart: false, basket: false, played: false, claimed: [], enabled: true, compact: false, reduceMotion: false };
+  return { version: 1, day, dew: 6, xp: 0, growth: { cabbage: 0, radish: 0, strawberry: 0, pumpkin: 0, eggplant: 0, corn: 0 }, stamps: 0, active: "cabbage", visited: [], chart: false, basket: false, played: false, claimed: [] };
 }
 export function dailyState(state: CompanionState, day: string): CompanionState {
   return state.day === day ? state : { ...state, day, visited: [], chart: false, basket: false, played: false, claimed: [] };
@@ -61,7 +58,6 @@ export function parseCompanionState(raw: string | null, day: string): CompanionS
       visited: Array.isArray(s.visited) ? [...new Set(s.visited.filter((x): x is string => typeof x === "string" && /^[A-Z0-9]{2,12}$/.test(x)))].slice(0, 3) : [],
       claimed: Array.isArray(s.claimed) ? QUESTS.filter((q) => s.claimed instanceof Array && s.claimed.includes(q.id)).map((q) => q.id) : [],
       chart: s.chart === true, basket: s.basket === true, played: s.played === true,
-      enabled: s.enabled !== false, compact: s.compact === true, reduceMotion: s.reduceMotion === true,
     }, day);
   } catch { return fallback; }
 }

@@ -96,5 +96,44 @@
     ],
     "catalogCorrection": "Edit target simplified food sheet. Keep same6columns4rows, exact subjects/layout/style/transparent background, no external decorative marks. Correct actual catalog identities: row3 column4 must be another whole CHICKEN (仿雞), not a goose, so show rounded plucked chicken with drumsticks and short neck, no duck/goose neck. Row4 column3 is soft Indica WHITE rice (在來米軟), not brown rice: use creamy white elongated rice grains. Row2 column2 represents pork hind leg, row2 column5 beef brisket slabs, preserve simple cuts. Keep all other cells unchanged. No labels, no text, no backdrop. All gutters alpha0. Requested1536x1024.",
     "notes": "Crop generated alpha sheets into individual centered square 256px PNGs; preserve original atlases."
+  },
+  "homeMarketV4": [
+    {
+      "name": "hero-board",
+      "prompt": "Use case: stylized-concept. Production FreshWise cozy hand-painted watercolor game UI asset. Reference1 original blank price board STYLE; warm cocoa outlines, cream paper fibres, soft honey wood grain, restrained sage greens. Not a UI screenshot. No letters, text, prices, numbers, food or characters. True transparent alpha outside asset. Clean simplified details legible at mobile size, no sparkles or orange rays. EDIT original reference1: remove hanging rope AND every hole, pin, rivet and fastener from cream paper sign. Preserve wooden vegetable crate, green leaves and small bottom flowers, blank cream paper. Recompose with no empty rope space at top: broad squat upright paper board, width:height about1:1, paper occupies central80%, no rope,no holes anywhere. Native1536x1536 requested for maximum180px web."
+    },
+    {
+      "name": "wood-counter",
+      "prompt": "Use case: stylized-concept. Production FreshWise cozy hand-painted watercolor game UI asset. Reference1 original blank price board STYLE; warm cocoa outlines, cream paper fibres, soft honey wood grain, restrained sage greens. Not a UI screenshot. No letters, text, prices, numbers, food or characters. True transparent alpha outside asset. Clean simplified details legible at mobile size, no sparkles or orange rays. Generate only one wide horizontal empty wooden market counter/table, frontal slightly top-down view. Width:height 4:1. Pale warm honey wood long plank tabletop upper60%, deeper vertical wooden apron lower40%, thick rounded brown contour, visible sparse watercolor wood-grain swirls. No legs, no cloth, no food, no ornaments, no nails, no text. A continuous clear tabletop surface so separate HTML food illustrations sit on it. Native3072x768 requested, intended max430x100 web. Genuine transparent outside wood silhouette. Entire object nearly fills canvas with3% margin."
+    },
+    {
+      "name": "quest-paper",
+      "prompt": "Use case: stylized-concept. Production FreshWise cozy hand-painted watercolor game UI asset. Reference1 original blank price board STYLE; warm cocoa outlines, cream paper fibres, soft honey wood grain, restrained sage greens. Not a UI screenshot. No letters, text, prices, numbers, food or characters. True transparent alpha outside asset. Clean simplified details legible at mobile size, no sparkles or orange rays. Generate one low wide cream paper task slip, ratio4:1. Soft irregular rounded corners, cocoa outline, subtle hand-painted watercolor parchment fibres and broad soft cream shading. Completely blank large usable center, NO holes, NO strings, NO paper clips, NO fasteners, NO pins, NO plants, NO objects, NO icons, NO text. Native3072x768 requested for max390px wide web. True transparent outside paper. Paper nearly fills canvas with2% clear margin."
+    },
+    {
+      "name": "mini-price-paper",
+      "prompt": "Use case: stylized-concept. Production FreshWise cozy hand-painted watercolor game UI asset. Reference1 original blank price board STYLE; warm cocoa outlines, cream paper fibres, soft honey wood grain, restrained sage greens. Not a UI screenshot. No letters, text, prices, numbers, food or characters. True transparent alpha outside asset. Clean simplified details legible at mobile size, no sparkles or orange rays. Generate one small freestanding blank cream paper market price card, 4:5 portrait. Very simple rounded slightly irregular cocoa edge, subtle cream watercolor paper texture, pale honey shading around border. No feet, stand, nails, rope, clips or holes. Entire center blank usable space. No text, food, characters or decorations. Native1024x1280 requested for max100px web."
+    }
+  ],
+  "texturedUiV5": {
+    "generator": "built-in image_gen",
+    "prompt": "Use case: style-transfer. Regenerate production FreshWise UI icon sheet. IMAGE1 blank price-tag board is the PRIMARY MATERIAL AND RENDERING STYLE reference. IMAGE2 clean 24-icon sheet is only SUBJECT, SILHOUETTE AND EXACT CELL ORDER reference. Transform ALL icons to visibly tactile hand-painted watercolor on fibrous cold-pressed paper, matching image1: prominent watercolor granulation, uneven pigment pooling at edges, broad dry-brush strokes, tiny paper-fiber speckles within every colored fill, subtle warm mottled cream highlights, brown outlines with slightly organic pigment edges. Wood parts show broad natural wood-grain brush marks, paper items visibly fibrous, leaves softly mottled. Texture must remain visible when each icon is reduced to32-40px: medium-scale tonal mottling as well as fine paper grain. Preserve chunky simple silhouettes and thick warm cocoa contours; restrained details for readability. NOT flat vector art, NOT smooth solid fills, NOT glossy plastic, NOT 3D. A cohesive cozy traditional watercolor game illustration set. EXACTLY6columns x4rows,1536x1024 requested, every icon centered in its own square cell,12% clear margin, no overlap, no grid. Row1: leaf-roof home; little market stall; cabbage hamster and radish bunny pair; vegetable basket; wooden gear; blue dew drop. Row2: cabbage; red apple; blue fish; chicken drumstick; pair of eggs; rice sack. Row3: magnifying glass; garden sieve filter; seed packet with sprout; green watering can; beach ball; heart envelope. Row4: open botanical book; yellow pencil; two green leaves; calendar; line chart board; warning notice board. NO decorative floating dots/rays/sparkles/splash marks outside ANY icon; especially no orange marks near dew, watering can or pencil, no blue marks above fish. Retain meaningful notice exclamation and chart line, but no text, labels or numbers anywhere. GENUINE ALPHA TRANSPARENT background between icons and outside silhouettes, no colored backdrop, no shadow halo, no baked checkerboard or white sticker rim. Never apply paper texture to transparent gaps; texture lives within icon artwork only. Preserve icon meanings and positions, completely regenerate material rendering.\n",
+    "outputs": "ui/textured-v5/ui-<function>.png",
+    "master": "source/textured-v5/ui-textured-master.png"
+  },
+  "taskPaperSlices": {
+    "generator": "built-in image_gen",
+    "prompt": "Use case: precise-object-edit / production game UI texture. Reference is existing FreshWise blank watercolor task paper. Regenerate a NEW blank paper panel MASTER to be cut into a top cap, vertically repeating middle, bottom cap. Keep warm pale cream/yellow watercolor paper fibers, broad very subtle pigment mottling, thick organic cocoa brown outline matching reference. Requested3072x1024 or highest wide3:1, genuine alpha transparency outside. Geometry ESSENTIAL: rounded softly irregular top and bottom edges only within top/bottom20% height. In central60% left and right edges MUST be perfectly straight vertical lines of constant thickness at same x coordinates, NO inward/outward bulges. Middle fill must have uniform overall tone without vertical gradient; side borders constant dark cocoa; no vertical lighting transitions. This will be sliced horizontally and center repeated vertically at arbitrary height: upper/lower seam colors and border widths need to match. Minimize vertical structure in center texture; broad faint horizontal grain variation allowed. Full paper almost fills canvas with2% transparent margin left/right/top/bottom. Large blank center. No text, glyphs, icons, objects, rope, holes, paper clips, metal pins, nails, highlights or drop shadow. Illustration only, no example UI. Preserve tactile cold-pressed watercolor texture, not flat vector.\n",
+    "crop": {
+      "topHeight": 145,
+      "bottomHeight": 145,
+      "width": 2172,
+      "originalHeight": 724
+    },
+    "outputs": [
+      "ui/task-paper-slip-top.png",
+      "ui/task-paper-slip-middle.png",
+      "ui/task-paper-slip-bottom.png"
+    ]
   }
 }

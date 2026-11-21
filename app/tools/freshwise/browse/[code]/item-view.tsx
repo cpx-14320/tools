@@ -102,7 +102,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
               : "資料來源今天沒有這一項的交易紀錄，過幾天再回來看看。"
           }
         />
-        <Callout icon="database" tone="neutral">
+        <Callout icon="database">
           {copy.sourceNote}
         </Callout>
       </div>
@@ -130,7 +130,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
 
       {/* ── 今日價 ─────────────────────────────────────────── */}
       <ListCard strong className="fw-detail-hero flex flex-col gap-3">
-        {companion.enabled && <PetArtwork id={companion.active} size={100} className="fw-detail-pet" />}
+        <PetArtwork id={companion.active} size={100} className="fw-detail-pet" />
         <div className="flex items-start gap-3">
           <ItemIcon src={itemImage(item.code)} fallbackIcon={item.icon} alt={item.name} size={22} boxSize={48} />
           <div className="min-w-0 flex-1">
@@ -201,12 +201,14 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
           </div>
         )}
 
-        <div className="flex items-center gap-2 border-t pt-3" style={{ borderColor: colors.borderSoft }}>
-          <Hint className="flex-1">
+        {/* 資料日期那行要自己佔滿一整列。以前跟按鈕並排（flex-1 + 按鈕），430px 的手機
+            上按鈕不會縮，那行就被擠成五行的窄柱：「11/20 ／（五）・傳 ／ 統市場・3 …」。 */}
+        <div className="flex flex-col gap-2 border-t pt-3" style={{ borderColor: colors.borderSoft }}>
+          <Hint>
             {formatShortDate(quote.date)}・{venueMeta(prefs.venue).name}
             {prefs.marketCode ? `・${quote.markets[0]?.marketName ?? ""}` : markets.length > 1 ? `・${markets.length} 個市場的代表價` : ""}
           </Hint>
-          <PrimaryButton icon={starred ? "check" : "plus"} onClick={() => toggleBasket(code, item.name)}>
+          <PrimaryButton size="block" icon={starred ? "check" : "plus"} onClick={() => toggleBasket(code, item.name)}>
             {starred ? `已在${copy.basket}` : `加入${copy.basket}`}
           </PrimaryButton>
         </div>
@@ -477,7 +479,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
         </ListCard>
       </section>
 
-      <Callout icon="database" tone="neutral">
+      <Callout icon="database">
         {copy.sourceNote}
       </Callout>
 

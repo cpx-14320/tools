@@ -22,14 +22,20 @@ export function GoTopButton({ visible }: { visible: boolean }) {
   }
 
   return (
-    <button
-      type="button"
-      onClick={scrollToTop}
-      aria-label="回到頂部"
-      style={{ bottom: "calc(env(safe-area-inset-bottom) + 5.5rem)", background: gradient.primary, boxShadow: shadow.cta }}
-      className="fixed right-5 z-20 grid size-11 place-items-center rounded-full transition-opacity hover:opacity-90"
-    >
-      <FaIcon icon="arrow-up" size={18} className="text-white" />
-    </button>
+    <>
+      {/* 這顆是 fixed 的，不佔版面高度，所以清單最後一列會被它蓋住（行情頁蓋到種子袋
+          按鈕、菜籃頁蓋到價格）。呼叫端都是把它放在頁面最後，就由它自己補一塊等高的
+          佔位，捲到底時最後一列還是點得到。 */}
+      <div aria-hidden className="h-12 shrink-0" />
+      <button
+        type="button"
+        onClick={scrollToTop}
+        aria-label="回到頂部"
+        style={{ bottom: "calc(env(safe-area-inset-bottom) + 5.5rem)", background: gradient.primary, boxShadow: shadow.cta }}
+        className="fixed right-5 z-20 grid size-11 place-items-center rounded-full transition-opacity hover:opacity-90"
+      >
+        <FaIcon icon="arrow-up" size={18} className="text-white" />
+      </button>
+    </>
   );
 }

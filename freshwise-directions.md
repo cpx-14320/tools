@@ -726,6 +726,7 @@ npx tsx scripts/freshwise-sync.mts --days 120   # 另外往回補 120 天的批�
 | 2026-11-21 | **再接兩個來源**：糧價（白米，20 縣市的零售與批發，是唯一不限臺中的零售價）與產銷履歷／有機蔬果行情（「有機要多付多少」）。新增「糧食」分類與五種米；快照改成自己記來源（同一個場所裡不同品項可能來自不同來源）；加上「跟當天中位數差三倍就丟掉」的離群值過濾。測試 251 項。 |
 | 2026-11-21 | **場所改名＋推估改區間**：場所用使用者會去的地點命名（傳統市場／超市／大賣場／批發市場）；沒有實測價的品項改顯示區間、倍數從自己的資料回推四分位距（青椒從「34～141」收斂成「48～88」）；推估的品項不再顯示漲跌與划算度。補上**中價**欄位與**完整行情表**（上/中/下/平均/量）；新增成交量與名稱兩種排序；標章比較加上佔比門檻。測試 263 項。 |
 | 2026-11-21 | **全流程實測**（夥伴素材接上之後）：五個頁面 × 三個場所全部 200、263 項功能測試與 17 組養成／素材測試全過；找到八個問題，記在第十五節（B1 批發當日快照殘缺導致水果整類消失最嚴重）。 |
+| 2026-11-22 | **修掉實測找到的問題＋樣式收斂**：B1 批發當日殘缺快照退回前一交易日、B2 肉品退回蔬菜圖示、B3 市場選單排序與重複縣市名、B4 詳情頁資料日期被擠成窄欄、B6 回頂按鈕蓋住清單、B7 走勢圖軸標籤重疊、B8 首頁標題對比；色票 114→48、字級 17→9 階；素材全部平放 `public/freshwise/`，未使用的 37 個移到 `unused/`；**夥伴養成改成跟著帳號走**（`freshwise.companions`，不再存 localStorage）。 |
 
 ---
 
@@ -767,3 +768,69 @@ npx tsx scripts/freshwise-sync.mts --days 120   # 另外往回補 120 天的批�
   `npx tsx scripts/freshwise-sync.mts --days 120`（約 6～8 分鐘）。
 - 13 個沒有資料來源的品項（L7）沒有圖集對應是**刻意的**——`freshwise-companion-check.mts`
   只檢查「有資料來源的品項」。B2 要修的是沒有圖時的退路，不是去補那 13 張圖。
+
+---
+
+## 十六、共用元件盤點與樣式收斂（2026-11-22）🟡
+
+### 為什麼要做
+
+Codex 接上插畫皮膚之後，畫面變成**兩層樣式在打架**：`ui.tsx` 用 theme token 畫一套，
+`game.css` 再用 `!important` 整個蓋掉換成插畫版。結果是
+
+- `game.css` 30KB、**114 個不重複色**（光「卡片邊框的棕色」就有 14 個差一兩階的版本）、
+  **17 種字級**、**36 個 `!important`**；
+- 同一顆按鈕有兩份顏色定義，改一邊不會生效，改兩邊才會，而且很容易漏。
+
+目標是回到 `components/expenses` 的做法：**元件自己畫完整的樣子，CSS 只做 CSS 才能做的事**
+（偽元素裝飾、hover／focus／aria 狀態、keyframes、捲軸、media query）。
+
+### 已完成 ✅
+
+| 項目 | 結果 |
+| --- | --- |
+| 色票收斂 | 114 色 → **48 個具名 CSS 變數**，定義在 `game.css` 開頭的 `.fw-app,.fw-modal` 一處。帶透明度的陰影改用 `color-mix()`，不再出現 `#9e886d1c` 這種 8 碼色 |
+| 字級收斂 | 17 種 → **9 階**（micro 10 / meta 11 / note 12 / label 13 / body 14 / lead 16 / section 20 / page 26 / price 32） |
+| TSX 取用變數 | `theme.ts` 新增 `v`，把變數名字抄成可以寫在 `style={{}}` 裡的字串。**值只存在 CSS 一處**，TSX 不再自己寫一份色碼 |
+| 素材整理 | `public/freshwise/` 比照 `public/expenses/` **全部平放同一層**，用檔名前綴分類（`ui-*`／`item-*`／`pet-*`／`category-*`）。沒在用的 37 個檔移到 `public/freshwise/unused/` |
+
+### 元件盤點：哪些是「同一個東西被寫了好幾次」
+
+`ui.tsx` 已經有 32 個共用元件，問題不是沒有共用，是**插畫皮膚又各自長了一份**。
+下面這幾組是「只差顏色或一兩個參數」，應該收斂成一個元件加 prop：
+
+| 組別 | 現在分散在哪 | 共同點 | 收斂方式 |
+| --- | --- | --- | --- |
+| **提示條** | `Callout`（已統一）| 淡底＋左立條＋小圖示＋說明文字 | ✅ 已是一個元件，`tone="warning" \| "neutral"` 只差底色與字色。**這就是標準版** |
+| **紙卡片** | `.fw-paper`／`.fw-notebook`／`.fw-quests`／`.fw-collection-book`／`.fw-price-list` | 米底＋棕邊＋右下實心偏移陰影＋手繪不等圓角 | 收成 `Paper`，用 `tone`（plain／notebook／quest／book）決定內距與圓角，顏色全走同一組變數 |
+| **膠囊按鈕** | `PrimaryButton`／`.fw-game-button`／`.fw-peach-button`／`FilterPill`／`.fw-filter-pills>button` | 圓角膠囊＋2px 邊＋實心下緣陰影 | 收成 `GameButton`，`tone="leaf" \| "peach" \| "ghost"`；`FilterPill`（目前寫在 `browse-view.tsx` 裡）併進 `SegmentedTabs` 的 pill 型態 |
+| **分頁列** | `SegmentedTabs`／`.fw-book-tabs`／`.fw-category-shelf` | 一排挑一個、選中態反白 | `SegmentedTabs` 多一個 `variant="pill" \| "book" \| "shelf"`，三者目前是三份各自的 CSS |
+| **進度條** | `.fw-growth-vine progress`／`.fw-hero-growth progress`／`.fw-quest-meter progress` | 圓角軌道＋綠色填色 | 收成 `GrowthBar`，只差寬度與是否顯示數字 |
+| **對話泡泡** | `.fw-home-speech`／`.fw-pet-speech` | 圓角框＋三角形指標 | 收成 `SpeechBubble`，`placement="below" \| "right"` |
+| **區塊標題** | `SectionTitle`／`.fw-quests>h2`／`.fw-diary h2`／`.fw-collection-book h2` | 30px 插畫圖示＋標題＋右側附註 | 統一走 `SectionTitle`，圖示尺寸由 prop 傳（現在是 CSS 用 `!important` 蓋掉元件的 inline 尺寸） |
+| **夥伴立繪** | `PetArtwork`／`CollectionArtwork` | 同一組角色、不同尺寸與素材 | 保留兩個（圖鑑是另一套姿勢的圖集），但共用 `petName()`／檔名表，不要各自寫一份 |
+
+### 還沒做：拆掉 36 個 `!important` ⬜
+
+分成四類，照「拆掉的風險由低到高」排：
+
+1. **元件尺寸被 CSS 蓋掉**（`.fw-section-title>.fw-art{width:30px!important}` 這類，6 處）
+   ——`IllustratedArt` 的寬高是 inline style，CSS 一定要 `!important` 才蓋得過。
+   **改法**：呼叫端把 `size` 傳對，刪掉 CSS 規則。
+2. **Tailwind 任意值被 CSS 蓋掉**（`.fw-price-tag .text-\[38px\]{font-size:32px!important}`，3 處）
+   ——**改法**：價格字級改吃 `--fw-fs-price`，刪掉 Tailwind 的 `text-[38px]`。
+3. **整顆元件的外觀被換掉**（`fw-primary`／`fw-field`／`fw-paper`／`fw-badge`／`fw-item-row`／
+   `fw-segmented-tabs`／`fw-callout`／`fw-modal-*`，約 25 處）
+   ——**改法**：把插畫皮膚搬進元件（用 `v.*` 變數），刪掉 CSS 覆蓋。這一類要一個元件一個
+   元件改＋看畫面，是主要的工作量。
+4. **`prefers-reduced-motion` 的 `animation:none!important`**（1 處）
+   ——**改法**：改成只針對 `.fw-breathe` 等實際會動的 class 關閉，同權重後寫者勝，不需要
+   `!important`。
+
+### 規則（之後寫新畫面照這個來）
+
+- 顏色與字級**只能**從 `game.css` 的 `--fw-*` 或 `theme.ts` 的 `v` 取，不要再出現新的色碼或 px。
+- 需要一個現在沒有的顏色時，先確認不是既有變數的某一階；真的要加就加在變數區並寫下用途。
+- 同一種樣式在兩個以上的地方出現過，就該是 `ui.tsx` 的一個元件，差異用 prop 表達，
+  **不要複製一份只改顏色**。
+- 不要用 `!important`。需要它通常代表「同一個東西被定義了兩次」，該去刪掉其中一份。

@@ -32,3 +32,15 @@
 目前網頁改用 `ui/simple/ui-<功能>.png`（24 張）及 `items/simple/item-<品項代碼>.png`（95 張），皆為 256×256 透明 PNG，主體等比例置中並保留透明邊距。生成母圖保存在 `source/simple-v3/`，固定品項代碼繼續由 art-assets.ts 維護；manifest 同時保存現用檔案與 legacyAtlas。
 256px 在 40px 顯示時為 6.4 倍，標題 48px 時為 5.33 倍，依本次指定單張 256px 規格，未宣稱達 6 倍。
 完整提示詞保存在 asset-prompts.json 的 simpleV3。
+
+## 首頁市集 V4
+
+新增無繩無洞價牌 `home/home-price-tag-board-clean.png`、木檯 `ui/market-wood-counter.png`、任務紙 `ui/task-paper-slip.png`、空白小價牌 `home/market-small-price-card.png`。皆使用內建 image_gen；原始素材保留。完整提示詞位於 asset-prompts.json/homeMarketV4。價格、食材、任務進度皆為動態 HTML；背景不烘焙食物或價錢。原生尺寸與實際倍率以 manifest 為準，未放大冒充原生六倍。
+
+## 水彩紙紋 UI V5
+
+24 個功能圖示使用內建 image_gen 參考原始價牌重新生成，增加顏料沉積、紙纖維、乾筆與木紋，維持粗棕輪廓、小尺寸辨識和無外側點線裝飾。現用單圖 `ui/textured-v5/ui-<功能>.png`，皆為 256×256 透明 PNG；舊圖與 V3 單圖保留。母圖及 32px 預覽位於 `source/textured-v5/`，完整提示詞位於 asset-prompts.json/texturedUiV5。
+
+## 可延伸任務紙（2026-11-22）
+
+重新生成直立側邊的紙張母圖，裁切為 `ui/task-paper-slip-top.png`、`ui/task-paper-slip-middle.png`、`ui/task-paper-slip-bottom.png`。上下段使用固定 aspect-ratio，中段 background-size:100% auto / repeat-y，隨文字長度延伸；原 task-paper-slip.png 保留。母圖位於 source/task-paper-slices/，提示詞及裁切尺寸保存在 asset-prompts.json/taskPaperSlices。

@@ -1,7 +1,7 @@
-/** 生成時的固定品項代碼對照，目錄增刪／排序不會讓既有圖示錯位。 */
-export const ITEM_ART_GROUPS: readonly { file: string; codes: readonly string[] }[] = [
+/** 有畫好插畫的品項代碼。素材平放在 `public/freshwise/item-<code>.png`，
+ *  這份清單只回答「這個品項有沒有圖」——沒有的會退回分類的通用圖示（見 item-icon.tsx）。 */
+export const ITEM_ART_GROUPS: readonly { codes: readonly string[] }[] = [
   {
-    "file": "/freshwise/items/item-catalog-atlas-01.png",
     "codes": [
       "FA1",
       "FA2",
@@ -30,7 +30,6 @@ export const ITEM_ART_GROUPS: readonly { file: string; codes: readonly string[] 
     ]
   },
   {
-    "file": "/freshwise/items/item-catalog-atlas-02.png",
     "codes": [
       "FC8",
       "FC9",
@@ -59,7 +58,6 @@ export const ITEM_ART_GROUPS: readonly { file: string; codes: readonly string[] 
     ]
   },
   {
-    "file": "/freshwise/items/item-catalog-atlas-03.png",
     "codes": [
       "GB1",
       "GB2",
@@ -88,7 +86,6 @@ export const ITEM_ART_GROUPS: readonly { file: string; codes: readonly string[] 
     ]
   },
   {
-    "file": "/freshwise/items/item-catalog-atlas-04.png",
     "codes": [
       "HB2",
       "HB3",
@@ -116,5 +113,9 @@ export const ITEM_ART_GROUPS: readonly { file: string; codes: readonly string[] 
     ]
   }
 ];
-export function itemArtwork(code: string) { for (const group of ITEM_ART_GROUPS) { const index = group.codes.indexOf(code); if (index >= 0) return { file: `/freshwise/items/simple/item-${code}.png`, index, atlasFile: group.file }; } return undefined; }
-
+export function itemArtwork(code: string) {
+  for (const group of ITEM_ART_GROUPS) {
+    if (group.codes.includes(code)) return { file: `/freshwise/item-${code}.png` };
+  }
+  return undefined;
+}

@@ -344,12 +344,12 @@ export const TRACKED_CATALOG: CatalogItem[] = CATALOG.filter((item) => !!SOURCE_
  * 問題，而代碼本來就是這個品項的穩定識別。
  */
 export function itemImage(code: string): string {
-  return `/freshwise/items/${code}.png`;
+  return `/freshwise/item-${code}.png`;
 }
 
 /** 分類圖片的路徑。同樣是「有圖就用圖、沒圖退回向量圖示」。 */
 export function categoryImage(key: CategoryKey): string {
-  return `/freshwise/categories/${key}.png`;
+  return `/freshwise/category-${key}.png`;
 }
 
 const BY_CODE = new Map(CATALOG.map((item) => [item.code, item]));

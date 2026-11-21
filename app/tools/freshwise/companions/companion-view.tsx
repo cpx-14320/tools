@@ -28,6 +28,6 @@ export function CompanionView() {
       {state.dew < 3 && <p className="fw-helper-note">完成下面的探索任務，就有露珠可以澆水。每天第一次陪玩也能增加成長。</p>}
     </> : <section className="fw-collection-book"><h2>蔬果圖鑑 <small>已結識 {owned.length}／{COMPANIONS.length} 位</small></h2><p>每一次探索，都多認識一位朋友。</p><div className="fw-collection-grid">{COMPANIONS.map((p) => { const unlocked = p.threshold <= state.stamps; return <button type="button" key={p.id} className={`fw-collection-pet ${unlocked ? "" : "fw-pet-locked"}`} disabled={!unlocked} aria-pressed={state.active === p.id} onClick={() => { select(p.id); setTab("care"); }}><CollectionArtwork id={p.id} /><strong>{p.name}</strong><span>{state.active === p.id ? "陪伴中" : unlocked ? "一起陪伴 →" : `印章 ${Math.min(state.stamps, p.threshold)}／${p.threshold}`}</span></button>; })}</div><p className="fw-helper-note">完成探索就能結識，不需要購買食材。南瓜慢慢是花園夥伴，目前沒有對應的查價品項。</p></section>}
     <QuestSlip all />
-    <p className="fw-helper-note">{storageAvailable ? "夥伴與任務進度保存在這台裝置。離開後不會掉等級，也不需要連續登入。" : "瀏覽器暫時無法儲存進度；目前互動仍可使用，關閉後可能無法保留。"}</p>
+    <p className="fw-helper-note">{storageAvailable ? "夥伴與任務進度跟著你的帳號，換手機、換瀏覽器都會在。" : "目前連不上伺服器，這次的進度可能沒辦法保存。"}</p>
   </div>;
 }

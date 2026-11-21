@@ -854,15 +854,66 @@ export async function syncAll(onProgress?: (msg: string) => void): Promise<{ ret
 
 /* ───────────────────── 讀取：組出 PriceQuote ───────────────────── */
 
+/**
+ * 判斷一份快照是不是「只publish到一半」。
+ *
+ * 踩過的坑：農業部的批發行情是整個上午陸陸續續補的，早上去抓會拿到一份只有蔬菜、
+ * 完全沒有水果的殘缺資料（實測 11/21 上午只回 132 列，前兩天各 3,600～3,800 列）。
+ * 那份一樣會被寫成當天的快照，於是畫面上「批發市場 ＋ 水果」變成一項都沒有。
+ *
+ * 判準刻意不是「筆數變少」——週日本來就少（11/16 只有 49 項但水果有 17 項，是正常的）。
+ * 看的是**有沒有整個分類消失**：最近幾天都有水果、今天一項水果都沒有，那就是還沒補完。
+ */
+function categoriesOf(doc: SnapshotDoc): Set<CategoryKey> {
+  const set = new Set<CategoryKey>();
+  for (const code of Object.keys(doc.byCode)) {
+    const category = findItem(code)?.category;
+    if (category) set.add(category);
+  }
+  return set;
+}
+
+function looksPartial(candidate: SnapshotDoc, history: SnapshotDoc[]): boolean {
+  if (history.length < 2) return false;
+  const present = categoriesOf(candidate);
+  if (present.size === 0) return true;
+  // 一個分類要在「過半數的近期快照」都出現過，才算是這個來源平常就有的分類。
+  const seen = new Map<CategoryKey, number>();
+  for (const doc of history) for (const category of categoriesOf(doc)) seen.set(category, (seen.get(category) ?? 0) + 1);
+  for (const [category, days] of seen) {
+    if (days * 2 > history.length && !present.has(category)) return true;
+  }
+  return false;
+}
+
+/** 幾個 scope 的當日資料是分批公布的，會出現殘缺的半份。只有這幾個要做完整性檢查。 */
+const PARTIAL_PRONE: SnapshotScope[] = ["wholesale"];
+
 /** 某個分組在指定日期（或之前）最近的一份快照。null 代表完全沒有資料。 */
 async function latestSnapshot(scope: SnapshotScope, onOrBefore: string): Promise<SnapshotDoc | null> {
   const coll = await snapshots();
-  return coll.findOne({ venue: scope, date: { $lte: onOrBefore } }, { sort: { date: -1 } });
+  if (!PARTIAL_PRONE.includes(scope)) {
+    return coll.findOne({ venue: scope, date: { $lte: onOrBefore } }, { sort: { date: -1 } });
+  }
+  // 多撈幾天當作「平常長什麼樣」的對照，最新那份殘缺就往前退一天。
+  const recent = await coll.find({ venue: scope, date: { $lte: onOrBefore } }, { sort: { date: -1 }, limit: 8 }).toArray();
+  for (let i = 0; i < recent.length; i += 1) {
+    if (!looksPartial(recent[i], recent.slice(i + 1))) return recent[i];
+  }
+  return recent[0] ?? null;
 }
 
 async function snapshotBefore(scope: SnapshotScope, before: string): Promise<SnapshotDoc | null> {
   const coll = await snapshots();
-  return coll.findOne({ venue: scope, date: { $lt: before } }, { sort: { date: -1 } });
+  if (!PARTIAL_PRONE.includes(scope)) {
+    return coll.findOne({ venue: scope, date: { $lt: before } }, { sort: { date: -1 } });
+  }
+  // 漲跌是拿「今天 vs 前一個交易日」比的，比較基準同樣不能是殘缺的半份。
+  const recent = await coll.find({ venue: scope, date: { $lt: before } }, { sort: { date: -1 }, limit: 8 }).toArray();
+  for (let i = 0; i < recent.length; i += 1) {
+    if (!looksPartial(recent[i], recent.slice(i + 1))) return recent[i];
+  }
+  return recent[0] ?? null;
 }
 
 /**
@@ -888,6 +939,18 @@ function mergeSnapshots(docs: (SnapshotDoc | null)[]): SnapshotDoc | null {
   };
 }
 
+/**
+ * 市場分群在選單裡的排序。**不要照字串排**——照筆劃排的結果是「各縣市糧價（米）」的
+ * 二十個縣市排在最前面，使用者要捲過二十列才看得到臺中那幾個真正的零售市場，而糧價
+ * 其實只影響五種米。規則是：這個場所的主要行情來源排前面，只涵蓋少數品項的排後面。
+ */
+const MARKET_GROUP_ORDER = ["臺中市公有零售市場", "蔬果批發市場", "魚市場", "各縣市糧價（米）"];
+
+function groupRank(group: string): number {
+  const index = MARKET_GROUP_ORDER.indexOf(group);
+  return index < 0 ? MARKET_GROUP_ORDER.length : index;
+}
+
 /** 從一份快照裡把出現過的市場收集起來。 */
 function marketOptionsOf(snap: SnapshotDoc | null): MarketOption[] {
   if (!snap) return [];
@@ -909,7 +972,9 @@ function marketOptionsOf(snap: SnapshotDoc | null): MarketOption[] {
       });
     }
   }
-  return [...seen.values()].sort((a, b) => (a.group === b.group ? a.name.localeCompare(b.name, "zh-TW") : a.group < b.group ? -1 : 1));
+  return [...seen.values()].sort((a, b) =>
+    a.group === b.group ? a.name.localeCompare(b.name, "zh-TW") : groupRank(a.group) - groupRank(b.group),
+  );
 }
 
 interface ReadContext {

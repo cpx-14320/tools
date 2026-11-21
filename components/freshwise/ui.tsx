@@ -1,7 +1,7 @@
 "use client";
 
 import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
-import { colors, gradient, shadow, text } from "./theme";
+import { colors, gradient, shadow, text, v } from "./theme";
 import { FaIcon } from "./fa-icon";
 
 // FreshWise 的通用元件庫（「長相」的部分），搭配 theme.ts 的 token 一起用。價格、漲跌
@@ -70,23 +70,23 @@ export function ErrorText({ children, className = "", center = false }: { childr
  * 跟 Note 的差別是這個有底色跟圖示——Note 是「順便說一下」，這個是「你必須知道這件事
  * 才不會誤解上面的數字」。整個工具只有三種情況用它，都寫在 theme.ts 的 copy 裡。
  */
-export function Callout({
-  children,
-  icon = "circle-info",
-  tone = "warning",
-}: {
-  children: ReactNode;
-  icon?: string;
-  tone?: "warning" | "neutral";
-}) {
-  const palette =
-    tone === "warning"
-      ? { bg: colors.warningBg, fg: colors.warning }
-      : { bg: colors.surfaceSoft, fg: colors.muted };
+/**
+ * 提示條：淡底＋插畫小圖示＋一行說明。估算值說明、休市公告、資料來源註記都用這一個。
+ *
+ * **只有一種配色。** 以前分 `tone="warning" | "neutral"` 兩種，差別只有底色與字色
+ * （#FFF0C7/#92611D 與 #F6EEDB/#836A54），同一個元件在不同頁面長得不一樣，使用者看到
+ * 的是「兩種看起來很像但又不一樣的提示」。要強調程度不同的時候用文案區分，不要用顏色
+ * 再長出一個變體。
+ *
+ * 底色用 `--fw-paper-sunk`（跟卡片紙、輸入框同一張紙），文字用 warning 的棕金色。
+ * 圖示用語意名稱傳（`database`／`calendar-xmark`／`triangle-exclamation`…），
+ * fa-icon.tsx 會對應到插畫圖示。
+ */
+export function Callout({ children, icon = "circle-info" }: { children: ReactNode; icon?: string }) {
   return (
-    <div className="fw-callout flex items-start gap-2 rounded-2xl px-3 py-2.5" style={{ backgroundColor: palette.bg }}>
-      <FaIcon icon={icon} size={12} className="mt-0.5 shrink-0" color={palette.fg} />
-      <p className="text-xs leading-relaxed" style={{ color: palette.fg }}>
+    <div className="fw-callout flex items-start gap-2 rounded-2xl px-3 py-2.5" style={{ backgroundColor: v.paperSunk }}>
+      <FaIcon icon={icon} size={12} className="mt-0.5 shrink-0" color={colors.warning} />
+      <p className="leading-relaxed" style={{ color: colors.warning, fontSize: v.fsLabel }}>
         {children}
       </p>
     </div>
