@@ -30,12 +30,11 @@ export function GoTopButton({ visible }: { visible: boolean }) {
         type="button"
         onClick={scrollToTop}
         aria-label="回到頂部"
-        style={{ bottom: "calc(env(safe-area-inset-bottom) + 88px)" }}
-        className="fw-go-top fixed right-5 z-20 grid place-items-center transition-opacity hover:opacity-90"
+        className="fw-go-top fixed z-20 grid place-items-center transition-opacity hover:opacity-90"
       >
         {/* 插畫版的回到頂端。圖檔放 public/freshwise/ui-go-top.png（跟其他介面圖示
             同一層、同一個 ui- 前綴）。 */}
-        <IllustratedArt src="/freshwise/ui-go-top.png" size={44} />
+        <IllustratedArt src="/freshwise/ui-go-top.png" size={40} />
       </button>
     </>
   );

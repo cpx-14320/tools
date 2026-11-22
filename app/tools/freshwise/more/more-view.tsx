@@ -15,10 +15,10 @@ import {
   SectionTitle,
   SegmentedTabs,
   SelectButton,
-  Switch,
 } from "@/components/freshwise/ui";
 import { FaIcon } from "@/components/freshwise/fa-icon";
 import { MarketPickerModal } from "@/components/freshwise/market-picker-modal";
+import { OptionPickerModal } from "@/components/freshwise/option-picker-modal";
 import { EditorSheet } from "@/components/freshwise/editor-sheet";
 import { useFreshwise } from "@/components/freshwise/store";
 import { colors, copy, text } from "@/components/freshwise/theme";
@@ -31,14 +31,14 @@ import type { MarketOption, UnitKey, VenueKey } from "@/lib/freshwise/types";
 
 const VENUE_TABS = VENUES.map((v) => ({ key: v.key, label: v.name, icon: v.icon }));
 
-const UNIT_TABS: readonly { key: UnitKey; label: string }[] = [
-  { key: "catty", label: "台斤" },
-  { key: "kg", label: "公斤" },
+const UNIT_OPTIONS: readonly { key: UnitKey; label: string; note: string }[] = [
+  { key: "catty", label: "台斤", note: "台灣市場的習慣單位" },
+  { key: "kg", label: "公斤", note: "開放資料的原始單位" },
 ];
 
 /** 漲跌提醒的門檻選項。固定四階，不給自由輸入——使用者對「幾 % 算大漲」沒有精確概念，
  *  給一個數字輸入框只會讓人卡在那裡想，四個選項反而好決定。 */
-const ALERT_TABS: readonly { key: string; label: string }[] = [
+const ALERT_OPTIONS: readonly { key: string; label: string }[] = [
   { key: "10", label: "10%" },
   { key: "15", label: "15%" },
   { key: "20", label: "20%" },
@@ -98,6 +98,8 @@ export function MoreView({
   const { reset: resetCompanions } = useCompanion();
   const [marketPickerOpen, setMarketPickerOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
+  const [unitPickerOpen, setUnitPickerOpen] = useState(false);
+  const [alertPickerOpen, setAlertPickerOpen] = useState(false);
 
   const venue = venueMeta(prefs.venue);
 
@@ -123,34 +125,27 @@ export function MoreView({
             ? `這個場所今天有 ${markets.length} 個市場回報行情。選「全部市場」就是看它們的平均價。`
             : "超市量販的價格是推估的，沒有個別市場可以選。"}
         </Hint>
-      </section>
 
-      {/* ── 顯示單位 ───────────────────────────────────────── */}
-      <section className="flex flex-col gap-2.5">
-        <SectionTitle leaf>價格單位</SectionTitle>
-        <SegmentedTabs items={UNIT_TABS} value={prefs.unit} onChange={(unit) => setPrefs({ unit })} />
-        <Note>
+        {/* 單位與提醒門檻本來各自一個區塊、各自一排 SegmentedTabs。它們其實都是
+            「預設用什麼條件看行情」的一部分，併進同一區，而且統一成下拉選單——
+            設定頁本來有三種挑選介面並存（分頁／彈窗／分頁），每一區都要重新認一次。 */}
+        <Field label="價格單位" as="div">
+          <SelectButton
+            icon="tag"
+            value={UNIT_OPTIONS.find((o) => o.key === prefs.unit)?.label ?? "台斤"}
+            onClick={() => setUnitPickerOpen(true)}
+          />
+        </Field>
+        <Hint>
           1 台斤 = {KG_PER_CATTY} 公斤。開放資料裡批發行情是元/公斤、零售訪價是元/台斤，這個工具一律換算成你選的單位再顯示，切換{copy.venue}時會自動換成那邊的慣用單位。
-        </Note>
-      </section>
-
-      {/* ── 首頁 ───────────────────────────────────────────── */}
-      <section className="flex flex-col gap-2.5">
-        <SectionTitle leaf>首頁</SectionTitle>
-        <Paper variant="flush" className="divide-y">
-          <DividedRow>
-            <span className="min-w-0 flex-1">
-              <span className={text.bodyStrong}>顯示今天的買菜建議</span>
-              <span className={`block ${text.meta}`}>關掉之後主視覺只顯示工具名稱</span>
-            </span>
-            <Switch checked={prefs.showAdvice} onChange={(showAdvice) => setPrefs({ showAdvice })} label="顯示今天的買菜建議" />
-          </DividedRow>
-        </Paper>
+        </Hint>
 
         <Field label="大漲大跌的提醒門檻" as="div">
-          <SegmentedTabs items={ALERT_TABS} value={String(prefs.alertPercent)} onChange={(key) => setPrefs({ alertPercent: Number(key) })} />
+          <SelectButton icon="arrow-trend-up" value={`${prefs.alertPercent}%`} onClick={() => setAlertPickerOpen(true)} />
         </Field>
-        <Hint>漲跌超過這個幅度的品項會被標成「要注意」。推播提醒還沒做。</Hint>
+        {/* 誠實標示：這個門檻目前還沒有任何畫面在用（原本要拿來標「要注意」與推播，
+            兩者都還沒做）。寫清楚比讓使用者調了半天沒反應好。 */}
+        <Hint>設定多少幅度算「大漲大跌」。提醒功能還在規劃，目前調整這個值畫面不會有變化。</Hint>
       </section>
 
       {/* ── 資料來源 ───────────────────────────────────────── */}
@@ -168,7 +163,7 @@ export function MoreView({
           <Note>行情每天更新一次（農業部大約上午公布當天的資料），所以同一天內重新整理不會有新數字。</Note>
         </Paper>
 
-        <Paper variant="flush" className="divide-y">
+        <Paper variant="flush" className="fw-stack">
           {DATA_SOURCES.map((source) => (
             <DividedRow key={source.name}>
               <span className="min-w-0 flex-1">
@@ -218,7 +213,7 @@ export function MoreView({
       {/* ── 關於 ───────────────────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
         <SectionTitle leaf>關於</SectionTitle>
-        <Paper variant="flush" className="divide-y">
+        <Paper variant="flush" className="fw-stack">
           <DividedRow>
             <span className="min-w-0 flex-1">
               <span className={text.bodyStrong}>
@@ -235,6 +230,23 @@ export function MoreView({
           </DividedRow>
         </Paper>
       </section>
+
+      <OptionPickerModal
+        open={unitPickerOpen}
+        title="價格單位"
+        value={prefs.unit}
+        options={UNIT_OPTIONS}
+        onClose={() => setUnitPickerOpen(false)}
+        onConfirm={(unit) => setPrefs({ unit })}
+      />
+      <OptionPickerModal
+        open={alertPickerOpen}
+        title="大漲大跌的提醒門檻"
+        value={String(prefs.alertPercent)}
+        options={ALERT_OPTIONS}
+        onClose={() => setAlertPickerOpen(false)}
+        onConfirm={(key) => setPrefs({ alertPercent: Number(key) })}
+      />
 
       <MarketPickerModal
         open={marketPickerOpen}
@@ -268,7 +280,7 @@ export function MoreView({
                 resetCompanions();
                 setBasket(defaultBasket());
                 setVenue("market");
-                setPrefs({ unit: "catty", alertPercent: 15, showAdvice: true });
+                setPrefs({ unit: "catty", alertPercent: 15 });
                 setResetOpen(false);
               }}
             >

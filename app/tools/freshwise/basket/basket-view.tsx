@@ -7,6 +7,7 @@ import { QuestSlip } from "@/components/freshwise/companion-widgets";
 import { newlyFilledQuantity } from "@/lib/freshwise/companions";
 import {
   AddButton,
+  CollapsibleList,
   Callout,
   DragHandle,
   EmptyState,
@@ -303,6 +304,8 @@ function GroupEntries({
 
   return (
     <>
+      {/* 分類裡的項目多的時候整頁會很長，跟首頁的清單用同一套收合。 */}
+      <CollapsibleList max={6} moreLabel={(n) => `這個${copy.group}還有 ${n} 項，展開看`}>
       {entries.map((entry, index) => {
         const item = itemOrPlaceholder(entry.code);
         const quote = quotes.get(entry.code);
@@ -310,7 +313,7 @@ function GroupEntries({
         // 靜靜消失的話使用者會以為自己的菜籃被動過了。
         if (!quote) {
           return (
-            <div key={entry.id} ref={drag.rowRef(index)} className={drag.rowClass(index)}><ListCard className="fw-basket-entry-card flex items-center gap-3">
+            <div key={entry.id} ref={drag.rowRef(index)} className={drag.rowClass(index)}><ListCard className="fw-basket-entry-card flex items-center gap-1.5">
               {entries.length > 1 && <DragHandle label={`拖曳排序 ${item.name}`} {...drag.handleProps(index)} />}
               <ItemIcon src={itemImage(item.code)} fallbackIcon={item.icon} alt={item.name} size={20} boxSize={40} className="opacity-60" />
               <button type="button" onClick={() => onEdit(entry)} className="min-w-0 flex-1 text-left">
@@ -342,6 +345,7 @@ function GroupEntries({
           </div>
         );
       })}
+      </CollapsibleList>
       <AddButton onClick={onAdd}>{`新增${copy.entry}`}</AddButton>
     </>
   );

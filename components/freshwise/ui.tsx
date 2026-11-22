@@ -451,26 +451,6 @@ export function FieldRow({ children, className = "" }: { children: ReactNode; cl
   return <div className={`grid grid-cols-2 gap-2 ${className}`}>{children}</div>;
 }
 
-/** 設定頁的開關。原生 checkbox 的樣式各平台不一樣，自己畫一顆。 */
-export function Switch({ checked, onChange, label }: { checked: boolean; onChange: (next: boolean) => void; label: string }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={() => onChange(!checked)}
-      className="fw-switch relative h-6 w-10 shrink-0 rounded-full transition-colors"
-      style={{ backgroundColor: checked ? colors.brand : colors.border }}
-    >
-      <span
-        className="absolute top-0.5 size-5 rounded-full bg-white shadow-sm transition-all"
-        style={{ left: checked ? 18 : 2 }}
-      />
-    </button>
-  );
-}
-
 /* ───────────────────────── 容器 ───────────────────────── */
 
 /** 白底清單卡片。 */
@@ -548,7 +528,7 @@ export function ListCard({
 /** 列與列之間有淡分隔線的清單容器。 */
 export function DividedCard({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <Paper variant="divided" className={`divide-y ${className}`} style={{ borderColor: v.lineCard }}>
+    <Paper variant="divided" className={`fw-stack ${className}`}>
       {children}
     </Paper>
   );
@@ -624,7 +604,9 @@ export function DividedRow({
   onClick?: () => void;
   className?: string;
 }) {
-  const cls = `flex w-full items-center gap-3 px-4 py-3 text-left ${onClick ? "transition-colors hover:bg-[#FCF7EB]" : ""} ${className}`;
+  // 左右不留內距：帶分隔線的區塊才會跟同一張紙上「只用 gap 疊起來」的區塊對齊在
+  // 同一條直線上，兩種版式看起來像同一個東西。
+  const cls = `flex w-full items-center gap-3 py-3 text-left ${onClick ? "transition-colors hover:bg-[#FCF7EB]" : ""} ${className}`;
   if (!onClick) return <div className={cls}>{children}</div>;
   return (
     <button type="button" onClick={onClick} className={cls}>

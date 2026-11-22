@@ -190,8 +190,6 @@ export interface FreshwisePrefs {
   marketCode: string;
   /** 漲跌提醒門檻（%）。超過這個幅度的品項，首頁會特別點出來。 */
   alertPercent: number;
-  /** 首頁要不要顯示「今天買菜建議」那張主視覺卡。 */
-  showAdvice: boolean;
 }
 
 /** 一本「價格簿」：某個場所、某一天，整份目錄的行情。由伺服器端組好傳給畫面。 */

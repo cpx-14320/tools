@@ -704,7 +704,6 @@ run("偏好設定（cookie）", () => {
   check("預設看傳統市場", prefs.venue === "market");
   check("預設用台斤", prefs.unit === "catty");
   check("預設看全部市場", prefs.marketCode === "");
-  check("預設顯示買菜建議", prefs.showAdvice === true);
   check("提醒門檻在合理範圍", prefs.alertPercent >= 5 && prefs.alertPercent <= 50);
   // 伺服器端算繪用的就是這組預設值，所以它必須跟「傳統市場的慣用單位」一致，不然第一次
   // 畫面的單位跟切換場所後的單位會不一樣。

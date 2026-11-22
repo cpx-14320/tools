@@ -129,8 +129,8 @@
 
 
 
-.fw-add-button{min-height:44px;border:0 0 1px dashed var(--fw-line-card);border-width:0 0 1px;border-radius:0;text-align:left;padding-left:8px;color:var(--fw-ink)}
-.fw-switch{outline:1px solid var(--fw-line-strong);outline-offset:2px;margin:8px 4px}.fw-drag-handle{min-height:44px;color:var(--fw-line-deep)}
+.fw-add-button{margin-top:-4px;min-height:44px;border:0 0 1px dashed var(--fw-line-card);border-width:0 0 1px;border-radius:0;text-align:left;padding-left:8px;color:var(--fw-ink)}
+.fw-drag-handle{min-height:44px;color:var(--fw-line-deep)}
 .fw-bottom-nav{position:absolute;inset:auto 0 0;z-index:20;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:8px 8px calc(8px + env(safe-area-inset-bottom));border-top:3px solid var(--fw-wood-nav-line);border-radius:0;background:var(--fw-wood-nav) url('/freshwise/ui-paper-texture.png') center/160px repeat;background-blend-mode:multiply;box-shadow:0 -3px 10px color-mix(in srgb, var(--fw-shadow-ink) 10%, transparent)}
 .fw-bottom-nav>a{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;min-height:66px;gap:0;color:var(--fw-ink);font-size:var(--fw-fs-note);font-weight:700;text-decoration:none;position:relative;isolation:isolate}
 /* 選中態的葉形底：以前貼著 <a> 的底邊、又比文字寬，下緣會被導覽列的內距切掉一截。
@@ -168,7 +168,7 @@
    其中一欄的立繪。 */
 .fw-collection-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 8px;padding:16px 0}
 .fw-collection-pet{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:140px;position:relative;background:transparent;opacity:1}.fw-collection-pet strong{font-size:var(--fw-fs-label);text-align:center;line-height:1.3}.fw-collection-pet>span:last-child{font-size:var(--fw-fs-meta);padding:1px 8px;background:var(--fw-leaf-pale);border-radius:8px;text-align:center}.fw-pet-locked .fw-art{opacity:.6;filter:saturate(.35)}.fw-pet-locked>span:last-child{background:var(--fw-sand-pale)}
-.fw-detail-hero{position:relative;--fw-paper-pad:16px 100px 16px 16px;min-height:210px}.fw-detail-pet{position:absolute;right:3px;top:45px;opacity:.95}.fw-detail-hero .fw-price-actions,.fw-detail-hero .border-t{flex-wrap:wrap}.fw-detail-hero h1{overflow-wrap:anywhere}.fw-basket-summary{position:relative;isolation:isolate;--fw-paper-pad:16px 100px 16px 16px;min-height:160px}.fw-basket-summary>div{flex-direction:column;align-items:flex-start}.fw-basket-summary .text-right{text-align:left}.fw-basket-pet{position:absolute;right:-4px;top:20px;z-index:-1}.fw-basket-page>section{padding-top:8px}.fw-basket-page .fw-item-row{--fw-row-pad:16px 4px}
+.fw-detail-hero{position:relative;--fw-paper-pad:16px 100px 16px 16px;min-height:210px}.fw-detail-pet{position:absolute;right:3px;top:45px;opacity:.95}.fw-detail-hero .fw-price-actions,.fw-detail-hero .border-t{flex-wrap:wrap}.fw-detail-hero h1{overflow-wrap:anywhere}.fw-basket-summary{position:relative;isolation:isolate;--fw-paper-pad:16px 100px 16px 16px;min-height:160px}.fw-basket-summary>div{flex-direction:column;align-items:flex-start}.fw-basket-summary .text-right{text-align:left}.fw-basket-pet{position:absolute;right:-4px;top:20px;z-index:-1}.fw-basket-page>section{padding-top:8px}.fw-basket-page .fw-item-row{--fw-row-pad:16px 4px;gap:6px}
 
 .fw-modal-backdrop{background:color-mix(in srgb, var(--fw-shadow-ink) 40%, transparent);backdrop-filter:blur(2px)}.fw-modal-paper{background:var(--fw-paper-card) url('/freshwise/ui-paper-texture.png') repeat;background-size:128px;border:2px solid var(--fw-line-field);border-radius:24px 19px 0 0;box-shadow:0 -7px 35px color-mix(in srgb, var(--fw-shadow-ink) 15%, transparent)}.fw-modal-frame{height:100dvh}
 .fw-modal-align{padding:0}
@@ -269,7 +269,7 @@
 .fw-category-shelf>button[aria-pressed=true]>span:last-child{background-color:var(--fw-leaf-soft);background-blend-mode:multiply;box-shadow:0 3px 0 var(--fw-leaf-line);color:var(--fw-ink-active)}
 /* 菜籃不論是否有行情，都使用同款紙張卡片。 */
 .fw-basket-entry-card{padding:12px}
-.fw-basket-page .fw-basket-entry-card>.fw-item-row{--fw-row-pad:0;border-bottom:0}
+.fw-basket-page .fw-basket-entry-card>.fw-item-row{--fw-row-pad:0;gap:6px;border-bottom:0}
 
 /* 任務紙三段式背景：上下緣固定比例，中段只重複、不隨內容高度拉伸。 */
 .fw-quest-paper{position:absolute;inset:0;z-index:-1;display:grid;grid-template-rows:auto minmax(0,1fr) auto;pointer-events:none}
@@ -285,7 +285,9 @@
 .fw-home-garden .fw-data-date{color:var(--fw-ink)}
 
 /* 回到頂端：外觀整個交給 ui-go-top.png，按鈕本身只負責位置與點擊範圍。 */
-.fw-go-top{width:44px;height:44px}
+/* 向右 20px（right-5），向下也要看起來是 20px——但下面有導覽列，所以量的是
+   「導覽列上緣到按鈕」的距離，由 --fw-nav-h 推出來。 */
+.fw-go-top{--fw-nav-h:85px;width:40px;height:40px;right:20px;bottom:calc(var(--fw-nav-h) + env(safe-area-inset-bottom) + 20px)}
 
 /* 進度條（任務進度、夥伴成長共用）。數字疊在條子裡面，省一整欄的寬度，
    任務文字就放得下。 */
@@ -337,3 +339,7 @@
 /* 區塊標題後面的問號。小一號、不搶標題的視覺重量，但點擊範圍仍有 44px。 */
 .fw-help-dot{display:inline-grid;place-items:center;width:22px;height:22px;margin-inline:2px;border:1.5px solid var(--fw-line-card);border-radius:100px;background:var(--fw-paper-sunk);color:var(--fw-muted);font-size:var(--fw-fs-note);font-weight:700;line-height:1}
 .fw-help-dot:hover{border-color:var(--fw-leaf-line);color:var(--fw-green)}
+
+/* 紙上「一列一列」的區塊。分隔線跟紙卡片的虛線分隔同一種，字級由 DividedRow 自己帶，
+   跟同一張紙上用 gap 疊起來的區塊（flex flex-col gap-1.5）看起來是同一套版式。 */
+.fw-stack>*+*{border-top:1px dashed var(--fw-line-card)}

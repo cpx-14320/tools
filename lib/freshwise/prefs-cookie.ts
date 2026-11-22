@@ -26,7 +26,6 @@ export const DEFAULT_PREFS: FreshwisePrefs = {
   unit: "catty",
   marketCode: "",
   alertPercent: 15,
-  showAdvice: true,
 };
 
 const VENUES: VenueKey[] = ["market", "super", "wholesale"];
@@ -56,7 +55,6 @@ export function parsePrefs(raw: string | undefined): FreshwisePrefs {
         typeof parsed.alertPercent === "number" && parsed.alertPercent >= 5 && parsed.alertPercent <= 50
           ? Math.round(parsed.alertPercent)
           : DEFAULT_PREFS.alertPercent,
-      showAdvice: typeof parsed.showAdvice === "boolean" ? parsed.showAdvice : DEFAULT_PREFS.showAdvice,
     };
   } catch {
     return DEFAULT_PREFS;

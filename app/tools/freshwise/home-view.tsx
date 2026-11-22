@@ -58,7 +58,7 @@ export function HomeView({today,book}:{today:string;book:PriceBook}){
  <header className="fw-home-brand"><div><small>FreshWise · 蔬果夥伴</small><h1>{copy.appName}</h1></div><DewBalance/></header>
  <MarketContext book={book} today={today} showDate={false} showNote={false}/>
  <section className="fw-home-hero" aria-label="今天的買菜建議">
- <h2 className="fw-home-speech">{prefs.showAdvice?brief.advice:"今天也和夥伴一起，慢慢看懂買菜行情。"}{headline?.quote.estimated&&!brief.advice.includes("推估")&&<small>（推估參考）</small>}</h2>
+ <h2 className="fw-home-speech">{brief.advice}{headline?.quote.estimated&&!brief.advice.includes("推估")&&<small>（推估參考）</small>}</h2>
  <div className="fw-hero-stage">
  <div className="fw-hero-companion">
    <PetArtwork id={state.active} size={200} priority className="fw-breathe"/>

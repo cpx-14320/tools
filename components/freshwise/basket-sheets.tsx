@@ -68,9 +68,11 @@ export function GroupEditorSheet({
                 onClick={() => setIcon(candidate)}
                 aria-label={`選擇圖示 ${candidate}`}
                 className="grid aspect-square place-items-center rounded-xl border transition-colors"
+                // 底色跟同一個彈窗裡的「分類名稱」輸入框一樣（--fw-paper-sunk），
+                // 兩個欄位並排時才像同一張表單，而不是一白一米。
                 style={{
-                  borderColor: active ? colors.brand : colors.border,
-                  backgroundColor: active ? colors.surfaceActive : "#fff",
+                  borderColor: active ? "var(--fw-leaf-line)" : "var(--fw-line-field)",
+                  backgroundColor: active ? "var(--fw-leaf-soft)" : "var(--fw-paper-sunk)",
                 }}
               >
                 <FaIcon icon={candidate} size={40} color={active ? colors.brand : colors.faint} />
