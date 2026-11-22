@@ -7,6 +7,7 @@ import { QuestSlip } from "@/components/freshwise/companion-widgets";
 import Link from "next/link";
 import {
   Callout,
+  CollapsibleList,
   Paper,
   EmptyState,
   Hint,
@@ -246,6 +247,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
             />;
           })}
         </Paper>
+        <Hint>{copy.cheapestNote}</Hint>
       </section>
 
       {/* ── 有機／產銷履歷要多付多少 ───────────────────────────
@@ -377,6 +379,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
             </div>
           ) : (
             <Paper variant="list">
+              <CollapsibleList moreLabel={(n) => `還有 ${n} 個市場，展開看`}>
               {markets.map((market, index) => <PriceListRow
                 key={market.marketCode}
                 art={<FaIcon icon="store" size={40}/>}
@@ -389,6 +392,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
                 </>}
                 price={<PriceText priceKg={market.avgKg} unit={prefs.unit} size="row" showUnit={false}/>}
               />)}
+              </CollapsibleList>
             </Paper>
           )}
 
