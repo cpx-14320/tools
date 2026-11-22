@@ -158,7 +158,7 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
               >
                 <span className="flex items-center gap-1.5">
                   {groups.length > 1 && <DragHandle label={`拖曳排序 ${group.name}`} {...groupDrag.handleProps(groupIndex)} />}
-                  <FaIcon icon={group.icon} size={48} color={colors.brand} />
+                  <FaIcon icon={group.icon} size={40} color={colors.brand} />
                   {group.name}
                   <span className={text.meta}>{entries.length} 項</span>
                 </span>

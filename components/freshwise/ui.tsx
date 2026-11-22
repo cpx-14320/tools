@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
 import { colors, gradient, shadow, text, v } from "./theme";
 import { FaIcon } from "./fa-icon";
@@ -582,6 +583,66 @@ export function DividedCard({ children, className = "" }: { children: ReactNode;
     <Paper variant="divided" className={`divide-y ${className}`} style={{ borderColor: v.lineCard }}>
       {children}
     </Paper>
+  );
+}
+
+/**
+ * 進度條。`<progress>` 裡面放不了文字，所以用 track + fill + 疊在上面的標籤，
+ * 語意靠 role="progressbar" 補回來。任務進度與夥伴成長共用同一顆——以前兩邊各寫一份，
+ * 一個用 `<progress>`、一個用 div，長得不一樣。
+ */
+export function MeterBar({
+  value,
+  max,
+  label,
+  ariaLabel,
+  className = "",
+}: {
+  value: number;
+  max: number;
+  /** 疊在條子上的文字，例如 `0／1`。不給就只畫條。 */
+  label?: string;
+  ariaLabel: string;
+  className?: string;
+}) {
+  const pct = max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0;
+  return (
+    <div className={`fw-meter ${className}`} role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={max} aria-label={ariaLabel}>
+      <span className="fw-meter-fill" style={{ width: `${pct}%` }} />
+      {label && <span className="fw-meter-label">{label}</span>}
+    </div>
+  );
+}
+
+/**
+ * 超過 `max` 筆就收起來，附一個展開／收合的切換。
+ *
+ * 首頁的菜籃預覽以前是 `slice(0, 4)` 直接砍掉後面的，使用者菜籃裡有九項卻只看到四項，
+ * 會以為資料沒同步。改成「預設顯示前幾筆，其餘收起來但告訴你還有幾筆」。
+ */
+export function CollapsibleList({
+  children,
+  max = 5,
+  moreLabel = (n: number) => `還有 ${n} 項，展開看`,
+  lessLabel = "收合",
+}: {
+  children: ReactNode[];
+  max?: number;
+  moreLabel?: (hidden: number) => string;
+  lessLabel?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const hidden = children.length - max;
+  const shown = open || hidden <= 0 ? children : children.slice(0, max);
+  return (
+    <>
+      {shown}
+      {hidden > 0 && (
+        <button type="button" onClick={() => setOpen(!open)} className="fw-collapse-toggle" aria-expanded={open}>
+          {open ? lessLabel : moreLabel(hidden)}
+        </button>
+      )}
+    </>
   );
 }
 

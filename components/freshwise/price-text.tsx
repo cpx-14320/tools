@@ -43,7 +43,9 @@ export function PriceText({
   // class，CSS 想調整只能靠 !important——留一個變數讓 media query 去改，就不用了。
   const fontSize =
     size === "big" ? v.fsPrice : size === "tag" ? "var(--fw-tag-price-size, var(--fw-fs-section))" : size === "row" ? v.fsSection : v.fsLead;
-  const rangeFontSize = size === "big" || size === "tag" ? v.fsSection : v.fsLead;
+  // 區間跟單一數字同一個字級：同一欄裡「30」跟「67～146」如果一大一小，看起來像兩種
+  // 不同的資訊。只有詳情頁的大數字（big/tag）才縮一階，那裡的版位真的放不下。
+  const rangeFontSize = size === "big" || size === "tag" ? v.fsSection : fontSize;
   const isRange = rangeLowKg !== undefined && rangeHighKg !== undefined && rangeHighKg > rangeLowKg;
 
   return (

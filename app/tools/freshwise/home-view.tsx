@@ -2,7 +2,7 @@
 import {useMemo,useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
-import {Callout,EmptyState,Hint,SearchInput,SectionTitle} from "@/components/freshwise/ui";
+import {Callout,CollapsibleList,EmptyState,Hint,Paper,SearchInput,SectionTitle} from "@/components/freshwise/ui";
 import {ItemIcon} from "@/components/freshwise/item-icon";
 import {ItemRow} from "@/components/freshwise/item-row";
 import {PriceText} from "@/components/freshwise/price-text";
@@ -29,14 +29,15 @@ export function HomeView({today,book}:{today:string;book:PriceBook}){
  const brief=useMemo(()=>buildBrief(rows,today,book.dataDate),[rows,today,book.dataDate]);
  const headline=[...brief.cheapest,...brief.risers,...brief.seasonal].find(row=>brief.advice.includes(row.item.name))??brief.cheapest[0]??brief.seasonal[0]??rows.find(r=>!r.quote.estimated)??rows[0];
  const basketCodes=allCodes(basket);
- const basketRows=rows.filter(row=>basketCodes.includes(row.item.code)).slice(0,4);
+ // 菜籃裡所有「今天這個場所有行情」的項目都帶進來，顯示幾筆交給 CollapsibleList。
+ const basketRows=rows.filter(row=>basketCodes.includes(row.item.code));
  // 等級、進度、稱呼跟夥伴頁共用同一份計算，兩頁不會長不一樣。
  const {pet,progress:growthInLevel,max:growthMax,label:levelLabel}=companionLevel(state);
  function search(){router.push(keyword.trim()?`/tools/freshwise/browse?q=${encodeURIComponent(keyword.trim())}`:"/tools/freshwise/browse")}
  return <div className="fw-page fw-home">
  <div className="fw-home-garden">
  <header className="fw-home-brand"><div><small>FreshWise · 蔬果夥伴</small><h1>{copy.appName}</h1></div><DewBalance/></header>
- <MarketContext book={book} today={today}/>
+ <MarketContext book={book} today={today} showDate={false}/>
  <section className="fw-home-hero" aria-label="今天的買菜建議">
  <h2 className="fw-home-speech">{prefs.showAdvice?brief.advice:"今天也和夥伴一起，慢慢看懂買菜行情。"}{headline?.quote.estimated&&!brief.advice.includes("推估")&&<small>（推估參考）</small>}</h2>
  <div className="fw-hero-stage">
@@ -70,10 +71,10 @@ export function HomeView({today,book}:{today:string;book:PriceBook}){
  {brief.delayed&&<Callout icon="calendar-xmark">目前顯示的是 {book.dataDate} 的資料。{prefs.venue==="wholesale"?"休市或來源更新時間可能影響資料日期。":"資料來源尚未更新至今日。"}</Callout>}
  {brief.cheapest.length>0&&<section className="fw-feature-shelf"><SectionTitle leaf action={<Link href="/tools/freshwise/browse">看全部 →</Link>}>今天值得買</SectionTitle><div className="fw-market-display">{brief.cheapest.slice(0,2).map(row=><Link key={row.item.code} href={`/tools/freshwise/browse/${row.item.code}`} className="fw-market-product" aria-label={`${row.item.name}，${briefReason(row,"cheap")}，查看行情`}><span className="fw-market-food"><ItemIcon src={itemImage(row.item.code)} fallbackIcon={row.item.icon} alt={row.item.name} size={90}/></span><span className="fw-market-price"><h3>{row.item.name}</h3><PriceText priceKg={row.quote.avgKg} rangeLowKg={row.quote.rangeLowKg} rangeHighKg={row.quote.rangeHighKg} unit={prefs.unit} size="row" showUnit={false}/><span className="fw-market-unit">元／{prefs.unit==="catty"?"台斤":"公斤"}{row.quote.estimated?" · 估算":""}</span>{!row.quote.estimated&&<TrendBadge trend={row.trend} size="sm"/>}</span></Link>)}</div></section>}
  <section><SectionTitle leaf action={<Link href="/tools/freshwise/basket" className="fw-leaf-link">查看菜籃 →</Link>}>我的菜籃</SectionTitle>
- {!basketReady?<Hint center>{copy.loading}</Hint>:basketRows.length? <div className="fw-price-list">{basketRows.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`} starred onToggleStar={()=>toggleBasket(row.item.code,row.item.name)}/>)}</div>:<EmptyState icon="basket-shopping" title={basketCodes.length?"菜籃裡的食材目前沒有行情":"先挑幾樣你常買的菜"} description="把常買的食材加入菜籃，下次就能直接看價格。" action={<Link href="/tools/freshwise/browse" className="fw-game-button">去逛逛行情</Link>}/>}
+ {!basketReady?<Hint center>{copy.loading}</Hint>:basketRows.length? <Paper variant="list"><CollapsibleList max={5}>{basketRows.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`} starred onToggleStar={()=>toggleBasket(row.item.code,row.item.name)}/>)}</CollapsibleList></Paper>:<EmptyState icon="basket-shopping" title={basketCodes.length?"菜籃裡的食材目前沒有行情":"先挑幾樣你常買的菜"} description="把常買的食材加入菜籃，下次就能直接看價格。" action={<Link href="/tools/freshwise/browse" className="fw-game-button">去逛逛行情</Link>}/>}
  </section>
- {brief.seasonal.length>0&&<section><SectionTitle leaf>現在正當季</SectionTitle><div className="fw-price-list">{brief.seasonal.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`} meta={briefReason(row,"season")}/>)}</div></section>}
- {brief.risers.length>0&&<section><SectionTitle leaf>漲價了，慢慢挑</SectionTitle><div className="fw-price-list">{brief.risers.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`} meta={briefReason(row,"rise")}/>)}</div></section>}
+ {brief.seasonal.length>0&&<section><SectionTitle leaf>現在正當季</SectionTitle><Paper variant="list"><CollapsibleList max={5}>{brief.seasonal.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`} meta={briefReason(row,"season")}/>)}</CollapsibleList></Paper></section>}
+ {brief.risers.length>0&&<section><SectionTitle leaf>漲價了，慢慢挑</SectionTitle><Paper variant="list"><CollapsibleList max={5}>{brief.risers.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`} meta={briefReason(row,"rise")}/>)}</CollapsibleList></Paper></section>}
  {brief.total===0&&<EmptyState icon="cloud-arrow-down" title="今天還沒有行情資料" description="資料來源可能尚未更新。可以先整理菜籃，再晚一點回來看看。"/>}
  <Callout icon="database">{copy.sourceNote}</Callout>
  </div>;

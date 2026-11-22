@@ -73,7 +73,7 @@ export function GroupEditorSheet({
                   backgroundColor: active ? colors.surfaceActive : "#fff",
                 }}
               >
-                <FaIcon icon={candidate} size={16} color={active ? colors.brand : colors.faint} />
+                <FaIcon icon={candidate} size={40} color={active ? colors.brand : colors.faint} />
               </button>
             );
           })}

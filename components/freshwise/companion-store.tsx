@@ -280,7 +280,6 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
         <button type="button" className="fw-game-button" onClick={() => setReward(null)}>
           收下心意，繼續探索
         </button>
-        <small>已保存這次獎勵，不必重複操作。</small>
       </BottomSheetModal>
     </Context.Provider>
   );

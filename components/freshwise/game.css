@@ -128,7 +128,9 @@
 .fw-switch{outline:1px solid var(--fw-line-strong);outline-offset:2px;margin:8px 4px}.fw-drag-handle{min-height:44px;color:var(--fw-line-deep)}
 .fw-bottom-nav{position:absolute;inset:auto 0 0;z-index:20;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:8px 8px calc(8px + env(safe-area-inset-bottom));border-top:3px solid var(--fw-wood-nav-line);border-radius:0;background:var(--fw-wood-nav) url('/freshwise/ui-paper-texture.png') center/160px repeat;background-blend-mode:multiply;box-shadow:0 -3px 10px color-mix(in srgb, var(--fw-shadow-ink) 10%, transparent)}
 .fw-bottom-nav>a{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;min-height:66px;gap:0;color:var(--fw-ink);font-size:var(--fw-fs-note);font-weight:700;text-decoration:none;position:relative;isolation:isolate}
-.fw-bottom-nav>a[aria-current=page]:before{content:"";position:absolute;inset:auto 5px 0;height:32px;border-radius:55% 20% 52% 27%;background:var(--fw-leaf-soft);z-index:-1}.fw-bottom-nav>a[aria-current=page]{color:var(--fw-ink-active)}
+/* 選中態的葉形底：以前貼著 <a> 的底邊、又比文字寬，下緣會被導覽列的內距切掉一截。
+   縮小並離開底邊，整個形狀才完整露出來。 */
+.fw-bottom-nav>a[aria-current=page]:before{content:"";position:absolute;inset:auto 12px 4px;height:24px;border-radius:55% 20% 52% 27%;background:var(--fw-leaf-soft);z-index:-1}.fw-bottom-nav>a[aria-current=page]{color:var(--fw-ink-active)}
 .fw-skip-link{position:absolute;left:12px;top:-80px;z-index:100;background:var(--fw-paper);padding:12px}.fw-skip-link:focus{top:12px}
 .fw-market-context{display:flex;flex-direction:column;gap:4px}.fw-context-strip{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.fw-context-strip>button{display:flex;align-items:center;gap:4px;min-height:44px;font-size:var(--fw-fs-label);color:var(--fw-ink);line-height:1.3}.fw-context-strip>button:first-child{flex:1;min-width:0}.fw-context-strip>button:first-child strong{font-size:var(--fw-fs-body)}.fw-unit-leaf{padding:4px 12px;border:1.5px solid var(--fw-leaf-line);border-radius:60% 12% 55% 15%;background:var(--fw-leaf-bg)}.fw-data-date{display:flex;align-items:center;gap:4px;font-size:var(--fw-fs-note);color:var(--fw-muted)}.fw-place-options{padding:12px 0;border-bottom:1px dashed var(--fw-line-card)}
 .fw-home{gap:24px;padding-top:20px}.fw-home-brand{display:flex;align-items:center;justify-content:space-between;gap:8px}.fw-home-brand small{display:block;font-size:var(--fw-fs-note);letter-spacing:.08em;font-weight:700;color:var(--fw-ink)}.fw-home-brand h1{font-size:var(--fw-fs-page);font-weight:800;line-height:1.3;letter-spacing:.05em}
@@ -148,6 +150,9 @@
 .fw-feature-shelf{padding-top:4px;border-bottom:5px solid var(--fw-line-wood)}.fw-quests{position:relative;padding:16px 16px;border:1.5px solid var(--fw-line-card);border-radius:12px;background:var(--fw-paper-sunk);box-shadow:2px 3px 0 var(--fw-shadow-card)}.fw-quests:before{content:"";position:absolute;top:-9px;left:15px;width:9px;height:27px;border:2px solid var(--fw-shadow-line);border-radius:7px;transform:rotate(14deg)}
 .fw-quests>h2{display:flex;align-items:center;gap:4px;font-weight:700;font-size:var(--fw-fs-section)}.fw-quests>h2>span{margin-left:auto;font-size:var(--fw-fs-meta);font-weight:400;color:var(--fw-muted)}.fw-quest-row{display:flex;gap:8px;align-items:center;padding:12px 0;border-bottom:1px dashed var(--fw-line-card)}.fw-quest-row:last-child{border-bottom:0;padding-bottom:0}.fw-quest-copy{flex:1;min-width:0}.fw-quest-copy strong{font-size:var(--fw-fs-body)}.fw-quest-copy p{font-size:var(--fw-fs-note);color:var(--fw-muted)}.fw-quest-copy progress{width:85%;height:8px;accent-color:var(--fw-leaf-line)}.fw-quest-action{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}.fw-quest-action>span:first-child{display:flex;align-items:center;font-size:var(--fw-fs-lead);font-weight:700}.fw-quest-claimed{font-size:var(--fw-fs-note);color:var(--fw-ink-done)}
 .fw-leaf-link{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:4px 12px;font-size:var(--fw-fs-label);font-weight:700;color:var(--fw-ink);text-decoration:none}
+.fw-collapse-toggle{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;min-height:44px;border-top:1px dashed var(--fw-line-card);color:var(--fw-green);font-size:var(--fw-fs-label);font-weight:700}
+.fw-collapse-toggle:after{content:"▾";font-size:var(--fw-fs-note)}
+.fw-collapse-toggle[aria-expanded=true]:after{content:"▴"}
 .fw-helper-note{font-size:var(--fw-fs-note);color:var(--fw-muted);line-height:1.7}.fw-book-tabs{display:flex;gap:12px;border-bottom:2px solid var(--fw-line-card);padding-bottom:8px}.fw-book-tabs>button{display:flex;align-items:center;gap:4px;min-height:48px;font-size:var(--fw-fs-lead);padding:4px 12px}.fw-book-tabs>button[aria-pressed=true]{background:var(--fw-leaf-bg);border-radius:14px 9px 0 0;border-bottom:2px solid var(--fw-leaf-line)}
 .fw-companion-garden{position:relative;display:flex;align-items:center;flex-direction:column;gap:8px;min-height:345px;margin:0 -20px;padding:8px 20px 12px;isolation:isolate}.fw-companion-garden h2{font-size:var(--fw-fs-page);font-weight:700}.fw-level-ribbon{padding:4px 16px;background:var(--fw-peach-soft);border:1px solid var(--fw-peach-line);border-radius:8px 21px 8px 17px;font-size:var(--fw-fs-label)}.fw-pet-speech{position:relative;align-self:flex-end;padding:8px 16px;max-width:190px;margin-bottom:-24px;background:var(--fw-paper-hi);border:1.5px solid var(--fw-peach-line);border-radius:12px;font-size:var(--fw-fs-body);z-index:1}.fw-companion-garden>.fw-pet-art,.fw-companion-garden>.fw-art{margin-top:8px}
 .fw-growth{text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}.fw-growth-vine{display:flex;width:90%;align-items:center;gap:8px}.fw-growth-vine progress{width:100%;height:12px;accent-color:var(--fw-leaf-line)}.fw-growth strong{font-size:var(--fw-fs-section)}.fw-growth p{font-size:var(--fw-fs-label);color:var(--fw-muted)}.fw-care-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.fw-care-actions .fw-game-button{padding:8px 4px;font-size:var(--fw-fs-body)}
@@ -222,11 +227,11 @@
 
 .fw-quests{padding:8px 12px 12px;border:0;box-shadow:none;isolation:isolate;background:none}
 .fw-quests:before{content:none}.fw-quests>h2{justify-content:center;min-height:28px;font-size:var(--fw-fs-section);text-align:center}
-.fw-quest-row{display:grid;grid-template-columns:38px minmax(0,1fr) 62px 44px;gap:8px;padding:4px 0;min-height:48px}
-.fw-quest-copy{text-align:center;line-height:1.4}.fw-quest-copy strong{font-size:var(--fw-fs-note)}.fw-quest-copy p{font-size:var(--fw-fs-meta)}
-.fw-quest-meter{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:var(--fw-fs-note);line-height:1.2;font-weight:700}
-.fw-quest-meter progress{display:block;width:60px;height:10px;appearance:none;overflow:hidden;border:1px solid var(--fw-line-deep);border-radius:100px;background:var(--fw-paper-deep)}
-.fw-quest-meter progress::-webkit-progress-bar{background:var(--fw-paper-deep)}.fw-quest-meter progress::-webkit-progress-value{background:var(--fw-btn-lo)}.fw-quest-meter progress::-moz-progress-bar{background:var(--fw-btn-lo)}
+.fw-quest-row{display:grid;grid-template-columns:38px minmax(0,1fr) 44px;gap:8px;padding:4px 0;min-height:48px}
+.fw-quest-copy{display:flex;flex-direction:column;gap:4px;text-align:center;line-height:1.4}.fw-quest-copy strong{font-size:var(--fw-fs-note)}.fw-quest-copy p{font-size:var(--fw-fs-meta)}
+
+
+
 .fw-quest-action{display:flex;justify-content:center;align-items:center;text-align:center;min-height:44px}
 .fw-quest-reward{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:44px;min-width:40px;font-size:var(--fw-fs-body);font-weight:700;line-height:1.1}
 .fw-quest-reward small{font-size:var(--fw-fs-micro)}.fw-quests-all .fw-quest-row{padding-block:8px}.fw-quests-all{padding-block:16px}
@@ -240,7 +245,7 @@
 .fw-market-price h3{font-size:var(--fw-fs-body);font-weight:700;line-height:1.3}.fw-market-price .fw-market-unit{font-size:var(--fw-fs-micro);line-height:1.2}
 .fw-primary,.fw-game-button{background-image:url('/freshwise/ui-paper-texture.png'),linear-gradient(var(--fw-btn-hi),var(--fw-btn-lo));background-size:140px,100% 100%;background-blend-mode:multiply}
 .fw-peach-button{background-image:url('/freshwise/ui-paper-texture.png'),linear-gradient(var(--fw-peach-hi),var(--fw-peach))}
-@media(max-width:365px){.fw-market-price{flex-basis:80px;padding-inline:4px}.fw-market-food{width:68px;flex-basis:68px}.fw-price-tag{padding:28px 12px 16px}.fw-tag-price-line{gap:2px}.fw-quest-row{grid-template-columns:30px minmax(0,1fr) 54px 36px;gap:4px}.fw-quest-meter progress{width:50px}.fw-quests{padding-inline:8px}.fw-category-shelf>a,.fw-category-shelf>button{min-width:40px;font-size:var(--fw-fs-meta)}}
+@media(max-width:365px){.fw-market-price{flex-basis:80px;padding-inline:4px}.fw-market-food{width:68px;flex-basis:68px}.fw-price-tag{padding:28px 12px 16px}.fw-tag-price-line{gap:2px}.fw-quest-row{grid-template-columns:30px minmax(0,1fr) 36px;gap:4px}.fw-quests{padding-inline:8px}.fw-category-shelf>a,.fw-category-shelf>button{min-width:40px;font-size:var(--fw-fs-meta)}}
 
 /* 共用介面也採用與價牌相同的細紙紋，保留原本的色彩與欄位圓角。 */
 
@@ -269,3 +274,13 @@
 .fw-home-garden>.fw-home-brand,
 .fw-home-garden>.fw-market-context{text-shadow:0 1px 0 var(--fw-paper-hi),0 0 6px var(--fw-paper-hi)}
 .fw-home-garden .fw-data-date{color:var(--fw-ink)}
+
+/* 回到頂端：外觀整個交給 ui-go-top.png，按鈕本身只負責位置與點擊範圍。 */
+.fw-go-top{width:44px;height:44px}
+
+/* 進度條（任務進度、夥伴成長共用）。數字疊在條子裡面，省一整欄的寬度，
+   任務文字就放得下。 */
+.fw-meter{position:relative;display:flex;align-items:center;justify-content:center;width:100%;min-height:16px;border:1px solid var(--fw-line-deep);border-radius:100px;background:var(--fw-paper-deep);overflow:hidden}
+.fw-meter-fill{position:absolute;inset:0 auto 0 0;background:var(--fw-btn-lo);transition:width .25s ease}
+.fw-meter-label{position:relative;font-size:var(--fw-fs-meta);font-weight:700;line-height:1.2;color:var(--fw-ink);font-variant-numeric:tabular-nums}
+@media(prefers-reduced-motion:reduce){.fw-meter-fill{transition:none}}
