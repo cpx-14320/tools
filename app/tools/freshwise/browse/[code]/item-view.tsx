@@ -27,7 +27,7 @@ import { PriceChart } from "@/components/freshwise/price-chart";
 import { useFreshwise } from "@/components/freshwise/store";
 import { colors, copy, shadow, text } from "@/components/freshwise/theme";
 import { isInBasket } from "@/lib/freshwise/basket";
-import { categoryName, itemImage, itemOrPlaceholder, venueMeta } from "@/lib/freshwise/catalog";
+import { categoryName, itemImage, itemOrPlaceholder } from "@/lib/freshwise/catalog";
 import { formatShortDate, monthOf } from "@/lib/freshwise/dates";
 import {
   formatPriceIn,
@@ -41,7 +41,7 @@ import {
   valueOf,
   valueSentence,
 } from "@/lib/freshwise/price";
-import type { ItemDetail, PriceSource, UnitKey } from "@/lib/freshwise/types";
+import type { ItemDetail, UnitKey } from "@/lib/freshwise/types";
 
 /** 走勢圖的期間選項。 */
 const RANGES: readonly { key: string; label: string; days: number }[] = [
@@ -53,14 +53,6 @@ const RANGES: readonly { key: string; label: string; days: number }[] = [
 
 const MONTH_LABELS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
 
-/** 來源的說明文字。使用者有權知道他看到的數字是誰訪的價。 */
-const SOURCE_LABEL: Record<PriceSource, string> = {
-  retail: "臺中市公有零售市場實際訪價",
-  wholesale: "農業部批發市場成交行情",
-  origin: "農業部家禽交易行情（產地價）",
-  grain: "農業部糧價（20 個縣市的訪價）",
-  derived: "由其他場所的行情推估",
-};
 
 export function ItemView({ code, today, detail }: { code: string; today: string; detail: ItemDetail | null }) {
   const { prefs, basket, toggleBasket, setPrefs } = useFreshwise();
@@ -111,18 +103,11 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
     );
   }
 
-  const { quote, venues } = detail;
+  const { quote } = detail;
   const trend = trendOf(quote);
   const value = valueOf(quote);
   const reliable = hasReliableHistory(quote);
 
-  // 「最便宜」只在消費者真的買得到的場所之間比。批發行情永遠是三者裡最低的，但一般人
-  // 不能去批發市場買一顆高麗菜——把「最便宜」標在那一列，等於推薦一個他去不了的地方。
-  const shoppable = venues.filter((v) => v.venue !== "wholesale" && v.quote);
-  const cheapestVenue = shoppable.reduce<typeof shoppable[number] | undefined>(
-    (best, row) => (!best || (row.quote && best.quote && row.quote.avgKg < best.quote.avgKg) ? row : best),
-    undefined,
-  );
 
   const markets = [...quote.markets].sort((a, b) => a.avgKg - b.avgKg);
 
@@ -169,9 +154,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
 
         {quote.estimated && quote.rangeLowKg !== undefined ? (
           <Note>
-            {prefs.venue === "super"
-              ? "超市與大賣場沒有公開的架上價資料。這個區間是用傳統市場價加上一般認知的價差（貴一到三成）推估的，只能當參考。"
-              : `這一項在臺中的零售市場沒有訪價，所以用批發價推估。倍數取自同類別實際觀察到的範圍，所以給的是區間不是單一數字。`}
+            這一項在臺中的零售市場沒有訪價，所以用批發價推估。倍數取自同類別實際觀察到的範圍，所以給的是區間不是單一數字。
           </Note>
         ) : reliable ? (
           <Note>{valueSentence(value, quote.historyDays)}</Note>
@@ -206,7 +189,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
             上按鈕不會縮，那行就被擠成五行的窄柱：「11/20 ／（五）・傳 ／ 統市場・3 …」。 */}
         <div className="flex flex-col gap-2 border-t pt-3" style={{ borderColor: colors.borderSoft }}>
           <Hint>
-            {formatShortDate(quote.date)}・{venueMeta(prefs.venue).name}
+            {formatShortDate(quote.date)}
             {prefs.marketCode ? `・${quote.markets[0]?.marketName ?? ""}` : markets.length > 1 ? `・${markets.length} 個市場的代表價` : ""}
           </Hint>
           <PrimaryButton size="block" icon={starred ? "check" : "plus"} onClick={() => toggleBasket(code, item.name)}>
@@ -218,37 +201,14 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
 
       {quote.estimated && (
         <Callout icon="triangle-exclamation">
-          {prefs.venue === "super" ? copy.estimatedNote : copy.retailCoverageNote}
+          {copy.retailCoverageNote}
         </Callout>
       )}
       {quote.date !== today && (
         <Callout icon="calendar-xmark">
-          顯示的是 {formatShortDate(quote.date)} 的行情。{prefs.venue === "wholesale" ? copy.closedNote : "資料來源還沒更新到今天。"}
+          顯示的是 {formatShortDate(quote.date)} 的行情。資料來源還沒更新到今天。
         </Callout>
       )}
-
-      {/* ── 哪裡買比較便宜（場所比價）────────────────────────── */}
-      <section className="flex flex-col gap-2">
-        <SectionTitle leaf>哪裡買比較便宜</SectionTitle>
-        <Paper variant="list">
-          {venues.map(({ venue, quote: venueQuote }) => {
-            const meta = venueMeta(venue);
-            const isCheapest = cheapestVenue?.venue === venue;
-            return <PriceListRow
-              key={venue}
-              art={<FaIcon icon={meta.icon} size={40}/>}
-              title={meta.name}
-              badges={<>
-                {venueQuote?.estimated && <EstimatedBadge/>}
-                {isCheapest && <span className={text.badge} style={{color: colors.down}}>最便宜</span>}
-              </>}
-              meta={venueQuote ? SOURCE_LABEL[venueQuote.source] : "這個場所沒有這一項的行情"}
-              price={venueQuote ? <PriceText priceKg={venueQuote.avgKg} rangeLowKg={venueQuote.rangeLowKg} rangeHighKg={venueQuote.rangeHighKg} unit={prefs.unit} size="row" showUnit={false}/> : <span className={text.hint}>—</span>}
-            />;
-          })}
-        </Paper>
-        <Hint>{copy.cheapestNote}</Hint>
-      </section>
 
       {/* ── 有機／產銷履歷要多付多少 ───────────────────────────
           只有蔬果、而且那五個會回報標章的批發市場當天有成交才出現。這是「超市的有機

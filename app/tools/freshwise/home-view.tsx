@@ -42,7 +42,7 @@ const SECTION_HELP = {
 } as const;
 
 export function HomeView({today,book}:{today:string;book:PriceBook}){
- const {prefs,basket,basketReady,toggleBasket}=useFreshwise();
+ const {prefs,basket,basketReady}=useFreshwise();
  const {state,ready}=useCompanion();
  const rows=useMemo(()=>rowsFromBook(book.quotes,today),[book.quotes,today]);
  const brief=useMemo(()=>buildBrief(rows,today,book.dataDate),[rows,today,book.dataDate]);
@@ -56,7 +56,7 @@ export function HomeView({today,book}:{today:string;book:PriceBook}){
  return <div className="fw-page fw-home">
  <div className="fw-home-garden">
  <header className="fw-home-brand"><div><small>{copy.appNameEn} · 今天買菜看這裡</small><h1>{copy.appName}</h1></div><DewBalance/></header>
- <MarketContext book={book} today={today} showDate={false} showNote={false}/>
+ <MarketContext book={book} today={today} showDate={false}/>
  <section className="fw-home-hero" aria-label="今天的買菜建議">
  <h2 className="fw-home-speech">{brief.advice}{headline?.quote.estimated&&!brief.advice.includes("推估")&&<small>（推估參考）</small>}</h2>
  <div className="fw-hero-stage">
@@ -89,7 +89,7 @@ export function HomeView({today,book}:{today:string;book:PriceBook}){
  </div>
  {brief.cheapest.length>0&&<section className="fw-feature-shelf"><SectionTitle leaf action={<Link href="/tools/freshwise/browse">看全部 →</Link>}>今天值得買</SectionTitle><div className="fw-market-display">{brief.cheapest.slice(0,2).map(row=><Link key={row.item.code} href={`/tools/freshwise/browse/${row.item.code}`} className="fw-market-product" aria-label={`${row.item.name}，${briefReason(row,"cheap")}，查看行情`}><span className="fw-market-food"><ItemIcon src={itemImage(row.item.code)} fallbackIcon={row.item.icon} alt={row.item.name} size={90}/></span><span className="fw-market-price"><h3>{row.item.name}</h3><PriceText priceKg={row.quote.avgKg} rangeLowKg={row.quote.rangeLowKg} rangeHighKg={row.quote.rangeHighKg} unit={prefs.unit} size="row" showUnit={false}/><span className="fw-market-unit">元／{prefs.unit==="catty"?"台斤":"公斤"}{row.quote.estimated?" · 估算":""}</span>{!row.quote.estimated&&<TrendBadge trend={row.trend} size="sm"/>}</span></Link>)}</div></section>}
  <section><SectionTitle leaf action={<Link href="/tools/freshwise/basket" className="fw-leaf-link">查看菜籃 →</Link>}>我的菜籃</SectionTitle>
- {!basketReady?<Hint center>{copy.loading}</Hint>:basketRows.length? <Paper variant="list"><CollapsibleList>{basketRows.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`} starred onToggleStar={()=>toggleBasket(row.item.code,row.item.name)}/>)}</CollapsibleList></Paper>:<EmptyState icon="basket-shopping" title={basketCodes.length?"菜籃裡的食材目前沒有行情":"先挑幾樣你常買的菜"} description="把常買的食材加入菜籃，下次就能直接看價格。" action={<Link href="/tools/freshwise/browse" className="fw-game-button">去逛逛行情</Link>}/>}
+ {!basketReady?<Hint center>{copy.loading}</Hint>:basketRows.length? <Paper variant="list"><CollapsibleList>{basketRows.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`}/>)}</CollapsibleList></Paper>:<EmptyState icon="basket-shopping" title={basketCodes.length?"菜籃裡的食材目前沒有行情":"先挑幾樣你常買的菜"} description="把常買的食材加入菜籃，下次就能直接看價格。" action={<Link href="/tools/freshwise/browse" className="fw-game-button">去逛逛行情</Link>}/>}
  </section>
  {brief.seasonal.length>0&&<section><SectionTitle leaf onHelp={()=>setHelp("seasonal")} helpLabel="現在正當季是怎麼挑的">現在正當季</SectionTitle><Paper variant="list"><CollapsibleList>{brief.seasonal.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`} meta={briefReason(row,"season")}/>)}</CollapsibleList></Paper></section>}
  {brief.risers.length>0&&<section><SectionTitle leaf onHelp={()=>setHelp("risers")} helpLabel="漲價了，慢慢挑是怎麼挑的">漲價了，慢慢挑</SectionTitle><Paper variant="list"><CollapsibleList>{brief.risers.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`} meta={briefReason(row,"rise")}/>)}</CollapsibleList></Paper></section>}

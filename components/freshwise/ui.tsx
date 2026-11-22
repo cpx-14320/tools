@@ -277,6 +277,53 @@ export function SegmentedTabs<T extends string>({
 }
 
 /**
+ * 排序列（電商常見的那種）。
+ *
+ * 以前是八個文字分頁（推薦／最划算／跌最多／漲最多／價格低→高／價格高→低／成交量／
+ * 依名稱），橫著排一長條、要左右捲才看得完，而且「跌最多」跟「價格低→高」對使用者
+ * 來說很難分。改成三個欄位：**推薦 ／ 價格 ／ 漲跌**，有方向性的那兩個重複點就換方向，
+ * 箭頭直接畫在欄位上——不用再看文字猜現在是哪一種。
+ */
+export function SortBar<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: readonly { key: T; label: string; asc?: T; desc?: T }[];
+  value: T;
+  onChange: (key: T) => void;
+}) {
+  return (
+    <div className="fw-sort-bar" role="group" aria-label="排序方式">
+      {options.map((opt) => {
+        const isAsc = opt.asc === value;
+        const isDesc = opt.desc === value;
+        const active = isAsc || isDesc || opt.key === value;
+        // 有方向的欄位：按一下先給預設方向，再按一下換方向。
+        const next = opt.asc && opt.desc ? (isAsc ? opt.desc : opt.asc) : opt.key;
+        return (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => onChange(next)}
+            aria-pressed={active}
+            className="fw-sort-item"
+          >
+            {opt.label}
+            {opt.asc && opt.desc && (
+              <span className="fw-sort-arrows" aria-hidden="true">
+                <span data-on={isAsc ? "true" : "false"}>▲</span>
+                <span data-on={isDesc ? "true" : "false"}>▼</span>
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
  * 篩選膠囊（只看當季／只看划算…）。以前寫在 browse-view.tsx 裡面，跟 SegmentedTabs
  * 幾乎一樣只是可以多選，現在收進來——兩邊的選中態才不會各長各的。
  */

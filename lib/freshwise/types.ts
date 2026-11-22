@@ -191,8 +191,6 @@ export interface FreshwisePrefs {
   unit: UnitKey;
   /** 預設的市場代號（空字串＝看這個場所的全部市場均價）。 */
   marketCode: string;
-  /** 漲跌提醒門檻（%）。超過這個幅度的品項，首頁會特別點出來。 */
-  alertPercent: number;
 }
 
 /** 一本「價格簿」：某個場所、某一天，整份目錄的行情。由伺服器端組好傳給畫面。 */

@@ -17,7 +17,6 @@ import {
   Note,
   PageTitle,
   SectionTitle,
-  SegmentedTabs,
   SelectButton,
 } from "@/components/freshwise/ui";
 import { FaIcon } from "@/components/freshwise/fa-icon";
@@ -26,29 +25,19 @@ import { OptionPickerModal } from "@/components/freshwise/option-picker-modal";
 import { EditorSheet } from "@/components/freshwise/editor-sheet";
 import { useFreshwise } from "@/components/freshwise/store";
 import { colors, copy, text } from "@/components/freshwise/theme";
-import { SELECTABLE_VENUES } from "@/lib/freshwise/catalog";
 import { formatShortDate } from "@/lib/freshwise/dates";
 import { resetBasket } from "@/lib/freshwise/storage";
 import { defaultBasket } from "@/lib/freshwise/basket";
-import type { MarketOption, UnitKey, VenueKey } from "@/lib/freshwise/types";
+import type { MarketOption, UnitKey } from "@/lib/freshwise/types";
 
 const OTHER_TOOL_ICONS: Record<string, string> = { transit: "/freshwise/ui-tool-transit.png", expenses: "/freshwise/ui-tool-expenses.png", compress: "/freshwise/ui-tool-compress.png" };
 
-const VENUE_TABS = SELECTABLE_VENUES.map((v) => ({ key: v.key, label: v.name, icon: v.icon }));
 
 const UNIT_OPTIONS: readonly { key: UnitKey; label: string; note: string }[] = [
   { key: "catty", label: "台斤", note: "台灣市場的習慣單位" },
   { key: "kg", label: "公斤", note: "開放資料的原始單位" },
 ];
 
-/** 漲跌提醒的門檻選項。固定四階，不給自由輸入——使用者對「幾 % 算大漲」沒有精確概念，
- *  給一個數字輸入框只會讓人卡在那裡想，四個選項反而好決定。 */
-const ALERT_OPTIONS: readonly { key: string; label: string }[] = [
-  { key: "10", label: "10%" },
-  { key: "15", label: "15%" },
-  { key: "20", label: "20%" },
-  { key: "30", label: "30%" },
-];
 
 /** 目前實際接上的資料來源。寫在設定頁是刻意的：這個工具的數字關係到使用者花錢，來源
  *  必須是公開可查的。 */
@@ -99,7 +88,7 @@ export function MoreView({
   dataDate: string;
   itemCount: number;
 }) {
-  const { prefs, setPrefs, setVenue, setMarket, setBasket } = useFreshwise();
+  const { prefs, setPrefs, setMarket, setBasket } = useFreshwise();
   const { user, loading: authLoading, logout } = useAuth();
   const otherTools = TOOLS_REGISTRY.filter((tool) => OTHER_TOOL_ICONS[tool.toolId] && user?.tools.includes(tool.toolId));
   const { reset: resetCompanions } = useCompanion();
@@ -107,7 +96,6 @@ export function MoreView({
   const router = useRouter();
   const [resetOpen, setResetOpen] = useState(false);
   const [unitPickerOpen, setUnitPickerOpen] = useState(false);
-  const [alertPickerOpen, setAlertPickerOpen] = useState(false);
 
   async function handleLogout() {
     await logout();
@@ -120,8 +108,7 @@ export function MoreView({
 
       {/* ── 預設看哪裡的價格 ───────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
-        <SectionTitle leaf>預設{copy.venue}</SectionTitle>
-        <SegmentedTabs items={VENUE_TABS} value={prefs.venue} onChange={(key: VenueKey) => setVenue(key)} scroll />
+        <SectionTitle leaf>預設查詢條件</SectionTitle>
 
         <Field label={`預設${copy.market}`} as="div">
           <SelectButton
@@ -130,15 +117,6 @@ export function MoreView({
             onClick={() => setMarketPickerOpen(true)}
           />
         </Field>
-        <Hint>
-          {markets.length > 0
-            ? `這個場所今天有 ${markets.length} 個市場回報行情。選「全部市場」就是看它們的平均價。`
-            : "超市量販的價格是推估的，沒有個別市場可以選。"}
-        </Hint>
-
-        {/* 單位與提醒門檻本來各自一個區塊、各自一排 SegmentedTabs。它們其實都是
-            「預設用什麼條件看行情」的一部分，併進同一區，而且統一成下拉選單——
-            設定頁本來有三種挑選介面並存（分頁／彈窗／分頁），每一區都要重新認一次。 */}
         <Field label="價格單位" as="div">
           <SelectButton
             icon="tag"
@@ -147,10 +125,6 @@ export function MoreView({
           />
         </Field>
 
-        <Field label="大漲大跌的提醒門檻" as="div">
-          <SelectButton icon="arrow-trend-up" value={`${prefs.alertPercent}%`} onClick={() => setAlertPickerOpen(true)} />
-        </Field>
-        <Hint>漲跌超過這個幅度的品項，在清單上會多一個「要注意」的標記。</Hint>
       </section>
 
       {/* ── 資料來源 ───────────────────────────────────────── */}
@@ -245,14 +219,6 @@ export function MoreView({
         onClose={() => setUnitPickerOpen(false)}
         onConfirm={(unit) => setPrefs({ unit })}
       />
-      <OptionPickerModal
-        open={alertPickerOpen}
-        title="大漲大跌的提醒門檻"
-        value={String(prefs.alertPercent)}
-        options={ALERT_OPTIONS}
-        onClose={() => setAlertPickerOpen(false)}
-        onConfirm={(key) => setPrefs({ alertPercent: Number(key) })}
-      />
 
       <MarketPickerModal
         open={marketPickerOpen}
@@ -285,8 +251,7 @@ export function MoreView({
                 // （它會寫回伺服器）。不用再清 localStorage／cookie——那裡已經沒有資料了。
                 resetCompanions();
                 setBasket(defaultBasket());
-                setVenue("market");
-                setPrefs({ unit: "catty", alertPercent: 15 });
+                setPrefs({ unit: "catty" });
                 setResetOpen(false);
               }}
             >

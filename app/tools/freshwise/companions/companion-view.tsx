@@ -24,19 +24,19 @@ export function CompanionView() {
 
   return (
     <div className="fw-page fw-companions-page">
+      {/* 標題跟菜籃頁、行情頁、設定頁完全一樣（遮雨棚）——用同一顆 PageTitle hanging，
+          不要為這一頁另外做一個。露珠與圖鑑移到標題下面自己一列：擠在標題列裡會把
+          標題牌壓窄，而且那兩顆是「這一頁的工具」，不是標題的一部分。 */}
+      <PageTitle hanging>我的蔬果夥伴</PageTitle>
+      <div className="fw-companion-tools">
+        <DewBalance />
+        <button type="button" className="fw-book-button" onClick={() => setBookOpen(true)} aria-label={`蔬果圖鑑，已結識 ${owned.length} 位`}>
+          <GameIcon name="book" size={30} />
+          <span>蔬果圖鑑</span>
+        </button>
+      </div>
+
       <div className="fw-companions-hero">
-        <PageTitle
-          actions={
-            <span className="flex items-center gap-2">
-              <DewBalance />
-              <button type="button" className="fw-book-button" onClick={() => setBookOpen(true)} aria-label={`蔬果圖鑑，已結識 ${owned.length} 位`}>
-                <GameIcon name="book" size={30} />
-              </button>
-            </span>
-          }
-        >
-          我的蔬果夥伴
-        </PageTitle>
 
         {ready && (
           <>

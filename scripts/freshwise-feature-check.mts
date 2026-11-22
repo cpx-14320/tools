@@ -704,27 +704,27 @@ run("偏好設定（存在帳號底下）", () => {
   check("預設看傳統市場", prefs.venue === "market");
   check("預設用台斤", prefs.unit === "catty");
   check("預設看全部市場", prefs.marketCode === "");
-  check("提醒門檻在合理範圍", prefs.alertPercent >= 5 && prefs.alertPercent <= 50);
   // 伺服器端算繪用的就是這組預設值，所以它必須跟「傳統市場的慣用單位」一致，不然第一次
   // 畫面的單位跟切換場所後的單位會不一樣。
   check("預設單位跟預設場所的慣用單位一致", prefs.unit === catalog.venueDefaultUnit(prefs.venue));
 
   // 資料庫裡可能留著改版前的舊格式，API 也是使用者送得進來的，所以逐欄位驗證、壞的
   // 退回預設值——一個壞欄位不該讓整組設定重置。
-  const kept = prefsModule.normalizePrefs({ ...prefs, venue: "super", unit: "kg", marketCode: "109" });
-  check("合法的值原樣保留", kept.venue === "super" && kept.unit === "kg" && kept.marketCode === "109");
+  const kept = prefsModule.normalizePrefs({ ...prefs, unit: "kg", marketCode: "109" });
+  check("合法的值原樣保留", kept.venue === "market" && kept.unit === "kg" && kept.marketCode === "109");
   check("沒有資料時回預設值", prefsModule.normalizePrefs(undefined).venue === prefs.venue);
   check("不是物件時回預設值", prefsModule.normalizePrefs("not-an-object").venue === prefs.venue);
   check("不認識的場所退回預設值", prefsModule.normalizePrefs({ venue: "costco" }).venue === prefs.venue);
   // 批發不是消費者買得到的地方，不能停在那裡——舊的偏好要被搬回傳統市場。
-  check("舊的批發偏好退回傳統市場", prefsModule.normalizePrefs({ venue: "wholesale" }).venue === "market");
-  check("可選場所不含批發", catalog.SELECTABLE_VENUES.every((v: { key: string }) => v.key !== "wholesale"));
-  check("超出範圍的提醒門檻退回預設值", prefsModule.normalizePrefs({ alertPercent: 999 }).alertPercent === prefs.alertPercent);
+  // 場所不再讓使用者選，舊偏好不管停在哪都要搬回「市場常見價」。
+  check("舊的批發偏好退回市場常見價", prefsModule.normalizePrefs({ venue: "wholesale" }).venue === "market");
+  check("舊的超市偏好退回市場常見價", prefsModule.normalizePrefs({ venue: "super" }).venue === "market");
+  check("只剩一個可選場所", catalog.SELECTABLE_VENUES.length === 1 && catalog.SELECTABLE_VENUES[0].key === "market");
   check(
     "合法欄位會被保留、只有壞欄位退回預設",
     (() => {
-      const mixed = prefsModule.normalizePrefs({ venue: "super", unit: "斤" });
-      return mixed.venue === "super" && mixed.unit === prefs.unit;
+      const mixed = prefsModule.normalizePrefs({ unit: "斤" });
+      return mixed.venue === "market" && mixed.unit === prefs.unit;
     })(),
   );
 

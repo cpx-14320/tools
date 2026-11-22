@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import { ItemIcon } from "./item-icon";
 import { PriceText } from "./price-text";
 import { PriceListRow } from "./price-list-row";
-import { useFreshwise } from "./store";
 import { EstimatedBadge, SeasonBadge, TrendBadge, ValueBadge } from "./badges";
 import { GameIcon } from "./game-art";
 import { itemImage } from "@/lib/freshwise/catalog";
@@ -24,10 +23,6 @@ export function ItemRow({ row, unit, href, onClick, meta, leading, starred, onTo
   onToggleStar?: () => void;
 }) {
   const { item, quote, trend, value, inSeason, reliable } = row;
-  // 「要注意」：漲跌超過使用者在設定頁訂的門檻。這是那個設定唯一的作用——沒有它的話
-  // 使用者調了半天不會有任何變化。推估價不算（那是批發乘係數，漲跌講的是批發的變化）。
-  const { prefs } = useFreshwise();
-  const alert = !quote.estimated && Math.abs(trend.percent) >= prefs.alertPercent;
   return <PriceListRow
     art={<ItemIcon src={itemImage(item.code)} fallbackIcon={item.icon} alt={item.name} size={20} boxSize={40}/>}
     title={item.name}
@@ -36,7 +31,7 @@ export function ItemRow({ row, unit, href, onClick, meta, leading, starred, onTo
     price={<>
       <PriceText priceKg={quote.avgKg} rangeLowKg={quote.rangeLowKg} rangeHighKg={quote.rangeHighKg} unit={unit} size="row" showUnit={false}/>
       {/* 推估價不顯示批發漲跌；歷史足夠且持平時才顯示划算度。 */}
-      {!quote.estimated && <TrendBadge trend={trend} alert={alert}/>}
+      {!quote.estimated && <TrendBadge trend={trend}/>}
       {!quote.estimated && trend.direction === "flat" && reliable && <ValueBadge value={value}/>}
     </>}
     leading={leading}

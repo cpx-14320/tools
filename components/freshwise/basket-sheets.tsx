@@ -4,7 +4,7 @@ import { useState } from "react";
 import { EditorSheet } from "./editor-sheet";
 import { Field, Hint, SelectButton, TextInput } from "./ui";
 import { FaIcon } from "./fa-icon";
-import { DEFAULT_GROUP_ICON, GROUP_ICONS } from "./group-icons";
+import { DEFAULT_GROUP_ICON, GROUP_ICONS, DISH_ICONS } from "./group-icons";
 import { BottomSheetModal } from "./bottom-sheet-modal";
 import { colors, copy, text } from "./theme";
 import { unitShort } from "@/lib/freshwise/price";
@@ -54,7 +54,7 @@ export function GroupEditorSheet({
       deleteLabel={`刪除${copy.group}`}
     >
       <Field label={`${copy.group}名稱`}>
-        <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="例如：每週常買、火鍋" maxLength={12} />
+        <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="例如：每週常買、鳳梨蝦球" maxLength={12} />
       </Field>
 
       <Field label="圖示" as="div">
@@ -76,6 +76,25 @@ export function GroupEditorSheet({
                 }}
               >
                 <FaIcon icon={candidate} size={40} color={active ? colors.brand : colors.faint} />
+              </button>
+            );
+          })}
+        </div>
+      </Field>
+
+      <Field label="常見料理" as="div">
+        <div className="fw-dish-options">
+          {DISH_ICONS.map((dish) => {
+            const active = icon === dish.icon;
+            return (
+              <button key={dish.icon} type="button" className="fw-dish-option" aria-label={`選擇料理圖示 ${dish.name}`} aria-pressed={active}
+                onClick={() => {
+                  const previous = DISH_ICONS.find((option) => option.icon === icon);
+                  if (!name.trim() || name === previous?.name) setName(dish.name);
+                  setIcon(dish.icon);
+                }}>
+                <FaIcon icon={dish.icon} size={48} />
+                <span>{dish.name}</span>
               </button>
             );
           })}

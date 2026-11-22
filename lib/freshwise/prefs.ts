@@ -10,12 +10,19 @@ export const DEFAULT_PREFS: FreshwisePrefs = {
   venue: "market",
   unit: "catty",
   marketCode: "",
-  alertPercent: 15,
 };
 
-/** 使用者可以停留的場所。批發不在裡面——它不是可選場所（見 catalog.ts），舊的偏好
- *  如果停在批發會被搬回傳統市場。 */
-const VENUES: VenueKey[] = ["market", "super"];
+/**
+ * 使用者可以停留的場所。
+ *
+ * **只剩一個。** 畫面上不再讓使用者選「傳統市場／超市大賣場／批發市場」：
+ * - 批發是菜販的進貨成本，一般人買不到。
+ * - 超市大賣場沒有任何公開的架上價，整個場所的數字都是推估的。
+ *
+ * 現在一律顯示「市場常見價」＝臺中公有零售市場的實際訪價；那裡沒訪到的品項才用批發
+ * 價推估，並且在那一列標「估算」。舊的偏好停在別的場所會被搬回來。
+ */
+const VENUES: VenueKey[] = ["market"];
 
 function isVenue(value: unknown): value is VenueKey {
   return typeof value === "string" && VENUES.includes(value as VenueKey);
@@ -33,9 +40,5 @@ export function normalizePrefs(raw: unknown): FreshwisePrefs {
     venue: isVenue(parsed.venue) ? parsed.venue : DEFAULT_PREFS.venue,
     unit: isUnit(parsed.unit) ? parsed.unit : DEFAULT_PREFS.unit,
     marketCode: typeof parsed.marketCode === "string" ? parsed.marketCode.slice(0, 40) : "",
-    alertPercent:
-      typeof parsed.alertPercent === "number" && parsed.alertPercent >= 5 && parsed.alertPercent <= 50
-        ? Math.round(parsed.alertPercent)
-        : DEFAULT_PREFS.alertPercent,
   };
 }

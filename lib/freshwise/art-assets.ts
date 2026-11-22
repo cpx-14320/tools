@@ -111,7 +111,8 @@ export const ITEM_ART_GROUPS: readonly { codes: readonly string[] }[] = [
       "RA4",
       "RA5"
     ]
-  }
+  },
+  { codes: ["FC1", "MA4", "MA5", "MA6", "MB4", "MC1", "MC2", "MC3", "EA2", "EA4", "EA5", "EA6"] },
 ];
 export function itemArtwork(code: string) {
   for (const group of ITEM_ART_GROUPS) {
