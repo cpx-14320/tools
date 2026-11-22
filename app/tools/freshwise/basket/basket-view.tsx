@@ -144,11 +144,7 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
               <SectionTitle
                 action={
                   <span className="flex items-center gap-1">
-                    <IconButton
-                      icon="pen"
-                      aria-label={`編輯${group.name}`}
-                      onClick={() => setGroupEditing(group)}
-                    />
+                    <IconButton icon="pen" iconSize={32} aria-label={`編輯${group.name}`} onClick={() => setGroupEditing(group)} />
                     {/* 只有兩個以上的分類才給握把——只有一個的時候拖曳沒有意義。 */}
 
                   </span>

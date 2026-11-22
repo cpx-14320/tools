@@ -29,18 +29,29 @@ export function SectionTitle({
   children,
   leaf = false,
   action,
+  onHelp,
+  helpLabel,
   className = "",
 }: {
   children: ReactNode;
   /** 左邊加一片葉子裝飾（首頁的幾個區塊標題用，設定頁那種密集清單不用）。 */
   leaf?: boolean;
   action?: ReactNode;
+  /** 給了就在標題後面加一顆問號，點了由呼叫端開說明。 */
+  onHelp?: () => void;
+  helpLabel?: string;
   className?: string;
 }) {
   return (
     <div className={`fw-section-title flex items-center gap-1 ${text.sectionTitle} ${className}`}>
       {leaf && <FaIcon icon="leaf" size={30} className="text-[#ADC774]" />}
       {children}
+      {/* 「這一區是怎麼選出來的」——挑選規則不寫出來，使用者只能猜。 */}
+      {onHelp && (
+        <button type="button" className="fw-help-dot" onClick={onHelp} aria-label={helpLabel ?? "這一區是怎麼挑的"}>
+          ?
+        </button>
+      )}
       {action && <span className="ml-auto shrink-0">{action}</span>}
     </div>
   );

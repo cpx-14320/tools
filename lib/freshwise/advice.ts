@@ -58,6 +58,7 @@ export function buildBrief(rows: PriceRow[], todayISO: string, dataDate: string)
   const cheapest = measuredFirst(
     rows.filter((row) => row.reliable && row.value.level === "cheap"),
     (a, b) => a.value.percent - b.value.percent,
+    BRIEF_LIMIT,
   );
 
   const risers = measuredFirst(
@@ -91,11 +92,18 @@ export function buildBrief(rows: PriceRow[], todayISO: string, dataDate: string)
   };
 }
 
-/** 有實際訪價的排前面、推估值排後面，各自再照給定的規則排序，最後取前 BRIEF_LIMIT 筆。 */
-function measuredFirst(rows: PriceRow[], compare: (a: PriceRow, b: PriceRow) => number): PriceRow[] {
+/**
+ * 有實際訪價的排前面、推估值排後面，各自再照給定的規則排序。
+ *
+ * `limit` 不給就是全部回傳——「現在正當季」與「漲價了」在畫面上是可以展開的完整清單
+ * （首頁用 CollapsibleList 收合），不該在資料層就砍掉。只有「今天值得買」是固定兩格的
+ * 貨架，才需要在這裡限筆數。
+ */
+function measuredFirst(rows: PriceRow[], compare: (a: PriceRow, b: PriceRow) => number, limit?: number): PriceRow[] {
   const measured = rows.filter((row) => !row.quote.estimated).sort(compare);
   const estimated = rows.filter((row) => row.quote.estimated).sort(compare);
-  return [...measured, ...estimated].slice(0, BRIEF_LIMIT);
+  const all = [...measured, ...estimated];
+  return limit === undefined ? all : all.slice(0, limit);
 }
 
 /**

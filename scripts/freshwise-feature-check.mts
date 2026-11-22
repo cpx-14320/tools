@@ -640,9 +640,11 @@ run("首頁快報", () => {
   log(`  · 今天的建議：${brief.advice}`);
   check("建議句有具體品項或整體說明", brief.advice.includes("今天") || brief.advice.includes("月"));
 
+  // 只有「今天值得買」是固定格數的貨架才限筆數；漲最多與當季在畫面上是可展開的完整
+  // 清單（首頁用 CollapsibleList 收合），資料層不該先砍掉。
   check("最划算區塊不超過上限", brief.cheapest.length <= advice.BRIEF_LIMIT);
-  check("漲最多區塊不超過上限", brief.risers.length <= advice.BRIEF_LIMIT);
-  check("當季區塊不超過上限", brief.seasonal.length <= advice.BRIEF_LIMIT);
+  check("漲最多區塊是完整清單", brief.risers.length === briefRows.filter((r) => r.trend.direction === "up").length);
+  check("當季區塊不限筆數", brief.seasonal.length >= Math.min(advice.BRIEF_LIMIT, briefRows.filter((r) => r.inSeason).length));
   check("最划算區塊的每一列都真的划算", brief.cheapest.every((r) => r.value.level === "cheap"));
   check("漲最多區塊的每一列都真的在漲", brief.risers.every((r) => r.trend.direction === "up"));
   check("當季區塊的每一列都是當季", brief.seasonal.every((r) => r.inSeason));

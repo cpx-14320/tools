@@ -99,7 +99,10 @@
 .fw-app,.fw-modal{color:var(--fw-ink);font-family:"Arial Rounded MT Bold","Microsoft JhengHei","PingFang TC",sans-serif;font-size:var(--fw-fs-lead);line-height:1.6}
 .fw-phone{position:relative;display:flex;flex-direction:column;width:100%;max-width:430px;height:100dvh;overflow:hidden;background:var(--fw-paper) url('/freshwise/ui-paper-texture.png') repeat;background-size:128px;transform:translateZ(0)}
 .fw-scroll{min-height:0;flex:1;overflow-x:hidden;overflow-y:auto;padding-bottom:calc(104px + env(safe-area-inset-bottom));scrollbar-width:thin;scrollbar-color:var(--fw-line-card) transparent;overscroll-behavior-y:contain}
-.fw-app :where(button,a,input):focus-visible,.fw-modal :where(button,a,input):focus-visible{outline:3px solid var(--fw-focus);outline-offset:3px}
+.fw-app :where(button,a):focus-visible,.fw-modal :where(button,a):focus-visible{outline:3px solid var(--fw-focus);outline-offset:3px}
+/* 輸入框不要那圈 3px 的粗外框——框本身就有邊，焦點只要讓邊變深就夠了。 */
+.fw-app input:focus-visible,.fw-modal input:focus-visible{outline:none}
+.fw-field:focus-within,.fw-input:focus-visible{border-color:var(--fw-leaf-line)}
 .fw-app button,.fw-modal button{touch-action:manipulation}.fw-app button:disabled{cursor:default;opacity:.55}
 .fw-app h1,.fw-app h2,.fw-app h3{letter-spacing:.03em}.fw-app p{overflow-wrap:anywhere}
 .fw-art{display:inline-block;flex-shrink:0;background-repeat:no-repeat;vertical-align:middle}
@@ -138,10 +141,11 @@
 .fw-home{gap:24px;padding-top:20px}.fw-home-brand{display:flex;align-items:center;justify-content:space-between;gap:8px}.fw-home-brand small{display:block;font-size:var(--fw-fs-note);letter-spacing:.08em;font-weight:700;color:var(--fw-ink)}.fw-home-brand h1{font-size:var(--fw-fs-page);font-weight:800;line-height:1.3;letter-spacing:.05em}
 .fw-book-button{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border:1.5px solid var(--fw-line-card);border-radius:12px 20px 9px 14px;background:var(--fw-paper-deep)}
 .fw-dew-balance{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 4px;border:1.5px solid var(--fw-line-card);border-radius:12px 20px 9px 14px;background:var(--fw-paper-deep);color:var(--fw-ink);text-decoration:none;font-weight:700;min-height:44px}
+/* 數字欄固定留四位數的寬度，露珠從 9 變 10 變 100 時整顆膠囊不會跟著抽動。 */
+.fw-dew-balance>span:last-child{min-width:4ch;text-align:right;font-variant-numeric:tabular-nums}
 .fw-home-hero{position:relative;margin:0 -20px;padding:12px 20px 0;min-height:340px;display:flex;flex-direction:column;gap:20px}
 
 .fw-home-speech{align-self:center;position:relative;width:min(100%,340px);padding:16px 20px;border:2px solid var(--fw-line-strong);border-radius:18px;background:var(--fw-paper-hi);box-shadow:0 3px 0 color-mix(in srgb, var(--fw-shadow-line) 11%, transparent);font-size:var(--fw-fs-body);font-weight:700;line-height:1.6}
-.fw-home-speech:after{content:"";position:absolute;bottom:-15px;left:46px;width:24px;height:18px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2018%22%3E%3Cpath%20d%3D%22M1%200H23L10%2015Q8%2017%206%2014Z%22%20fill%3D%22%23fffaf0%22%2F%3E%3Cpath%20d%3D%22M1%201L6%2014Q8%2017%2010%2015L23%201%22%20fill%3D%22none%22%20stroke%3D%22%23a18662%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E") center/contain no-repeat;pointer-events:none}
 .fw-hero-stage{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-height:190px}.fw-hero-companion{position:relative;display:flex;flex-direction:column;align-items:center;min-width:0}.fw-hero-level{font-size:var(--fw-fs-note);font-weight:700;border:1px solid var(--fw-peach-line);background:var(--fw-peach-hi);border-radius:8px;padding:2px 8px;margin-top:-12px;z-index:1}.fw-hero-level a{color:inherit}
 .fw-price-tag{position:relative;display:flex;flex-direction:column;justify-content:center;gap:8px;align-items:center;flex-shrink:0;width:184px;min-height:218px;padding:48px 16px 28px;border:0;border-radius:0;background:transparent url('/freshwise/home-price-tag-board-clean.png') center/100% 100% no-repeat;box-shadow:none;text-align:center;text-decoration:none;color:var(--fw-ink)}.fw-price-tag:before{content:none}.fw-price-tag h2{font-size:var(--fw-fs-section);font-weight:700}.fw-price-tag>div{max-width:100%}.fw-price-tag .fw-tag-unit{font-size:var(--fw-fs-note)}.fw-hero-price-column{display:flex;flex-direction:column;align-items:center;flex-shrink:0;min-width:0}.fw-hero-link{align-self:stretch;margin-top:4px;min-height:44px;padding:8px 20px}
 .fw-category-shelf{display:flex;justify-content:space-between;gap:4px;overflow-x:auto;min-height:85px;padding:0 0 8px;border-bottom:4px solid var(--fw-line-wood);background:linear-gradient(transparent 76%,var(--fw-sand) 76%)}
@@ -329,3 +333,7 @@
 .fw-venue-label strong{font-size:var(--fw-fs-body)}
 /* 排序列左邊的標示，跟右邊的「篩選」按鈕對齊成同一條工具列。 */
 .fw-toolbar-label{display:flex;align-items:center;gap:4px;min-height:44px;font-size:var(--fw-fs-body);font-weight:700;color:var(--fw-ink)}
+
+/* 區塊標題後面的問號。小一號、不搶標題的視覺重量，但點擊範圍仍有 44px。 */
+.fw-help-dot{display:inline-grid;place-items:center;width:22px;height:22px;margin-inline:2px;border:1.5px solid var(--fw-line-card);border-radius:100px;background:var(--fw-paper-sunk);color:var(--fw-muted);font-size:var(--fw-fs-note);font-weight:700;line-height:1}
+.fw-help-dot:hover{border-color:var(--fw-leaf-line);color:var(--fw-green)}
