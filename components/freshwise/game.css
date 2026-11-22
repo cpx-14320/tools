@@ -11,71 +11,56 @@
  * 顏色與字級都走底下的 CSS 變數，**不要再寫 literal 的色碼或 px**。以前這個檔案裡有
  * 114 個不重複色，光是「卡片邊框的那個棕色」就有 14 個差一兩階的版本；收斂成下面這
  * 一組之後，要調色只改這裡一處。theme.ts 有同名的一份給 TSX 的 inline style 用。
- * ==========================================================================*/
-
-.fw-app,
-.fw-modal {
-  /* ── 墨色（文字）──────────────────────────────── */
-  --fw-ink: #624839;          /* 主要文字、標題、價格 */
-  --fw-muted: #836a54;        /* 次要說明文字 */
-  --fw-placeholder: #927d64;  /* 輸入框的提示文字 */
-  --fw-ink-active: #3f5d25;   /* 選中的分頁／導覽文字 */
-  --fw-ink-done: #567438;     /* 任務已領取 */
+ * ==========================================================================*/.fw-app,
+.fw-modal{/* ── 墨色（文字）──────────────────────────────── */
+  --fw-ink: #624839;/* 主要文字、標題、價格 */
+  --fw-muted: #836a54;/* 次要說明文字 */
+  --fw-placeholder: #927d64;/* 輸入框的提示文字 */
+  --fw-ink-active: #3f5d25;/* 選中的分頁／導覽文字 */
+  --fw-ink-done: #567438;/* 任務已領取 */
 
   /* ── 紙面（背景，亮 → 暗）───────────────────────── */
-  --fw-paper-hi: #fffaf0;     /* 對話泡泡 */
-  --fw-paper-card: #fff9e9;   /* 圖鑑冊、彈窗紙、手機外框 */
-  --fw-paper: #fff7e5;        /* 手機底色、未選中的分頁 */
-  --fw-paper-sunk: #fff7df;   /* 卡片紙、輸入框、提示條 */
-  --fw-paper-deep: #fff4d9;   /* 標題牌、露珠餘額、進度條軌道 */
-  --fw-paper-shade: #fbf3d9;  /* 標題棚架的條紋 */
-  --fw-sand: #f5dfba;         /* 分類貨架檯面 */
-  --fw-sand-deep: #ead9b7;    /* 棚架投影、日記橫線 */
-  --fw-sand-pale: #f0dfc6;    /* 未解鎖的夥伴、輸入框內陰影 */
-  --fw-viewport: #eee8d4;     /* 手機框外面的桌布 */
-  --fw-butter: #fae8b5;       /* 獎勵條 */
-  --fw-gold: #d1a653;
-  --fw-warning: #92611d;   /* 提示條的文字 */         /* 提示條左側的立條 */
+  --fw-paper-hi: #fffaf0;/* 對話泡泡 */
+  --fw-paper-card: #fff9e9;/* 圖鑑冊、彈窗紙、手機外框 */
+  --fw-paper: #fff7e5;/* 手機底色、未選中的分頁 */
+  --fw-paper-sunk: #fff7df;/* 卡片紙、輸入框、提示條 */
+  --fw-paper-deep: #fff4d9;/* 標題牌、露珠餘額、進度條軌道 */
+  --fw-paper-shade: #fbf3d9;/* 標題棚架的條紋 */
+  --fw-sand: #f5dfba;/* 分類貨架檯面 */
+  --fw-sand-deep: #ead9b7;/* 棚架投影、日記橫線 */
+  --fw-sand-pale: #f0dfc6;/* 未解鎖的夥伴、輸入框內陰影 */
+  --fw-viewport: #eee8d4;/* 手機框外面的桌布 */
+  --fw-butter: #fae8b5;/* 獎勵條 */
+  --fw-gold: #d1a653;--fw-warning: #92611d;/* 提示條的文字 */         /* 提示條左側的立條 */
 
   /* ── 桃／木（橘棕）────────────────────────────── */
-  --fw-peach-hi: #ffe6cf;
-  --fw-peach-soft: #f8d7c1;
-  --fw-peach: #f0c29e;
-  --fw-peach-line: #bd9670;
-  --fw-wood-nav: #e9bd7e;      /* 底部導覽的木檯 */
-  --fw-wood-nav-line: #b47d47;
-  --fw-wood-sign: #e8c998;     /* 掛牌的吊環 */
+  --fw-peach-hi: #ffe6cf;--fw-peach-soft: #f8d7c1;--fw-peach: #f0c29e;--fw-peach-line: #bd9670;--fw-wood-nav: #e9bd7e;/* 底部導覽的木檯 */
+  --fw-wood-nav-line: #b47d47;--fw-wood-sign: #e8c998;/* 掛牌的吊環 */
 
   /* ── 線／邊框（亮 → 暗）─────────────────────────── */
-  --fw-line-soft: #e4d6bb;     /* 卡片內的淡分隔 */
-  --fw-line-pale: #e1ceaa;
-  --fw-line: #d7c3a0;          /* 一般邊框 */
-  --fw-line-card: #cdb38a;     /* 卡片、清單列、虛線分隔 */
-  --fw-line-wood: #c9a77c;     /* 貨架、圖鑑冊這類「木頭」邊 */
-  --fw-line-field: #bfa27d;    /* 輸入框 */
-  --fw-line-strong: #ad8b60;   /* 標題牌、開關外框 */
-  --fw-line-deep: #96724c;     /* 拖曳握把、進度條外框 */
+  --fw-line-soft: #e4d6bb;/* 卡片內的淡分隔 */
+  --fw-line-pale: #e1ceaa;--fw-line: #d7c3a0;/* 一般邊框 */
+  --fw-line-card: #cdb38a;/* 卡片、清單列、虛線分隔 */
+  --fw-line-wood: #c9a77c;/* 貨架、圖鑑冊這類「木頭」邊 */
+  --fw-line-field: #bfa27d;/* 輸入框 */
+  --fw-line-strong: #ad8b60;/* 標題牌、開關外框 */
+  --fw-line-deep: #96724c;/* 拖曳握把、進度條外框 */
 
   /* ── 投影（實心偏移陰影）──────────────────────── */
-  --fw-shadow-paper: #e4d3b2;
-  --fw-shadow-card: #dfcdaa;
-  --fw-shadow-line: #9e8767;
-  --fw-shadow-ink: #5d4728;    /* 半透明用，搭 color-mix */
+  --fw-shadow-paper: #e4d3b2;--fw-shadow-card: #dfcdaa;--fw-shadow-line: #9e8767;--fw-shadow-ink: #5d4728;/* 半透明用，搭 color-mix */
 
   /* ── 綠（亮 → 暗）────────────────────────────── */
-  --fw-leaf-pale: #eef0cf;
-  --fw-leaf-bg: #e6efc6;       /* 淡綠底 */
-  --fw-leaf-soft: #e2efbd;     /* 選中態底色 */
-  --fw-btn-hi: #e7efbf;        /* 主要按鈕漸層亮端 */
-  --fw-btn-lo: #c7da91;        /* 主要按鈕漸層暗端 */
-  --fw-btn-shadow: #b3a06b;    /* 主要按鈕的實心投影 */
-  --fw-leaf-mid: #c1d889;   /* 進度條／成長條的填色中段 */
-  --fw-leaf-bright: #a7c974;   /* 進度條填色 */
-  --fw-leaf-line: #8aa346;     /* 選中態邊框 */
-  --fw-green: #6e8c41;         /* 品牌綠 */
-  --fw-garden: #dcedd0;        /* 花園背景在圖片載入前的底色 */
-  --fw-shelf-green: #d5e1b8;
-  --fw-focus: #4e7b61;         /* 鍵盤焦點框 */
+  --fw-leaf-pale: #eef0cf;--fw-leaf-bg: #e6efc6;/* 淡綠底 */
+  --fw-leaf-soft: #e2efbd;/* 選中態底色 */
+  --fw-btn-hi: #e7efbf;/* 主要按鈕漸層亮端 */
+  --fw-btn-lo: #c7da91;/* 主要按鈕漸層暗端 */
+  --fw-btn-shadow: #b3a06b;/* 主要按鈕的實心投影 */
+  --fw-leaf-mid: #c1d889;/* 進度條／成長條的填色中段 */
+  --fw-leaf-bright: #a7c974;/* 進度條填色 */
+  --fw-leaf-line: #8aa346;/* 選中態邊框 */
+  --fw-green: #6e8c41;/* 品牌綠 */
+  --fw-garden: #dcedd0;/* 花園背景在圖片載入前的底色 */
+  --fw-shelf-green: #d5e1b8;--fw-focus: #4e7b61;/* 鍵盤焦點框 */
 
   /* ── 圖示尺寸（4 階，呼叫端用 size prop 傳，不要在 CSS 蓋）────────
    * 24px：提示條、徽章旁的小圖示
@@ -92,223 +77,61 @@
    */
 
   /* ── 字級（9 階，不要再出現第 10 種大小）──────────── */
-  --fw-fs-micro: 10px;   /* 徽章裡的附註 */
-  --fw-fs-meta: 11px;    /* 列表列的附註 */
-  --fw-fs-note: 12px;    /* 備註說明 */
-  --fw-fs-label: 13px;   /* 欄位小標、分頁 */
-  --fw-fs-body: 14px;    /* 內文 */
-  --fw-fs-lead: 16px;    /* 稍大的內文、輸入框（iOS 不會縮放） */
-  --fw-fs-section: 20px; /* 區塊標題 */
-  --fw-fs-page: 26px;    /* 頁面標題 */
-  --fw-fs-price: 32px;   /* 詳情頁的價格數字 */
-}
-
-.fw-viewport{display:flex;justify-content:center;min-height:100dvh;background:var(--fw-viewport);padding:0}
-.fw-app,.fw-modal{color:var(--fw-ink);font-family:"Arial Rounded MT Bold","Microsoft JhengHei","PingFang TC",sans-serif;font-size:var(--fw-fs-lead);line-height:1.6}
-.fw-phone{position:relative;display:flex;flex-direction:column;width:100%;max-width:430px;height:100dvh;overflow:hidden;background:var(--fw-paper) url('/freshwise/ui-paper-texture.png') repeat;background-size:128px;transform:translateZ(0)}
-.fw-scroll{min-height:0;flex:1;overflow-x:hidden;overflow-y:auto;padding-bottom:calc(104px + env(safe-area-inset-bottom));scrollbar-width:thin;scrollbar-color:var(--fw-line-card) transparent;overscroll-behavior-y:contain}
-.fw-app :where(button,a):focus-visible,.fw-modal :where(button,a):focus-visible{outline:3px solid var(--fw-focus);outline-offset:3px}
-/* 輸入框不要那圈 3px 的粗外框——框本身就有邊，焦點只要讓邊變深就夠了。 */
-.fw-app input:focus-visible,.fw-modal input:focus-visible{outline:none}
-.fw-field:focus-within,.fw-input:focus-visible{border-color:var(--fw-leaf-line)}
-.fw-app button,.fw-modal button{touch-action:manipulation}.fw-app button:disabled{cursor:default;opacity:.55}
-.fw-app h1,.fw-app h2,.fw-app h3{letter-spacing:.03em}.fw-app p{overflow-wrap:anywhere}
-.fw-art{display:inline-block;flex-shrink:0;background-repeat:no-repeat;vertical-align:middle}
-.fw-leaf-art{align-self:center;margin-block:0;vertical-align:middle}
-.fw-pet-art{position:relative;display:inline-block;flex-shrink:0;vertical-align:middle}.fw-pet-art img{object-fit:contain}
-.fw-item-art{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
-.fw-functional-glyph{display:inline-flex;justify-content:center;align-items:center;line-height:1;font-weight:700}
-.fw-page{display:flex;flex-direction:column;gap:24px;padding:24px 20px 28px}.fw-page>section{min-width:0}
-.fw-page-title{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;margin:-24px -20px 2px;padding:8px 32px 48px;isolation:isolate}
-.fw-page-title:before{content:"";position:absolute;inset:0;z-index:-1;border-bottom:3px solid var(--fw-line-strong);border-radius:10px 10px 35% 30%;background:repeating-linear-gradient(90deg,var(--fw-shelf-green) 0 42px,var(--fw-paper-shade) 42px 84px);box-shadow:0 5px 0 var(--fw-sand-deep);opacity:.9}
-.fw-page-title h1{display:inline-block;padding:4px 12px;background:var(--fw-paper-deep);border:2px solid var(--fw-line-strong);border-radius:14px 9px 12px 8px;box-shadow:0 3px 0 var(--fw-shadow-card);font-size:var(--fw-fs-page);line-height:1.4;white-space:nowrap}
-.fw-section-title{line-height:1.4;padding-bottom:8px}.fw-section-title>span:last-child{font-size:var(--fw-fs-label)}
-.fw-primary,.fw-game-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:8px 20px;border:2px solid var(--fw-leaf-line);border-radius:100px;background:linear-gradient(var(--fw-btn-hi),var(--fw-btn-lo));color:var(--fw-ink);font-size:var(--fw-fs-lead);font-weight:700;box-shadow:0 3px 0 var(--fw-btn-shadow);text-decoration:none;text-align:center;line-height:1.4}
-.fw-primary:hover,.fw-game-button:hover{filter:brightness(1.025);transform:translateY(-1px)}.fw-primary:active,.fw-game-button:active{transform:translateY(1px)}
-.fw-peach-button{background:linear-gradient(var(--fw-peach-hi),var(--fw-peach));border-color:var(--fw-peach-line)}.fw-game-button:disabled{transform:none;filter:none}
-.fw-icon-button{display:grid;flex-shrink:0;place-items:center;padding:2px;border-radius:100px;background:transparent;color:var(--fw-green)}
-.fw-clear-button{display:grid;width:44px;height:44px;place-items:center;margin:-8px -8px -8px 0}
-
-
-
-
-
-.fw-field input{flex:1;min-width:0;border:0;background:transparent;color:inherit;font-size:inherit;outline:none}
-.fw-field input::placeholder,.fw-input::placeholder{color:var(--fw-placeholder)}
-
-
-
-.fw-add-button{margin-top:-4px;border:0 0 1px dashed var(--fw-line-card);border-width:0 0 1px;border-radius:0;text-align:left;padding-left:8px;color:var(--fw-ink)}
-.fw-drag-handle{color:var(--fw-line-deep)}
-.fw-bottom-nav{position:absolute;inset:auto 0 0;z-index:20;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:8px 8px calc(8px + env(safe-area-inset-bottom));border-top:3px solid var(--fw-wood-nav-line);border-radius:0;background:var(--fw-wood-nav) url('/freshwise/ui-paper-texture.png') center/160px repeat;background-blend-mode:multiply;box-shadow:0 -3px 10px color-mix(in srgb, var(--fw-shadow-ink) 10%, transparent)}
-.fw-bottom-nav>a{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;gap:0;color:var(--fw-ink);font-size:var(--fw-fs-note);font-weight:700;text-decoration:none;position:relative;isolation:isolate}
+  --fw-fs-micro: 10px;/* 徽章裡的附註 */
+  --fw-fs-meta: 11px;/* 列表列的附註 */
+  --fw-fs-note: 12px;/* 備註說明 */
+  --fw-fs-label: 13px;/* 欄位小標、分頁 */
+  --fw-fs-body: 14px;/* 內文 */
+  --fw-fs-lead: 16px;/* 稍大的內文、輸入框（iOS 不會縮放） */
+  --fw-fs-section: 20px;/* 區塊標題 */
+  --fw-fs-page: 26px;/* 頁面標題 */
+  --fw-fs-price: 32px;/* 詳情頁的價格數字 */}.fw-viewport{display:flex;justify-content:center;min-height:100dvh;background:var(--fw-viewport);padding:0}.fw-app,.fw-modal{color:var(--fw-ink);font-family:"Arial Rounded MT Bold","Microsoft JhengHei","PingFang TC",sans-serif;font-size:var(--fw-fs-lead);line-height:1.6}.fw-phone{position:relative;display:flex;flex-direction:column;width:100%;max-width:430px;height:100dvh;overflow:hidden;background:var(--fw-paper) url('/freshwise/ui-paper-texture.png') repeat;background-size:128px;transform:translateZ(0)}.fw-scroll{min-height:0;flex:1;overflow-x:hidden;overflow-y:auto;padding-bottom:calc(104px + env(safe-area-inset-bottom));scrollbar-width:thin;scrollbar-color:var(--fw-line-card) transparent;overscroll-behavior-y:contain}.fw-app :where(button,a):focus-visible,.fw-modal :where(button,a):focus-visible{outline:3px solid var(--fw-focus);outline-offset:3px}
+/* 輸入框不要那圈 3px 的粗外框——框本身就有邊，焦點只要讓邊變深就夠了。 */.fw-app input:focus-visible,.fw-modal input:focus-visible{outline:none}.fw-field:focus-within,.fw-input:focus-visible{border-color:var(--fw-leaf-line)}.fw-app button,.fw-modal button{touch-action:manipulation}.fw-app button:disabled{cursor:default;opacity:.55}.fw-app h1,.fw-app h2,.fw-app h3{letter-spacing:.03em}.fw-app p{overflow-wrap:anywhere}.fw-art{display:inline-block;flex-shrink:0;background-repeat:no-repeat;vertical-align:middle}.fw-leaf-art{align-self:center;margin-block:0;vertical-align:middle}.fw-pet-art{position:relative;display:inline-block;flex-shrink:0;vertical-align:middle}.fw-pet-art img{object-fit:contain}.fw-item-art{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}.fw-functional-glyph{display:inline-flex;justify-content:center;align-items:center;line-height:1;font-weight:700}.fw-page{display:flex;flex-direction:column;gap:24px;padding:24px 20px 28px}.fw-page>section{min-width:0}.fw-page-title{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;margin:-24px -20px 2px;padding:8px 32px 48px;isolation:isolate}.fw-page-title h1{display:inline-block;padding:4px 12px;background:var(--fw-paper-deep);border:2px solid var(--fw-line-strong);border-radius:14px 9px 12px 8px;box-shadow:0 3px 0 var(--fw-shadow-card);font-size:var(--fw-fs-page);line-height:1.4;white-space:nowrap}.fw-section-title{line-height:1.4;padding-bottom:8px}.fw-section-title>span:last-child{font-size:var(--fw-fs-label)}.fw-primary:hover,.fw-game-button:hover{filter:brightness(1.025);transform:translateY(-1px)}.fw-primary:active,.fw-game-button:active{transform:translateY(1px)}.fw-game-button:disabled{transform:none;filter:none}.fw-icon-button{display:grid;flex-shrink:0;place-items:center;padding:2px;border-radius:100px;background:transparent;color:var(--fw-green)}.fw-clear-button{display:grid;width:44px;height:44px;place-items:center;margin:-8px -8px -8px 0}.fw-field input{flex:1;min-width:0;border:0;background:transparent;color:inherit;font-size:inherit;outline:none}.fw-field input::placeholder,.fw-input::placeholder{color:var(--fw-placeholder)}.fw-add-button{margin-top:-4px;border:0 0 1px dashed var(--fw-line-card);border-width:0 0 1px;border-radius:0;text-align:left;padding-left:8px;color:var(--fw-ink)}.fw-drag-handle{color:var(--fw-line-deep)}.fw-bottom-nav{position:absolute;inset:auto 0 0;z-index:20;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:8px 8px calc(8px + env(safe-area-inset-bottom));border-top:3px solid var(--fw-wood-nav-line);border-radius:0;background:var(--fw-wood-nav) url('/freshwise/ui-paper-texture.png') center/160px repeat;background-blend-mode:multiply;box-shadow:0 -3px 10px color-mix(in srgb, var(--fw-shadow-ink) 10%, transparent)}.fw-bottom-nav>a{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;gap:0;color:var(--fw-ink);font-size:var(--fw-fs-note);font-weight:700;text-decoration:none;position:relative;isolation:isolate}
 /* 選中態的葉形底：以前貼著 <a> 的底邊、又比文字寬，下緣會被導覽列的內距切掉一截。
-   縮小並離開底邊，整個形狀才完整露出來。 */
-.fw-bottom-nav>a[aria-current=page]:before{content:"";position:absolute;inset:auto 12px 4px;height:24px;border-radius:55% 20% 52% 27%;background:var(--fw-leaf-soft);z-index:-1}.fw-bottom-nav>a[aria-current=page]{color:var(--fw-ink-active)}
-.fw-skip-link{position:absolute;left:12px;top:-80px;z-index:100;background:var(--fw-paper);padding:12px}.fw-skip-link:focus{top:12px}
-.fw-market-context{display:flex;flex-direction:column;gap:4px}.fw-context-strip{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.fw-context-strip>button{display:flex;align-items:center;gap:4px;font-size:var(--fw-fs-label);color:var(--fw-ink);line-height:1.3}.fw-context-strip>button:first-child{flex:1;min-width:0}.fw-context-strip>button:first-child strong{font-size:var(--fw-fs-body)}.fw-unit-leaf{padding:4px 12px;border:1.5px solid var(--fw-leaf-line);border-radius:60% 12% 55% 15%;background:var(--fw-leaf-bg)}.fw-data-date{display:flex;align-items:center;gap:4px;font-size:var(--fw-fs-note);color:var(--fw-muted)}.fw-place-options{padding:12px 0;border-bottom:1px dashed var(--fw-line-card)}
-.fw-home{gap:24px;padding-top:20px}.fw-home-brand{display:flex;align-items:center;justify-content:space-between;gap:8px}.fw-home-brand small{display:block;font-size:var(--fw-fs-note);letter-spacing:.08em;font-weight:700;color:var(--fw-ink)}.fw-home-brand h1{font-size:var(--fw-fs-page);font-weight:800;line-height:1.3;letter-spacing:.05em}
-.fw-book-button{display:inline-flex;align-items:center;justify-content:center;min-width:44px;border:1.5px solid var(--fw-line-card);border-radius:13px 8px 13px 8px;background:var(--fw-paper-deep)}
-.fw-dew-balance{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 4px;border:1.5px solid var(--fw-line-card);border-radius:12px 20px 9px 14px;background:var(--fw-paper-deep);color:var(--fw-ink);text-decoration:none;font-weight:700}
-/* 數字欄固定留四位數的寬度，露珠從 9 變 10 變 100 時整顆膠囊不會跟著抽動。 */
-.fw-dew-balance>span:last-child{min-width:4ch;text-align:right;font-variant-numeric:tabular-nums}
-.fw-home-hero{position:relative;margin:0 -20px;padding:12px 20px 0;display:flex;flex-direction:column;gap:20px}
-
-.fw-home-speech{align-self:center;position:relative;width:min(100%,340px);padding:12px;border:1.5px solid var(--fw-line-strong);border-radius:13px 8px 13px 8px;background:var(--fw-paper-hi);box-shadow:0 3px 0 color-mix(in srgb, var(--fw-shadow-line) 11%, transparent);font-size:var(--fw-fs-body);line-height:1.6}
-.fw-hero-stage{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.fw-hero-companion{position:relative;display:flex;flex-direction:column;align-items:center;min-width:0}.fw-hero-level{font-size:var(--fw-fs-note);font-weight:700;border:1px solid var(--fw-peach-line);background:var(--fw-peach-hi);border-radius:8px;padding:2px 8px;margin-top:-12px;z-index:1}.fw-hero-level a{color:inherit}
-.fw-price-tag{position:relative;display:flex;flex-direction:column;justify-content:center;gap:8px;align-items:center;flex-shrink:0;width:184px;padding:48px 16px 28px;border:0;border-radius:0;background:transparent url('/freshwise/home-price-tag-board-clean.png') center/100% 100% no-repeat;box-shadow:none;text-align:center;text-decoration:none;color:var(--fw-ink)}.fw-price-tag:before{content:none}.fw-price-tag h2{font-size:var(--fw-fs-section);font-weight:700}.fw-price-tag>div{max-width:100%}.fw-price-tag .fw-tag-unit{font-size:var(--fw-fs-note)}.fw-hero-price-column{display:flex;flex-direction:column;align-items:center;flex-shrink:0;min-width:0}.fw-hero-link{align-self:stretch;margin-top:4px;padding:8px 20px}
-.fw-category-shelf{display:flex;justify-content:space-between;gap:4px;overflow-x:auto;padding:0 0 8px;border-bottom:4px solid var(--fw-line-wood);background:linear-gradient(transparent 76%,var(--fw-sand) 76%)}
-.fw-category-shelf>a,.fw-category-shelf>button{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;min-width:48px;font-size:var(--fw-fs-label);font-weight:700;color:var(--fw-ink);position:relative;isolation:isolate}.fw-category-shelf>button[aria-pressed=true]:after{content:"";position:absolute;bottom:0;left:0;right:0;height:28px;background:var(--fw-leaf-soft);border:1.5px solid var(--fw-leaf-line);border-radius:50% 20% 50% 25%;z-index:-1}
-.fw-price-list:before{content:"";position:absolute;top:-9px;left:15px;height:23px;width:10px;border:2px solid var(--fw-line-strong);background:var(--fw-wood-sign);border-radius:8px;transform:rotate(9deg)}
-.fw-item-row{border-bottom:1px dashed var(--fw-line-card)}.fw-item-row:last-child{border-bottom:0}.fw-item-row .fw-item-copy{min-width:0}.fw-item-row .fw-item-meta{white-space:normal;font-size:var(--fw-fs-note);line-height:1.5}.fw-item-row .fw-item-name{flex-wrap:wrap;gap:4px}.fw-item-row .fw-item-name>span:first-child{white-space:normal}.fw-item-toggle{position:relative;display:grid;place-items:center;width:44px;height:44px;flex-shrink:0;border-radius:14px}.fw-item-toggle[aria-pressed=true]{background:var(--fw-leaf-bg);border:1px solid var(--fw-leaf-bright)}.fw-item-toggle small{position:absolute;right:1px;bottom:0;font-size:var(--fw-fs-body);background:var(--fw-paper);border:1px solid var(--fw-leaf-line);border-radius:50%;width:18px;height:18px;line-height:16px;text-align:center}
-.fw-list-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px}.fw-filter-toggle{display:flex;gap:4px;align-items:center;font-weight:700;font-size:var(--fw-fs-body)}.fw-filter-panel{padding:12px 0;border-top:1px dashed var(--fw-line-card);border-bottom:1px dashed var(--fw-line-card)}.fw-segmented-tabs{scrollbar-width:none}.fw-segmented-tabs::-webkit-scrollbar{display:none}
-.fw-filter-pills{display:flex;flex-wrap:wrap;gap:8px}
-.fw-feature-shelf{padding-top:4px;border-bottom:5px solid var(--fw-line-wood)}.fw-quests{position:relative;padding:16px 16px;border:1.5px solid var(--fw-line-card);border-radius:12px;background:var(--fw-paper-sunk);box-shadow:2px 3px 0 var(--fw-shadow-card)}.fw-quests:before{content:"";position:absolute;top:-9px;left:15px;width:9px;height:27px;border:2px solid var(--fw-shadow-line);border-radius:7px;transform:rotate(14deg)}
-.fw-quests>h2{display:flex;align-items:center;gap:4px;font-weight:700;font-size:var(--fw-fs-section)}.fw-quests>h2>span{margin-left:auto;font-size:var(--fw-fs-meta);font-weight:400;color:var(--fw-muted)}.fw-quest-row{display:flex;gap:8px;align-items:center;padding:12px 0;border-bottom:1px dashed var(--fw-line-card)}.fw-quest-row:last-child{border-bottom:0;padding-bottom:0}.fw-quest-copy{flex:1;min-width:0}.fw-quest-copy strong{font-size:var(--fw-fs-body)}.fw-quest-copy p{font-size:var(--fw-fs-note);color:var(--fw-muted)}.fw-quest-copy progress{width:85%;height:8px;accent-color:var(--fw-leaf-line)}.fw-quest-action{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}.fw-quest-action>span:first-child{display:flex;align-items:center;font-size:var(--fw-fs-lead);font-weight:700}.fw-quest-claimed{font-size:var(--fw-fs-note);color:var(--fw-ink-done)}
-.fw-leaf-link{display:inline-flex;align-items:center;justify-content:center;font-size:var(--fw-fs-label);font-weight:700;color:var(--fw-ink);text-decoration:none}
-.fw-collapse-toggle{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;border-top:1px dashed var(--fw-line-card);color:var(--fw-green);font-size:var(--fw-fs-label);font-weight:700}
-.fw-collapse-toggle:after{content:"▾";font-size:var(--fw-fs-note)}
-.fw-collapse-toggle[aria-expanded=true]:after{content:"▴"}
-.fw-helper-note{font-size:var(--fw-fs-note);color:var(--fw-muted);line-height:1.7}
-.fw-companion-garden{position:relative;display:flex;align-items:center;flex-direction:column;gap:8px;min-height:0;margin:0 -20px;padding:8px 20px 0;isolation:isolate}.fw-level-ribbon{padding:4px 16px;background:var(--fw-peach-soft);border:1px solid var(--fw-peach-line);border-radius:8px 21px 8px 17px;font-size:var(--fw-fs-lead);font-weight:700}.fw-pet-speech{position:relative;align-self:center;text-align:center;padding:8px 16px;max-width:240px;margin-bottom:-24px;background:var(--fw-paper-hi);border:1.5px solid var(--fw-peach-line);border-radius:12px;font-size:var(--fw-fs-body);z-index:1}.fw-companion-garden>.fw-pet-art,.fw-companion-garden>.fw-art{margin-top:8px}
-.fw-growth{text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}.fw-growth-vine{display:flex;width:90%;align-items:center;gap:8px}.fw-growth strong{font-size:var(--fw-fs-section)}.fw-growth p{font-size:var(--fw-fs-label);color:var(--fw-muted)}.fw-care-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.fw-care-actions .fw-game-button{padding:8px 4px;font-size:var(--fw-fs-body)}
-.fw-diary{padding:16px 8px;border-block:1px dashed var(--fw-line-card);background:repeating-linear-gradient(transparent 0 31px,color-mix(in srgb, var(--fw-sand-deep) 50%, transparent) 31px 32px)}.fw-diary h2{display:flex;align-items:center;font-size:var(--fw-fs-section);font-weight:700}.fw-diary p{padding:8px 0;font-size:var(--fw-fs-lead);line-height:2}.fw-diary .fw-leaf-link{margin-top:8px}
-.fw-collection-book{display:flex;flex-direction:column;gap:12px;padding:20px}.fw-collection-book h2{display:flex;flex-wrap:wrap;justify-content:space-between;font-size:var(--fw-fs-section);font-weight:700}.fw-collection-book h2 small{font-size:var(--fw-fs-label)}.fw-collection-book>p{font-size:var(--fw-fs-label);color:var(--fw-muted)}/* 三欄、不畫中間的裝訂線——兩欄時那條線剛好落在格子中間當分隔，三欄就會穿過
-   其中一欄的立繪。 */
-.fw-collection-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 8px;padding:16px 0}
-.fw-collection-pet{display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;background:transparent;opacity:1}.fw-collection-pet strong{font-size:var(--fw-fs-label);text-align:center;line-height:1.3}.fw-collection-pet>span:last-child{font-size:var(--fw-fs-meta);padding:1px 8px;background:var(--fw-leaf-pale);border-radius:8px;text-align:center}.fw-pet-locked .fw-art{opacity:.6;filter:saturate(.35)}.fw-pet-locked>span:last-child{background:var(--fw-sand-pale)}
-.fw-detail-hero{position:relative;--fw-paper-pad:16px 16px 16px 16px}.fw-detail-hero .fw-price-actions,.fw-detail-hero .border-t{flex-wrap:wrap}.fw-detail-hero h1{overflow-wrap:anywhere}.fw-basket-summary{position:relative;isolation:isolate;--fw-paper-pad:16px 100px 16px 16px}.fw-basket-summary>div{flex-direction:column;align-items:flex-start}.fw-basket-summary .text-right{text-align:left}.fw-basket-pet{position:absolute;right:8px;top:20px;z-index:-1}.fw-basket-page>section:not(.fw-quests){padding-top:8px}.fw-basket-page .fw-item-row{--fw-row-pad:16px 4px;gap:8px}
-
-.fw-modal-backdrop{background:color-mix(in srgb, var(--fw-shadow-ink) 40%, transparent);backdrop-filter:blur(2px)}.fw-modal-paper{background:var(--fw-paper-card) url('/freshwise/ui-paper-texture.png') repeat;background-size:128px;border:2px solid var(--fw-line-field);border-radius:24px 19px 0 0;box-shadow:0 -7px 35px color-mix(in srgb, var(--fw-shadow-ink) 15%, transparent)}.fw-modal-frame{height:100dvh}
-.fw-modal-align{padding:0}
-.fw-modal-paper>[data-modal-heading]{padding:16px 20px;border-bottom:1px dashed var(--fw-line-card)}.fw-reward-letter{display:flex;flex-direction:column;align-items:center;text-align:center;gap:20px;padding:20px 24px 28px}.fw-reward-letter h2{font-size:var(--fw-fs-section);font-weight:700}.fw-reward-letter p{font-size:var(--fw-fs-lead);line-height:1.8}.fw-reward-letter small{font-size:var(--fw-fs-note);color:var(--fw-muted)}.fw-letter-rewards{display:flex;align-items:center;justify-content:center;gap:16px;padding:12px;background:var(--fw-butter);width:100%;border-radius:4px}.fw-letter-rewards>span{display:flex;align-items:center;gap:4px;font-size:var(--fw-fs-body);font-weight:700}
-.fw-game-toast{position:fixed;left:50%;bottom:130px;transform:translateX(-50%);z-index:80;max-width:360px;width:calc(100% - 48px);padding:16px 20px;border:2px solid var(--fw-leaf-bright);border-radius:18px;background:var(--fw-paper-sunk);color:var(--fw-ink);box-shadow:0 5px 20px color-mix(in srgb, var(--fw-shadow-ink) 19%, transparent);font-size:var(--fw-fs-lead);text-align:center}
-.fw-loading{padding:36px 12px;text-align:center;color:var(--fw-muted);font-size:var(--fw-fs-lead)}.fw-breathe{animation:fw-breathe 3.5s ease-in-out infinite}@keyframes fw-breathe{50%{transform:translateY(-3px)}}
+   縮小並離開底邊，整個形狀才完整露出來。 */.fw-bottom-nav>a[aria-current=page]:before{content:"";position:absolute;inset:auto 12px 4px;height:24px;border-radius:55% 20% 52% 27%;background:var(--fw-leaf-soft);z-index:-1}.fw-bottom-nav>a[aria-current=page]{color:var(--fw-ink-active)}.fw-skip-link{position:absolute;left:12px;top:-80px;z-index:100;background:var(--fw-paper);padding:12px}.fw-skip-link:focus{top:12px}.fw-market-context{display:flex;flex-direction:column;gap:4px}.fw-context-strip{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.fw-context-strip>button{display:flex;align-items:center;gap:4px;font-size:var(--fw-fs-label);color:var(--fw-ink);line-height:1.3}.fw-context-strip>button:first-child{flex:1;min-width:0}.fw-context-strip>button:first-child strong{font-size:var(--fw-fs-body)}.fw-unit-leaf{padding:4px 12px;border:1.5px solid var(--fw-leaf-line);border-radius:60% 12% 55% 15%;background:var(--fw-leaf-bg)}.fw-data-date{display:flex;align-items:center;gap:4px;font-size:var(--fw-fs-note);color:var(--fw-muted)}.fw-place-options{padding:12px 0;border-bottom:1px dashed var(--fw-line-card)}.fw-home{gap:24px;padding-top:20px}.fw-home-brand{display:flex;align-items:center;justify-content:space-between;gap:8px}.fw-home-brand small{display:block;font-size:var(--fw-fs-note);letter-spacing:.08em;font-weight:700;color:var(--fw-ink)}.fw-home-brand h1{font-size:var(--fw-fs-page);font-weight:800;line-height:1.3;letter-spacing:.05em}.fw-book-button{display:inline-flex;align-items:center;justify-content:center;min-width:44px;border:1.5px solid var(--fw-line-card);border-radius:13px 8px 13px 8px;background:var(--fw-paper-deep)}
+/* 數字欄固定留四位數的寬度，露珠從 9 變 10 變 100 時整顆膠囊不會跟著抽動。 */.fw-dew-balance>span:last-child{min-width:4ch;text-align:right;font-variant-numeric:tabular-nums}.fw-hero-level a{color:inherit}.fw-price-tag:before{content:none}.fw-price-tag>div{max-width:100%}.fw-price-list:before{content:"";position:absolute;top:-9px;left:15px;height:23px;width:10px;border:2px solid var(--fw-line-strong);background:var(--fw-wood-sign);border-radius:8px;transform:rotate(9deg)}.fw-item-row:last-child{border-bottom:0}.fw-item-row .fw-item-copy{min-width:0}.fw-item-row .fw-item-meta{white-space:normal;font-size:var(--fw-fs-note);line-height:1.5}.fw-item-row .fw-item-name{flex-wrap:wrap;gap:4px}.fw-item-row .fw-item-name>span:first-child{white-space:normal}.fw-item-toggle{position:relative;display:grid;place-items:center;width:44px;height:44px;flex-shrink:0;border-radius:14px}.fw-item-toggle[aria-pressed=true]{background:var(--fw-leaf-bg);border:1px solid var(--fw-leaf-bright)}.fw-item-toggle small{position:absolute;right:1px;bottom:0;font-size:var(--fw-fs-body);background:var(--fw-paper);border:1px solid var(--fw-leaf-line);border-radius:50%;width:18px;height:18px;line-height:16px;text-align:center}.fw-list-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px}.fw-filter-toggle{display:flex;gap:4px;align-items:center;font-weight:700;font-size:var(--fw-fs-body)}.fw-filter-panel{padding:12px 0;border-top:1px dashed var(--fw-line-card);border-bottom:1px dashed var(--fw-line-card)}.fw-segmented-tabs::-webkit-scrollbar{display:none}.fw-filter-pills{display:flex;flex-wrap:wrap;gap:8px}.fw-quests>h2>span{margin-left:auto;font-size:var(--fw-fs-meta);font-weight:400;color:var(--fw-muted)}.fw-quest-row:last-child{border-bottom:0;padding-bottom:0}.fw-quest-copy progress{width:85%;height:8px;accent-color:var(--fw-leaf-line)}.fw-quest-action>span:first-child{display:flex;align-items:center;font-size:var(--fw-fs-lead);font-weight:700}.fw-quest-claimed{font-size:var(--fw-fs-note);color:var(--fw-ink-done)}.fw-leaf-link{display:inline-flex;align-items:center;justify-content:center;font-size:var(--fw-fs-label);font-weight:700;color:var(--fw-ink);text-decoration:none}.fw-collapse-toggle{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;padding:8px 0;color:var(--fw-green);font-size:var(--fw-fs-label);font-weight:700}.fw-collapse-toggle:after{content:"▾";font-size:var(--fw-fs-note)}.fw-collapse-toggle[aria-expanded=true]:after{content:"▴"}.fw-helper-note{font-size:var(--fw-fs-note);color:var(--fw-muted);line-height:1.7}.fw-pet-speech{position:relative;align-self:center;text-align:center;padding:8px 16px;max-width:240px;margin-bottom:-24px;background:var(--fw-paper-hi);border:1.5px solid var(--fw-peach-line);border-radius:12px;font-size:var(--fw-fs-body);z-index:1}.fw-companion-garden>.fw-pet-art,.fw-companion-garden>.fw-art{margin-top:8px}.fw-growth{text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}.fw-growth strong{font-size:var(--fw-fs-section)}.fw-growth p{font-size:var(--fw-fs-label);color:var(--fw-muted)}.fw-care-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.fw-diary{padding:16px 8px;border-block:1px dashed var(--fw-line-card);background:repeating-linear-gradient(transparent 0 31px,color-mix(in srgb, var(--fw-sand-deep) 50%, transparent) 31px 32px)}.fw-diary h2{display:flex;align-items:center;font-size:var(--fw-fs-section);font-weight:700}.fw-diary p{padding:8px 0;font-size:var(--fw-fs-lead);line-height:2}.fw-diary .fw-leaf-link{margin-top:8px}.fw-collection-book{display:flex;flex-direction:column;gap:12px;padding:20px}.fw-collection-book h2{display:flex;flex-wrap:wrap;justify-content:space-between;font-size:var(--fw-fs-section);font-weight:700}.fw-collection-book h2 small{font-size:var(--fw-fs-label)}.fw-collection-book>p{font-size:var(--fw-fs-label);color:var(--fw-muted)}/* 三欄、不畫中間的裝訂線——兩欄時那條線剛好落在格子中間當分隔，三欄就會穿過
+   其中一欄的立繪。 */.fw-collection-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 8px;padding:16px 0}.fw-collection-pet{display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;background:transparent;opacity:1}.fw-collection-pet strong{font-size:var(--fw-fs-label);text-align:center;line-height:1.3}.fw-collection-pet>span:last-child{font-size:var(--fw-fs-meta);padding:1px 8px;background:var(--fw-leaf-pale);border-radius:8px;text-align:center}.fw-pet-locked .fw-art{opacity:.6;filter:saturate(.35)}.fw-pet-locked>span:last-child{background:var(--fw-sand-pale)}.fw-detail-hero{position:relative;--fw-paper-pad:16px 16px 16px 16px}.fw-detail-hero .fw-price-actions,.fw-detail-hero .border-t{flex-wrap:wrap}.fw-detail-hero h1{overflow-wrap:anywhere}.fw-basket-summary{position:relative;isolation:isolate;--fw-paper-pad:16px 100px 16px 16px}.fw-basket-summary>div{flex-direction:column;align-items:flex-start}.fw-basket-summary .text-right{text-align:left}.fw-basket-pet{position:absolute;right:8px;top:20px;z-index:-1}.fw-basket-page>section:not(.fw-quests){padding-top:8px}.fw-basket-page .fw-item-row{--fw-row-pad:16px 4px;gap:8px}.fw-modal-backdrop{background:color-mix(in srgb, var(--fw-shadow-ink) 40%, transparent);backdrop-filter:blur(2px)}.fw-modal-paper{background:var(--fw-paper-card) url('/freshwise/ui-paper-texture.png') repeat;background-size:128px;border:2px solid var(--fw-line-field);border-radius:24px 19px 0 0;box-shadow:0 -7px 35px color-mix(in srgb, var(--fw-shadow-ink) 15%, transparent)}.fw-modal-frame{height:100dvh}.fw-modal-align{padding:0}.fw-modal-paper>[data-modal-heading]{padding:16px 20px;border-bottom:1px dashed var(--fw-line-card)}.fw-reward-letter{display:flex;flex-direction:column;align-items:center;text-align:center;gap:20px;padding:20px 24px 28px}.fw-reward-letter h2{font-size:var(--fw-fs-section);font-weight:700}.fw-reward-letter p{font-size:var(--fw-fs-lead);line-height:1.8}.fw-reward-letter small{font-size:var(--fw-fs-note);color:var(--fw-muted)}.fw-letter-rewards{display:flex;align-items:center;justify-content:center;gap:16px;padding:12px;background:var(--fw-butter);width:100%;border-radius:4px}.fw-letter-rewards>span{display:flex;align-items:center;gap:4px;font-size:var(--fw-fs-body);font-weight:700}.fw-game-toast{position:fixed;left:50%;bottom:130px;transform:translateX(-50%);z-index:80;max-width:360px;width:calc(100% - 48px);padding:16px 20px;border:2px solid var(--fw-leaf-bright);border-radius:18px;background:var(--fw-paper-sunk);color:var(--fw-ink);box-shadow:0 5px 20px color-mix(in srgb, var(--fw-shadow-ink) 19%, transparent);font-size:var(--fw-fs-lead);text-align:center}.fw-loading{padding:36px 12px;text-align:center;color:var(--fw-muted);font-size:var(--fw-fs-lead)}.fw-breathe{animation:fw-breathe 3.5s ease-in-out infinite}@keyframes fw-breathe{50%{transform:translateY(-3px)}}
 /* 只關掉真的會動的那幾個。以前是用萬用選擇器把所有動畫與轉場一次強制關掉，
    那等於宣告「這個檔案永遠需要強制覆蓋」，而且連 hover 的顏色漸變都一起殺掉。 */
 @media(prefers-reduced-motion:reduce){.fw-breathe{animation:none}.fw-app [class*="transition"],.fw-modal [class*="transition"]{transition:none}}
 @media(min-width:640px){.fw-viewport{padding:24px 16px}.fw-phone{height:min(932px,calc(100dvh - 48px));border:5px solid var(--fw-paper-card);border-radius:30px;box-shadow:0 15px 55px color-mix(in srgb, var(--fw-shadow-ink) 14%, transparent);outline:1px solid var(--fw-line-card)}.fw-modal-frame{height:min(932px,calc(100dvh - 48px))}.fw-modal-align{padding:24px 16px}}
 @media(max-width:365px){.fw-page{padding-inline:16px}.fw-category-shelf{margin-inline:-16px;padding-inline:16px}.fw-page-title{margin-inline:-16px;padding-inline:28px}.fw-home-hero{margin-inline:-16px;padding-inline:16px}.fw-price-tag{width:148px}.fw-home-brand h1{font-size:var(--fw-fs-page)}.fw-care-actions{grid-template-columns:1fr}.fw-quests>h2>span{display:none}.fw-bottom-nav>a{font-size:var(--fw-fs-meta)}.fw-context-strip>button:first-child strong{font-size:var(--fw-fs-label)}}
 
-/* 首頁品牌、場所與夥伴舞台共用同一張花園背景。 */
-.fw-home-garden{position:relative;isolation:isolate;display:flex;flex-direction:column;gap:16px;margin:-20px -20px 0;padding:20px 20px 24px}
-.fw-home-garden:before{content:"";position:absolute;inset:0;z-index:-1;background:var(--fw-garden) url('/freshwise/garden-day-background.png') center top/cover no-repeat;mask-image:linear-gradient(#000 0%,#000 94%,transparent 100%);pointer-events:none}
-
-.fw-tag-price-line{display:inline-flex;align-items:baseline;justify-content:center;gap:4px;max-width:100%;white-space:nowrap}
-.fw-tag-price-line .fw-tag-unit{flex-shrink:0;line-height:1.4}
-
-.fw-hero-growth{display:flex;flex-direction:column;align-items:center;gap:4px;width:145px;margin-top:4px;font-size:var(--fw-fs-note);line-height:1.45;color:var(--fw-ink)}
-.fw-hero-growth>span{padding:1px 12px;background:var(--fw-paper-deep);border:1px solid var(--fw-line-field);border-radius:100px}
-.fw-hero-growth strong{font-variant-numeric:tabular-nums}
-
-.fw-hero-growth progress{display:block;width:112px;height:8px;appearance:none;border:1px solid var(--fw-line-strong);border-radius:100px;background:var(--fw-paper-deep);overflow:hidden}
-.fw-hero-growth progress::-webkit-progress-bar{background:var(--fw-paper-deep);border-radius:100px}
-.fw-hero-growth progress::-webkit-progress-value{background:var(--fw-leaf-bright);border-radius:100px}
-.fw-hero-growth progress::-moz-progress-bar{background:var(--fw-leaf-bright);border-radius:100px}
-@media(max-width:365px){.fw-home-garden{margin-inline:-16px;padding-inline:16px}.fw-price-tag{--fw-tag-price-size:var(--fw-fs-lead)}.fw-tag-price-line .fw-tag-unit{font-size:var(--fw-fs-micro)}.fw-price-tag{padding-inline:12px}.fw-hero-growth{width:135px}}
-
-.fw-pet-art.fw-breathe{width:200px;height:200px}
+/* 首頁品牌、場所與夥伴舞台共用同一張花園背景。 */.fw-home-garden:before{content:"";position:absolute;inset:0;z-index:-1;background:var(--fw-garden) url('/freshwise/garden-day-background.png') center top/cover no-repeat;mask-image:linear-gradient(#000 0%,#000 94%,transparent 100%);pointer-events:none}.fw-tag-price-line{display:inline-flex;align-items:baseline;justify-content:center;gap:4px;max-width:100%;white-space:nowrap}.fw-tag-price-line .fw-tag-unit{flex-shrink:0;line-height:1.4}.fw-hero-growth strong{font-variant-numeric:tabular-nums}
+@media(max-width:365px){.fw-home-garden{margin-inline:-16px;padding-inline:16px}.fw-price-tag{--fw-tag-price-size:var(--fw-fs-lead)}.fw-tag-price-line .fw-tag-unit{font-size:var(--fw-fs-micro)}.fw-price-tag{padding-inline:12px}.fw-hero-growth{width:135px}}.fw-pet-art.fw-breathe{width:200px;height:200px}
 @media(min-width:366px) and (max-width:400px){.fw-price-tag{width:162px;padding-inline:12px}}
 @media(max-width:365px){.fw-hero-stage{gap:4px}}
 
-/* 夥伴頁花園延伸至標題頂端，取代標題原本的棚架裝飾。 */
-.fw-companions-hero{position:relative;isolation:isolate;display:flex;flex-direction:column;gap:16px;margin:-24px -20px 0;padding:24px 20px 12px}
-.fw-companions-hero:before{content:"";position:absolute;inset:0;z-index:-1;background:var(--fw-garden) url('/freshwise/garden-day-background.png') center top/cover no-repeat;mask-image:linear-gradient(#000 0%,#000 92%,transparent 100%);pointer-events:none}
-.fw-companions-hero>.fw-page-title{margin:0;min-height:0;padding:0}
-.fw-companions-hero>.fw-page-title:before{content:none}
+/* 夥伴頁花園延伸至標題頂端，取代標題原本的棚架裝飾。 */.fw-companions-hero{position:relative;isolation:isolate;display:flex;flex-direction:column;gap:16px;margin:-24px -20px 0;padding:24px 20px 12px}.fw-companions-hero:before{content:"";position:absolute;inset:0;z-index:-1;background:var(--fw-garden) url('/freshwise/garden-day-background.png') center top/cover no-repeat;mask-image:linear-gradient(#000 0%,#000 92%,transparent 100%);pointer-events:none}.fw-companions-hero>.fw-page-title:before{content:none}
 @media(max-width:365px){.fw-companions-hero{margin-inline:-16px;padding-inline:16px}.fw-companions-hero>.fw-companion-garden{margin-inline:-16px;padding-inline:16px}}
 
-/* 標題圖示與文字置中；包含菜籃群組、任務及日記標題。 */
-.fw-section-title,.fw-quests>h2,.fw-diary>h2{display:flex;align-items:center;gap:8px}
+/* 標題圖示與文字置中；包含菜籃群組、任務及日記標題。 */.fw-section-title,.fw-quests>h2,.fw-diary>h2{display:flex;align-items:center;gap:8px}
 
-
-/* 紙紋與木紋保持獨立，行情及任務文字由 HTML 呈現。 */
-.fw-home-garden{gap:12px;padding-bottom:20px}
-.fw-home-hero{min-height:0;gap:16px;padding-top:4px}
-.fw-home-speech{text-align:left;background:var(--fw-paper-hi) url('/freshwise/ui-paper-texture.png') repeat;background-size:160px}
-.fw-hero-stage{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:8px;align-items:end;min-height:0}
-.fw-home .fw-pet-art.fw-breathe{width:100%;max-width:212px;height:auto;aspect-ratio:1}
-.fw-hero-companion{width:100%;padding-bottom:4px}
-.fw-hero-level{margin-top:-8px;padding:2px 12px;background:var(--fw-peach-hi) url('/freshwise/ui-paper-texture.png') center/160px;font-size:var(--fw-fs-note)}
-.fw-hero-price-column{width:100%;gap:4px}
-.fw-price-tag{width:100%;max-width:174px;min-height:0;aspect-ratio:1;padding:32px 20px 20px;gap:4px;background-image:url('/freshwise/home-price-tag-board-clean.png')}
-.fw-price-tag h2{font-size:var(--fw-fs-section);line-height:1.3}.fw-price-tag .fw-tag-unit{font-size:var(--fw-fs-meta)}
-.fw-hero-link{font-size:var(--fw-fs-body);padding:8px 8px;margin:0}
-.fw-hero-growth{position:relative;display:block;width:132px;height:22px;margin-top:4px;line-height:22px}
-.fw-hero-growth>span{position:absolute;inset:0;z-index:1;padding:0;border:0;background:none;text-align:center;font-size:var(--fw-fs-meta);font-weight:700;pointer-events:none}
-.fw-hero-growth progress{width:100%;height:22px;border:1.5px solid var(--fw-line-deep);border-radius:100px;background:var(--fw-paper-deep)}
-.fw-hero-growth progress::-webkit-progress-bar{background:var(--fw-paper-deep)}.fw-hero-growth progress::-webkit-progress-value{background:var(--fw-btn-lo)}.fw-hero-growth progress::-moz-progress-bar{background:var(--fw-btn-lo)}
+/* 紙紋與木紋保持獨立，行情及任務文字由 HTML 呈現。 */.fw-home-garden{position:relative;isolation:isolate;display:flex;flex-direction:column;gap:12px;margin:-20px -20px 0;padding:20px 20px 24px;padding-bottom:20px}.fw-home-hero{position:relative;margin:0 -20px;padding:12px 20px 0;display:flex;flex-direction:column;gap:16px;min-height:0;padding-top:4px}.fw-home-speech{align-self:center;position:relative;width:min(100%,340px);padding:12px;border:1.5px solid var(--fw-line-strong);border-radius:13px 8px 13px 8px;background:var(--fw-paper-hi) url('/freshwise/ui-paper-texture.png') repeat;box-shadow:0 3px 0 color-mix(in srgb, var(--fw-shadow-line) 11%, transparent);font-size:var(--fw-fs-body);line-height:1.6;text-align:left;background-size:160px}.fw-home .fw-pet-art.fw-breathe{width:100%;max-width:212px;height:auto;aspect-ratio:1}.fw-hero-level{font-size:var(--fw-fs-note);font-weight:700;border:1px solid var(--fw-peach-line);background:var(--fw-peach-hi) url('/freshwise/ui-paper-texture.png') center/160px;border-radius:8px;padding:2px 12px;margin-top:-8px;z-index:1}.fw-price-tag h2{font-size:var(--fw-fs-section);font-weight:700;line-height:1.3}.fw-price-tag .fw-tag-unit{font-size:var(--fw-fs-meta)}.fw-hero-link{align-self:stretch;padding:8px 8px;font-size:var(--fw-fs-body);margin:0}.fw-hero-growth{display:block;flex-direction:column;align-items:center;gap:4px;width:132px;margin-top:4px;font-size:var(--fw-fs-note);line-height:22px;color:var(--fw-ink);position:relative;height:22px}.fw-hero-growth>span{padding:0;background:none;border:0;border-radius:100px;position:absolute;inset:0;z-index:1;text-align:center;font-size:var(--fw-fs-meta);font-weight:700;pointer-events:none}.fw-hero-growth progress{display:block;width:100%;height:22px;appearance:none;border:1.5px solid var(--fw-line-deep);border-radius:100px;background:var(--fw-paper-deep);overflow:hidden}.fw-hero-growth progress::-webkit-progress-bar{background:var(--fw-paper-deep);border-radius:100px}.fw-hero-growth progress::-webkit-progress-value{background:var(--fw-btn-lo);border-radius:100px}.fw-hero-growth progress::-moz-progress-bar{background:var(--fw-btn-lo);border-radius:100px}
 /* 行情頁往下捲時分類列釘在最上面：使用者一邊看清單一邊會想換分類，捲回頂端再換
    是多餘的來回。背景要不透明（底下的清單會從後面穿過去），左右出血到手機框邊，
-   捲動時看起來才像一整條工具列而不是一塊浮在中間的卡片。 */
-.fw-category-shelf{position:sticky;top:0;z-index:12;isolation:isolate;margin:0 -20px;padding:0 20px 12px;border:0;background:transparent;gap:0;overflow-x:auto;transition:background-color .15s}
+   捲動時看起來才像一整條工具列而不是一塊浮在中間的卡片。 */.fw-category-shelf{display:flex;justify-content:space-between;gap:0;overflow-x:auto;padding:0 20px 12px;background:transparent;position:sticky;top:0;z-index:12;isolation:isolate;border:0;transition:background-color .15s}
 /* 釘在上方時才需要不透明的底（底下的清單會從後面穿過去）。用 IntersectionObserver
-   標記太重，改用 sticky 自己的位置判斷：scroll 容器頂端時 top:0 命中。 */
-.fw-category-shelf[data-stuck=true]{background:var(--fw-paper)}
-.fw-category-shelf:before{content:"";position:absolute;inset:31px 0 0;z-index:-1;background:url('/freshwise/market-wood-counter.png') center/100% 100% no-repeat;pointer-events:none}
-.fw-category-shelf>a,.fw-category-shelf>button{min-width:43px;flex:1;font-size:var(--fw-fs-note);gap:0;padding-bottom:4px}
-.fw-category-shelf>a>.fw-art,.fw-category-shelf>button>.fw-art,.fw-category-shelf>a>.fw-item-art{margin-bottom:-2px;transform:translateY(-12px)}
-
-.fw-quests{padding:8px 12px 12px;border:0;box-shadow:none;isolation:isolate;background:none}
-.fw-quests:before{content:none}.fw-quests>h2{justify-content:center;font-size:var(--fw-fs-section);text-align:center}
-.fw-quest-row{display:grid;grid-template-columns:38px minmax(0,1fr) 44px;gap:8px;padding:4px 0}
-.fw-quest-copy{display:flex;flex-direction:column;gap:4px;text-align:center;line-height:1.4}.fw-quest-copy strong{font-size:var(--fw-fs-note)}.fw-quest-copy p{font-size:var(--fw-fs-meta)}
-
-
-
-.fw-quest-action{display:flex;justify-content:center;align-items:center;text-align:center}
-.fw-quest-reward{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:40px;font-size:var(--fw-fs-body);font-weight:700;line-height:1.1}
-.fw-quest-reward small{font-size:var(--fw-fs-micro)}.fw-quests-all .fw-quest-row{padding-block:8px}.fw-quests-all{padding-block:16px}
-.fw-feature-shelf{border:0;padding:0}.fw-feature-shelf>.fw-section-title{padding-bottom:0}
-.fw-market-display{position:relative;isolation:isolate;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:4px 2px 24px}
-.fw-market-display:before{content:"";position:absolute;inset:auto -8px 0;height:72px;z-index:-1;background:url('/freshwise/market-wood-counter.png') center/100% 100% no-repeat}
-.fw-market-product{display:flex;align-items:flex-end;justify-content:center;gap:0;min-width:0;text-decoration:none;color:var(--fw-ink)}
-.fw-market-food{flex:0 1 80px;width:80px;height:116px;display:flex;align-items:flex-end;justify-content:center;z-index:1;margin-right:2px;padding-bottom:4px}
-.fw-market-food .fw-item-art{width:100%}
-.fw-market-price{position:relative;flex:0 0 88px;transform:translateY(-12px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px 8px;background:url('/freshwise/market-small-price-card.png?v=8') center/100% 100% no-repeat;text-align:center}
-.fw-market-price h3{font-size:var(--fw-fs-body);font-weight:700;line-height:1.3}.fw-market-price .fw-market-unit{font-size:var(--fw-fs-micro);line-height:1.2}
-.fw-primary,.fw-game-button{background-image:url('/freshwise/ui-paper-texture.png'),linear-gradient(var(--fw-btn-hi),var(--fw-btn-lo));background-size:140px,100% 100%;background-blend-mode:multiply}
-.fw-peach-button{background-image:url('/freshwise/ui-paper-texture.png'),linear-gradient(var(--fw-peach-hi),var(--fw-peach))}
+   標記太重，改用 sticky 自己的位置判斷：scroll 容器頂端時 top:0 命中。 */.fw-category-shelf[data-stuck=true]{background:var(--fw-paper)}.fw-category-shelf:before{content:"";position:absolute;inset:0;z-index:-1;background:url('/freshwise/market-wood-counter.png') center/100% 100% no-repeat;pointer-events:none}.fw-category-shelf>a,.fw-category-shelf>button{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:0;min-width:43px;font-size:var(--fw-fs-note);font-weight:700;color:var(--fw-ink);position:relative;isolation:isolate;flex:1;padding-bottom:4px}.fw-category-shelf>a>.fw-art,.fw-category-shelf>button>.fw-art,.fw-category-shelf>a>.fw-item-art{margin-bottom:-2px;transform:translateY(-12px)}.fw-quests:before{content:none;position:absolute;top:-9px;left:15px;width:9px;height:27px;border:2px solid var(--fw-shadow-line);border-radius:7px;transform:rotate(14deg)}.fw-quest-row{display:grid;gap:8px;align-items:center;padding:4px 0;border-bottom:1px dashed var(--fw-line-card);grid-template-columns:38px minmax(0,1fr) 44px}.fw-quest-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;text-align:center;line-height:1.4}.fw-quest-copy strong{font-size:var(--fw-fs-note)}.fw-quest-copy p{font-size:var(--fw-fs-meta);color:var(--fw-muted)}.fw-quest-action{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;justify-content:center;text-align:center}.fw-quest-reward{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:40px;font-size:var(--fw-fs-body);font-weight:700;line-height:1.1}.fw-quest-reward small{font-size:var(--fw-fs-micro)}.fw-feature-shelf{border:0;padding:0}.fw-feature-shelf>.fw-section-title{padding-bottom:0}.fw-market-display{position:relative;isolation:isolate;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:4px 2px 24px}.fw-market-display:before{content:"";position:absolute;inset:auto -8px 0;height:72px;z-index:-1;background:url('/freshwise/market-wood-counter.png') center/100% 100% no-repeat}.fw-market-product{display:flex;align-items:flex-end;justify-content:center;gap:0;min-width:0;text-decoration:none;color:var(--fw-ink)}.fw-market-food{flex:0 1 80px;width:80px;height:116px;display:flex;align-items:flex-end;justify-content:center;z-index:1;margin-right:2px;padding-bottom:4px}.fw-market-food .fw-item-art{width:100%}.fw-market-price{position:relative;flex:0 0 88px;transform:translateY(-12px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px 8px;background:url('/freshwise/market-small-price-card.png?v=8') center/100% 100% no-repeat;text-align:center}.fw-market-price h3{font-size:var(--fw-fs-body);font-weight:700;line-height:1.3}.fw-market-price .fw-market-unit{font-size:var(--fw-fs-micro);line-height:1.2}.fw-primary,.fw-game-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:8px 20px;border:2px solid var(--fw-leaf-line);border-radius:100px;background:linear-gradient(var(--fw-btn-hi),var(--fw-btn-lo));color:var(--fw-ink);font-size:var(--fw-fs-lead);font-weight:700;box-shadow:0 3px 0 var(--fw-btn-shadow);text-decoration:none;text-align:center;line-height:1.4;background-image:url('/freshwise/ui-paper-texture.png'),linear-gradient(var(--fw-btn-hi),var(--fw-btn-lo));background-size:140px,100% 100%;background-blend-mode:multiply}.fw-peach-button{background:linear-gradient(var(--fw-peach-hi),var(--fw-peach));border-color:var(--fw-peach-line);background-image:url('/freshwise/ui-paper-texture.png'),linear-gradient(var(--fw-peach-hi),var(--fw-peach))}
 @media(max-width:365px){.fw-market-price{flex-basis:80px;padding-inline:4px}.fw-market-food{width:68px;flex-basis:68px}.fw-price-tag{padding:28px 12px 16px}.fw-tag-price-line{gap:2px}.fw-quest-row{grid-template-columns:30px minmax(0,1fr) 36px;gap:4px}.fw-quests{padding-inline:8px}.fw-category-shelf>a,.fw-category-shelf>button{min-width:40px;font-size:var(--fw-fs-meta)}}
 
-/* 共用介面也採用與價牌相同的細紙紋，保留原本的色彩與欄位圓角。 */
+/* 共用介面也採用與價牌相同的細紙紋，保留原本的色彩與欄位圓角。 */.fw-page-title:before{content:"";position:absolute;inset:0;z-index:-1;border-bottom:3px solid var(--fw-line-strong);border-radius:10px 10px 35% 30%;background:repeating-linear-gradient(90deg,var(--fw-shelf-green) 0 42px,var(--fw-paper-shade) 42px 84px);box-shadow:0 5px 0 var(--fw-sand-deep);opacity:.9;background-image:url('/freshwise/ui-paper-texture.png'),repeating-linear-gradient(90deg,var(--fw-shelf-green) 0 42px,var(--fw-paper-shade) 42px 84px);background-size:160px,auto;background-blend-mode:multiply}.fw-unit-leaf,.fw-dew-balance{background-image:url('/freshwise/ui-paper-texture.png');background-size:160px;background-blend-mode:multiply}
+/* 實心下箭頭與相鄰文字垂直置中。 */.fw-dropdown-arrow{display:inline-flex;align-items:center;justify-content:center;align-self:center;flex-shrink:0;width:12px;height:1em;font-size:var(--fw-fs-micro);line-height:1;vertical-align:middle}
 
-.fw-page-title:before{background-image:url('/freshwise/ui-paper-texture.png'),repeating-linear-gradient(90deg,var(--fw-shelf-green) 0 42px,var(--fw-paper-shade) 42px 84px);background-size:160px,auto;background-blend-mode:multiply}
-.fw-unit-leaf,.fw-dew-balance{background-image:url('/freshwise/ui-paper-texture.png');background-size:160px;background-blend-mode:multiply}
-/* 實心下箭頭與相鄰文字垂直置中。 */
-.fw-dropdown-arrow{display:inline-flex;align-items:center;justify-content:center;align-self:center;flex-shrink:0;width:12px;height:1em;font-size:var(--fw-fs-micro);line-height:1;vertical-align:middle}
+/* 分類文字隨食材上移，以奶油紙標籤凸顯名稱。 */.fw-category-shelf>a>span:last-child,.fw-category-shelf>button>span:last-child{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;transform:translateY(-10px);min-width:36px;padding:2px 8px;line-height:1.4;white-space:nowrap;border-radius:45% 30% 42% 28%;background:var(--fw-paper-deep) url('/freshwise/ui-paper-texture.png') center/140px repeat;box-shadow:0 2px 0 color-mix(in srgb, var(--fw-line-wood) 40%, transparent)}.fw-category-shelf>button[aria-pressed=true]:after{content:none;position:absolute;bottom:0;left:0;right:0;height:28px;background:var(--fw-leaf-soft);border:1.5px solid var(--fw-leaf-line);border-radius:50% 20% 50% 25%;z-index:-1}.fw-category-shelf>button[aria-pressed=true]>span:last-child{background-color:var(--fw-leaf-soft);background-blend-mode:multiply;box-shadow:0 3px 0 var(--fw-leaf-line);color:var(--fw-ink-active)}
+/* 菜籃不論是否有行情，都使用同款紙張卡片。 */.fw-basket-entry-card{padding:12px}.fw-basket-page .fw-basket-entry-card>.fw-item-row{--fw-row-pad:0;gap:8px;border-bottom:0}
 
-/* 分類文字隨食材上移，以奶油紙標籤凸顯名稱。 */
-.fw-category-shelf>a>span:last-child,.fw-category-shelf>button>span:last-child{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;transform:translateY(-10px);min-width:36px;padding:2px 8px;line-height:1.4;white-space:nowrap;border-radius:45% 30% 42% 28%;background:var(--fw-paper-deep) url('/freshwise/ui-paper-texture.png') center/140px repeat;box-shadow:0 2px 0 color-mix(in srgb, var(--fw-line-wood) 40%, transparent)}
-.fw-category-shelf>button[aria-pressed=true]:after{content:none}
-.fw-category-shelf>button[aria-pressed=true]>span:last-child{background-color:var(--fw-leaf-soft);background-blend-mode:multiply;box-shadow:0 3px 0 var(--fw-leaf-line);color:var(--fw-ink-active)}
-/* 菜籃不論是否有行情，都使用同款紙張卡片。 */
-.fw-basket-entry-card{padding:12px}
-.fw-basket-page .fw-basket-entry-card>.fw-item-row{--fw-row-pad:0;gap:8px;border-bottom:0}
+/* 任務紙三段式背景：上下緣固定比例，中段只重複、不隨內容高度拉伸。 */.fw-quest-paper{position:absolute;inset:0;z-index:-1;display:grid;grid-template-rows:auto minmax(0,1fr) auto;pointer-events:none}.fw-quest-paper>span{display:block;min-width:0;min-height:0;background-position:center top;background-size:100% auto;background-repeat:no-repeat}.fw-quest-paper-top,.fw-quest-paper-bottom{aspect-ratio:2172/203}
 
-/* 任務紙三段式背景：上下緣固定比例，中段只重複、不隨內容高度拉伸。 */
-.fw-quest-paper{position:absolute;inset:0;z-index:-1;display:grid;grid-template-rows:auto minmax(0,1fr) auto;pointer-events:none}
-.fw-quest-paper>span{display:block;min-width:0;min-height:0;background-position:center top;background-size:100% auto;background-repeat:no-repeat}
-.fw-quest-paper-top,.fw-quest-paper-bottom{aspect-ratio:2172/203}
-.fw-quest-paper-top{background-image:url('/freshwise/task-paper-slip-top.png')}
-.fw-quest-paper>.fw-quest-paper-middle{background-image:url('/freshwise/task-paper-slip-middle.png');background-repeat:repeat-y}
-.fw-quest-paper-bottom{background-image:url('/freshwise/task-paper-slip-bottom.png')}
-
-/* 花園背景（天空）上的文字：淺色底＋淺色字會讀不到，補一層紙色光暈把字托起來。 */
-.fw-home-garden>.fw-home-brand,
-.fw-home-garden>.fw-market-context{text-shadow:0 1px 0 var(--fw-paper-hi),0 0 6px var(--fw-paper-hi)}
-.fw-home-garden .fw-data-date{color:var(--fw-ink)}
+/* 花園背景（天空）上的文字：淺色底＋淺色字會讀不到，補一層紙色光暈把字托起來。 */.fw-home-garden>.fw-home-brand,
+.fw-home-garden>.fw-market-context{text-shadow:0 1px 0 var(--fw-paper-hi),0 0 6px var(--fw-paper-hi)}.fw-home-garden .fw-data-date{color:var(--fw-ink)}
 
 /* 回到頂端：外觀整個交給 ui-go-top.png，按鈕本身只負責位置與點擊範圍。 */
 /* 向右 20px（right-5），向下也要看起來是 20px——但下面有導覽列，所以量的是
-   「導覽列上緣到按鈕」的距離，由 --fw-nav-h 推出來。 */
-.fw-go-top{--fw-nav-h:85px;width:40px;height:40px;right:20px;bottom:calc(var(--fw-nav-h) + env(safe-area-inset-bottom) + 20px)}
+   「導覽列上緣到按鈕」的距離，由 --fw-nav-h 推出來。 */.fw-go-top{--fw-nav-h:85px;width:40px;height:40px;right:20px;bottom:calc(var(--fw-nav-h) + env(safe-area-inset-bottom) + 20px)}
 
 /* 進度條（任務進度、夥伴成長共用）。數字疊在條子裡面，省一整欄的寬度，
-   任務文字就放得下。 */
-.fw-meter{position:relative;display:flex;align-items:center;justify-content:center;width:100%;border:1px solid var(--fw-line-deep);border-radius:100px;background:var(--fw-paper-deep);overflow:hidden}
-.fw-meter-fill{position:absolute;inset:0 auto 0 0;background:var(--fw-btn-lo);transition:width .25s ease}
-.fw-meter-label{position:relative;font-size:var(--fw-fs-meta);font-weight:700;line-height:1.2;color:var(--fw-ink);font-variant-numeric:tabular-nums}
+   任務文字就放得下。 */.fw-meter{position:relative;display:flex;align-items:center;justify-content:center;width:100%;border:1px solid var(--fw-line-deep);border-radius:100px;background:var(--fw-paper-deep);overflow:hidden}.fw-meter-fill{position:absolute;inset:0 auto 0 0;background:var(--fw-btn-lo);transition:width .25s ease}.fw-meter-label{position:relative;font-size:var(--fw-fs-meta);font-weight:700;line-height:1.2;color:var(--fw-ink);font-variant-numeric:tabular-nums}
 @media(prefers-reduced-motion:reduce){.fw-meter-fill{transition:none}}
 
 /* ───────────────────── 共用元件（ui.tsx）的外觀 ─────────────────────
@@ -317,159 +140,55 @@
  * 元件那邊已經沒有另一份樣式在競爭。
  */
 
-/* 提示條 */
-.fw-callout{display:flex;align-items:flex-start;gap:8px;padding:12px;border-left:3px solid var(--fw-gold);border-radius:3px;background:var(--fw-paper-sunk)}
-.fw-callout p{font-size:var(--fw-fs-label);line-height:1.7;color:var(--fw-warning)}
+/* 提示條 */.fw-callout{display:flex;align-items:flex-start;gap:8px;padding:12px;border-left:3px solid var(--fw-gold);border-radius:3px;background:var(--fw-paper-sunk)}.fw-callout p{font-size:var(--fw-fs-label);line-height:1.7;color:var(--fw-warning)}
 
-/* 徽章。手繪感的不等圓角：四個角不一樣，看起來像手畫的標籤而不是系統元件。 */
-.fw-badge{display:inline-flex;flex-shrink:0;align-items:center;gap:4px;padding:2px 8px;border-radius:9px 5px 9px 5px;font-size:var(--fw-fs-note);font-weight:500;line-height:1.4}
-.fw-badge-sm{padding:1px 4px;font-size:var(--fw-fs-micro)}
+/* 徽章。手繪感的不等圓角：四個角不一樣，看起來像手畫的標籤而不是系統元件。 */.fw-badge{display:inline-flex;flex-shrink:0;align-items:center;gap:4px;padding:2px 8px;border-radius:9px 5px 9px 5px;font-size:var(--fw-fs-note);font-weight:500;line-height:1.4}.fw-badge-sm{padding:1px 4px;font-size:var(--fw-fs-micro)}
 
-/* 分段切換 */
-.fw-segmented-tabs{display:inline-flex;align-items:center;gap:8px;padding:4px 0}
-.fw-tabs-scroll{display:flex;max-width:100%;overflow-x:auto;scrollbar-width:none}
-.fw-tabs-scroll::-webkit-scrollbar{display:none}
-.fw-tab{display:flex;flex-shrink:0;align-items:center;gap:8px;white-space:nowrap;padding:8px 12px;border:1.5px solid var(--fw-line-card);border-radius:13px 8px 13px 8px;background:var(--fw-paper);color:var(--fw-ink);font-size:var(--fw-fs-label);font-weight:500;transition:background-color .15s,border-color .15s}
-.fw-tab[aria-pressed=true]{border-color:var(--fw-leaf-line);background:var(--fw-leaf-soft);box-shadow:0 2px 0 var(--fw-btn-shadow)}
+/* 分段切換 */.fw-segmented-tabs{scrollbar-width:none;display:inline-flex;align-items:center;gap:8px;padding:4px 0}.fw-tabs-scroll{display:flex;max-width:100%;overflow-x:auto;scrollbar-width:none}.fw-tabs-scroll::-webkit-scrollbar{display:none}.fw-tab{display:flex;flex-shrink:0;align-items:center;gap:8px;white-space:nowrap;padding:8px 12px;border:1.5px solid var(--fw-line-card);border-radius:13px 8px 13px 8px;background:var(--fw-paper);color:var(--fw-ink);font-size:var(--fw-fs-label);font-weight:500;transition:background-color .15s,border-color .15s}.fw-tab[aria-pressed=true]{border-color:var(--fw-leaf-line);background:var(--fw-leaf-soft);box-shadow:0 2px 0 var(--fw-btn-shadow)}
 
-/* 篩選膠囊（可多選，所以是圓角膠囊而不是分頁的不等圓角） */
-.fw-filter-pill{padding:8px 12px;border:1px solid transparent;border-radius:100px;background:var(--fw-paper-sunk);color:var(--fw-ink);font-size:var(--fw-fs-label);font-weight:500;transition:background-color .15s,border-color .15s}
-.fw-filter-pill[aria-pressed=true]{border-color:var(--fw-leaf-line);background:var(--fw-leaf-soft)}
+/* 篩選膠囊（可多選，所以是圓角膠囊而不是分頁的不等圓角） */.fw-filter-pill{padding:8px 12px;border:1px solid transparent;border-radius:100px;background:var(--fw-paper-sunk);color:var(--fw-ink);font-size:var(--fw-fs-label);font-weight:500;transition:background-color .15s,border-color .15s}.fw-filter-pill[aria-pressed=true]{border-color:var(--fw-leaf-line);background:var(--fw-leaf-soft)}
 
-/* 清單列 */
-.fw-item-row{display:flex;align-items:center;gap:12px;padding:var(--fw-row-pad,16px 0)}
-.fw-item-link{display:flex;flex:1;min-width:0;align-items:center;gap:12px}
-.fw-item-title{font-size:var(--fw-item-name-size,var(--fw-fs-lead));font-weight:600;color:var(--fw-ink)}
+/* 清單列 */.fw-item-row{border-bottom:1px dashed var(--fw-line-card);display:flex;align-items:center;gap:12px;padding:var(--fw-row-pad,16px 0)}.fw-item-link{display:flex;flex:1;min-width:0;align-items:center;gap:12px}.fw-item-title{font-size:var(--fw-item-name-size,var(--fw-fs-lead));font-weight:600;color:var(--fw-ink)}
 
-/* 價格數字。字級由元件決定（版位不同大小不同），顏色與字重固定。 */
-.fw-price-amount{font-weight:700;line-height:1;color:var(--fw-ink)}
-.fw-price-range{font-weight:700;color:var(--fw-ink)}
+/* 價格數字。字級由元件決定（版位不同大小不同），顏色與字重固定。 */.fw-price-amount{font-weight:700;line-height:1;color:var(--fw-ink)}.fw-price-range{font-weight:700;color:var(--fw-ink)}
 
-/* 場所名稱：以前是可點的下拉按鈕，分頁常駐之後它只剩「現在在哪」的標示。 */
-.fw-venue-label{display:flex;flex:1;min-width:0;align-items:center;gap:4px;font-size:var(--fw-fs-label);color:var(--fw-ink)}
-.fw-venue-label strong{font-size:var(--fw-fs-body)}
-/* 排序列左邊的標示，跟右邊的「篩選」按鈕對齊成同一條工具列。 */
-.fw-toolbar-label{display:flex;align-items:center;gap:4px;font-size:var(--fw-fs-body);font-weight:700;color:var(--fw-ink)}
+/* 場所名稱：以前是可點的下拉按鈕，分頁常駐之後它只剩「現在在哪」的標示。 */.fw-venue-label{display:flex;flex:1;min-width:0;align-items:center;gap:4px;font-size:var(--fw-fs-label);color:var(--fw-ink)}.fw-venue-label strong{font-size:var(--fw-fs-body)}
+/* 排序列左邊的標示，跟右邊的「篩選」按鈕對齊成同一條工具列。 */.fw-toolbar-label{display:flex;align-items:center;gap:4px;font-size:var(--fw-fs-body);font-weight:700;color:var(--fw-ink)}
 
-/* 區塊標題後面的問號。小一號、不搶標題的視覺重量，但點擊範圍仍有 44px。 */
-.fw-help-dot{display:inline-grid;place-items:center;width:22px;height:22px;margin-inline:2px;border:1.5px solid var(--fw-line-card);border-radius:100px;background:var(--fw-paper-sunk);color:var(--fw-muted);font-size:var(--fw-fs-note);font-weight:700;line-height:1}
-.fw-help-dot:hover{border-color:var(--fw-leaf-line);color:var(--fw-green)}
+/* 區塊標題後面的問號。小一號、不搶標題的視覺重量，但點擊範圍仍有 44px。 */.fw-help-dot{display:inline-grid;place-items:center;width:22px;height:22px;margin-inline:2px;border:1.5px solid var(--fw-line-card);border-radius:100px;background:var(--fw-paper-sunk);color:var(--fw-muted);font-size:var(--fw-fs-note);font-weight:700;line-height:1}.fw-help-dot:hover{border-color:var(--fw-leaf-line);color:var(--fw-green)}
 
 /* 紙上「一列一列」的區塊。分隔線跟紙卡片的虛線分隔同一種，字級由 DividedRow 自己帶，
-   跟同一張紙上用 gap 疊起來的區塊（flex flex-col gap-1.5）看起來是同一套版式。 */
-.fw-stack>*+*{border-top:1px dashed var(--fw-line-card)}
+   跟同一張紙上用 gap 疊起來的區塊（flex flex-col gap-1.5）看起來是同一套版式。 */.fw-stack>*+*{border-top:1px dashed var(--fw-line-card)}
 
 /* 2026-11-22：插畫素材改版；所有樣式集中於 game.css。 */
-.fw-dew-balance{border-radius:13px 8px 13px 8px}
-/* 圖像與操作區分兩列，讓寵物和價牌以圖像底部對齊。 */
-.fw-hero-stage{grid-template-rows:auto auto;align-items:end;row-gap:8px}
-.fw-hero-companion{grid-area:1/1;align-self:end;padding-bottom:0}
-.fw-hero-price-column{grid-area:1/2;align-self:end}
-.fw-hero-pet-details{grid-area:2/1;display:flex;flex-direction:column;align-items:center;gap:4px;align-self:center;min-width:0}
-.fw-hero-pet-details .fw-hero-level{margin-top:0}
-.fw-hero-stage>.fw-hero-link{grid-area:2/2;align-self:center;margin:0}
-.fw-price-tag{background-image:url('/freshwise/home-price-tag-board-clean.png?v=6');padding-top:32px;padding-bottom:28px}
-/* 多任務紙框：切片在轉角過渡結束後才銜接，增加內文留白。 */
-.fw-quests{padding:20px 20px 24px}
-.fw-quests-all{padding:24px 20px 28px}
-.fw-quests>h2{margin-bottom:8px}
-.fw-quests-all .fw-quest-row{padding-block:12px}
-.fw-quest-paper-top{background-image:url('/freshwise/task-paper-slip-top.png?v=6')}
-.fw-quest-paper>.fw-quest-paper-middle{background-image:url('/freshwise/task-paper-slip-middle.png?v=6')}
-.fw-quest-paper-bottom{background-image:url('/freshwise/task-paper-slip-bottom.png?v=6')}
-/* 名稱與等級用空白插畫底圖，名稱和數值保留為 HTML。 */
-
-.fw-companion-garden{gap:12px}
-.fw-level-ribbon{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;min-width:140px;padding:8px 24px;border:0;border-radius:0;background:none;font-size:var(--fw-fs-label);line-height:1.3;text-align:center}
-.fw-hero-pet-details .fw-hero-level{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;padding:4px 24px;border:0;border-radius:0;background:none}
-/* 圖片外框與動態填色分層，進度百分比不會因圖片而失真。 */
-.fw-growth-vine{width:min(100%,250px);gap:8px}
-.fw-growth-meter-frame{position:relative;isolation:isolate;flex:1;min-width:0;padding:8px 12px;background:none}
-.fw-growth-meter-frame>.fw-meter{border:0;background:transparent}
-.fw-growth-meter-frame .fw-meter-fill{background:var(--fw-leaf-mid) url('/freshwise/ui-paper-texture.png') center/120px repeat;background-blend-mode:multiply;border-radius:100px}
-.fw-growth-meter-frame .fw-meter-label{font-size:var(--fw-fs-note)}
-/* 澆水／陪玩恢復 CSS 膠囊按鈕，沿用主按鈕邊框與陰影，不使用背景圖片。 */
-.fw-care-actions .fw-game-button{background:linear-gradient(var(--fw-btn-hi),var(--fw-btn-lo));background-blend-mode:normal}
-.fw-care-actions .fw-peach-button{background:linear-gradient(var(--fw-peach-hi),var(--fw-peach))}
-.fw-care-actions .fw-game-button:disabled{opacity:.55;filter:saturate(.7)}
-.fw-sliced-art{position:absolute;inset:0;z-index:-1;display:flex;pointer-events:none}
-.fw-sliced-art>span{display:block;min-width:0;height:100%;background-position:center;background-repeat:no-repeat;background-size:auto 100%}
-.fw-sliced-art>.fw-sliced-cap{flex:0 0 auto;aspect-ratio:1/2}
-.fw-sliced-art>.fw-sliced-middle{flex:1;background-repeat:repeat-x}
-.fw-sliced-ribbon>.fw-sliced-cap{aspect-ratio:1}
+/* 圖像與操作區分兩列，讓寵物和價牌以圖像底部對齊。 */.fw-hero-stage{display:grid;align-items:end;justify-content:space-between;gap:8px;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);min-height:0;grid-template-rows:auto auto;row-gap:8px}.fw-hero-price-column{display:flex;flex-direction:column;align-items:center;flex-shrink:0;min-width:0;width:100%;gap:4px;grid-area:1/2;align-self:end}.fw-hero-pet-details{grid-area:2/1;display:flex;flex-direction:column;align-items:center;gap:4px;align-self:center;min-width:0}.fw-hero-stage>.fw-hero-link{grid-area:2/2;align-self:center;margin:0}.fw-price-tag{position:relative;display:flex;flex-direction:column;justify-content:center;gap:4px;align-items:center;flex-shrink:0;width:100%;padding:32px 20px 20px;border:0;border-radius:0;background:transparent url('/freshwise/home-price-tag-board-clean.png') center/100% 100% no-repeat;box-shadow:none;text-align:center;text-decoration:none;color:var(--fw-ink);max-width:174px;min-height:0;aspect-ratio:1;background-image:url('/freshwise/home-price-tag-board-clean.png?v=6');padding-top:32px;padding-bottom:28px}
+/* 多任務紙框：切片在轉角過渡結束後才銜接，增加內文留白。 */.fw-quests{position:relative;padding:20px 20px 24px;border:0;border-radius:12px;background:none;box-shadow:none;isolation:isolate}.fw-quests>h2{display:flex;align-items:center;gap:4px;font-weight:700;font-size:var(--fw-fs-section);justify-content:center;text-align:center;margin-bottom:8px}.fw-quest-paper-top{background-image:url('/freshwise/task-paper-slip-top.png?v=6')}.fw-quest-paper>.fw-quest-paper-middle{background-image:url('/freshwise/task-paper-slip-middle.png?v=6');background-repeat:repeat-y}.fw-quest-paper-bottom{background-image:url('/freshwise/task-paper-slip-bottom.png?v=6')}
+/* 名稱與等級用空白插畫底圖，名稱和數值保留為 HTML。 */.fw-companion-garden{position:relative;display:flex;align-items:center;flex-direction:column;gap:12px;min-height:0;margin:0 -20px;padding:8px 20px 0;isolation:isolate}.fw-level-ribbon{padding:8px 24px;background:none;border:0;border-radius:0;font-size:var(--fw-fs-label);font-weight:700;position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;min-width:140px;line-height:1.3;text-align:center}.fw-hero-pet-details .fw-hero-level{margin-top:0;position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;padding:4px 24px;border:0;border-radius:0;background:none}
+/* 圖片外框與動態填色分層，進度百分比不會因圖片而失真。 */.fw-growth-vine{display:flex;width:min(100%,250px);align-items:center;gap:8px}.fw-growth-meter-frame{position:relative;isolation:isolate;flex:1;min-width:0;padding:8px 12px;background:none}.fw-growth-meter-frame>.fw-meter{border:0;background:transparent}.fw-growth-meter-frame .fw-meter-fill{background:var(--fw-leaf-mid) url('/freshwise/ui-paper-texture.png') center/120px repeat;background-blend-mode:multiply;border-radius:100px}.fw-growth-meter-frame .fw-meter-label{font-size:var(--fw-fs-note)}
+/* 澆水／陪玩恢復 CSS 膠囊按鈕，沿用主按鈕邊框與陰影，不使用背景圖片。 */.fw-care-actions .fw-peach-button{background:linear-gradient(var(--fw-peach-hi),var(--fw-peach))}.fw-care-actions .fw-game-button:disabled{opacity:.55;filter:saturate(.7)}.fw-sliced-art{position:absolute;inset:0;z-index:-1;display:flex;pointer-events:none}.fw-sliced-art>span{display:block;min-width:0;height:100%;background-position:center;background-repeat:no-repeat;background-size:auto 100%}.fw-sliced-art>.fw-sliced-cap{flex:0 0 auto;aspect-ratio:1/2}.fw-sliced-ribbon>.fw-sliced-cap{aspect-ratio:1}
 @media(max-width:365px){.fw-quests{padding:20px 16px 24px}.fw-quests-all{padding:20px 16px 24px}.fw-care-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.fw-care-actions .fw-game-button{font-size:var(--fw-fs-label);padding-inline:8px}.fw-care-actions .fw-art{width:32px;height:32px}.fw-hero-pet-details .fw-hero-level{padding-inline:16px}}
 
-/* 校正原圖透明邊距；切片的中段從左端接續，避免材質接縫跳位。 */
-.fw-hero-companion{transform:translateY(10%)}
-.fw-sliced-art>.fw-sliced-middle{background-position:left center}
-.fw-companions-hero>.fw-page-title{flex-wrap:wrap;gap:8px}
-.fw-companions-hero>.fw-page-title h1{font-size:var(--fw-fs-section)}
-.fw-companion-garden>.fw-pet-art{margin-bottom:-24px}
-.fw-care-actions .fw-game-button{font-size:var(--fw-fs-label);padding-inline:12px;gap:8px}
-.fw-care-actions .fw-art{width:32px;height:32px}
-.fw-care-label{white-space:nowrap}
+/* 校正原圖透明邊距；切片的中段從左端接續，避免材質接縫跳位。 */.fw-hero-companion{position:relative;display:flex;flex-direction:column;align-items:center;min-width:0;width:100%;padding-bottom:0;grid-area:1/1;align-self:end;transform:translateY(10%)}.fw-sliced-art>.fw-sliced-middle{flex:1;background-repeat:repeat-x;background-position:left center}.fw-companions-hero>.fw-page-title{margin:0;min-height:0;padding:0;flex-wrap:wrap;gap:8px}.fw-companions-hero>.fw-page-title h1{font-size:var(--fw-fs-section)}.fw-companion-garden>.fw-pet-art{margin-bottom:-24px}.fw-care-actions .fw-game-button{padding:8px 4px;font-size:var(--fw-fs-label);background:linear-gradient(var(--fw-btn-hi),var(--fw-btn-lo));background-blend-mode:normal;padding-inline:12px;gap:8px}.fw-care-actions .fw-art{width:32px;height:32px}.fw-care-label{white-space:nowrap}
 @media(max-width:365px){.fw-care-actions .fw-game-button{padding-inline:8px}}
-/* 寵物互動：畫框與腳底原點固定，僅點擊後載入選中的單張表情。 */
-.fw-pet-trigger{position:absolute;inset:0;display:block;width:100%;height:100%;margin:0;padding:0;border:0;background:none;box-shadow:none;color:inherit;cursor:pointer;touch-action:manipulation;border-radius:16px}
-.fw-pet-trigger:focus-visible{outline:2px solid var(--fw-green);outline-offset:3px}
-.fw-pet-visual,.fw-pet-pending{position:absolute;inset:0;display:block}
-.fw-pet-visual{transform-origin:50% 88%;pointer-events:none}
-.fw-pet-pending{opacity:0;pointer-events:none}
-.fw-pet-visual[data-reacted="true"][data-mood="happy"]{animation:fw-pet-happy .42s ease-out}
-.fw-pet-visual[data-reacted="true"][data-mood="surprised"]{animation:fw-pet-surprised .42s ease-out}
-.fw-pet-visual[data-reacted="true"][data-mood="sad"]{animation:fw-pet-sad .6s ease-out}
-.fw-pet-visual[data-reacted="true"][data-mood="curious"]{animation:fw-pet-curious .5s ease-out}
+/* 寵物互動：畫框與腳底原點固定，僅點擊後載入選中的單張表情。 */.fw-pet-trigger{position:absolute;inset:0;display:block;width:100%;height:100%;margin:0;padding:0;border:0;background:none;box-shadow:none;color:inherit;cursor:pointer;touch-action:manipulation;border-radius:16px}.fw-pet-trigger:focus-visible{outline:2px solid var(--fw-green);outline-offset:3px}.fw-pet-visual,.fw-pet-pending{position:absolute;inset:0;display:block}.fw-pet-visual{transform-origin:50% 88%;pointer-events:none}.fw-pet-pending{opacity:0;pointer-events:none}.fw-pet-visual[data-reacted="true"][data-mood="happy"]{animation:fw-pet-happy .42s ease-out}.fw-pet-visual[data-reacted="true"][data-mood="surprised"]{animation:fw-pet-surprised .42s ease-out}.fw-pet-visual[data-reacted="true"][data-mood="sad"]{animation:fw-pet-sad .6s ease-out}.fw-pet-visual[data-reacted="true"][data-mood="curious"]{animation:fw-pet-curious .5s ease-out}
 @keyframes fw-pet-happy{35%{transform:scale(1.018,.987)}70%{transform:scale(.994,1.006)}}
-@keyframes fw-pet-surprised{30%{transform:scale(1.012,1.025)}65%{transform:scale(1.005,.995)}}
+@keyframes fw-pet-surprised{}
 @keyframes fw-pet-sad{40%{transform:scale(1.008,.985)}75%{transform:scale(1.003,.995)}}
 @keyframes fw-pet-curious{30%{transform:rotate(-.7deg)}65%{transform:rotate(.5deg)}}
 @media(prefers-reduced-motion:reduce){.fw-pet-visual{animation:none}}
 
-/* 設定頁跨工具入口沿用本工具的水彩圖示；分類新增與回頂部共用右下操作列。 */
-.fw-other-tools{--fw-paper-pad:0}
-.fw-other-tool-link{display:flex;align-items:center;gap:12px;padding:12px 0;color:var(--fw-ink);text-decoration:none}
-.fw-other-tool-link:hover{color:var(--fw-green)}
-.fw-basket-floating-actions{position:fixed;right:18px;bottom:calc(85px + env(safe-area-inset-bottom) + 20px);z-index:20;display:flex;flex-direction:column;align-items:center;gap:12px}
-.fw-basket-floating-actions>.fw-icon-button{width:44px;height:44px}
-.fw-basket-floating-actions>.fw-icon-button:disabled{opacity:.5}
-.fw-go-top-inline{position:static}
-.fw-basket-floating-spacer{height:44px;flex-shrink:0}
-.fw-basket-floating-spacer-double{height:96px}
+/* 設定頁跨工具入口沿用本工具的水彩圖示；分類新增與回頂部共用右下操作列。 */.fw-other-tools{--fw-paper-pad:0}.fw-other-tool-link{display:flex;align-items:center;gap:12px;padding:12px 0;color:var(--fw-ink);text-decoration:none}.fw-other-tool-link:hover{color:var(--fw-green)}.fw-basket-floating-actions{position:fixed;right:18px;bottom:calc(85px + env(safe-area-inset-bottom) + 20px);z-index:20;display:flex;flex-direction:column;align-items:center;gap:12px}.fw-basket-floating-actions>.fw-icon-button{width:44px;height:44px}.fw-basket-floating-actions>.fw-icon-button:disabled{opacity:.5}.fw-go-top-inline{position:static}.fw-basket-floating-spacer{height:44px;flex-shrink:0}.fw-basket-floating-spacer-double{height:96px}
 
-/* V10 任務紙與可水平延伸吊牌：文字、數值維持 HTML。 */
-.fw-quests-compact{display:grid;grid-template-columns:56px minmax(0,1fr) 44px;column-gap:8px;row-gap:4px;align-content:center;padding:24px 20px;background:url('/freshwise/home-quest-paper.webp') center/100% 100% no-repeat}
-.fw-quests-compact>.fw-quest-paper{display:none}
-.fw-quests-compact>h2{grid-column:2;grid-row:1;margin:0;line-height:1.3}
-.fw-quests-compact>.fw-quest-row{display:contents}
-.fw-quests-compact>.fw-quest-row>.fw-art{grid-column:1;grid-row:1/3;align-self:center;justify-self:center}
-.fw-quests-compact .fw-quest-copy{grid-column:2;grid-row:2;align-self:center}
-.fw-quests-compact .fw-quest-copy>.fw-meter{width:min(100%,132px);align-self:center}
-.fw-quests-compact .fw-quest-action{grid-column:3;grid-row:1/3;align-self:center;border-left:1px dashed var(--fw-line-card);padding-left:8px}
-/* 夥伴任務沿用首頁紙條，九宮格切片固定紙夾、圓角與邊框，中央隨三個任務延伸。 */
-.fw-quests-all{padding:28px 20px 24px;border-image:url('/freshwise/home-quest-paper.webp') 240 180 228 300 fill / 38px 28px 36px 47px / 0 stretch}
-.fw-quests-all>.fw-quest-paper{display:none}
-.fw-quests-all .fw-quest-row{padding-block:12px}
+/* V10 任務紙與可水平延伸吊牌：文字、數值維持 HTML。 */.fw-quests-compact{display:grid;grid-template-columns:56px minmax(0,1fr) 44px;column-gap:8px;row-gap:4px;align-content:center;padding:24px 20px;background:url('/freshwise/home-quest-paper.webp') center/100% 100% no-repeat}.fw-quests-compact>.fw-quest-paper{display:none}.fw-quests-compact>h2{grid-column:2;grid-row:1;margin:0;line-height:1.3}.fw-quests-compact>.fw-quest-row{display:contents}.fw-quests-compact>.fw-quest-row>.fw-art{grid-column:1;grid-row:1/3;align-self:center;justify-self:center}.fw-quests-compact .fw-quest-copy{grid-column:2;grid-row:2;align-self:center}.fw-quests-compact .fw-quest-copy>.fw-meter{width:min(100%,132px);align-self:center}.fw-quests-compact .fw-quest-action{grid-column:3;grid-row:1/3;align-self:center;border-left:1px dashed var(--fw-line-card);padding-left:8px}
+/* 夥伴任務沿用首頁紙條，九宮格切片固定紙夾、圓角與邊框，中央隨三個任務延伸。 */.fw-quests-all{padding:28px 20px 24px;border-image:url('/freshwise/home-quest-paper.webp') 240 180 228 300 fill / 38px 28px 36px 47px / 0 stretch}.fw-quests-all>.fw-quest-paper{display:none}.fw-quests-all .fw-quest-row{padding-block:12px}
 .fw-page-title/* 四個頁面的標題吊牌共用這一組（以菜籃頁調整後的為準）。不要再為某一頁寫覆蓋——
-   要調就調這裡，四頁一起變。 */
-.fw-page-title-hanging{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;margin:-24px -20px 2px;padding:16px 20px 20px;gap:2px}
-.fw-page-title-hanging:before{content:"";background:url('/freshwise/page-market-awning-background.png?v=10') center top/100% 100% no-repeat;border:0;border-radius:0;box-shadow:none;opacity:1}
-.fw-page-title-hanging h1{position:relative;isolation:isolate;display:inline-flex;align-items:center;justify-content:center;max-width:100%;padding:20px 60px 8px;border:0;border-radius:0;background:none;box-shadow:none;font-size:var(--fw-fs-page);line-height:1.35;white-space:normal;text-align:center}
-.fw-hanging-title-art>.fw-sliced-cap{aspect-ratio:0.878601}
-.fw-page-subtitle{margin:0;font-size:var(--fw-fs-label);line-height:1.4;color:var(--fw-ink);text-align:center}
+   要調就調這裡，四頁一起變。 */.fw-page-title-hanging{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;margin:-24px -20px 2px;padding:16px 20px 20px;gap:2px}.fw-page-title-hanging:before{content:"";background:url('/freshwise/page-market-awning-background.png?v=10') center top/100% 100% no-repeat;border:0;border-radius:0;box-shadow:none;opacity:1}.fw-page-title-hanging h1{position:relative;isolation:isolate;display:inline-flex;align-items:center;justify-content:center;max-width:100%;padding:20px 60px 8px;border:0;border-radius:0;background:none;box-shadow:none;font-size:var(--fw-fs-page);line-height:1.35;white-space:normal;text-align:center}.fw-hanging-title-art>.fw-sliced-cap{aspect-ratio:0.878601}.fw-page-subtitle{margin:0;font-size:var(--fw-fs-label);line-height:1.4;color:var(--fw-ink);text-align:center}
 
-
-/* 吊牌下緣保留顯示空間，補足縮圖後過細的底線。 */
-.fw-hanging-title-art{filter:drop-shadow(0 1px 0 var(--fw-line-deep))}
-.fw-dew-balance{background:var(--fw-paper-deep)}
+/* 吊牌下緣保留顯示空間，補足縮圖後過細的底線。 */.fw-hanging-title-art{filter:drop-shadow(0 1px 0 var(--fw-line-deep))}.fw-dew-balance{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 4px;border:1.5px solid var(--fw-line-card);border-radius:13px 8px 13px 8px;background:var(--fw-paper-deep);color:var(--fw-ink);text-decoration:none;font-weight:700}
 @media(max-width:365px){.fw-page-title.fw-page-title-hanging{margin-inline:-16px;padding-inline:16px}}
 
-/* 詳情頁的返回。圖示是插畫，文字維持可讀的 HTML（不要做成圖片裡的字）。 */
-.fw-back-link{display:inline-flex;align-items:center;gap:4px;color:var(--fw-green);font-size:var(--fw-fs-body);font-weight:700;text-decoration:none}
+/* 詳情頁的返回。圖示是插畫，文字維持可讀的 HTML（不要做成圖片裡的字）。 */.fw-back-link{display:inline-flex;align-items:center;gap:4px;color:var(--fw-green);font-size:var(--fw-fs-body);font-weight:700;text-decoration:none}
 
 /* ── 紙卡片（Paper 的四種 variant）─────────────────────────
    13px 8px 的不等圓角是這個工具所有「一張紙」的共同語彙：卡片、行情清單、走勢圖、
-   什麼時候買最好、設定頁的區塊都是同一張紙，只差內距與要不要框。 */
-.fw-paper{background:var(--fw-paper-sunk);border:1.5px solid var(--fw-line-card);border-radius:13px 8px;box-shadow:2px 3px 0 var(--fw-shadow-paper);padding:var(--fw-paper-pad,16px)}
-.fw-notebook{--fw-paper-pad:2px 0}
-.fw-price-list{--fw-paper-pad:4px 12px;position:relative}
-.fw-paper-flush{border:0;border-bottom:1px dashed var(--fw-line-card);border-radius:0;box-shadow:none;background:transparent}
+   什麼時候買最好、設定頁的區塊都是同一張紙，只差內距與要不要框。 */.fw-paper{background:var(--fw-paper-sunk);border:1.5px solid var(--fw-line-card);border-radius:13px 8px;box-shadow:2px 3px 0 var(--fw-shadow-paper);padding:var(--fw-paper-pad,16px)}.fw-notebook{--fw-paper-pad:2px 0}.fw-price-list{--fw-paper-pad:4px 12px;position:relative}.fw-paper-flush{border:0;border-bottom:1px dashed var(--fw-line-card);border-radius:0;box-shadow:none;background:transparent}

@@ -207,7 +207,7 @@ export function MoreView({
         <SectionTitle leaf>這個工具的資料</SectionTitle>
         <Paper variant="flush" className="flex flex-col gap-2.5">
           <Note>
-            夥伴與任務進度跟著帳號走，換裝置登入就會在。{copy.basket}目前還存在這台裝置，換裝置不會自動同步。
+            {copy.basket}、偏好與夥伴進度都跟著帳號走，換手機、換瀏覽器登入看到的是同一份。
           </Note>
           <div className="flex items-center gap-3">
             <button
