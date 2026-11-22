@@ -5,31 +5,28 @@ import { useRouter } from "next/navigation";
 import { CenterToast } from "./center-toast";
 import { defaultBasket, toggleBasket as toggleBasketPure, type BasketState } from "@/lib/freshwise/basket";
 import { venueDefaultUnit } from "@/lib/freshwise/catalog";
-import { loadBasket, saveBasket } from "@/lib/freshwise/storage";
-import { writePrefsCookie } from "@/lib/freshwise/prefs-cookie";
+import { takeLegacyDeviceData } from "@/lib/freshwise/storage";
 import type { FreshwisePrefs, VenueKey } from "@/lib/freshwise/types";
 import { copy } from "./theme";
 
 /**
  * 整個工具的客戶端狀態：使用者偏好、我的菜籃、置中提示。
  *
- * ## 偏好為什麼從伺服器來
+ * ## 三種資料都跟著帳號
  *
- * 價格是伺服器端從 MongoDB 整理出來的（真實開放資料），所以伺服器必須在算繪時就知道
- * 「要算哪個場所、哪個市場」。偏好因此存在 cookie 裡、由 layout 讀出來傳進這個 Provider
- * 當 `initialPrefs`——第一次畫面就是使用者真正的設定，不會先顯示預設值再跳走。
+ * 偏好、菜籃（這裡）與夥伴進度（companion-store.tsx）都存在 MongoDB、綁使用者 id。
+ * 本來偏好在 cookie、菜籃在 localStorage，那是「跟著這台瀏覽器」而不是「跟著這個人」：
+ * 手機上把菜籃清空、換電腦登入同一個帳號，舊的菜籃還在。
+ *
+ * 兩者都由 layout（伺服器端）讀好傳進來當初始值，所以第一次算繪就是使用者真正的設定
+ * 與菜籃——不會先顯示預設值再跳走，也不會閃一下「菜籃是空的」。
  *
  * 改偏好的時候分兩種：
- * - **會改變數字的**（場所、市場）：寫 cookie ＋ `router.refresh()`，讓伺服器用新的偏好
- *   重算一份價格。不呼叫 refresh 的話畫面上的場所分頁換了、數字卻還是舊場所的。
- * - **只影響顯示的**（單位、首頁建議開關、提醒門檻）：只寫 cookie 與本地狀態，不重新
- *   跟伺服器要資料——單位換算是前端做的（見 price-text.tsx），沒必要為它跑一趟。
- *
- * ## 菜籃還在 localStorage
- *
- * 菜籃是會成長的清單，不適合放 cookie（每個請求都要帶）。它仍然是瀏覽器端狀態，所以
- * `basketReady` 這個旗標還留著：localStorage 要等掛載後才讀得到，讀完之前不要畫「菜籃是
- * 空的」（會閃一下）。等菜籃搬進資料庫之後這個旗標就可以拿掉。
+ * - **會改變數字的**（場所、市場）：**先等伺服器存好**再 `router.refresh()`，讓伺服器
+ *   用新的偏好重算一份價格。順序不能反——refresh 比寫入早到的話，伺服器讀到的還是舊
+ *   偏好，畫面上的場所分頁換了、數字卻是舊場所的。
+ * - **只影響顯示的**（單位、提醒門檻）：寫回去就好，不重新跟伺服器要資料——單位換算是
+ *   前端做的（見 price-text.tsx），沒必要為它跑一趟。
  */
 interface FreshwiseStore {
   prefs: FreshwisePrefs;
@@ -40,7 +37,8 @@ interface FreshwiseStore {
   /** 換市場。會重新取資料。 */
   setMarket: (marketCode: string) => void;
   basket: BasketState;
-  /** localStorage 讀完了沒。 */
+  /** 菜籃是不是已經是真實資料。伺服器已經讀好傳進來，所以永遠是 true；保留這個欄位
+   *  是為了呼叫端不用一次全改（它們用它決定要不要畫「載入中」）。 */
   basketReady: boolean;
   setBasket: (next: BasketState) => void;
   /** 行情頁那顆星星：不在菜籃裡就加進第一個分類，已經在裡面就整個移除。 */
@@ -50,11 +48,20 @@ interface FreshwiseStore {
 
 const StoreContext = createContext<FreshwiseStore | null>(null);
 
-export function FreshwiseProvider({ initialPrefs, children }: { initialPrefs: FreshwisePrefs; children: ReactNode }) {
+const API = "/api/freshwise/user-data";
+
+export function FreshwiseProvider({
+  initialPrefs,
+  initialBasket,
+  children,
+}: {
+  initialPrefs: FreshwisePrefs;
+  initialBasket: BasketState | null;
+  children: ReactNode;
+}) {
   const router = useRouter();
   const [prefs, setPrefsState] = useState<FreshwisePrefs>(initialPrefs);
-  const [basket, setBasketState] = useState<BasketState>(() => defaultBasket());
-  const [basketReady, setBasketReady] = useState(false);
+  const [basket, setBasketState] = useState<BasketState>(() => initialBasket ?? defaultBasket());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // 伺服器重新算繪時（換場所、換市場之後的 router.refresh()）cookie 的內容會跟著變，
@@ -70,27 +77,65 @@ export function FreshwiseProvider({ initialPrefs, children }: { initialPrefs: Fr
     setPrefsState(initialPrefs);
   }
 
-  // 掛載後讀菜籃。這是「把外部儲存（localStorage）讀進 state」的一次性初始化，不是在
-  // 訂閱什麼會變的東西，也不會連鎖觸發其他 effect——是這個 lint 規則容許的例外情況。
+  // 伺服器送下來的菜籃同樣要跟上（router.refresh() 之後）。
+  const serializedBasket = JSON.stringify(initialBasket);
+  const [lastBasket, setLastBasket] = useState(serializedBasket);
+  if (serializedBasket !== lastBasket) {
+    setLastBasket(serializedBasket);
+    if (initialBasket) setBasketState(initialBasket);
+  }
+
+  // 一次性搬家：這台裝置上還留著舊版的 localStorage 菜籃／cookie 偏好，而帳號底下
+  // 還是全新的，就把它交給伺服器。只在「雲端真的還沒有資料」時才送——否則在 A 裝置
+  // 整理好的菜籃，會被 B 裝置上的舊資料蓋掉。搬完就把本機那份清掉。
   useEffect(() => {
-    const stored = loadBasket();
-    // 完全沒存過（第一次使用）才給預設菜籃；存過但是空的要尊重那個空的狀態，不然使用者
-    // 把菜籃清空、重新整理一次，預設的那幾樣菜又全部回來，看起來像刪不掉。
-    /* eslint-disable-next-line react-hooks/set-state-in-effect */
-    setBasketState(stored ?? defaultBasket());
-    setBasketReady(true);
-  }, []);
+    const legacy = takeLegacyDeviceData();
+    if (!legacy) return;
+    void (async () => {
+      try {
+        const res = await fetch(API);
+        if (!res.ok) return;
+        const current = (await res.json()) as { fresh?: boolean };
+        if (!current.fresh) return;
+        await fetch(API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(legacy),
+        });
+        router.refresh();
+      } catch {
+        /* 搬不過去就算了，下次再試；本機那份已經清掉，使用者看到的是帳號裡的資料 */
+      }
+    })();
+  }, [router]);
+
+  /** 存回伺服器。失敗就提示一次——靜靜失敗的話使用者會以為設定有存到。 */
+  const persist = useCallback(
+    async (payload: Record<string, unknown>) => {
+      try {
+        const res = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error(String(res.status));
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [],
+  );
 
   const applyPrefs = useCallback(
     (patch: Partial<FreshwisePrefs>, refetch: boolean) => {
       const next = { ...prefs, ...patch };
-      // Cookie 與路由更新都在事件處理期間執行，避免 React 重跑 state updater
-      // 時觸發 Router 更新。伺服器重新整理前必須先寫好 cookie。
-      writePrefsCookie(next);
+      // 畫面先更新（樂觀），再寫回伺服器。會改變數字的那種一定要**等存好**才 refresh，
+      // 不然伺服器重算時讀到的還是舊偏好。
       setPrefsState(next);
-      if (refetch) router.refresh();
+      void (async () => {
+        const ok = await persist({ prefs: next });
+        if (!ok) setToastMessage("設定沒有存起來，請檢查網路後再試一次");
+        if (refetch) router.refresh();
+      })();
     },
-    [prefs, router],
+    [persist, prefs, router],
   );
 
   const setPrefs = useCallback((patch: Partial<FreshwisePrefs>) => applyPrefs(patch, false), [applyPrefs]);
@@ -108,10 +153,13 @@ export function FreshwiseProvider({ initialPrefs, children }: { initialPrefs: Fr
 
   const setMarket = useCallback((marketCode: string) => applyPrefs({ marketCode }, true), [applyPrefs]);
 
-  const setBasket = useCallback((next: BasketState) => {
-    setBasketState(next);
-    saveBasket(next);
-  }, []);
+  const setBasket = useCallback(
+    (next: BasketState) => {
+      setBasketState(next);
+      void persist({ basket: next });
+    },
+    [persist],
+  );
 
   const toast = useCallback((message: string) => {
     // 同一則提示連按兩次要能重新計時。先清掉再設定，CenterToast 會重新掛載一次。
@@ -123,7 +171,7 @@ export function FreshwiseProvider({ initialPrefs, children }: { initialPrefs: Fr
     (code: string, itemName: string) => {
       setBasketState((current) => {
         const next = toggleBasketPure(current, code);
-        saveBasket(next);
+        void persist({ basket: next });
         // 提示要講清楚是哪一項——清單上一次可以按很多顆星星，只說「已加入菜籃」的話
         // 使用者不確定自己剛剛點到的是哪一列。
         const added = next.entries.some((e) => e.code === code);
@@ -131,12 +179,12 @@ export function FreshwiseProvider({ initialPrefs, children }: { initialPrefs: Fr
         return next;
       });
     },
-    [toast],
+    [persist, toast],
   );
 
   const value = useMemo<FreshwiseStore>(
-    () => ({ prefs, setPrefs, setVenue, setMarket, basket, basketReady, setBasket, toggleBasket, toast }),
-    [prefs, setPrefs, setVenue, setMarket, basket, basketReady, setBasket, toggleBasket, toast],
+    () => ({ prefs, setPrefs, setVenue, setMarket, basket, basketReady: true, setBasket, toggleBasket, toast }),
+    [prefs, setPrefs, setVenue, setMarket, basket, setBasket, toggleBasket, toast],
   );
 
   return (

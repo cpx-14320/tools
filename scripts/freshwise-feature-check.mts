@@ -31,7 +31,7 @@ const price = await import("../lib/freshwise/price");
 const search = await import("../lib/freshwise/search");
 const basketLib = await import("../lib/freshwise/basket");
 const advice = await import("../lib/freshwise/advice");
-const prefsCookie = await import("../lib/freshwise/prefs-cookie");
+const prefsModule = await import("../lib/freshwise/prefs");
 const sourceMap = await import("../lib/freshwise/source-map");
 const moaClient = await import("../lib/freshwise/moa-client");
 
@@ -698,9 +698,9 @@ run("首頁快報", () => {
   check("一行摘要含品項名稱與單位", advice.rowSummary(row, "catty").includes(row.item.name) && advice.rowSummary(row, "catty").includes("元/台斤"));
 });
 
-// ── 10. 偏好設定的預設值 ────────────────────────────────────────────────
-run("偏好設定（cookie）", () => {
-  const prefs = prefsCookie.DEFAULT_PREFS;
+// ── 10. 偏好設定的預設值與驗證 ──────────────────────────────────────────
+run("偏好設定（存在帳號底下）", () => {
+  const prefs = prefsModule.DEFAULT_PREFS;
   check("預設看傳統市場", prefs.venue === "market");
   check("預設用台斤", prefs.unit === "catty");
   check("預設看全部市場", prefs.marketCode === "");
@@ -709,31 +709,36 @@ run("偏好設定（cookie）", () => {
   // 畫面的單位跟切換場所後的單位會不一樣。
   check("預設單位跟預設場所的慣用單位一致", prefs.unit === catalog.venueDefaultUnit(prefs.venue));
 
-  // cookie 的內容是使用者改得到的，而且改版後可能留下舊格式，所以逐欄位驗證、壞的退回
-  // 預設值——一個壞欄位不該讓整組設定重置。
-  const roundTrip = prefsCookie.parsePrefs(
-    prefsCookie.serializePrefs({ ...prefs, venue: "wholesale", unit: "kg", marketCode: "109" }),
-  );
-  check("序列化再解析回來一樣", roundTrip.venue === "wholesale" && roundTrip.unit === "kg" && roundTrip.marketCode === "109");
-  check("沒有 cookie 時回預設值", prefsCookie.parsePrefs(undefined).venue === prefs.venue);
-  check("壞掉的 JSON 回預設值", prefsCookie.parsePrefs("not-json").venue === prefs.venue);
-  check(
-    "不認識的場所退回預設值",
-    prefsCookie.parsePrefs(encodeURIComponent(JSON.stringify({ venue: "costco" }))).venue === prefs.venue,
-  );
-  check(
-    "超出範圍的提醒門檻退回預設值",
-    prefsCookie.parsePrefs(encodeURIComponent(JSON.stringify({ alertPercent: 999 }))).alertPercent === prefs.alertPercent,
-  );
+  // 資料庫裡可能留著改版前的舊格式，API 也是使用者送得進來的，所以逐欄位驗證、壞的
+  // 退回預設值——一個壞欄位不該讓整組設定重置。
+  const kept = prefsModule.normalizePrefs({ ...prefs, venue: "wholesale", unit: "kg", marketCode: "109" });
+  check("合法的值原樣保留", kept.venue === "wholesale" && kept.unit === "kg" && kept.marketCode === "109");
+  check("沒有資料時回預設值", prefsModule.normalizePrefs(undefined).venue === prefs.venue);
+  check("不是物件時回預設值", prefsModule.normalizePrefs("not-an-object").venue === prefs.venue);
+  check("不認識的場所退回預設值", prefsModule.normalizePrefs({ venue: "costco" }).venue === prefs.venue);
+  check("超出範圍的提醒門檻退回預設值", prefsModule.normalizePrefs({ alertPercent: 999 }).alertPercent === prefs.alertPercent);
   check(
     "合法欄位會被保留、只有壞欄位退回預設",
     (() => {
-      const mixed = prefsCookie.parsePrefs(encodeURIComponent(JSON.stringify({ venue: "wholesale", unit: "\u65a4" })));
+      const mixed = prefsModule.normalizePrefs({ venue: "wholesale", unit: "斤" });
       return mixed.venue === "wholesale" && mixed.unit === prefs.unit;
     })(),
   );
-});
 
+  // 菜籃也是同一套：一筆壞資料不該讓整個菜籃重置。
+  const basketModule = basketLib;
+  const dirty = {
+    groups: [{ id: "g1", name: "常買", order: 0 }, { id: "", name: 1 }],
+    entries: [
+      { id: "e1", code: "FA1", order: 0, groupId: "g1" },
+      { id: "e2", code: "FA2", order: 1, groupId: "gone" },
+    ],
+  };
+  const cleaned = basketModule.normalizeBasket(dirty);
+  check("菜籃：壞掉的分類被丟掉、好的留著", cleaned.groups.length === 1 && cleaned.groups[0].id === "g1");
+  check("菜籃：指向不存在分類的項目被丟掉", cleaned.entries.length === 1 && cleaned.entries[0].id === "e1");
+  check("菜籃：不是物件時回空菜籃", basketModule.normalizeBasket(null).entries.length === 0);
+});
 // ── 11. 開放資料的對應表 ────────────────────────────────────────────────
 run("開放資料的對應表", () => {
   const codes = new Set(catalog.CATALOG.map((i) => i.code));

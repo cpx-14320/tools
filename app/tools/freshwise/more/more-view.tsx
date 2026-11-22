@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/components/auth-provider";
+import { IllustratedArt } from "@/components/freshwise/game-art";
+import { TOOLS_REGISTRY } from "@/lib/tools-registry";
 import { useCompanion } from "@/components/freshwise/companion-store";
 import Link from "next/link";
 import {
@@ -24,10 +27,12 @@ import { useFreshwise } from "@/components/freshwise/store";
 import { colors, copy, text } from "@/components/freshwise/theme";
 import { VENUES, venueMeta } from "@/lib/freshwise/catalog";
 import { formatShortDate } from "@/lib/freshwise/dates";
-import { clearFreshwiseStorage, resetBasket } from "@/lib/freshwise/storage";
+import { resetBasket } from "@/lib/freshwise/storage";
 import { defaultBasket } from "@/lib/freshwise/basket";
 import { KG_PER_CATTY } from "@/lib/freshwise/price";
 import type { MarketOption, UnitKey, VenueKey } from "@/lib/freshwise/types";
+
+const OTHER_TOOL_ICONS: Record<string, string> = { transit: "/freshwise/ui-tool-transit.png", expenses: "/freshwise/ui-tool-expenses.png", compress: "/freshwise/ui-tool-compress.png" };
 
 const VENUE_TABS = VENUES.map((v) => ({ key: v.key, label: v.name, icon: v.icon }));
 
@@ -95,6 +100,8 @@ export function MoreView({
   itemCount: number;
 }) {
   const { prefs, setPrefs, setVenue, setMarket, setBasket } = useFreshwise();
+  const { user, loading: authLoading } = useAuth();
+  const otherTools = TOOLS_REGISTRY.filter((tool) => OTHER_TOOL_ICONS[tool.toolId] && user?.tools.includes(tool.toolId));
   const { reset: resetCompanions } = useCompanion();
   const [marketPickerOpen, setMarketPickerOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
@@ -105,7 +112,7 @@ export function MoreView({
 
   return (
     <div className="fw-page fw-settings-page">
-      <PageTitle>我的小手帳</PageTitle>
+      <PageTitle hanging>我的小手帳</PageTitle>
 
       {/* ── 預設看哪裡的價格 ───────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
@@ -184,6 +191,17 @@ export function MoreView({
         </Paper>
 
         <Callout icon="circle-info">{copy.retailCoverageNote}</Callout>
+      </section>
+
+      <section className="flex flex-col gap-2.5" aria-label="其他小工具">
+        <SectionTitle leaf>其他小工具</SectionTitle>
+        <Paper variant="flush" className="fw-stack fw-other-tools">
+          {authLoading ? <Hint>{copy.loading}</Hint> : otherTools.length === 0 ? <Hint>目前沒有其他小工具的使用權限</Hint> : otherTools.map((tool) => <Link key={tool.toolId} href={tool.href} className="fw-other-tool-link">
+            <IllustratedArt src={OTHER_TOOL_ICONS[tool.toolId]} size={48}/>
+            <span className={`min-w-0 flex-1 ${text.bodyStrong}`}>{tool.name}</span>
+            <FaIcon icon="chevron-right" size={12} color={colors.placeholder}/>
+          </Link>)}
+        </Paper>
       </section>
 
       {/* ── 資料管理 ───────────────────────────────────────── */}
@@ -275,8 +293,8 @@ export function MoreView({
             <DangerButton
               size="md"
               onClick={() => {
-                // 菜籃（localStorage）跟偏好（cookie）都清掉，再把記憶體裡的狀態設回預設值。
-                clearFreshwiseStorage();
+                // 三種資料都在帳號底下：夥伴進度走自己的 API，偏好與菜籃走 store
+                // （它會寫回伺服器）。不用再清 localStorage／cookie——那裡已經沒有資料了。
                 resetCompanions();
                 setBasket(defaultBasket());
                 setVenue("market");

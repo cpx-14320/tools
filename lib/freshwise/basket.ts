@@ -60,6 +60,35 @@ function newId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${idCounter}`;
 }
 
+/**
+ * 把一包來路不明的資料整理成合法的菜籃。
+ *
+ * 壞掉的那一筆丟掉就好，不要整包放棄——使用者十五個項目裡有一筆欄位缺漏，不該讓
+ * 整個菜籃重置。指向已經不存在的分類的項目也丟掉（孤兒項目畫不出來，留著只占空間）。
+ *
+ * 伺服器端（寫進資料庫前）與舊 localStorage 的搬家都走這一支，驗證規則只有一份。
+ */
+export function normalizeBasket(raw: unknown): BasketState {
+  if (!raw || typeof raw !== "object") return emptyBasket();
+  const parsed = raw as Partial<BasketState>;
+  if (!Array.isArray(parsed.groups) || !Array.isArray(parsed.entries)) return emptyBasket();
+
+  const groups = parsed.groups.filter(
+    (g): g is BasketGroup => !!g && typeof g.id === "string" && typeof g.name === "string" && typeof g.order === "number",
+  );
+  const groupIds = new Set(groups.map((g) => g.id));
+  const entries = parsed.entries.filter(
+    (e): e is BasketEntry =>
+      !!e &&
+      typeof e.id === "string" &&
+      typeof e.code === "string" &&
+      typeof e.order === "number" &&
+      typeof e.groupId === "string" &&
+      groupIds.has(e.groupId),
+  );
+  return { groups, entries };
+}
+
 /** 重新編號，讓 order 永遠是 0,1,2,… 的連續整數。每次改動都跑一次，不要讓刪除之後留下
  *  0,1,3,4 這種有洞的順序——拖曳排序寫回時會用索引當 order，有洞的話兩邊對不起來。 */
 function renumber<T extends { order: number }>(items: T[]): T[] {
