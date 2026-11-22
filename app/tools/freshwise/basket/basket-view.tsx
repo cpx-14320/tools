@@ -161,7 +161,7 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
         })
       )}
 
-      <QuestSlip />
+      <QuestSlip variant="paper" />
 
       <div aria-hidden="true" className={`fw-basket-floating-spacer ${basket.entries.length >= 8 ? "fw-basket-floating-spacer-double" : ""}`}/>
       <div className="fw-basket-floating-actions">

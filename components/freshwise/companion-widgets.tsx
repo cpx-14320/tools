@@ -6,11 +6,17 @@ import { MeterBar } from "./ui";
 import { questProgress, QUESTS } from "@/lib/freshwise/companions";
 
 export function DewBalance() { const { state, ready } = useCompanion(); return <Link href="/tools/freshwise/companions" className="fw-dew-balance" aria-label={ready ? `我的夥伴，目前有 ${state.dew} 露珠` : "我的夥伴"}><GameIcon name="dew" size={30} /><span>{ready ? state.dew : "—"}</span></Link>; }
-export function QuestSlip({ all = false }: { all?: boolean }) {
+/**
+ * `variant`：
+ * - `slip`（預設）首頁與夥伴頁的手撕紙條外觀。
+ * - `paper` 菜籃頁與行情詳情頁用——那兩頁滿版都是標準紙卡，再插一張不同材質的紙會
+ *   看起來像外來的東西。改掛 .fw-paper 跟隔壁的卡片同一張紙。
+ */
+export function QuestSlip({ all = false, variant = "slip" }: { all?: boolean; variant?: "slip" | "paper" }) {
   const { state, ready, claim } = useCompanion();
   if (!ready) return null;
   const quests = all ? QUESTS : [QUESTS.find((q) => !state.claimed.includes(q.id)) ?? QUESTS[0]];
-  return <section className={`fw-quests ${all ? "fw-quests-all" : "fw-quests-compact"}`} aria-label="今日探索任務">
+  return <section className={`fw-quests ${all ? "fw-quests-all" : "fw-quests-compact"} ${variant === "paper" ? "fw-quests-paper" : ""}`} aria-label="今日探索任務">
     <h2>今日小任務</h2>
     {quests.map((quest) => { const progress = questProgress(state, quest.id); const claimed = state.claimed.includes(quest.id); const done = progress >= quest.target;
       const reward = <><GameIcon name="dew" size={26} /><span>+{quest.reward}</span></>;

@@ -116,6 +116,10 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
       <BackRow unit={prefs.unit} onUnitChange={(unit) => setPrefs({ unit })} />
 
       {/* ── 今日價 ─────────────────────────────────────────── */}
+      {/* 資料日期放在品項卡上面——跟行情頁同一個位置、同一句話。使用者看價格之前要先
+          知道這是哪一天的數字，擺在卡片下面等於看完才告訴他。 */}
+      {quote.date !== today && <Callout icon="calendar-xmark">目前顯示的是 {formatShortDate(quote.date)} 的資料。</Callout>}
+
       <ListCard strong className="fw-detail-hero flex flex-col gap-3">
         <div className="flex items-start gap-3">
           <ItemIcon src={itemImage(item.code)} fallbackIcon={item.icon} alt={item.name} size={22} boxSize={48} />
@@ -199,17 +203,6 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
 
       </ListCard>
 
-      {quote.estimated && (
-        <Callout icon="triangle-exclamation">
-          {copy.retailCoverageNote}
-        </Callout>
-      )}
-      {quote.date !== today && (
-        <Callout icon="calendar-xmark">
-          顯示的是 {formatShortDate(quote.date)} 的行情。資料來源還沒更新到今天。
-        </Callout>
-      )}
-
       {/* ── 有機／產銷履歷要多付多少 ───────────────────────────
           只有蔬果、而且那五個會回報標章的批發市場當天有成交才出現。這是「超市的有機
           蔬菜貴一倍」之外，少數有公開資料可以回答的問題。 */}
@@ -282,14 +275,9 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
             各{copy.market}今天的價格
           </SectionTitle>
 
-          {/* 代表價怎麼算出來的要寫清楚——使用者會拿下面的清單去對上面那個數字，對不起來
-              的時候要有地方解釋。零售訪價沒有成交量可以加權，取中位數才不會被單一攤位的
-              異常價格拉走（見 prices.server.ts 的 representativePrice）。 */}
-          <Note>
-            {quote.source === "wholesale"
-              ? "上面的代表價是各市場的成交量加權平均。"
-              : "上面的代表價是各市場的中位數——訪價沒有成交量可以加權，取中位數才不會被單一攤位的異常價格拉走。"}
-          </Note>
+          {/* 只有一個市場回報時要講出來——不講的話畫面上只有「中義市場」一列，看起來
+              像系統挑了一個市場給你，而不是「今天只有這一家有這樣東西」。 */}
+          {markets.length === 1 && <Hint>今天只有這一個市場回報這一項，上面的價格就是它。</Hint>}
 
           {showFullTable ? (
             // 表格一定要能自己橫向捲動：五欄數字在 430px 寬的手機上塞不進去，讓整頁
@@ -354,11 +342,6 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
               </CollapsibleList>
             </Paper>
           )}
-
-          <Hint>
-            上價／中價／下價是當天成交的高、中、低價，價差反映品質與規格的落差。
-            {quote.source !== "wholesale" && "零售訪價每個市場只記一個數字，所以沒有中價與交易量。"}
-          </Hint>
         </section>
       )}
 
@@ -407,7 +390,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
       </section>
 
 
-      <QuestSlip />
+      <QuestSlip variant="paper" />
 
       <div className="flex justify-center">
         <Link href="/tools/freshwise/basket" className="fw-leaf-link">去看{copy.basket} →</Link>

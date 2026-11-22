@@ -4,8 +4,14 @@ import { useState } from "react";
 import { useFreshwise } from "./store";
 import { GameIcon } from "./game-art";
 import { MarketPickerModal } from "./market-picker-modal";
+import { SegmentedTabs } from "./ui";
 import { formatShortDate } from "@/lib/freshwise/dates";
-import type { PriceBook } from "@/lib/freshwise/types";
+import type { PriceBook, UnitKey } from "@/lib/freshwise/types";
+
+const UNIT_TABS: readonly { key: UnitKey; label: string }[] = [
+  { key: "catty", label: "台斤" },
+  { key: "kg", label: "公斤" },
+];
 
 /**
  * 目前查詢的條件：市場與單位。
@@ -35,14 +41,9 @@ export function MarketContext({ book, today, showDate = true }: { book: PriceBoo
             ▼
           </span>
         </button>
-        <button
-          className="fw-unit-leaf"
-          type="button"
-          onClick={() => setPrefs({ unit: prefs.unit === "catty" ? "kg" : "catty" })}
-          aria-label={`切換價格單位，目前${prefs.unit === "catty" ? "台斤" : "公斤"}`}
-        >
-          {prefs.unit === "catty" ? "台斤" : "公斤"}
-        </button>
+        {/* 單位用分頁而不是「按一下換另一個」的切換鈕：兩個選項都看得到，使用者不用
+            先讀懂現在是哪一個、再推論按下去會變成什麼。跟排序、分類同一種互動語彙。 */}
+        <SegmentedTabs items={UNIT_TABS} value={prefs.unit} onChange={(unit) => setPrefs({ unit })} />
       </div>
 
       {showDate && (
