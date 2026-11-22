@@ -41,42 +41,15 @@ const UNIT_OPTIONS: readonly { key: UnitKey; label: string; note: string }[] = [
 
 /** 目前實際接上的資料來源。寫在設定頁是刻意的：這個工具的數字關係到使用者花錢，來源
  *  必須是公開可查的。 */
-const DATA_SOURCES: readonly { name: string; detail: string; status: "live" | "none" }[] = [
-  {
-    name: "農產品交易行情（農業部）",
-    detail: "全國批發市場的蔬菜、水果每日成交行情，元/公斤。",
-    status: "live",
-  },
-  {
-    name: "漁產品交易行情（農業部）",
-    detail: "各地魚市場的魚貨每日成交行情，元/公斤。",
-    status: "live",
-  },
-  {
-    name: "家禽交易行情（農業部）",
-    detail: "白肉雞與雞蛋的產地價，元/台斤。",
-    status: "live",
-  },
-  {
-    name: "糧價（農業部）",
-    detail: "白米的零售價與批發價，20 個縣市、每日更新——這是唯一一份全國各地都有的零售價。",
-    status: "live",
-  },
-  {
-    name: "產銷履歷與有機蔬果行情（農業部）",
-    detail: "五個批發市場會回報有無標章，用來算「有機／產銷履歷要多付多少」。",
-    status: "live",
-  },
-  {
-    name: "公有零售市場每日蔬果價格（臺中市）",
-    detail: "14 個公有零售市場的實際零售訪價，含魚蝦、豬牛雞鴨肉與蛋，元/台斤，滾動一年。",
-    status: "live",
-  },
-  {
-    name: "超市量販架上價",
-    detail: "沒有任何免費開放資料，只能依零售價推估，所以畫面上一律標示「估算」。",
-    status: "none",
-  },
+/** 資料來源一覽。只留名字——使用者要知道的是「數字從哪來」，不是每一支 API 的欄位
+ *  說明。「超市量販架上價」那筆已經拿掉：場所選項移除之後畫面上根本沒有超市了。 */
+const DATA_SOURCES: readonly string[] = [
+  "公有零售市場每日蔬果價格（臺中市）",
+  "農產品交易行情（農業部）",
+  "漁產品交易行情（農業部）",
+  "家禽交易行情（農業部）",
+  "糧價（農業部）",
+  "產銷履歷與有機蔬果行情（農業部）",
 ];
 
 export function MoreView({
@@ -139,24 +112,17 @@ export function MoreView({
             <Hint>今天有行情的品項</Hint>
             <span className={text.bodyStrong}>{itemCount} 項</span>
           </div>
-          <Note>行情每天更新一次（農業部大約上午公布當天的資料），所以同一天內重新整理不會有新數字。</Note>
         </Paper>
 
         <Paper variant="flush" className="fw-stack">
-          {DATA_SOURCES.map((source) => (
-            <DividedRow key={source.name}>
-              <span className="min-w-0 flex-1">
-                <span className={text.bodyStrong}>{source.name}</span>
-                <span className={`block ${text.meta}`}>{source.detail}</span>
-              </span>
+          {DATA_SOURCES.map((name) => (
+            <DividedRow key={name}>
+              <span className={`min-w-0 flex-1 ${text.body}`}>{name}</span>
               <span
                 className={`shrink-0 rounded-full px-2 py-0.5 ${text.badge}`}
-                style={{
-                  backgroundColor: source.status === "live" ? colors.downBg : colors.warningBg,
-                  color: source.status === "live" ? colors.down : colors.warning,
-                }}
+                style={{ backgroundColor: colors.downBg, color: colors.down }}
               >
-                {source.status === "live" ? "已接上" : "無資料來源"}
+                已接上
               </span>
             </DividedRow>
           ))}

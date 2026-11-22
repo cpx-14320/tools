@@ -8,13 +8,11 @@ import { newlyFilledQuantity } from "@/lib/freshwise/companions";
 import {
   AddButton,
   CollapsibleList,
-  Callout,
   DragHandle,
   EmptyState,
   Hint,
   IconButton,
   ListCard,
-  Note,
   PageTitle,
   PrimaryButton,
   SectionTitle,
@@ -41,7 +39,7 @@ import {
   updateEntry,
   updateGroup,
 } from "@/lib/freshwise/basket";
-import { itemImage, itemOrPlaceholder, venueMeta } from "@/lib/freshwise/catalog";
+import { itemImage, itemOrPlaceholder } from "@/lib/freshwise/catalog";
 import { formatShortDate, monthOf } from "@/lib/freshwise/dates";
 import { basketCost, entryCost, formatMoney, unitShort } from "@/lib/freshwise/price";
 import { toRow } from "@/lib/freshwise/search";
@@ -98,23 +96,17 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
       <ListCard strong className="fw-basket-summary flex flex-col gap-1.5">
         {/* 夥伴要跟著使用者選的那一隻，不要寫死。 */}
         <PetArtwork id={companion.active} size={100} className="fw-basket-pet" />
-        {/* 三行就夠：標題、金額、條件。以前右欄把場所／日期／項目數拆成三行，加上左欄
-            兩行、底下再兩行註解，一張卡片六七行文字，重點（金額）反而不突出。場所、
-            單位、日期、項目數都是同一件事的條件，併成一行用「・」分隔。 */}
+        {/* 跟旁邊的夥伴立繪差不多高就好——兩行：金額，以及一行條件。場所已經沒有
+            選項了不用再講，單位跟著數字走也不用另外說。 */}
         <Hint>今天買整籃大概要</Hint>
         <p>
           <span className={text.priceBig}>{cost.counted > 0 ? formatMoney(cost.total) : "—"}</span>
           <span className={`ml-1.5 ${text.meta}`}>元</span>
         </p>
         <Hint>
-          {venueMeta(prefs.venue).name}・{unitShort(prefs.unit)}價・{formatShortDate(book.dataDate)}・{basket.entries.length} 項
-          {cost.skipped > 0 && `（${cost.skipped} 項沒填份量）`}
+          {formatShortDate(book.dataDate)}・{basket.entries.length} 項
+          {cost.skipped > 0 && `・${cost.skipped} 項還沒填份量`}
         </Hint>
-        {cost.counted === 0 ? (
-          <Note>幫項目填上常買的份量（例如 2 {unitShort("catty")}），這裡就會估算整籃的金額。</Note>
-        ) : (
-          basketReady && basket.entries.some((entry) => !quotes.has(entry.code)) && <Note>估算值；沒有行情的項目不計入總額。</Note>
-        )}
       </ListCard>
 
       {/* ready 之前不要畫空狀態：localStorage 還沒讀完，這時候 basket 是預設值，先閃一次
@@ -170,9 +162,6 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
       )}
 
       <QuestSlip />
-      <Callout icon="database">
-        {copy.sourceNote}
-      </Callout>
 
       <div aria-hidden="true" className={`fw-basket-floating-spacer ${basket.entries.length >= 8 ? "fw-basket-floating-spacer-double" : ""}`}/>
       <div className="fw-basket-floating-actions">
@@ -236,10 +225,13 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
         month={month}
         excludeCodes={pickerGroupId ? entriesOfGroup(basket, pickerGroupId).map((e) => e.code) : []}
         onClose={() => setPickerGroupId(null)}
-        onPick={(code) => {
-          if (pickerGroupId) {
-            setBasket(addEntry(basket, pickerGroupId, code));
-            toast(`${itemOrPlaceholder(code).name}${copy.addedToBasket}`);
+        onPick={(codes) => {
+          if (pickerGroupId && codes.length > 0) {
+            // 一次加好幾樣：逐筆套用純函式（addEntry 回傳新的菜籃），最後只寫一次。
+            let next = basket;
+            for (const code of codes) next = addEntry(next, pickerGroupId, code);
+            setBasket(next);
+            toast(codes.length === 1 ? `${itemOrPlaceholder(codes[0]).name}${copy.addedToBasket}` : `已加入 ${codes.length} 項`);
           }
           setPickerGroupId(null);
         }}

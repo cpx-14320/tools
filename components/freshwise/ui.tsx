@@ -288,10 +288,18 @@ export function SortBar<T extends string>({
   options,
   value,
   onChange,
+  onFilter,
+  filterOpen = false,
+  filterCount = 0,
 }: {
   options: readonly { key: T; label: string; asc?: T; desc?: T }[];
   value: T;
   onChange: (key: T) => void;
+  /** 篩選併進同一條列的最後一欄——它跟排序是同一件事（決定清單長什麼樣），
+   *  分成兩列會多佔一條高度，而且使用者要在兩個地方找。 */
+  onFilter?: () => void;
+  filterOpen?: boolean;
+  filterCount?: number;
 }) {
   return (
     <div className="fw-sort-bar" role="group" aria-label="排序方式">
@@ -319,6 +327,12 @@ export function SortBar<T extends string>({
           </button>
         );
       })}
+      {onFilter && (
+        <button type="button" onClick={onFilter} aria-expanded={filterOpen} aria-pressed={filterCount > 0} className="fw-sort-item">
+          篩選
+          {filterCount > 0 && <span className="fw-sort-count">{filterCount}</span>}
+        </button>
+      )}
     </div>
   );
 }

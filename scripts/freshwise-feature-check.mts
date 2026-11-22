@@ -588,7 +588,8 @@ run("菜籃：項目", () => {
 
 run("菜籃：星星（加入／移除）", () => {
   let state = basketLib.defaultBasket();
-  check("預設菜籃裡的品項是已加入狀態", basketLib.isInBasket(state, "FA1"));
+  // 不要綁死某一個品項代碼——預設菜籃的內容會換（現在是三道菜的示範）。
+  check("預設菜籃裡的品項是已加入狀態", state.entries.every((e: { code: string }) => basketLib.isInBasket(state, e.code)));
   check("沒加過的品項是未加入狀態", !basketLib.isInBasket(state, "GC3"));
 
   state = basketLib.toggleBasket(state, "GC3");

@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { BottomSheetModal } from "./bottom-sheet-modal";
-import { Hint, ListMessage, SearchInput, ScrollList, ScrollListRow, SegmentedTabs } from "./ui";
+import { GhostButton, Hint, ListMessage, PrimaryButton, SearchInput, ScrollList, ScrollListRow, SegmentedTabs } from "./ui";
 import { FaIcon } from "./fa-icon";
 import { ItemIcon } from "./item-icon";
 import { SeasonBadge } from "./badges";
-import { colors, text } from "./theme";
+import { colors, copy, text } from "./theme";
 import { CATEGORIES, categoryName, isInSeason, itemImage, TRACKED_CATALOG } from "@/lib/freshwise/catalog";
 import { matchesKeyword } from "@/lib/freshwise/search";
 import type { CategoryKey } from "@/lib/freshwise/types";
@@ -19,8 +19,10 @@ const TABS: readonly { key: TabKey; label: string }[] = [
 ];
 
 /**
- * 品項選擇器（加入菜籃用）。搜尋＋分類分頁＋清單，點一個就直接加入並關閉——不需要再按
- * 一次「確定」，因為這個彈窗只選一個東西，點擊本身就是確認。
+ * 品項選擇器（加入菜籃用）。搜尋＋分類分頁＋清單，**可以一次勾好幾樣再一起加入**。
+ *
+ * 本來是「點一個就加入並關閉」，但實際用起來要加五樣菜就得開關彈窗五次，每次還要重新
+ * 搜尋、重新切分類。改成多選＋底部「加入 N 項」。
  *
  * 這裡刻意不顯示價格：使用者在這一步決定的是「我要追蹤什麼」，不是在比價。塞上價格會
  * 讓每一列變高、一屏能看到的品項變少，反而更難找到想要的那一樣。
@@ -41,10 +43,12 @@ export function ItemPickerModal({
   /** 已經在目標分類裡的品項代碼。 */
   excludeCodes: string[];
   onClose: () => void;
-  onPick: (code: string) => void;
+  /** 一次回傳選好的所有代碼。 */
+  onPick: (codes: string[]) => void;
 }) {
   const [keyword, setKeyword] = useState("");
   const [tab, setTab] = useState<TabKey>("all");
+  const [picked, setPicked] = useState<string[]>([]);
 
   // 每次打開都清掉上一次的搜尋條件（理由同 MarketPickerModal）。
   const [lastOpen, setLastOpen] = useState(open);
@@ -53,6 +57,7 @@ export function ItemPickerModal({
     if (open) {
       setKeyword("");
       setTab("all");
+      setPicked([]);
     }
   }
 
@@ -70,7 +75,20 @@ export function ItemPickerModal({
   );
 
   return (
-    <BottomSheetModal open={open} title="選擇品項" onClose={onClose} bodyClassName="flex flex-col gap-3 px-5 py-5">
+    <BottomSheetModal
+      open={open}
+      title="選擇品項"
+      onClose={onClose}
+      bodyClassName="flex flex-col gap-3 px-5 py-5"
+      footer={
+        <>
+          <GhostButton onClick={onClose}>{copy.cancel}</GhostButton>
+          <PrimaryButton disabled={picked.length === 0} onClick={() => onPick(picked)}>
+            {picked.length > 0 ? `加入 ${picked.length} 項` : "加入"}
+          </PrimaryButton>
+        </>
+      }
+    >
       <SearchInput value={keyword} onChange={setKeyword} placeholder="搜尋品項（高麗菜、虱目魚…）" />
       <SegmentedTabs items={TABS} value={tab} onChange={setTab} scroll />
 
@@ -78,10 +96,11 @@ export function ItemPickerModal({
         {results.length === 0 && <ListMessage>找不到「{keyword}」，換個說法試試</ListMessage>}
         {results.map((item) => {
           const already = excluded.has(item.code);
+          const chosen = picked.includes(item.code);
           return (
             <ScrollListRow
               key={item.code}
-              onClick={already ? undefined : () => onPick(item.code)}
+              onClick={already ? undefined : () => setPicked((cur) => (cur.includes(item.code) ? cur.filter((c) => c !== item.code) : [...cur, item.code]))}
               className={already ? "opacity-50" : ""}
             >
               <span className="flex min-w-0 items-center gap-2.5">
@@ -99,7 +118,7 @@ export function ItemPickerModal({
                   </span>
                 </span>
               </span>
-              {already ? <Hint>已加入</Hint> : <FaIcon icon="plus" size={12} color={colors.brand} />}
+              {already ? <Hint>已加入</Hint> : <FaIcon icon={chosen ? "check" : "plus"} size={13} color={chosen ? colors.brand : colors.placeholder} />}
             </ScrollListRow>
           );
         })}

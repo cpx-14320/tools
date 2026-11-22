@@ -42,7 +42,7 @@ interface FreshwiseStore {
   basketReady: boolean;
   setBasket: (next: BasketState) => void;
   /** 行情頁那顆星星：不在菜籃裡就加進第一個分類，已經在裡面就整個移除。 */
-  toggleBasket: (code: string, itemName: string) => void;
+  toggleBasket: (code: string, itemName: string, groupId?: string) => void;
   toast: (message: string) => void;
 }
 
@@ -167,10 +167,11 @@ export function FreshwiseProvider({
     requestAnimationFrame(() => setToastMessage(message));
   }, []);
 
+  /** `groupId` 有給就加到那個分類，沒給就沿用原本的行為（第一個分類）。 */
   const toggleBasket = useCallback(
-    (code: string, itemName: string) => {
+    (code: string, itemName: string, groupId?: string) => {
       setBasketState((current) => {
-        const next = toggleBasketPure(current, code);
+        const next = toggleBasketPure(current, code, groupId);
         void persist({ basket: next });
         // 提示要講清楚是哪一項——清單上一次可以按很多顆星星，只說「已加入菜籃」的話
         // 使用者不確定自己剛剛點到的是哪一列。

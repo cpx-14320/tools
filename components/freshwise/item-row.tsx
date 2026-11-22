@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { ItemIcon } from "./item-icon";
 import { PriceText } from "./price-text";
 import { PriceListRow } from "./price-list-row";
-import { EstimatedBadge, SeasonBadge, TrendBadge, ValueBadge } from "./badges";
+import { EstimatedBadge, SeasonBadge, TrendBadge } from "./badges";
 import { GameIcon } from "./game-art";
 import { itemImage } from "@/lib/freshwise/catalog";
 import { historyLabel } from "@/lib/freshwise/price";
@@ -22,7 +22,7 @@ export function ItemRow({ row, unit, href, onClick, meta, leading, starred, onTo
   starred?: boolean;
   onToggleStar?: () => void;
 }) {
-  const { item, quote, trend, value, inSeason, reliable } = row;
+  const { item, quote, trend, inSeason } = row;
   return <PriceListRow
     art={<ItemIcon src={itemImage(item.code)} fallbackIcon={item.icon} alt={item.name} size={20} boxSize={40}/>}
     title={item.name}
@@ -32,7 +32,6 @@ export function ItemRow({ row, unit, href, onClick, meta, leading, starred, onTo
       <PriceText priceKg={quote.avgKg} rangeLowKg={quote.rangeLowKg} rangeHighKg={quote.rangeHighKg} unit={unit} size="row" showUnit={false}/>
       {/* 推估價不顯示批發漲跌；歷史足夠且持平時才顯示划算度。 */}
       {!quote.estimated && <TrendBadge trend={trend}/>}
-      {!quote.estimated && trend.direction === "flat" && reliable && <ValueBadge value={value}/>}
     </>}
     leading={leading}
     href={href}
@@ -56,13 +55,15 @@ function defaultMeta(row: PriceRow): string {
   if (row.quote.estimated && row.quote.rangeLowKg !== undefined) {
     return `沒有實測價，依批發價推估的範圍`;
   }
+  // 有數字就只給數字。以前同一列會同時出現「比平常便宜 13%」這句話跟一個「划算」
+  // 徽章，兩個在講同一件事；形容詞留給沒有數字可講的情況。
   if (row.reliable) {
     const abs = Math.abs(row.value.percent);
     const base = historyLabel(row.quote.historyDays);
     if (row.value.level === "cheap") return `比${base}的平均便宜 ${abs}%`;
     if (row.value.level === "pricey") return `比${base}的平均貴 ${abs}%`;
+    return `跟${base}的平均差不多`;
   }
-  if (row.inSeason) return "當季盛產，品質通常比較好";
-  if (!row.reliable) return `歷史資料累積中（已有 ${row.quote.historyDays} 天）`;
-  return `跟${historyLabel(row.quote.historyDays)}的平均差不多`;
+  if (row.inSeason) return "當季盛產";
+  return `歷史資料累積中（已有 ${row.quote.historyDays} 天）`;
 }

@@ -27,23 +27,31 @@ export interface BasketState {
  * 端都會被用到，id 每次不一樣的話 React hydration 會對不起來。
  */
 export function defaultBasket(): BasketState {
+  // 預設內容用「一道菜一個分類」來示範這個工具怎麼用：分類不是硬要你照分類法分，
+  // 而是「今天要煮什麼」。新使用者一打開就看得到真實的價格與份量估算，不用先自己
+  // 建一堆東西才知道畫面長什麼樣；不想要的話設定頁有「還原預設我的菜籃」與「清除
+  // 全部資料」。
+  //
+  // id 寫死成固定字串（不是隨機產生）是故意的：這份預設值在伺服器端算繪與瀏覽器端
+  // 都會被用到，id 每次不一樣的話 React hydration 會對不起來。
   const groups: BasketGroup[] = [
-    { id: "g-weekly", name: "每週常買", icon: "basket-shopping", order: 0 },
-    { id: "g-hotpot", name: "火鍋", icon: "fire-burner", order: 1 },
+    { id: "g-pineapple-shrimp", name: "鳳梨蝦球", icon: "dish-pineapple-shrimp", order: 0 },
+    { id: "g-mixed-seafood", name: "炒三鮮", icon: "dish-mixed-seafood-stir-fry", order: 1 },
+    { id: "g-oyster-omelet", name: "蚵仔煎", icon: "dish-oyster-omelet", order: 2 },
   ];
   const entries: BasketEntry[] = [
-    { id: "e-1", groupId: "g-weekly", code: "FA1", qtyCatty: 2, order: 0 },
-    { id: "e-2", groupId: "g-weekly", code: "FB4", qtyCatty: 0.5, order: 1 },
-    { id: "e-3", groupId: "g-weekly", code: "FC3", qtyCatty: 1, order: 2 },
-    { id: "e-4", groupId: "g-weekly", code: "EA1", qtyCatty: 2, order: 3 },
-    { id: "e-5", groupId: "g-weekly", code: "MA2", qtyCatty: 1, order: 4 },
-    { id: "e-6", groupId: "g-hotpot", code: "FA2", qtyCatty: 2, order: 0 },
-    { id: "e-7", groupId: "g-hotpot", code: "FD9", qtyCatty: 1, order: 1 },
-    { id: "e-8", groupId: "g-hotpot", code: "MB4", qtyCatty: 1.5, order: 2 },
-    { id: "e-9", groupId: "g-hotpot", code: "HB3", qtyCatty: 1, order: 3 },
+    { id: "e-ps-1", groupId: "g-pineapple-shrimp", code: "GA2", qtyCatty: 1, order: 0 },
+    { id: "e-ps-2", groupId: "g-pineapple-shrimp", code: "HB3", qtyCatty: 1, order: 1 },
+    { id: "e-ms-1", groupId: "g-mixed-seafood", code: "HB7", qtyCatty: 0.5, order: 0 },
+    { id: "e-ms-2", groupId: "g-mixed-seafood", code: "HB5", qtyCatty: 0.5, order: 1 },
+    { id: "e-ms-3", groupId: "g-mixed-seafood", code: "HB4", qtyCatty: 0.5, order: 2 },
+    { id: "e-ms-4", groupId: "g-mixed-seafood", code: "HB3", qtyCatty: 0.5, order: 3 },
+    { id: "e-oo-1", groupId: "g-oyster-omelet", code: "HB5", qtyCatty: 1, order: 0 },
+    { id: "e-oo-2", groupId: "g-oyster-omelet", code: "EA1", qtyCatty: 1, order: 1 },
   ];
   return { groups, entries };
 }
+
 
 export function emptyBasket(): BasketState {
   return { groups: [], entries: [] };
@@ -236,7 +244,7 @@ export function reorderEntries(state: BasketState, groupId: string, orderedIds: 
  * 不可能在那裡放一個分類選擇器。想放到特定分類的人會去我的菜籃頁用「＋ 新增項目」，
  * 那裡才有完整的分類選擇。
  */
-export function toggleBasket(state: BasketState, code: string): BasketState {
+export function toggleBasket(state: BasketState, code: string, groupId?: string): BasketState {
   if (isInBasket(state, code)) {
     const remaining = state.entries.filter((e) => e.code !== code);
     // 每個被影響到的分類都要重新編號。
@@ -249,11 +257,12 @@ export function toggleBasket(state: BasketState, code: string): BasketState {
     return { ...state, entries };
   }
 
-  const first = groupsSorted(state)[0];
+  // 呼叫端指定了分類就用它（行情頁會先問「要加到哪一籃」）；沒指定才用第一個。
+  const target = groupId && state.groups.some((g) => g.id === groupId) ? groupId : groupsSorted(state)[0]?.id;
   // 連一個分類都沒有（使用者把預設的兩個都刪了）時先補一個，不然星星按了沒反應。
-  if (!first) {
+  if (!target) {
     const withGroup = addGroup(state, "我的菜籃", "basket-shopping");
     return addEntry(withGroup, groupsSorted(withGroup)[0].id, code);
   }
-  return addEntry(state, first.id, code);
+  return addEntry(state, target, code);
 }

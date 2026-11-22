@@ -1,7 +1,7 @@
 "use client";
 import {useMemo,useState} from "react";
 import Link from "next/link";
-import {Callout,CollapsibleList,EmptyState,Hint,Paper,SectionTitle} from "@/components/freshwise/ui";
+import {CollapsibleList,EmptyState,Hint,Paper,SectionTitle} from "@/components/freshwise/ui";
 import {BottomSheetModal} from "@/components/freshwise/bottom-sheet-modal";
 import {GoTopButton} from "@/components/freshwise/go-top-button";
 import {ItemIcon} from "@/components/freshwise/item-icon";
@@ -94,7 +94,6 @@ export function HomeView({today,book}:{today:string;book:PriceBook}){
  {brief.seasonal.length>0&&<section><SectionTitle leaf onHelp={()=>setHelp("seasonal")} helpLabel="現在正當季是怎麼挑的">現在正當季</SectionTitle><Paper variant="list"><CollapsibleList>{brief.seasonal.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`} meta={briefReason(row,"season")}/>)}</CollapsibleList></Paper></section>}
  {brief.risers.length>0&&<section><SectionTitle leaf onHelp={()=>setHelp("risers")} helpLabel="漲價了，慢慢挑是怎麼挑的">漲價了，慢慢挑</SectionTitle><Paper variant="list"><CollapsibleList>{brief.risers.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`} meta={briefReason(row,"rise")}/>)}</CollapsibleList></Paper></section>}
  {brief.total===0&&<EmptyState icon="cloud-arrow-down" title="今天還沒有行情資料" description="資料來源可能尚未更新。可以先整理菜籃，再晚一點回來看看。"/>}
- <Callout icon="database">{copy.sourceNote}</Callout>
  <GoTopButton visible={brief.seasonal.length+brief.risers.length>=8}/>
  <BottomSheetModal open={help!==null} title={help?SECTION_HELP[help].title:""} onClose={()=>setHelp(null)} bodyClassName="flex flex-col gap-3 px-5 py-5">
   {help&&SECTION_HELP[help].lines.map(line=><Hint key={line}>{line}</Hint>)}
