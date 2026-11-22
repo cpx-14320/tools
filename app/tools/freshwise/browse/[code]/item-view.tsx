@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useCompanion } from "@/components/freshwise/companion-store";
+import { IllustratedArt } from "@/components/freshwise/game-art";
 import { QuestSlip } from "@/components/freshwise/companion-widgets";
 import Link from "next/link";
 import {
@@ -75,6 +76,10 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
   const starred = isInBasket(basket, code);
 
   const days = RANGES.find((r) => r.key === rangeKey)?.days ?? 30;
+  // 歷史只有幾天的品項（批發行情還在累積）切到「1 年」會跟「7 天」畫出同一張圖，
+  // 看起來像切換壞掉。超過實際天數的選項直接不列出來，只留一個「最長就這麼多」的說明。
+  const history = detail?.series.length ?? 0;
+  const ranges = RANGES.filter((r, i) => i === 0 || RANGES[i - 1].days < history);
   // 伺服器送下來的是完整歷史（最多一年），期間切換只是在前端切片，不用重新向伺服器要。
   const series = useMemo(() => (detail ? detail.series.slice(-days) : []), [detail, days]);
   const stats = useMemo(() => statsOf(series), [series]);
@@ -279,7 +284,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
       {/* ── 走勢 ─────────────────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
         <SectionTitle leaf>價格走勢</SectionTitle>
-        <SegmentedTabs items={RANGES} value={rangeKey} onChange={(key) => { setRangeKey(key); if (key !== rangeKey && detail.series.length > 1) record({ type: "chart" }); }} />
+        <SegmentedTabs items={ranges} value={ranges.some((r) => r.key === rangeKey) ? rangeKey : ranges[ranges.length - 1].key} onChange={(key) => { setRangeKey(key); if (key !== rangeKey && detail.series.length > 1) record({ type: "chart" }); }} />
         <Paper className="flex flex-col gap-2" style={{ borderRadius: "13px 8px" }}>
           <PriceChart points={series} unit={prefs.unit} averageKg={reliable ? quote.yearAvgKg : undefined} />
           <div className="grid grid-cols-3 gap-2 border-t pt-2.5" style={{ borderColor: colors.borderSoft }}>
@@ -292,6 +297,9 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
             {stats.changePercent === 0 ? "幾乎沒變" : stats.changePercent > 0 ? `上漲 ${stats.changePercent}%` : `下跌 ${Math.abs(stats.changePercent)}%`}
             ・共 {stats.count} 個有交易的日子
           </Hint>
+          {ranges.length < RANGES.length && (
+            <Hint>這一項的歷史只累積到 {history} 天，所以沒有更長的期間可以看。每天的行情會繼續累積上去。</Hint>
+          )}
         </Paper>
       </section>
 
@@ -449,9 +457,11 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
 function BackRow({ unit, onUnitChange }: { unit: UnitKey; onUnitChange: (unit: UnitKey) => void }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <Link href="/tools/freshwise/browse" className={`flex items-center gap-1 ${text.body}`}>
-        <FaIcon icon="chevron-left" size={12} color={colors.brand} />
-        <span style={{ color: colors.brand }}>行情</span>
+      {/* 返回改用插畫按鈕。圖檔放 public/freshwise/ui-back.png（跟其他介面圖示同一層、
+          同一個 ui- 前綴）。 */}
+      <Link href="/tools/freshwise/browse" className="fw-back-link" aria-label="回到行情">
+        <IllustratedArt src="/freshwise/ui-back.png" size={40} />
+        <span>行情</span>
       </Link>
       <SegmentedTabs
         items={[

@@ -299,7 +299,7 @@ function GroupEntries({
   return (
     <>
       {/* 分類裡的項目多的時候整頁會很長，跟首頁的清單用同一套收合。 */}
-      <CollapsibleList max={6}>
+      <CollapsibleList moreLabel={(n) => `這個${copy.group}還有 ${n} 項，展開看`}>
       {entries.map((entry, index) => {
         const item = itemOrPlaceholder(entry.code);
         const quote = quotes.get(entry.code);

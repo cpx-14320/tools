@@ -563,9 +563,13 @@ export function MeterBar({
  * 首頁的菜籃預覽以前是 `slice(0, 4)` 直接砍掉後面的，使用者菜籃裡有九項卻只看到四項，
  * 會以為資料沒同步。改成「預設顯示前幾筆，其餘收起來但告訴你還有幾筆」。
  */
+/** 清單收合的門檻。首頁各區塊與菜籃分類共用同一個數字——同一個 App 裡「幾筆之後要收起來」
+ *  只該有一種答案，不然使用者會覺得有的地方收有的地方不收。 */
+export const COLLAPSE_AFTER = 5;
+
 export function CollapsibleList({
   children,
-  max = 5,
+  max = COLLAPSE_AFTER,
   moreLabel = (n: number) => `還有 ${n} 項，展開看`,
   lessLabel = "收合",
 }: {
