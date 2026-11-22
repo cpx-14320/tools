@@ -1,4 +1,4 @@
-// FreshWise（菜鳥不買貴）的設計系統定義：色票、字級、間距、圓角、陰影、文案用詞。
+// FreshWise（菜鳥買菜記）的設計系統定義：色票、字級、間距、圓角、陰影、文案用詞。
 //
 // 結構刻意跟 components/transit/theme.ts 一模一樣（同一組 token 名稱、同一套字級階層、
 // 同一份文案用詞表），這樣三個工具的程式碼讀起來是同一個手感，改一個工具學到的規則在
@@ -213,7 +213,7 @@ export const spacing = {
  */
 export const copy = {
   /** 工具名稱。中文名在畫面上用，英文名只出現在網址與程式碼裡。 */
-  appName: "菜鳥不買貴",
+  appName: "菜鳥買菜記",
   appNameEn: "FreshWise",
 
   loading: "載入中…",

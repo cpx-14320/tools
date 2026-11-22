@@ -42,9 +42,10 @@ async function ensureIndexes(db: Db): Promise<void> {
     // 快取文件自動清掉，不用另外寫排程清理。
     db.collection("transit.tdxCache").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
 
-    // 菜鳥不買貴（freshwise.*）——這幾個集合裡**沒有任何使用者資料**，全部是從農業部與
-    // 臺中市的開放資料整理出來的公開行情，所以沒有 userId。使用者自己的偏好與菜籃目前
-    // 還存在瀏覽器的 localStorage。
+    // 菜鳥買菜記（freshwise.*）——底下的行情類集合**沒有任何使用者資料**，全部是從農業部
+    // 與臺中市的開放資料整理出來的公開行情，所以沒有 userId。使用者自己的資料另外兩份，
+    // 都用使用者 id 當 _id：freshwise.userData（偏好＋菜籃）與 freshwise.companions
+    // （夥伴養成進度）。兩者都是一人一份文件、直接用 _id 查，不需要額外索引。
     //
     // sourceCache 是原始回應的快取，TTL index 負責把過期的自動清掉（跟搭乘車的
     // transit.tdxCache 同一個做法，不用另外寫排程）。

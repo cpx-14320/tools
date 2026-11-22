@@ -34,7 +34,7 @@ export const TOOLS_REGISTRY: ToolMeta[] = [
   },
   {
     toolId: "freshwise",
-    name: "菜鳥不買貴",
+    name: "菜鳥買菜記",
     description: "查今天的蔬果魚肉蛋行情，順便記住你常買的那幾樣。",
     icon: "🥬",
     faIcon: "carrot",

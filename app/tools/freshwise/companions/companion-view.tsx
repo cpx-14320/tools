@@ -3,7 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { COMPANIONS, companionLevel } from "@/lib/freshwise/companions";
 import { useCompanion } from "@/components/freshwise/companion-store";
-import { CollectionArtwork, GameIcon, PetArtwork } from "@/components/freshwise/game-art";
+import { CollectionArtwork, GameIcon, PetArtwork, SlicedArtwork } from "@/components/freshwise/game-art";
 import { DewBalance, QuestSlip } from "@/components/freshwise/companion-widgets";
 import { BottomSheetModal } from "@/components/freshwise/bottom-sheet-modal";
 import { MeterBar, PageTitle } from "@/components/freshwise/ui";
@@ -41,27 +41,26 @@ export function CompanionView() {
         {ready && (
           <>
             <section className="fw-companion-garden">
-              <h2>{pet.name}</h2>
               <p className="fw-pet-speech">一起看看今天的菜價吧！</p>
-              <PetArtwork id={pet.id} size={200} priority className="fw-breathe" />
-              {/* 等級牌放在立繪下方：名字在上、角色在中、等級在下，視線一路往下走。 */}
-              <span className="fw-level-ribbon">{label}</span>
+              <PetArtwork id={pet.id} size={200} priority interactive className="fw-breathe" />
+              {/* 小尺寸等級牌接在角色下方，與成長進度保持緊湊。 */}
+              <span className="fw-level-ribbon"><SlicedArtwork name="companion-level-ribbon" className="fw-sliced-ribbon"/>{label}</span>
             </section>
             <section className="fw-growth">
               <div className="fw-growth-vine">
                 <GameIcon name="leaf" />
-                <MeterBar value={progress} max={max} label={`${progress}／${max}`} ariaLabel={`${pet.nickname}的成長 ${progress}／${max}`} />
+                <div className="fw-growth-meter-frame"><SlicedArtwork name="companion-growth-frame"/><MeterBar value={progress} max={max} label={`${progress}／${max}`} ariaLabel={`${pet.nickname}的成長 ${progress}／${max}`} /></div>
                 <GameIcon name="leaf" />
               </div>
               <p>再陪伴一點，就能升級囉。</p>
             </section>
             <div className="fw-care-actions">
               <button type="button" className="fw-game-button" disabled={state.dew < 3} onClick={() => care("water")}>
-                <GameIcon name="water" size={40} />澆水 · 3 露珠
+                <GameIcon name="water" size={40} /><span className="fw-care-label">澆水 · 3 露珠</span>
               </button>
               <button type="button" className="fw-game-button fw-peach-button" disabled={state.played} onClick={() => care("play")}>
                 <GameIcon name="play" size={40} />
-                {state.played ? "今天玩過囉" : "陪玩"}
+                <span className="fw-care-label">{state.played ? "今天玩過囉" : "陪玩"}</span>
               </button>
             </div>
           </>
@@ -86,7 +85,7 @@ export function CompanionView() {
               </Link>
             )}
           </section>
-          {state.dew < 3 && <p className="fw-helper-note">完成下面的探索任務，就有露珠可以澆水。每天第一次陪玩也能增加成長。</p>}
+          {state.dew < 3 && <p className="fw-helper-note">完成下面的探索任務，就有露珠可以澆水。</p>}
         </>
       )}
 

@@ -90,13 +90,7 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
 
   return (
     <div className="fw-page fw-basket-page">
-      <PageTitle
-        actions={
-          <IconButton icon="plus" tone="soft" aria-label={`新增${copy.group}`} onClick={() => setGroupEditing("new")} />
-        }
-      >
-        {copy.basket}
-      </PageTitle>
+      <PageTitle hanging>{copy.basket}</PageTitle>
 
       {/* 這一籃今天大概要花多少錢。這是菜籃頁存在的理由——分開看每一樣菜多少錢沒有感覺，
           加起來的數字才有。 */}
@@ -174,16 +168,16 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
         })
       )}
 
-      {groups.length > 0 && (
-        <AddButton onClick={() => setGroupEditing("new")}>{`新增${copy.group}`}</AddButton>
-      )}
-
       <QuestSlip />
       <Callout icon="database">
         {copy.sourceNote}
       </Callout>
 
-      <GoTopButton visible={basket.entries.length >= 8} />
+      <div aria-hidden="true" className={`fw-basket-floating-spacer ${basket.entries.length >= 8 ? "fw-basket-floating-spacer-double" : ""}`}/>
+      <div className="fw-basket-floating-actions">
+        <IconButton icon="plus" aria-label={`新增${copy.group}`} title={`新增${copy.group}`} aria-haspopup="dialog" disabled={!basketReady} onClick={() => setGroupEditing("new")}/>
+        <GoTopButton visible={basket.entries.length >= 8} inline/>
+      </div>
 
       {/* ── 彈窗 ──────────────────────────────────────────── */}
       <GroupEditorSheet
@@ -305,7 +299,7 @@ function GroupEntries({
   return (
     <>
       {/* 分類裡的項目多的時候整頁會很長，跟首頁的清單用同一套收合。 */}
-      <CollapsibleList max={6} moreLabel={(n) => `這個${copy.group}還有 ${n} 項，展開看`}>
+      <CollapsibleList max={6}>
       {entries.map((entry, index) => {
         const item = itemOrPlaceholder(entry.code);
         const quote = quotes.get(entry.code);

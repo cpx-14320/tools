@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
 import { colors, gradient, shadow, text, v } from "./theme";
 import { FaIcon } from "./fa-icon";
+import { SlicedArtwork } from "./game-art";
 
 // FreshWise 的通用元件庫（「長相」的部分），搭配 theme.ts 的 token 一起用。價格、漲跌
 // 徽章、品項列這些帶有這個工具自己的商業含意的元件不放這裡，各自一個檔案（price-text、
@@ -15,10 +16,11 @@ import { FaIcon } from "./fa-icon";
 /* ───────────────────────── 文字 ───────────────────────── */
 
 /** 每一頁最上方的標題列（h1 ＋ 右側可選的操作區）。 */
-export function PageTitle({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
+export function PageTitle({ children, actions, hanging = false, subtitle }: { children: ReactNode; actions?: ReactNode; hanging?: boolean; subtitle?: ReactNode }) {
   return (
-    <div className="fw-page-title flex items-start justify-between gap-3">
-      <h1 className={text.pageTitle}>{children}</h1>
+    <div className={`fw-page-title ${hanging ? "fw-page-title-hanging" : ""} flex items-start justify-between gap-3`}>
+      <h1 className={text.pageTitle}>{hanging && <SlicedArtwork name="page-hanging-title" format="webp" className="fw-hanging-title-art"/>}{children}</h1>
+      {subtitle && <p className="fw-page-subtitle">{subtitle}</p>}
       {actions}
     </div>
   );
@@ -205,28 +207,21 @@ export function AddButton({ children, className = "", ...rest }: { children: Rea
   );
 }
 
-/**
- * 圓形圖示按鈕。
- * - `plain`：沒有底色（區塊標題旁的編輯筆）。
- * - `soft`：淡綠底。
- * - `white`：白底（主視覺上面的返回／設定）。
- */
+/** 透明底圖示按鈕，供分類編輯與浮動新增操作使用。 */
 export function IconButton({
   icon,
-  tone = "plain",
   iconSize = 40,
   className = "",
   ...rest
 }: {
   icon: string;
-  tone?: "plain" | "soft";
   /** 圖示要多大。按鈕的大小由圖示＋內距決定，不要再另外鎖 width/height——以前鎖成
    *  32px、圖示卻是 24px，插畫被塞在一個比它小的框裡，看起來糊糊的。 */
   iconSize?: number;
   className?: string;
 } & ButtonBaseProps) {
   return (
-    <button type="button" className={`fw-icon-button ${tone === "soft" ? "fw-icon-button-soft" : ""} ${className}`} {...rest}>
+    <button type="button" className={`fw-icon-button ${className}`} {...rest}>
       <FaIcon icon={icon} size={iconSize} className="text-current" />
     </button>
   );
@@ -645,8 +640,8 @@ export function ListMessage({ children, tone = "hint" }: { children: ReactNode; 
 export function EmptyState({ icon, title, description, action }: { icon: string; title: string; description?: string; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center gap-2.5 px-6 py-10 text-center">
-      <div className="grid size-14 place-items-center rounded-2xl" style={{ backgroundColor: colors.surfaceSoft }}>
-        <FaIcon icon={icon} size={22} className="text-[#8C7864]" />
+      <div className="grid size-14 place-items-center rounded-2xl" style={{ border: `1.5px solid ${v.lineField}`, backgroundColor: v.paperSunk }}>
+        <FaIcon icon={icon} size={40} className="text-[#8C7864]" />
       </div>
       <p className={text.sectionTitle}>{title}</p>
       {description && <Hint center>{description}</Hint>}

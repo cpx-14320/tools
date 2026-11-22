@@ -5,7 +5,7 @@ import { getSessionUser, hasToolAccess } from "@/lib/auth";
 import { ToolAccessDenied } from "@/components/tool-access-denied";
 import { FreshwiseShell } from "@/components/freshwise/freshwise-shell";
 
-export const metadata: Metadata = { title: "菜鳥不買貴" };
+export const metadata: Metadata = { title: "菜鳥買菜記" };
 
 /** 跟其他工具同一套把關：沒登入踢回登入頁，有登入但沒有這個工具的權限就顯示沒有權限的
  *  畫面（不是 404——使用者該知道的是「要請管理者開權限」，不是「這頁不存在」）。
@@ -16,6 +16,6 @@ export const metadata: Metadata = { title: "菜鳥不買貴" };
 export default async function FreshwiseLayout({ children }: { children: ReactNode }) {
   const user = await getSessionUser();
   if (!user) redirect("/login");
-  if (!hasToolAccess(user, "freshwise")) return <ToolAccessDenied toolName="菜鳥不買貴" />;
+  if (!hasToolAccess(user, "freshwise")) return <ToolAccessDenied toolName="菜鳥買菜記" />;
   return <FreshwiseShell>{children}</FreshwiseShell>;
 }

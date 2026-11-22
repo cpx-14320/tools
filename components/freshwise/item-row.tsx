@@ -1,119 +1,47 @@
 "use client";
 
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { ItemIcon } from "./item-icon";
 import { PriceText } from "./price-text";
+import { PriceListRow } from "./price-list-row";
 import { EstimatedBadge, SeasonBadge, TrendBadge, ValueBadge } from "./badges";
-import { text } from "./theme";
 import { GameIcon } from "./game-art";
 import { itemImage } from "@/lib/freshwise/catalog";
 import { historyLabel } from "@/lib/freshwise/price";
 import type { PriceRow } from "@/lib/freshwise/search";
 import type { UnitKey } from "@/lib/freshwise/types";
 
-/**
- * 品項的一列。首頁快報、行情清單、我的菜籃三個地方都是這一個元件——這是整個工具最常
- * 出現的版面單位，三處各寫一份的話「價格放右邊、漲跌徽章放價格下面、當季徽章跟在品名
- * 後面」這些排版細節一定會長出三種版本。
- *
- * 版面固定是四段：左邊圖示格 → 品名與徽章 → 說明文字 → 右邊價格與漲跌。可選的拖曳握把
- * 插在最左邊（我的菜籃），可選的星星在最右邊（行情清單）。
- */
-export function ItemRow({
-  row,
-  unit,
-  href,
-  onClick,
-  meta,
-  leading,
-  starred,
-  onToggleStar,
-}: {
+/** 品項資料與菜籃操作保留在這裡；列排版與詳情比價共用 PriceListRow。 */
+export function ItemRow({ row, unit, href, onClick, meta, leading, starred, onToggleStar }: {
   row: PriceRow;
   unit: UnitKey;
-  /** 有給就整列可以點進詳情頁。 */
   href?: string;
-  /** 不用 href 時的點擊行為（我的菜籃點一列是開編輯彈窗，不是換頁）。 */
   onClick?: () => void;
-  /** 覆蓋預設的說明文字（預設會依划算度／當季自動產生）。 */
   meta?: ReactNode;
-  /** 最左邊的插槽，給拖曳握把用。 */
   leading?: ReactNode;
-  /** undefined＝不顯示星星。 */
   starred?: boolean;
   onToggleStar?: () => void;
 }) {
   const { item, quote, trend, value, inSeason, reliable } = row;
-
-  const content = (
-    <>
-      {/* 圖片還沒放進 public/freshwise/items/ 之前，會自動顯示 Font Awesome 的向量圖示。 */}
-      <ItemIcon src={itemImage(item.code)} fallbackIcon={item.icon} alt={item.name} size={20} boxSize={40} />
-
-      <div className="fw-item-copy min-w-0 flex-1">
-        <div className="fw-item-name flex items-center gap-1.5">
-          <span className="fw-item-title">{item.name}</span>
-          {inSeason && <SeasonBadge />}
-          {quote.estimated && <EstimatedBadge />}
-        </div>
-        {/* 說明文字：呼叫端沒指定時自動產生。不要留空——空的那一行會讓每一列高度不一樣，
-            清單看起來像壞掉。 */}
-        <div className={`fw-item-meta mt-0.5 ${text.meta}`}>{meta ?? defaultMeta(row)}</div>
-      </div>
-
-      <div className="flex shrink-0 flex-col items-end gap-1">
-        <PriceText
-          priceKg={quote.avgKg}
-          rangeLowKg={quote.rangeLowKg}
-          rangeHighKg={quote.rangeHighKg}
-          unit={unit}
-          size="row"
-          showUnit={false}
-        />
-        {/* 推估的品項不顯示漲跌與划算度：那是把批發的變化乘上一個倍數得到的，講的其實是
-            批發的漲跌，標在「傳統市場」那一列會誤導。 */}
-        {!quote.estimated && <TrendBadge trend={trend} />}
-        {/* 漲跌持平時 TrendBadge 不畫任何東西，這時候補一個划算度徽章，右欄才不會空一塊。
-            歷史不夠長的品項判不出划算度（見 price.ts 的 MIN_HISTORY_DAYS），就什麼都不放。 */}
-        {!quote.estimated && trend.direction === "flat" && reliable && <ValueBadge value={value} />}
-      </div>
-    </>
-  );
-
-  return (
-    // 清單列不是一張卡片，是「紙上的一行」：沒有底色、沒有陰影，只用一條虛線跟下一行
-    // 分開（最後一行的線由 .fw-item-row:last-child 收掉）。以前元件畫成白卡片、CSS 再用
-    // !important 把底色跟陰影清掉，兩邊互相抵銷。
-    <div className="fw-item-row">
-      {leading}
-      {href ? (
-        <Link href={href} className="fw-item-link">
-          {content}
-        </Link>
-      ) : onClick ? (
-        <button type="button" onClick={onClick} className="fw-item-link text-left">
-          {content}
-        </button>
-      ) : (
-        <div className="fw-item-link">{content}</div>
-      )}
-      {starred !== undefined && (
-        <button
-          type="button"
-          onClick={onToggleStar}
-          aria-label={starred ? `將${item.name}從菜籃移除` : `把${item.name}加入菜籃`}
-          className="fw-item-toggle"
-          aria-pressed={starred}
-        >
-          {/* 實心星＝已在菜籃、空心星＝還沒加。只用顏色區分的話（都是實心星，一個綠一個
-              灰）在淺色底上很難一眼分辨，也對色弱使用者不友善，所以連形狀一起換。 */}
-          <GameIcon name={starred ? "basket" : "seed"} size={32} />
-          <small aria-hidden="true">{starred ? "✓" : "+"}</small>
-        </button>
-      )}
-    </div>
-  );
+  return <PriceListRow
+    art={<ItemIcon src={itemImage(item.code)} fallbackIcon={item.icon} alt={item.name} size={20} boxSize={40}/>}
+    title={item.name}
+    badges={<>{inSeason && <SeasonBadge/>}{quote.estimated && <EstimatedBadge/>}</>}
+    meta={meta ?? defaultMeta(row)}
+    price={<>
+      <PriceText priceKg={quote.avgKg} rangeLowKg={quote.rangeLowKg} rangeHighKg={quote.rangeHighKg} unit={unit} size="row" showUnit={false}/>
+      {/* 推估價不顯示批發漲跌；歷史足夠且持平時才顯示划算度。 */}
+      {!quote.estimated && <TrendBadge trend={trend}/>}
+      {!quote.estimated && trend.direction === "flat" && reliable && <ValueBadge value={value}/>}
+    </>}
+    leading={leading}
+    href={href}
+    onClick={onClick}
+    trailing={starred !== undefined && <button type="button" onClick={onToggleStar} aria-label={starred ? `將${item.name}從菜籃移除` : `把${item.name}加入菜籃`} className="fw-item-toggle" aria-pressed={starred}>
+      <GameIcon name={starred ? "basket" : "seed"} size={32}/>
+      <small aria-hidden="true">{starred ? "✓" : "+"}</small>
+    </button>}
+  />;
 }
 
 /**

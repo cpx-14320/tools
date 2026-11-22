@@ -2,13 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useCompanion } from "@/components/freshwise/companion-store";
-import { PetArtwork } from "@/components/freshwise/game-art";
 import { QuestSlip } from "@/components/freshwise/companion-widgets";
 import Link from "next/link";
 import {
   Callout,
-  DividedCard,
-  DividedRow,
+  Paper,
   EmptyState,
   Hint,
   LinkButton,
@@ -20,6 +18,7 @@ import {
 } from "@/components/freshwise/ui";
 import { FaIcon } from "@/components/freshwise/fa-icon";
 import { ItemIcon } from "@/components/freshwise/item-icon";
+import { PriceListRow } from "@/components/freshwise/price-list-row";
 import { EstimatedBadge, SeasonBadge, TrendBadge, ValueBadge } from "@/components/freshwise/badges";
 import { PriceText } from "@/components/freshwise/price-text";
 import { PriceChart } from "@/components/freshwise/price-chart";
@@ -63,7 +62,7 @@ const SOURCE_LABEL: Record<PriceSource, string> = {
 
 export function ItemView({ code, today, detail }: { code: string; today: string; detail: ItemDetail | null }) {
   const { prefs, basket, toggleBasket, setPrefs } = useFreshwise();
-  const { record, state: companion } = useCompanion();
+  const { record } = useCompanion();
   useEffect(() => { if (detail) record({ type: "view", code }); }, [code, detail, record]);
   const [rangeKey, setRangeKey] = useState("30");
   // 完整行情表預設收起來：五欄數字對「不懂買菜價格的人」是雜訊，但要自己判讀的人一定
@@ -102,9 +101,6 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
               : "資料來源今天沒有這一項的交易紀錄，過幾天再回來看看。"
           }
         />
-        <Callout icon="database">
-          {copy.sourceNote}
-        </Callout>
       </div>
     );
   }
@@ -130,7 +126,6 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
 
       {/* ── 今日價 ─────────────────────────────────────────── */}
       <ListCard strong className="fw-detail-hero flex flex-col gap-3">
-        <PetArtwork id={companion.active} size={100} className="fw-detail-pet" />
         <div className="flex items-start gap-3">
           <ItemIcon src={itemImage(item.code)} fallbackIcon={item.icon} alt={item.name} size={22} boxSize={48} />
           <div className="min-w-0 flex-1">
@@ -213,7 +208,6 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
           </PrimaryButton>
         </div>
 
-        <Hint>資料來源：{SOURCE_LABEL[quote.source]}</Hint>
       </ListCard>
 
       {quote.estimated && (
@@ -230,50 +224,23 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
       {/* ── 哪裡買比較便宜（場所比價）────────────────────────── */}
       <section className="flex flex-col gap-2">
         <SectionTitle leaf>哪裡買比較便宜</SectionTitle>
-        <DividedCard>
+        <Paper variant="list">
           {venues.map(({ venue, quote: venueQuote }) => {
             const meta = venueMeta(venue);
             const isCheapest = cheapestVenue?.venue === venue;
-            return (
-              <DividedRow key={venue}>
-                <span className="grid size-9 shrink-0 place-items-center rounded-xl" style={{ backgroundColor: colors.surfaceSoft }}>
-                  <FaIcon icon={meta.icon} size={14} color={colors.brand} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5">
-                    <span className={text.bodyStrong}>{meta.name}</span>
-                    {venueQuote?.estimated && <EstimatedBadge />}
-                    {isCheapest && (
-                      <span className={text.badge} style={{ color: colors.down }}>
-                        最便宜
-                      </span>
-                    )}
-                  </span>
-                  <span className={`block truncate ${text.meta}`}>
-                    {venueQuote ? SOURCE_LABEL[venueQuote.source] : "這個場所沒有這一項的行情"}
-                  </span>
-                </span>
-                <span className="shrink-0 text-right">
-                  {venueQuote ? (
-                    <PriceText
-                      priceKg={venueQuote.avgKg}
-                      rangeLowKg={venueQuote.rangeLowKg}
-                      rangeHighKg={venueQuote.rangeHighKg}
-                      unit={prefs.unit}
-                      size="row"
-                      showUnit={false}
-                    />
-                  ) : (
-                    <span className={text.hint}>—</span>
-                  )}
-                </span>
-              </DividedRow>
-            );
+            return <PriceListRow
+              key={venue}
+              art={<FaIcon icon={meta.icon} size={40}/>}
+              title={meta.name}
+              badges={<>
+                {venueQuote?.estimated && <EstimatedBadge/>}
+                {isCheapest && <span className={text.badge} style={{color: colors.down}}>最便宜</span>}
+              </>}
+              meta={venueQuote ? SOURCE_LABEL[venueQuote.source] : "這個場所沒有這一項的行情"}
+              price={venueQuote ? <PriceText priceKg={venueQuote.avgKg} rangeLowKg={venueQuote.rangeLowKg} rangeHighKg={venueQuote.rangeHighKg} unit={prefs.unit} size="row" showUnit={false}/> : <span className={text.hint}>—</span>}
+            />;
           })}
-        </DividedCard>
-        <Note>
-          三個場所都換算成同一個單位（{unitLabel(prefs.unit)}）才能直接比。批發價是菜販的進貨成本，不是你在市場付的錢。
-        </Note>
+        </Paper>
       </section>
 
       {/* ── 有機／產銷履歷要多付多少 ───────────────────────────
@@ -313,7 +280,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
       <section className="flex flex-col gap-2.5">
         <SectionTitle leaf>價格走勢</SectionTitle>
         <SegmentedTabs items={RANGES} value={rangeKey} onChange={(key) => { setRangeKey(key); if (key !== rangeKey && detail.series.length > 1) record({ type: "chart" }); }} />
-        <ListCard className="flex flex-col gap-2">
+        <Paper className="flex flex-col gap-2" style={{ borderRadius: "13px 8px" }}>
           <PriceChart points={series} unit={prefs.unit} averageKg={reliable ? quote.yearAvgKg : undefined} />
           <div className="grid grid-cols-3 gap-2 border-t pt-2.5" style={{ borderColor: colors.borderSoft }}>
             <MiniStat label="這段最低" value={formatPriceIn(stats.minKg, prefs.unit)} />
@@ -325,7 +292,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
             {stats.changePercent === 0 ? "幾乎沒變" : stats.changePercent > 0 ? `上漲 ${stats.changePercent}%` : `下跌 ${Math.abs(stats.changePercent)}%`}
             ・共 {stats.count} 個有交易的日子
           </Hint>
-        </ListCard>
+        </Paper>
       </section>
 
       <QuestSlip />
@@ -401,31 +368,20 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
               </table>
             </div>
           ) : (
-            <DividedCard>
-              {markets.map((market, index) => (
-                <DividedRow key={market.marketCode}>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-1.5">
-                      <span className={`truncate ${text.bodyStrong}`}>{market.marketName}</span>
-                      {index === 0 && markets.length > 1 && (
-                        <span className={text.badge} style={{ color: colors.down }}>
-                          最低
-                        </span>
-                      )}
-                    </span>
-                    <span className={`block ${text.meta}`}>
-                      {market.city && `${market.city}・`}
-                      {market.highKg > market.lowKg
-                        ? `上下價 ${formatPriceIn(market.lowKg, prefs.unit)}～${formatPriceIn(market.highKg, prefs.unit)}`
-                        : "單一訪價"}
-                      {typeof market.volumeKg === "number" && market.volumeKg > 0 &&
-                        `・成交 ${market.volumeKg.toLocaleString("en-US")} 公斤`}
-                    </span>
-                  </span>
-                  <PriceText priceKg={market.avgKg} unit={prefs.unit} size="row" showUnit={false} />
-                </DividedRow>
-              ))}
-            </DividedCard>
+            <Paper variant="list">
+              {markets.map((market, index) => <PriceListRow
+                key={market.marketCode}
+                art={<FaIcon icon="store" size={40}/>}
+                title={market.marketName}
+                badges={index === 0 && markets.length > 1 && <span className={text.badge} style={{color: colors.down}}>最低</span>}
+                meta={<>
+                  {market.city && `${market.city}・`}
+                  {market.highKg > market.lowKg ? `上下價 ${formatPriceIn(market.lowKg, prefs.unit)}～${formatPriceIn(market.highKg, prefs.unit)}` : "單一訪價"}
+                  {typeof market.volumeKg === "number" && market.volumeKg > 0 && `・成交 ${market.volumeKg.toLocaleString("en-US")} 公斤`}
+                </>}
+                price={<PriceText priceKg={market.avgKg} unit={prefs.unit} size="row" showUnit={false}/>}
+              />)}
+            </Paper>
           )}
 
           <Hint>
@@ -479,9 +435,6 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
         </ListCard>
       </section>
 
-      <Callout icon="database">
-        {copy.sourceNote}
-      </Callout>
 
       <div className="flex justify-center">
         <Link href="/tools/freshwise/basket" className="fw-leaf-link">去看{copy.basket} →</Link>

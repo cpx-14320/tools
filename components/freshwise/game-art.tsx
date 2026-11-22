@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { PetInteraction } from "./pet-interaction";
 import type { CSSProperties } from "react";
 import { COMPANIONS, type CompanionId } from "@/lib/freshwise/companions";
 
@@ -25,7 +26,7 @@ export function IllustratedArt({ src, size, className = "" }: { src: string; siz
 }
 
 export function GameIcon({ name, size = 32, className = "" }: { name: GameIconName; size?: number; className?: string }) {
-  return <IllustratedArt src={`/freshwise/ui-${name}.png`} size={size} className={className} />;
+  return <IllustratedArt src={`/freshwise/ui-${name}.png${name === "leaf" || name === "calendar" ? "?v=8" : ""}`} size={size} className={`${name === "leaf" ? "fw-leaf-art " : ""}${className}`} />;
 }
 
 const PET_FILES: Record<CompanionId, string> = {
@@ -33,7 +34,7 @@ const PET_FILES: Record<CompanionId, string> = {
   radish: "pet-radish-bengbeng.png",
   strawberry: "pet-strawberry-jiujiu.png",
   pumpkin: "pet-pumpkin-manman.png",
-  eggplant: "pet-eggplant-bobo.png",
+  eggplant: "pet-eggplant-bobo-neutral.webp",
   corn: "pet-corn-nuannuan.png",
 };
 
@@ -46,10 +47,10 @@ function petName(id: CompanionId): string {
 }
 
 /** 主角夥伴（首頁花園、夥伴頁、詳情頁角落）。 */
-export function PetArtwork({ id = "cabbage", size = 160, className = "", priority = false }: { id?: CompanionId; size?: number; className?: string; priority?: boolean }) {
+export function PetArtwork({ id = "cabbage", size = 160, className = "", priority = false, interactive = false }: { id?: CompanionId; size?: number; className?: string; priority?: boolean; interactive?: boolean }) {
   return (
     <span className={`fw-pet-art ${className}`} style={{ width: size, height: size }}>
-      <Image src={petFile(id)} alt={petName(id)} fill sizes={`${size}px`} priority={priority} />
+      {interactive ? <PetInteraction key={id} id={id} name={petName(id)} baseSrc={petFile(id)} size={size} priority={priority}/> : <Image src={petFile(id)} alt={petName(id)} fill sizes={`${size}px`} priority={priority} />}
     </span>
   );
 }
@@ -71,4 +72,9 @@ function AtlasArt({ src, index, columns, rows, size, label, className = "" }: { 
 /** 蔬果圖鑑格子裡的小夥伴（圖集的格位順序＝COMPANIONS 的順序，不要重排那份陣列）。 */
 export function CollectionArtwork({ id, size = 76, className = "" }: { id: CompanionId; size?: number; className?: string }) {
   return <AtlasArt {...COLLECTION_ATLAS} index={COMPANIONS.findIndex((p) => p.id === id)} size={size} label={petName(id)} className={className} />;
+}
+
+/** 左右端維持比例，中間材質重複延伸的裝飾圖片層。 */
+export function SlicedArtwork({name,className="",format="png"}:{name:string;className?:string;format?:"png"|"webp"}) {
+  return <span className={`fw-sliced-art ${className}`} aria-hidden="true"><span className="fw-sliced-cap" style={{backgroundImage:`url(/freshwise/${name}-left.${format})`}}/><span className="fw-sliced-middle" style={{backgroundImage:`url(/freshwise/${name}-middle.${format})`}}/><span className="fw-sliced-cap" style={{backgroundImage:`url(/freshwise/${name}-right.${format})`}}/></span>;
 }

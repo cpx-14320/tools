@@ -1,5 +1,5 @@
 /* ============================================================================
- * FreshWise（菜鳥不買貴）插畫皮膚的樣式表
+ * FreshWise（菜鳥買菜記）插畫皮膚的樣式表
  *
  * 分工：插畫只負責圖案，文字／互動／圖表仍然是可存取的 HTML 與 SVG。
  *
@@ -106,6 +106,7 @@
 .fw-app button,.fw-modal button{touch-action:manipulation}.fw-app button:disabled{cursor:default;opacity:.55}
 .fw-app h1,.fw-app h2,.fw-app h3{letter-spacing:.03em}.fw-app p{overflow-wrap:anywhere}
 .fw-art{display:inline-block;flex-shrink:0;background-repeat:no-repeat;vertical-align:middle}
+.fw-leaf-art{align-self:center;margin-block:0;vertical-align:middle}
 .fw-pet-art{position:relative;display:inline-block;flex-shrink:0;vertical-align:middle}.fw-pet-art img{object-fit:contain}
 .fw-item-art{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
 .fw-functional-glyph{display:inline-flex;justify-content:center;align-items:center;line-height:1;font-weight:700}
@@ -118,7 +119,7 @@
 .fw-primary:hover,.fw-game-button:hover{filter:brightness(1.025);transform:translateY(-1px)}.fw-primary:active,.fw-game-button:active{transform:translateY(1px)}
 .fw-peach-button{background:linear-gradient(var(--fw-peach-hi),var(--fw-peach));border-color:var(--fw-peach-line)}.fw-game-button:disabled{transform:none;filter:none}
 .fw-icon-button{display:grid;flex-shrink:0;place-items:center;padding:2px;border-radius:100px;background:transparent;color:var(--fw-green)}
-.fw-icon-button-soft{background:var(--fw-paper-sunk)}.fw-clear-button{display:grid;width:44px;height:44px;place-items:center;margin:-8px -8px -8px 0}
+.fw-clear-button{display:grid;width:44px;height:44px;place-items:center;margin:-8px -8px -8px 0}
 
 
 
@@ -139,13 +140,13 @@
 .fw-skip-link{position:absolute;left:12px;top:-80px;z-index:100;background:var(--fw-paper);padding:12px}.fw-skip-link:focus{top:12px}
 .fw-market-context{display:flex;flex-direction:column;gap:4px}.fw-context-strip{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.fw-context-strip>button{display:flex;align-items:center;gap:4px;min-height:44px;font-size:var(--fw-fs-label);color:var(--fw-ink);line-height:1.3}.fw-context-strip>button:first-child{flex:1;min-width:0}.fw-context-strip>button:first-child strong{font-size:var(--fw-fs-body)}.fw-unit-leaf{padding:4px 12px;border:1.5px solid var(--fw-leaf-line);border-radius:60% 12% 55% 15%;background:var(--fw-leaf-bg)}.fw-data-date{display:flex;align-items:center;gap:4px;font-size:var(--fw-fs-note);color:var(--fw-muted)}.fw-place-options{padding:12px 0;border-bottom:1px dashed var(--fw-line-card)}
 .fw-home{gap:24px;padding-top:20px}.fw-home-brand{display:flex;align-items:center;justify-content:space-between;gap:8px}.fw-home-brand small{display:block;font-size:var(--fw-fs-note);letter-spacing:.08em;font-weight:700;color:var(--fw-ink)}.fw-home-brand h1{font-size:var(--fw-fs-page);font-weight:800;line-height:1.3;letter-spacing:.05em}
-.fw-book-button{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border:1.5px solid var(--fw-line-card);border-radius:12px 20px 9px 14px;background:var(--fw-paper-deep)}
+.fw-book-button{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border:1.5px solid var(--fw-line-card);border-radius:13px 8px 13px 8px;background:var(--fw-paper-deep)}
 .fw-dew-balance{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 4px;border:1.5px solid var(--fw-line-card);border-radius:12px 20px 9px 14px;background:var(--fw-paper-deep);color:var(--fw-ink);text-decoration:none;font-weight:700;min-height:44px}
 /* 數字欄固定留四位數的寬度，露珠從 9 變 10 變 100 時整顆膠囊不會跟著抽動。 */
 .fw-dew-balance>span:last-child{min-width:4ch;text-align:right;font-variant-numeric:tabular-nums}
 .fw-home-hero{position:relative;margin:0 -20px;padding:12px 20px 0;min-height:340px;display:flex;flex-direction:column;gap:20px}
 
-.fw-home-speech{align-self:center;position:relative;width:min(100%,340px);padding:16px 20px;border:2px solid var(--fw-line-strong);border-radius:18px;background:var(--fw-paper-hi);box-shadow:0 3px 0 color-mix(in srgb, var(--fw-shadow-line) 11%, transparent);font-size:var(--fw-fs-body);font-weight:700;line-height:1.6}
+.fw-home-speech{align-self:center;position:relative;width:min(100%,340px);padding:12px;border:1.5px solid var(--fw-line-strong);border-radius:13px 8px 13px 8px;background:var(--fw-paper-hi);box-shadow:0 3px 0 color-mix(in srgb, var(--fw-shadow-line) 11%, transparent);font-size:var(--fw-fs-body);line-height:1.6}
 .fw-hero-stage{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-height:190px}.fw-hero-companion{position:relative;display:flex;flex-direction:column;align-items:center;min-width:0}.fw-hero-level{font-size:var(--fw-fs-note);font-weight:700;border:1px solid var(--fw-peach-line);background:var(--fw-peach-hi);border-radius:8px;padding:2px 8px;margin-top:-12px;z-index:1}.fw-hero-level a{color:inherit}
 .fw-price-tag{position:relative;display:flex;flex-direction:column;justify-content:center;gap:8px;align-items:center;flex-shrink:0;width:184px;min-height:218px;padding:48px 16px 28px;border:0;border-radius:0;background:transparent url('/freshwise/home-price-tag-board-clean.png') center/100% 100% no-repeat;box-shadow:none;text-align:center;text-decoration:none;color:var(--fw-ink)}.fw-price-tag:before{content:none}.fw-price-tag h2{font-size:var(--fw-fs-section);font-weight:700}.fw-price-tag>div{max-width:100%}.fw-price-tag .fw-tag-unit{font-size:var(--fw-fs-note)}.fw-hero-price-column{display:flex;flex-direction:column;align-items:center;flex-shrink:0;min-width:0}.fw-hero-link{align-self:stretch;margin-top:4px;min-height:44px;padding:8px 20px}
 .fw-category-shelf{display:flex;justify-content:space-between;gap:4px;overflow-x:auto;min-height:85px;padding:0 0 8px;border-bottom:4px solid var(--fw-line-wood);background:linear-gradient(transparent 76%,var(--fw-sand) 76%)}
@@ -156,19 +157,19 @@
 .fw-filter-pills{display:flex;flex-wrap:wrap;gap:8px}
 .fw-feature-shelf{padding-top:4px;border-bottom:5px solid var(--fw-line-wood)}.fw-quests{position:relative;padding:16px 16px;border:1.5px solid var(--fw-line-card);border-radius:12px;background:var(--fw-paper-sunk);box-shadow:2px 3px 0 var(--fw-shadow-card)}.fw-quests:before{content:"";position:absolute;top:-9px;left:15px;width:9px;height:27px;border:2px solid var(--fw-shadow-line);border-radius:7px;transform:rotate(14deg)}
 .fw-quests>h2{display:flex;align-items:center;gap:4px;font-weight:700;font-size:var(--fw-fs-section)}.fw-quests>h2>span{margin-left:auto;font-size:var(--fw-fs-meta);font-weight:400;color:var(--fw-muted)}.fw-quest-row{display:flex;gap:8px;align-items:center;padding:12px 0;border-bottom:1px dashed var(--fw-line-card)}.fw-quest-row:last-child{border-bottom:0;padding-bottom:0}.fw-quest-copy{flex:1;min-width:0}.fw-quest-copy strong{font-size:var(--fw-fs-body)}.fw-quest-copy p{font-size:var(--fw-fs-note);color:var(--fw-muted)}.fw-quest-copy progress{width:85%;height:8px;accent-color:var(--fw-leaf-line)}.fw-quest-action{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}.fw-quest-action>span:first-child{display:flex;align-items:center;font-size:var(--fw-fs-lead);font-weight:700}.fw-quest-claimed{font-size:var(--fw-fs-note);color:var(--fw-ink-done)}
-.fw-leaf-link{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:4px 12px;font-size:var(--fw-fs-label);font-weight:700;color:var(--fw-ink);text-decoration:none}
+.fw-leaf-link{display:inline-flex;align-items:center;justify-content:center;min-height:44px;font-size:var(--fw-fs-label);font-weight:700;color:var(--fw-ink);text-decoration:none}
 .fw-collapse-toggle{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;min-height:44px;border-top:1px dashed var(--fw-line-card);color:var(--fw-green);font-size:var(--fw-fs-label);font-weight:700}
 .fw-collapse-toggle:after{content:"▾";font-size:var(--fw-fs-note)}
 .fw-collapse-toggle[aria-expanded=true]:after{content:"▴"}
 .fw-helper-note{font-size:var(--fw-fs-note);color:var(--fw-muted);line-height:1.7}
-.fw-companion-garden{position:relative;display:flex;align-items:center;flex-direction:column;gap:8px;min-height:345px;margin:0 -20px;padding:8px 20px 12px;isolation:isolate}.fw-companion-garden h2{font-size:var(--fw-fs-page);font-weight:700}.fw-level-ribbon{padding:4px 16px;background:var(--fw-peach-soft);border:1px solid var(--fw-peach-line);border-radius:8px 21px 8px 17px;font-size:var(--fw-fs-lead);font-weight:700}.fw-pet-speech{position:relative;align-self:center;text-align:center;padding:8px 16px;max-width:240px;margin-bottom:-24px;background:var(--fw-paper-hi);border:1.5px solid var(--fw-peach-line);border-radius:12px;font-size:var(--fw-fs-body);z-index:1}.fw-companion-garden>.fw-pet-art,.fw-companion-garden>.fw-art{margin-top:8px}
+.fw-companion-garden{position:relative;display:flex;align-items:center;flex-direction:column;gap:8px;min-height:0;margin:0 -20px;padding:8px 20px 0;isolation:isolate}.fw-level-ribbon{padding:4px 16px;background:var(--fw-peach-soft);border:1px solid var(--fw-peach-line);border-radius:8px 21px 8px 17px;font-size:var(--fw-fs-lead);font-weight:700}.fw-pet-speech{position:relative;align-self:center;text-align:center;padding:8px 16px;max-width:240px;margin-bottom:-24px;background:var(--fw-paper-hi);border:1.5px solid var(--fw-peach-line);border-radius:12px;font-size:var(--fw-fs-body);z-index:1}.fw-companion-garden>.fw-pet-art,.fw-companion-garden>.fw-art{margin-top:8px}
 .fw-growth{text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}.fw-growth-vine{display:flex;width:90%;align-items:center;gap:8px}.fw-growth strong{font-size:var(--fw-fs-section)}.fw-growth p{font-size:var(--fw-fs-label);color:var(--fw-muted)}.fw-care-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.fw-care-actions .fw-game-button{padding:8px 4px;font-size:var(--fw-fs-body)}
 .fw-diary{padding:16px 8px;border-block:1px dashed var(--fw-line-card);background:repeating-linear-gradient(transparent 0 31px,color-mix(in srgb, var(--fw-sand-deep) 50%, transparent) 31px 32px)}.fw-diary h2{display:flex;align-items:center;font-size:var(--fw-fs-section);font-weight:700}.fw-diary p{padding:8px 0;font-size:var(--fw-fs-lead);line-height:2}.fw-diary .fw-leaf-link{margin-top:8px}
 .fw-collection-book{display:flex;flex-direction:column;gap:12px;padding:20px}.fw-collection-book h2{display:flex;flex-wrap:wrap;justify-content:space-between;font-size:var(--fw-fs-section);font-weight:700}.fw-collection-book h2 small{font-size:var(--fw-fs-label)}.fw-collection-book>p{font-size:var(--fw-fs-label);color:var(--fw-muted)}/* 三欄、不畫中間的裝訂線——兩欄時那條線剛好落在格子中間當分隔，三欄就會穿過
    其中一欄的立繪。 */
 .fw-collection-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 8px;padding:16px 0}
 .fw-collection-pet{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:140px;position:relative;background:transparent;opacity:1}.fw-collection-pet strong{font-size:var(--fw-fs-label);text-align:center;line-height:1.3}.fw-collection-pet>span:last-child{font-size:var(--fw-fs-meta);padding:1px 8px;background:var(--fw-leaf-pale);border-radius:8px;text-align:center}.fw-pet-locked .fw-art{opacity:.6;filter:saturate(.35)}.fw-pet-locked>span:last-child{background:var(--fw-sand-pale)}
-.fw-detail-hero{position:relative;--fw-paper-pad:16px 100px 16px 16px;min-height:210px}.fw-detail-pet{position:absolute;right:3px;top:45px;opacity:.95}.fw-detail-hero .fw-price-actions,.fw-detail-hero .border-t{flex-wrap:wrap}.fw-detail-hero h1{overflow-wrap:anywhere}.fw-basket-summary{position:relative;isolation:isolate;--fw-paper-pad:16px 100px 16px 16px;min-height:160px}.fw-basket-summary>div{flex-direction:column;align-items:flex-start}.fw-basket-summary .text-right{text-align:left}.fw-basket-pet{position:absolute;right:-4px;top:20px;z-index:-1}.fw-basket-page>section{padding-top:8px}.fw-basket-page .fw-item-row{--fw-row-pad:16px 4px;gap:6px}
+.fw-detail-hero{position:relative;--fw-paper-pad:16px 16px 16px 16px;min-height:210px}.fw-detail-hero .fw-price-actions,.fw-detail-hero .border-t{flex-wrap:wrap}.fw-detail-hero h1{overflow-wrap:anywhere}.fw-basket-summary{position:relative;isolation:isolate;--fw-paper-pad:16px 100px 16px 16px;min-height:160px}.fw-basket-summary>div{flex-direction:column;align-items:flex-start}.fw-basket-summary .text-right{text-align:left}.fw-basket-pet{position:absolute;right:8px;top:20px;z-index:-1}.fw-basket-page>section:not(.fw-quests){padding-top:8px}.fw-basket-page .fw-item-row{--fw-row-pad:16px 4px;gap:6px}
 
 .fw-modal-backdrop{background:color-mix(in srgb, var(--fw-shadow-ink) 40%, transparent);backdrop-filter:blur(2px)}.fw-modal-paper{background:var(--fw-paper-card) url('/freshwise/ui-paper-texture.png') repeat;background-size:128px;border:2px solid var(--fw-line-field);border-radius:24px 19px 0 0;box-shadow:0 -7px 35px color-mix(in srgb, var(--fw-shadow-ink) 15%, transparent)}.fw-modal-frame{height:100dvh}
 .fw-modal-align{padding:0}
@@ -203,9 +204,9 @@
 @media(max-width:365px){.fw-hero-stage{gap:4px}}
 
 /* 夥伴頁花園延伸至標題頂端，取代標題原本的棚架裝飾。 */
-.fw-companions-hero{position:relative;isolation:isolate;display:flex;flex-direction:column;gap:24px;margin:-24px -20px 0;padding:24px 20px 12px}
+.fw-companions-hero{position:relative;isolation:isolate;display:flex;flex-direction:column;gap:16px;margin:-24px -20px 0;padding:24px 20px 12px}
 .fw-companions-hero:before{content:"";position:absolute;inset:0;z-index:-1;background:var(--fw-garden) url('/freshwise/garden-day-background.png') center top/cover no-repeat;mask-image:linear-gradient(#000 0%,#000 92%,transparent 100%);pointer-events:none}
-.fw-companions-hero>.fw-page-title{margin:0}
+.fw-companions-hero>.fw-page-title{margin:0;min-height:0;padding:0}
 .fw-companions-hero>.fw-page-title:before{content:none}
 @media(max-width:365px){.fw-companions-hero{margin-inline:-16px;padding-inline:16px}.fw-companions-hero>.fw-companion-garden{margin-inline:-16px;padding-inline:16px}}
 
@@ -216,7 +217,7 @@
 /* 紙紋與木紋保持獨立，行情及任務文字由 HTML 呈現。 */
 .fw-home-garden{gap:12px;padding-bottom:20px}
 .fw-home-hero{min-height:0;gap:16px;padding-top:4px}
-.fw-home-speech{text-align:center;background:var(--fw-paper-hi) url('/freshwise/ui-paper-texture.png') repeat;background-size:160px}
+.fw-home-speech{text-align:left;background:var(--fw-paper-hi) url('/freshwise/ui-paper-texture.png') repeat;background-size:160px}
 .fw-hero-stage{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:8px;align-items:end;min-height:0}
 .fw-home .fw-pet-art.fw-breathe{width:100%;max-width:212px;height:auto;aspect-ratio:1}
 .fw-hero-companion{width:100%;padding-bottom:4px}
@@ -250,7 +251,7 @@
 .fw-market-product{display:flex;align-items:flex-end;justify-content:center;gap:0;min-width:0;text-decoration:none;color:var(--fw-ink)}
 .fw-market-food{flex:0 1 80px;width:80px;height:116px;display:flex;align-items:flex-end;justify-content:center;z-index:1;margin-right:2px;padding-bottom:4px}
 .fw-market-food .fw-item-art{width:100%}
-.fw-market-price{position:relative;flex:0 0 88px;min-height:108px;transform:translateY(-12px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px 8px;background:url('/freshwise/market-small-price-card.png') center/100% 100% no-repeat;text-align:center}
+.fw-market-price{position:relative;flex:0 0 88px;min-height:108px;transform:translateY(-12px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:12px 8px;background:url('/freshwise/market-small-price-card.png?v=8') center/100% 100% no-repeat;text-align:center}
 .fw-market-price h3{font-size:var(--fw-fs-body);font-weight:700;line-height:1.3}.fw-market-price .fw-market-unit{font-size:var(--fw-fs-micro);line-height:1.2}
 .fw-primary,.fw-game-button{background-image:url('/freshwise/ui-paper-texture.png'),linear-gradient(var(--fw-btn-hi),var(--fw-btn-lo));background-size:140px,100% 100%;background-blend-mode:multiply}
 .fw-peach-button{background-image:url('/freshwise/ui-paper-texture.png'),linear-gradient(var(--fw-peach-hi),var(--fw-peach))}
@@ -274,7 +275,7 @@
 /* 任務紙三段式背景：上下緣固定比例，中段只重複、不隨內容高度拉伸。 */
 .fw-quest-paper{position:absolute;inset:0;z-index:-1;display:grid;grid-template-rows:auto minmax(0,1fr) auto;pointer-events:none}
 .fw-quest-paper>span{display:block;min-width:0;min-height:0;background-position:center top;background-size:100% auto;background-repeat:no-repeat}
-.fw-quest-paper-top,.fw-quest-paper-bottom{aspect-ratio:2172/145}
+.fw-quest-paper-top,.fw-quest-paper-bottom{aspect-ratio:2172/203}
 .fw-quest-paper-top{background-image:url('/freshwise/task-paper-slip-top.png')}
 .fw-quest-paper>.fw-quest-paper-middle{background-image:url('/freshwise/task-paper-slip-middle.png');background-repeat:repeat-y}
 .fw-quest-paper-bottom{background-image:url('/freshwise/task-paper-slip-bottom.png')}
@@ -314,7 +315,7 @@
 .fw-segmented-tabs{display:inline-flex;align-items:center;gap:8px;padding:4px 0}
 .fw-tabs-scroll{display:flex;max-width:100%;overflow-x:auto;scrollbar-width:none}
 .fw-tabs-scroll::-webkit-scrollbar{display:none}
-.fw-tab{display:flex;flex-shrink:0;align-items:center;gap:6px;white-space:nowrap;min-height:44px;padding:8px 12px;border:1.5px solid var(--fw-line-card);border-radius:13px 8px 13px 9px;background:var(--fw-paper);color:var(--fw-ink);font-size:var(--fw-fs-label);font-weight:500;transition:background-color .15s,border-color .15s}
+.fw-tab{display:flex;flex-shrink:0;align-items:center;gap:6px;white-space:nowrap;min-height:44px;padding:8px 12px;border:1.5px solid var(--fw-line-card);border-radius:13px 8px 13px 8px;background:var(--fw-paper);color:var(--fw-ink);font-size:var(--fw-fs-label);font-weight:500;transition:background-color .15s,border-color .15s}
 .fw-tab[aria-pressed=true]{border-color:var(--fw-leaf-line);background:var(--fw-leaf-soft);box-shadow:0 2px 0 var(--fw-btn-shadow)}
 
 /* 篩選膠囊（可多選，所以是圓角膠囊而不是分頁的不等圓角） */
@@ -343,3 +344,105 @@
 /* 紙上「一列一列」的區塊。分隔線跟紙卡片的虛線分隔同一種，字級由 DividedRow 自己帶，
    跟同一張紙上用 gap 疊起來的區塊（flex flex-col gap-1.5）看起來是同一套版式。 */
 .fw-stack>*+*{border-top:1px dashed var(--fw-line-card)}
+
+/* 2026-11-22：插畫素材改版；所有樣式集中於 game.css。 */
+.fw-dew-balance{border-radius:13px 8px 13px 8px}
+/* 圖像與操作區分兩列，讓寵物和價牌以圖像底部對齊。 */
+.fw-hero-stage{grid-template-rows:auto auto;align-items:end;row-gap:6px}
+.fw-hero-companion{grid-area:1/1;align-self:end;padding-bottom:0}
+.fw-hero-price-column{grid-area:1/2;align-self:end}
+.fw-hero-pet-details{grid-area:2/1;display:flex;flex-direction:column;align-items:center;gap:3px;align-self:center;min-width:0}
+.fw-hero-pet-details .fw-hero-level{margin-top:0}
+.fw-hero-stage>.fw-hero-link{grid-area:2/2;align-self:center;margin:0}
+.fw-price-tag{background-image:url('/freshwise/home-price-tag-board-clean.png?v=6');padding-top:30px;padding-bottom:28px}
+/* 多任務紙框：切片在轉角過渡結束後才銜接，增加內文留白。 */
+.fw-quests{padding:20px 20px 24px}
+.fw-quests-all{padding:22px 20px 26px}
+.fw-quests>h2{margin-bottom:6px}
+.fw-quests-all .fw-quest-row{padding-block:12px}
+.fw-quest-paper-top{background-image:url('/freshwise/task-paper-slip-top.png?v=6')}
+.fw-quest-paper>.fw-quest-paper-middle{background-image:url('/freshwise/task-paper-slip-middle.png?v=6')}
+.fw-quest-paper-bottom{background-image:url('/freshwise/task-paper-slip-bottom.png?v=6')}
+/* 名稱與等級用空白插畫底圖，名稱和數值保留為 HTML。 */
+
+.fw-companion-garden{gap:12px}
+.fw-level-ribbon{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;min-width:140px;min-height:30px;padding:6px 24px;border:0;border-radius:0;background:none;font-size:var(--fw-fs-label);line-height:1.3;text-align:center}
+.fw-hero-pet-details .fw-hero-level{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;min-height:30px;padding:5px 22px;border:0;border-radius:0;background:none}
+/* 圖片外框與動態填色分層，進度百分比不會因圖片而失真。 */
+.fw-growth-vine{width:min(100%,250px);gap:6px}
+.fw-growth-meter-frame{position:relative;isolation:isolate;flex:1;min-width:0;padding:9px 12px;background:none}
+.fw-growth-meter-frame>.fw-meter{min-height:22px;border:0;background:transparent}
+.fw-growth-meter-frame .fw-meter-fill{background:#c1d889 url('/freshwise/ui-paper-texture.png') center/120px repeat;background-blend-mode:multiply;border-radius:100px}
+.fw-growth-meter-frame .fw-meter-label{font-size:var(--fw-fs-note)}
+/* 澆水／陪玩恢復 CSS 膠囊按鈕，沿用主按鈕邊框與陰影，不使用背景圖片。 */
+.fw-care-actions .fw-game-button{background:linear-gradient(var(--fw-btn-hi),var(--fw-btn-lo));background-blend-mode:normal}
+.fw-care-actions .fw-peach-button{background:linear-gradient(var(--fw-peach-hi),var(--fw-peach))}
+.fw-care-actions .fw-game-button:disabled{opacity:.55;filter:saturate(.7)}
+.fw-sliced-art{position:absolute;inset:0;z-index:-1;display:flex;pointer-events:none}
+.fw-sliced-art>span{display:block;min-width:0;height:100%;background-position:center;background-repeat:no-repeat;background-size:auto 100%}
+.fw-sliced-art>.fw-sliced-cap{flex:0 0 auto;aspect-ratio:1/2}
+.fw-sliced-art>.fw-sliced-middle{flex:1;background-repeat:repeat-x}
+.fw-sliced-ribbon>.fw-sliced-cap{aspect-ratio:1}
+@media(max-width:365px){.fw-quests{padding:18px 14px 22px}.fw-quests-all{padding:20px 14px 24px}.fw-care-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.fw-care-actions .fw-game-button{font-size:var(--fw-fs-label);padding-inline:6px}.fw-care-actions .fw-art{width:32px!important;height:32px!important}.fw-hero-pet-details .fw-hero-level{padding-inline:16px}}
+
+/* 校正原圖透明邊距；切片的中段從左端接續，避免材質接縫跳位。 */
+.fw-hero-companion{transform:translateY(10%)}
+.fw-sliced-art>.fw-sliced-middle{background-position:left center}
+.fw-companions-hero>.fw-page-title{flex-wrap:wrap;gap:8px}
+.fw-companions-hero>.fw-page-title h1{font-size:var(--fw-fs-section)}
+.fw-companion-garden>.fw-pet-art{margin-bottom:-24px}
+.fw-care-actions .fw-game-button{font-size:var(--fw-fs-label);padding-inline:10px;gap:6px}
+.fw-care-actions .fw-art{width:32px!important;height:32px!important}
+.fw-care-label{white-space:nowrap}
+@media(max-width:365px){.fw-care-actions .fw-game-button{padding-inline:6px}}
+/* 寵物互動：畫框與腳底原點固定，僅點擊後載入選中的單張表情。 */
+.fw-pet-trigger{position:absolute;inset:0;display:block;width:100%;height:100%;margin:0;padding:0;border:0;background:none;box-shadow:none;color:inherit;cursor:pointer;touch-action:manipulation;border-radius:16px}
+.fw-pet-trigger:focus-visible{outline:2px solid var(--fw-green);outline-offset:3px}
+.fw-pet-visual,.fw-pet-pending{position:absolute;inset:0;display:block}
+.fw-pet-visual{transform-origin:50% 88%;pointer-events:none}
+.fw-pet-pending{opacity:0;pointer-events:none}
+.fw-pet-visual[data-reacted="true"][data-mood="happy"]{animation:fw-pet-happy .42s ease-out}
+.fw-pet-visual[data-reacted="true"][data-mood="surprised"]{animation:fw-pet-surprised .42s ease-out}
+.fw-pet-visual[data-reacted="true"][data-mood="sad"]{animation:fw-pet-sad .6s ease-out}
+.fw-pet-visual[data-reacted="true"][data-mood="curious"]{animation:fw-pet-curious .5s ease-out}
+@keyframes fw-pet-happy{35%{transform:scale(1.018,.987)}70%{transform:scale(.994,1.006)}}
+@keyframes fw-pet-surprised{30%{transform:scale(1.012,1.025)}65%{transform:scale(1.005,.995)}}
+@keyframes fw-pet-sad{40%{transform:scale(1.008,.985)}75%{transform:scale(1.003,.995)}}
+@keyframes fw-pet-curious{30%{transform:rotate(-.7deg)}65%{transform:rotate(.5deg)}}
+@media(prefers-reduced-motion:reduce){.fw-pet-visual{animation:none!important}}
+
+/* 設定頁跨工具入口沿用本工具的水彩圖示；分類新增與回頂部共用右下操作列。 */
+.fw-other-tools{--fw-paper-pad:0}
+.fw-other-tool-link{display:flex;align-items:center;gap:12px;min-height:64px;padding:12px 0;color:var(--fw-ink);text-decoration:none}
+.fw-other-tool-link:hover{color:var(--fw-green)}
+.fw-basket-floating-actions{position:fixed;right:18px;bottom:calc(85px + env(safe-area-inset-bottom) + 20px);z-index:20;display:flex;flex-direction:column;align-items:center;gap:12px}
+.fw-basket-floating-actions>.fw-icon-button{width:44px;height:44px}
+.fw-basket-floating-actions>.fw-icon-button:disabled{opacity:.5}
+.fw-go-top-inline{position:static}
+.fw-basket-floating-spacer{height:44px;flex-shrink:0}
+.fw-basket-floating-spacer-double{height:96px}
+
+/* V10 任務紙與可水平延伸吊牌：文字、數值維持 HTML。 */
+.fw-quests-compact{display:grid;grid-template-columns:56px minmax(0,1fr) 44px;column-gap:8px;row-gap:4px;align-content:center;min-height:116px;padding:24px 20px;background:url('/freshwise/home-quest-paper.webp') center/100% 100% no-repeat}
+.fw-quests-compact>.fw-quest-paper{display:none}
+.fw-quests-compact>h2{grid-column:2;grid-row:1;min-height:24px;margin:0;line-height:1.3}
+.fw-quests-compact>.fw-quest-row{display:contents}
+.fw-quests-compact>.fw-quest-row>.fw-art{grid-column:1;grid-row:1/3;align-self:center;justify-self:center}
+.fw-quests-compact .fw-quest-copy{grid-column:2;grid-row:2;align-self:center}
+.fw-quests-compact .fw-quest-copy>.fw-meter{width:min(100%,132px);align-self:center}
+.fw-quests-compact .fw-quest-action{grid-column:3;grid-row:1/3;align-self:center;border-left:1px dashed var(--fw-line-card);padding-left:8px}
+/* 夥伴任務沿用首頁紙條，九宮格切片固定紙夾、圓角與邊框，中央隨三個任務延伸。 */
+.fw-quests-all{padding:28px 20px 24px;border-image:url('/freshwise/home-quest-paper.webp') 240 180 228 300 fill / 38px 28px 36px 47px / 0 stretch}
+.fw-quests-all>.fw-quest-paper{display:none}
+.fw-quests-all .fw-quest-row{padding-block:10px}
+.fw-page-title.fw-page-title-hanging{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:116px;margin:-24px -20px 2px;padding:18px 20px 16px;gap:2px}
+.fw-page-title-hanging:before{content:"";background:url('/freshwise/page-market-awning-background.png?v=10') center top/100% 100% no-repeat;border:0;border-radius:0;box-shadow:none;opacity:1}
+.fw-page-title-hanging h1{position:relative;isolation:isolate;display:inline-flex;align-items:center;justify-content:center;max-width:100%;min-height:54px;padding:16px 46px 6px;border:0;border-radius:0;background:none;box-shadow:none;font-size:var(--fw-fs-section);line-height:1.35;white-space:normal;text-align:center}
+.fw-hanging-title-art>.fw-sliced-cap{aspect-ratio:0.878601}
+.fw-page-subtitle{margin:0;font-size:var(--fw-fs-label);line-height:1.4;color:var(--fw-ink);text-align:center}
+.fw-basket-page>.fw-page-title-hanging{padding:14px 20px 20px;justify-content:flex-start}
+.fw-basket-page>.fw-page-title-hanging h1{min-height:68px;padding:18px 60px 10px;font-size:var(--fw-fs-page)}
+/* 吊牌下緣保留顯示空間，補足縮圖後過細的底線。 */
+.fw-basket-page .fw-hanging-title-art{bottom:-2px;filter:drop-shadow(0 1px 0 var(--fw-line-deep))}
+.fw-dew-balance{background:var(--fw-paper-deep)}
+@media(max-width:365px){.fw-page-title.fw-page-title-hanging{margin-inline:-16px;padding-inline:16px}}

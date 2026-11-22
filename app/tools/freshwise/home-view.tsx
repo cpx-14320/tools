@@ -12,7 +12,7 @@ import {MarketContext} from "@/components/freshwise/market-context";
 import {useFreshwise} from "@/components/freshwise/store";
 import {useCompanion} from "@/components/freshwise/companion-store";
 import {DewBalance,QuestSlip} from "@/components/freshwise/companion-widgets";
-import {GameIcon,PetArtwork} from "@/components/freshwise/game-art";
+import {GameIcon,PetArtwork,SlicedArtwork} from "@/components/freshwise/game-art";
 import {copy} from "@/components/freshwise/theme";
 import {allCodes} from "@/lib/freshwise/basket";
 import {itemImage} from "@/lib/freshwise/catalog";
@@ -61,12 +61,8 @@ export function HomeView({today,book}:{today:string;book:PriceBook}){
  <h2 className="fw-home-speech">{brief.advice}{headline?.quote.estimated&&!brief.advice.includes("推估")&&<small>（推估參考）</small>}</h2>
  <div className="fw-hero-stage">
  <div className="fw-hero-companion">
-   <PetArtwork id={state.active} size={200} priority className="fw-breathe"/>
-   <span className="fw-hero-level">{ready?levelLabel:"夥伴準備中…"}</span>
-   {ready&&<div className="fw-hero-growth">
-     <span>成長 <strong>{growthInLevel}／{growthMax}</strong></span>
-     <progress value={growthInLevel} max={growthMax} aria-label={`${pet.nickname}的成長 ${growthInLevel}／${growthMax}`}/>
-   </div>}
+   <PetArtwork id={state.active} size={200} priority interactive className="fw-breathe"/>
+
  </div>
  <div className="fw-hero-price-column">
  {headline?<Link className="fw-price-tag" href={`/tools/freshwise/browse/${headline.item.code}`}>
@@ -78,8 +74,15 @@ export function HomeView({today,book}:{today:string;book:PriceBook}){
    {!headline.quote.estimated&&<TrendBadge trend={headline.trend}/>}
    <span className="fw-tag-unit">看價格詳情 →</span>
  </Link>:<div className="fw-price-tag"><GameIcon name="calendar" size={40}/><p>行情準備中</p></div>}
- <Link href="/tools/freshwise/companions" className="fw-game-button fw-hero-link">陪夥伴玩 →</Link>
  </div>
+ <div className="fw-hero-pet-details">
+   <span className="fw-hero-level"><SlicedArtwork name="companion-level-ribbon" className="fw-sliced-ribbon"/>{ready?levelLabel:"夥伴準備中…"}</span>
+   {ready&&<div className="fw-hero-growth">
+     <span>成長 <strong>{growthInLevel}／{growthMax}</strong></span>
+     <progress value={growthInLevel} max={growthMax} aria-label={`${pet.nickname}的成長 ${growthInLevel}／${growthMax}`}/>
+   </div>}
+ </div>
+ <Link href="/tools/freshwise/companions" className="fw-game-button fw-hero-link">陪夥伴玩 →</Link>
  </div>
  </section>
  <QuestSlip/>

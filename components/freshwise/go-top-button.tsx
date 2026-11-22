@@ -10,7 +10,8 @@ import { scrollContainerToTop } from "@/lib/scroll-within";
  * 搜尋中／查無資料／空清單都不顯示，只要畫面上真的有一份偏長的清單可以捲，就讓使用者
  * 隨時能一鍵跳回頂端重新選條件，不用自己判斷捲多遠了。
  */
-export function GoTopButton({ visible }: { visible: boolean }) {
+/** inline 讓菜籃的浮動操作列統一定位；其他頁維持原本 fixed 行為。 */
+export function GoTopButton({ visible, inline = false }: { visible: boolean; inline?: boolean }) {
   if (!visible) return null;
 
   function scrollToTop() {
@@ -25,12 +26,12 @@ export function GoTopButton({ visible }: { visible: boolean }) {
       {/* 這顆是 fixed 的，不佔版面高度，所以清單最後一列會被它蓋住（行情頁蓋到種子袋
           按鈕、菜籃頁蓋到價格）。呼叫端都是把它放在頁面最後，就由它自己補一塊等高的
           佔位，捲到底時最後一列還是點得到。 */}
-      <div aria-hidden className="h-12 shrink-0" />
+      {!inline && <div aria-hidden className="h-12 shrink-0" />}
       <button
         type="button"
         onClick={scrollToTop}
         aria-label="回到頂部"
-        className="fw-go-top fixed z-20 grid place-items-center transition-opacity hover:opacity-90"
+        className={`fw-go-top ${inline ? "fw-go-top-inline" : "fixed"} z-20 grid place-items-center transition-opacity hover:opacity-90`}
       >
         {/* 插畫版的回到頂端。圖檔放 public/freshwise/ui-go-top.png（跟其他介面圖示
             同一層、同一個 ui- 前綴）。 */}

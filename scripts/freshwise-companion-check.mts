@@ -1,3 +1,6 @@
+import { nextPetEmotion, petEmotionFile, PET_EMOTIONS } from "../lib/freshwise/pet-expressions";
+import { existsSync, statSync } from "node:fs";
+import { join } from "node:path";
 import assert from "node:assert/strict";
 import { careForCompanion, claimCompanionQuest, companionDay, COMPANIONS, dailyState, initialCompanionState, newlyFilledQuantity, parseCompanionState, questProgress, recordCompanionEvent, selectCompanion } from "../lib/freshwise/companions";
 import { TRACKED_CATALOG } from "../lib/freshwise/catalog";
@@ -23,4 +26,7 @@ check("只有原本未填而現在填入正份量，才算整理完成", () => {
 check("讀取新日期的儲存不帶入舊日任務", () => { const s = recordCompanionEvent(initialCompanionState("2026-11-20"), { type: "view", code: "FA1" }, "2026-11-20"); assert.deepEqual(parseCompanionState(JSON.stringify(s), day).visited, []); });
 check("每位夥伴各自成長，切換不會覆蓋另一位進度", () => { let s = { ...initialCompanionState(day), stamps: 2 }; s = careForCompanion(s, "water", day); s = selectCompanion(s, "radish"); assert.equal(s.xp, 0); s = careForCompanion(s, "water", day); s = careForCompanion(s, "play", day); assert.equal(s.xp, 5); s = selectCompanion(s, "cabbage"); assert.equal(s.xp, 3); const loaded = parseCompanionState(JSON.stringify(s), day); assert.equal(loaded.growth.radish, 5); assert.equal(selectCompanion(loaded, "corn"), loaded); });
 check("所有有資料來源的品項都有固定圖集對應，沒有重複代碼", () => { const codes = ITEM_ART_GROUPS.flatMap((group) => group.codes); assert.equal(new Set(codes).size, codes.length); for (const item of TRACKED_CATALOG) assert.ok(itemArtwork(item.code), item.code); assert.equal(itemArtwork("unknown"), undefined); });
+check("表情隨機切換排除目前狀態，每種情緒都抽得到", () => { for (const current of ["neutral", ...PET_EMOTIONS] as const) { const expected = PET_EMOTIONS.filter((mood) => mood !== current); const chosen = expected.map((_, index) => nextPetEmotion(current, (index + 0.5) / expected.length)); assert.deepEqual(chosen, expected); assert.equal(chosen.includes(current as typeof PET_EMOTIONS[number]), false); } });
+check("表情抽樣的邊界與無效值不會產生錯誤路徑", () => { for (const current of ["neutral", ...PET_EMOTIONS] as const) for (const sample of [-1, 0, 0.999, 1, Infinity, NaN]) assert.ok(PET_EMOTIONS.includes(nextPetEmotion(current, sample))); });
+check("六位夥伴各有四張獨立輕量表情素材", () => { const paths = new Set<string>(); for (const pet of COMPANIONS) for (const mood of PET_EMOTIONS) { const url = petEmotionFile(pet.id, mood); assert.match(url, /^\/freshwise\/pet-[a-z-]+\.webp$/); assert.ok(!paths.has(url)); paths.add(url); const file = join(process.cwd(), "public", url); assert.ok(existsSync(file), file); assert.ok(statSync(file).size <= 135 * 1024, file); } assert.equal(paths.size, 24); });
 console.log(`\nFreshWise 養成與素材核心 ${passed} 組檢查通過。`);

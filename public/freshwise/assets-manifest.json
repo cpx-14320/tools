@@ -49,13 +49,14 @@
       "width": 1254,
       "height": 1254,
       "cornerAlpha": 0,
-      "bytes": 1542579,
+      "bytes": 1302507,
       "region": "companions",
       "columns": 1,
       "rows": 1,
       "maxCssWidth": 200,
       "nativeToCssRatio": 6.27,
-      "meets6x": true
+      "meets6x": true,
+      "noseOnly": true
     },
     {
       "file": "companions/pet-pumpkin-manman.png",
@@ -1983,6 +1984,247 @@
       "maxCssWidth": 390,
       "nativeToCssRatio": 5.57,
       "repeatY": false
+    },
+    {
+      "file": "ui-go-top.png",
+      "region": "go-top",
+      "width": 256,
+      "height": 256,
+      "cornerAlpha": 0,
+      "maxCssWidth": 44,
+      "nativeToCssRatio": 5.82,
+      "meets6x": false,
+      "bytes": 85940
+    },
+    {
+      "file": "home-price-tag-board-clean.png",
+      "width": 1254,
+      "height": 1254,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 174,
+      "nativeToCssRatio": 7.21,
+      "meets6x": true
+    },
+    {
+      "file": "unused/companion-nameplate.png",
+      "width": 2060,
+      "height": 456,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 280,
+      "nativeToCssRatio": 7.36,
+      "meets6x": true,
+      "sourceOnly": true
+    },
+    {
+      "file": "unused/companion-nameplate-left.png",
+      "width": 456,
+      "height": 456,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 280,
+      "nativeToCssRatio": 1.63,
+      "meets6x": false,
+      "sourceOnly": true
+    },
+    {
+      "file": "unused/companion-nameplate-middle.png",
+      "width": 1148,
+      "height": 456,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 280,
+      "nativeToCssRatio": 4.1,
+      "meets6x": false,
+      "sourceOnly": true
+    },
+    {
+      "file": "unused/companion-nameplate-right.png",
+      "width": 456,
+      "height": 456,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 280,
+      "nativeToCssRatio": 1.63,
+      "meets6x": false,
+      "sourceOnly": true
+    },
+    {
+      "file": "unused/companion-level-ribbon.png",
+      "width": 2064,
+      "height": 400,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 180,
+      "nativeToCssRatio": 11.47,
+      "meets6x": true,
+      "sourceOnly": true
+    },
+    {
+      "file": "companion-level-ribbon-left.png",
+      "width": 400,
+      "height": 400,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 38.0,
+      "nativeToCssRatio": 10.53,
+      "meets6x": true
+    },
+    {
+      "file": "companion-level-ribbon-middle.png",
+      "width": 1264,
+      "height": 400,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 120.08,
+      "nativeToCssRatio": 10.53,
+      "meets6x": true
+    },
+    {
+      "file": "companion-level-ribbon-right.png",
+      "width": 400,
+      "height": 400,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 38.0,
+      "nativeToCssRatio": 10.53,
+      "meets6x": true
+    },
+    {
+      "file": "unused/companion-water-button.png",
+      "width": 2033,
+      "height": 581,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 180,
+      "nativeToCssRatio": 11.29,
+      "meets6x": true,
+      "sourceOnly": true
+    },
+    {
+      "file": "unused/companion-water-button-left.png",
+      "width": 290,
+      "height": 581,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 28.95,
+      "nativeToCssRatio": 10.02,
+      "meets6x": true,
+      "sourceOnly": true
+    },
+    {
+      "file": "unused/companion-water-button-middle.png",
+      "width": 1453,
+      "height": 581,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 145.05,
+      "nativeToCssRatio": 10.02,
+      "meets6x": true,
+      "sourceOnly": true
+    },
+    {
+      "file": "unused/companion-water-button-right.png",
+      "width": 290,
+      "height": 581,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 28.95,
+      "nativeToCssRatio": 10.02,
+      "meets6x": true,
+      "sourceOnly": true
+    },
+    {
+      "file": "unused/companion-play-button.png",
+      "width": 1973,
+      "height": 537,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 180,
+      "nativeToCssRatio": 10.96,
+      "meets6x": true,
+      "sourceOnly": true
+    },
+    {
+      "file": "unused/companion-play-button-left.png",
+      "width": 268,
+      "height": 537,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 28.95,
+      "nativeToCssRatio": 9.26,
+      "meets6x": true,
+      "sourceOnly": true
+    },
+    {
+      "file": "unused/companion-play-button-middle.png",
+      "width": 1437,
+      "height": 537,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 155.21,
+      "nativeToCssRatio": 9.26,
+      "meets6x": true,
+      "sourceOnly": true
+    },
+    {
+      "file": "unused/companion-play-button-right.png",
+      "width": 268,
+      "height": 537,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 28.95,
+      "nativeToCssRatio": 9.26,
+      "meets6x": true,
+      "sourceOnly": true
+    },
+    {
+      "file": "unused/companion-growth-frame.png",
+      "width": 2111,
+      "height": 312,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 300,
+      "nativeToCssRatio": 7.04,
+      "meets6x": true,
+      "sourceOnly": true
+    },
+    {
+      "file": "companion-growth-frame-left.png",
+      "width": 156,
+      "height": 312,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 20.0,
+      "nativeToCssRatio": 7.8,
+      "meets6x": true
+    },
+    {
+      "file": "companion-growth-frame-middle.png",
+      "width": 1799,
+      "height": 312,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 230.64,
+      "nativeToCssRatio": 7.8,
+      "meets6x": true
+    },
+    {
+      "file": "companion-growth-frame-right.png",
+      "width": 156,
+      "height": 312,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 20.0,
+      "nativeToCssRatio": 7.8,
+      "meets6x": true
+    },
+    {
+      "file": "task-paper-slip-top.png",
+      "width": 2172,
+      "height": 203,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 390,
+      "nativeToCssRatio": 5.57,
+      "meets6x": false
+    },
+    {
+      "file": "task-paper-slip-middle.png",
+      "width": 2172,
+      "height": 318,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 390,
+      "nativeToCssRatio": 5.57,
+      "meets6x": false
+    },
+    {
+      "file": "task-paper-slip-bottom.png",
+      "width": 2172,
+      "height": 203,
+      "region": "garden-polish-v6",
+      "maxCssWidth": 390,
+      "nativeToCssRatio": 5.57,
+      "meets6x": false
     }
   ],
   "icons": [
@@ -3753,10 +3995,781 @@
   "activeVariant": "simple-v3-single-256",
   "activeUiVariant": "textured-v5-single-256",
   "taskPaperSlices": {
-    "top": "ui/task-paper-slip-top.png",
-    "middle": "ui/task-paper-slip-middle.png",
-    "bottom": "ui/task-paper-slip-bottom.png",
-    "capAspectRatio": "2172/145",
-    "layout": "fixed-aspect top/bottom, repeat-y middle; no height stretching"
+    "top": "task-paper-slip-top.png",
+    "middle": "task-paper-slip-middle.png",
+    "bottom": "task-paper-slip-bottom.png",
+    "capAspectRatio": "2172/203",
+    "layout": "28% curved caps with straight repeat-y middle"
+  },
+  "unusedMovesV6": {
+    "companion-growth-frame.png": "unused/companion-growth-frame.png",
+    "companion-level-ribbon.png": "unused/companion-level-ribbon.png",
+    "companion-nameplate-left.png": "unused/companion-nameplate-left.png",
+    "companion-nameplate-middle.png": "unused/companion-nameplate-middle.png",
+    "companion-nameplate-right.png": "unused/companion-nameplate-right.png",
+    "companion-nameplate.png": "unused/companion-nameplate.png",
+    "companion-play-button.png": "unused/companion-play-button.png",
+    "companion-water-button.png": "unused/companion-water-button.png"
+  },
+  "petExpressionsV7": {
+    "generatedOn": "2026-11-22",
+    "moods": [
+      "surprised",
+      "happy",
+      "sad",
+      "curious"
+    ],
+    "loading": "Only the next selected expression is requested after click. Keep current image until decode completes.",
+    "assets": [
+      {
+        "file": "pet-cabbage-tuantuan-curious.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 106724,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "cabbage",
+        "emotion": "curious",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          110,
+          113,
+          1122,
+          1109
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-3ee51d75-5081-4f46-b0cf-108f8493a330.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-cabbage-tuantuan-happy.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 111368,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "cabbage",
+        "emotion": "happy",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          110,
+          113,
+          1122,
+          1109
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-37948068-03a3-4528-bc23-f62de675d61f.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-cabbage-tuantuan-surprised.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 110750,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "cabbage",
+        "emotion": "surprised",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          110,
+          113,
+          1122,
+          1109
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-45e025b4-e934-4d49-8a3c-b0e0aa7dc3dc.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-cabbage-tuantuan-sad.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 113920,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "cabbage",
+        "emotion": "sad",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          110,
+          113,
+          1122,
+          1109
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-438c3ad0-9169-4183-95b3-a298f9e30370.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-radish-bengbeng-surprised.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 117352,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "radish",
+        "emotion": "surprised",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          215,
+          40,
+          1094,
+          1164
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-7fe8e999-6ba1-4e9f-82a3-93ae399fdbe0.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-radish-bengbeng-happy.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 115596,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "radish",
+        "emotion": "happy",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          215,
+          40,
+          1094,
+          1164
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-d2b1f94a-4c15-45ac-90a5-59f90225ac81.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-eggplant-bobo-surprised.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 116720,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "eggplant",
+        "emotion": "surprised",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          87,
+          86,
+          1167,
+          1147
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-811bf395-56b8-4cde-9adc-59d2fc046ec4.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-radish-bengbeng-sad.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 120918,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "radish",
+        "emotion": "sad",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          215,
+          40,
+          1094,
+          1164
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-4272026c-6452-4247-9f5a-89017a5b7f95.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-eggplant-bobo-happy.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 118902,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "eggplant",
+        "emotion": "happy",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          87,
+          86,
+          1167,
+          1147
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-c0650632-6ab2-4a37-b9b5-4797398578cc.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-radish-bengbeng-curious.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 123184,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "radish",
+        "emotion": "curious",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          215,
+          40,
+          1094,
+          1164
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-2ae7d165-6cf2-45f7-898d-d4480e00254b.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-eggplant-bobo-curious.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 121666,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "eggplant",
+        "emotion": "curious",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          87,
+          86,
+          1167,
+          1147
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-c4831f10-11f4-42a8-adee-321afbdd1c6f.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-eggplant-bobo-sad.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 118824,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "eggplant",
+        "emotion": "sad",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          87,
+          86,
+          1167,
+          1147
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-9d30893f-55ef-434f-a567-1ca210356e94.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-strawberry-jiujiu-surprised.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 107428,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "strawberry",
+        "emotion": "surprised",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          89,
+          163,
+          1094,
+          1075
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-9d04908d-bc5a-4fc7-b33f-5c3f76884392.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-strawberry-jiujiu-happy.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 110340,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "strawberry",
+        "emotion": "happy",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          89,
+          163,
+          1094,
+          1075
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-ec06f8dd-5772-47c0-a435-b58a8c059df6.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-strawberry-jiujiu-sad.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 108746,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "strawberry",
+        "emotion": "sad",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          89,
+          163,
+          1094,
+          1075
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-aaabf70a-2c83-4aa2-b1f5-d379f5b54b07.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-strawberry-jiujiu-curious.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 106036,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "strawberry",
+        "emotion": "curious",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          89,
+          163,
+          1094,
+          1075
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-926d7e11-cadf-413d-905e-9d7f38cb1f27.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-pumpkin-manman-happy.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 106240,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "pumpkin",
+        "emotion": "happy",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          122,
+          204,
+          1095,
+          997
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-f4ff03f6-e9dc-4dd2-bdc9-87141f0eb9bb.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-pumpkin-manman-surprised.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 106270,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "pumpkin",
+        "emotion": "surprised",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          122,
+          204,
+          1095,
+          997
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-36e1b025-0dea-4509-9b79-9ceca6de77a9.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-pumpkin-manman-sad.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 108468,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "pumpkin",
+        "emotion": "sad",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          122,
+          204,
+          1095,
+          997
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-3884d7b3-965a-4213-a975-c96f4c56b6d3.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-corn-nuannuan-surprised.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 112558,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "corn",
+        "emotion": "surprised",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          120,
+          206,
+          1166,
+          1004
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-30b8568d-c370-43c2-9ea5-a61cec67ba90.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-pumpkin-manman-curious.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 104378,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "pumpkin",
+        "emotion": "curious",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          122,
+          204,
+          1095,
+          997
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-42cc9b79-bcfc-44b2-aa50-daf5717bb5b4.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-corn-nuannuan-happy.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 101536,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "corn",
+        "emotion": "happy",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          120,
+          206,
+          1166,
+          1004
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-aa997ea4-f431-423a-a113-8cc2821bd55e.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-corn-nuannuan-sad.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 110634,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "corn",
+        "emotion": "sad",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          120,
+          206,
+          1166,
+          1004
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-9d61f316-61ec-45bf-95f8-7fb47c44b5b8.png",
+        "quality": 82
+      },
+      {
+        "file": "pet-corn-nuannuan-curious.webp",
+        "width": 1254,
+        "height": 1254,
+        "bytes": 103476,
+        "cornerAlpha": 0,
+        "region": "pet-expression",
+        "pet": "corn",
+        "emotion": "curious",
+        "maxCssWidth": 212,
+        "nativeToCssRatio": 5.92,
+        "meets6x": false,
+        "displayAt200Ratio": 6.27,
+        "alignedBodyBounds": [
+          120,
+          206,
+          1166,
+          1004
+        ],
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-c85f1c95-1a40-4b82-8e0b-12d0bafaa047.png",
+        "quality": 82
+      }
+    ],
+    "totalBytes": 2682034,
+    "neutralBobo": {
+      "source": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-5db6de09-09ab-4546-ad1d-d84c3b88ebce.png",
+      "prompt": "Use case: identity-preserve edit. Edit exact supplied FreshWise Bobo eggplant penguin. Change ONLY ONE thing: completely REMOVE the open pink mouth and all dark mouth contour BELOW the yellow oval NOSE. Restore smooth cream watercolor face in that small spot. Bobo has a yellow oval nose and NO MOUTH whatsoever. Keep original solid dark oval eyes exactly unchanged, no highlights, no added eyebrows. Keep EVERYTHING else unchanged:1254 square canvas, full body, leaf cape, foot positions, outline, watercolor texture, original scale and margins. Do not move any features. Individual genuinely transparent alpha PNG. No text, no backdrop, no multiple poses.",
+      "file": "pet-eggplant-bobo.png",
+      "bytes": 1302507,
+      "previousFile": "unused/pet-eggplant-bobo-before-nose-only.png",
+      "webFile": "pet-eggplant-bobo-neutral.webp",
+      "webBytes": 123368
+    }
+  },
+  "uiAssetPolishV8": {
+    "generatedOn": "2026-11-22",
+    "generator": "built-in image_gen",
+    "assets": [
+      {
+        "file": "market-small-price-card.png",
+        "width": 528,
+        "height": 648,
+        "bytes": 394495,
+        "nativeWidth": 1115,
+        "nativeHeight": 1411,
+        "visibleBounds": [
+          21,
+          27,
+          506,
+          631
+        ],
+        "cornerAlpha": 0,
+        "maxCssWidth": 88,
+        "nativeToCssRatio": 6.0,
+        "meets6x": true,
+        "previousFile": "unused/market-small-price-card-before-v8.png",
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-c91befab-eea7-4705-9634-f55814c4c57e.png"
+      },
+      {
+        "file": "ui-calendar.png",
+        "width": 256,
+        "height": 256,
+        "bytes": 75846,
+        "nativeWidth": 1254,
+        "nativeHeight": 1254,
+        "visibleBounds": [
+          16,
+          38,
+          240,
+          217
+        ],
+        "cornerAlpha": 0,
+        "maxCssWidth": 48,
+        "nativeToCssRatio": 5.33,
+        "meets6x": false,
+        "previousFile": "unused/ui-calendar-before-v8.png",
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-4e9ec305-6853-4996-9c5f-c8958a31dfd6.png"
+      },
+      {
+        "file": "ui-leaf.png",
+        "width": 256,
+        "height": 256,
+        "bytes": 85995,
+        "nativeWidth": 1254,
+        "nativeHeight": 1254,
+        "visibleBounds": [
+          16,
+          27,
+          240,
+          229
+        ],
+        "cornerAlpha": 0,
+        "maxCssWidth": 48,
+        "nativeToCssRatio": 5.33,
+        "meets6x": false,
+        "previousFile": "unused/ui-leaf-before-v8.png",
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-85d970a7-e882-4428-9ebb-3555ef7177de.png"
+      }
+    ],
+    "unusedButtonSlices": {
+      "companion-water-button-left.png": "unused/companion-water-button-left.png",
+      "companion-water-button-middle.png": "unused/companion-water-button-middle.png",
+      "companion-water-button-right.png": "unused/companion-water-button-right.png",
+      "companion-play-button-left.png": "unused/companion-play-button-left.png",
+      "companion-play-button-middle.png": "unused/companion-play-button-middle.png",
+      "companion-play-button-right.png": "unused/companion-play-button-right.png"
+    },
+    "companionLayout": {
+      "buttonBackground": "CSS gradients, borders and shadows; no image layer",
+      "ribbonMinWidth": 140,
+      "ribbonMinHeight": 30,
+      "gardenMinHeight": 0,
+      "sectionGap": 16
+    },
+    "detailHeroPadding": "16px 16px 16px 16px"
+  },
+  "otherToolsV9": {
+    "generatedOn": "2026-11-22",
+    "generator": "built-in image_gen",
+    "assets": [
+      {
+        "file": "ui-tool-transit.png",
+        "width": 256,
+        "height": 256,
+        "cornerAlpha": 0,
+        "bytes": 83964,
+        "nativeWidth": 1254,
+        "nativeHeight": 1254,
+        "visibleBounds": [
+          16,
+          34,
+          240,
+          222
+        ],
+        "region": "settings-other-tools",
+        "maxCssWidth": 48,
+        "nativeToCssRatio": 5.33,
+        "meets6x": false,
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-46d74424-5759-4afc-8425-4df7e91d6318.png"
+      },
+      {
+        "file": "ui-tool-expenses.png",
+        "width": 256,
+        "height": 256,
+        "cornerAlpha": 0,
+        "bytes": 83498,
+        "nativeWidth": 1254,
+        "nativeHeight": 1254,
+        "visibleBounds": [
+          16,
+          24,
+          240,
+          232
+        ],
+        "region": "settings-other-tools",
+        "maxCssWidth": 48,
+        "nativeToCssRatio": 5.33,
+        "meets6x": false,
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-4cce53da-93b9-43de-adf8-6172e2f95165.png"
+      },
+      {
+        "file": "ui-tool-compress.png",
+        "width": 256,
+        "height": 256,
+        "cornerAlpha": 0,
+        "bytes": 76545,
+        "nativeWidth": 1254,
+        "nativeHeight": 1254,
+        "visibleBounds": [
+          16,
+          42,
+          240,
+          213
+        ],
+        "region": "settings-other-tools",
+        "maxCssWidth": 48,
+        "nativeToCssRatio": 5.33,
+        "meets6x": false,
+        "sourceImage": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-27f57aff-181b-489f-b395-6bcd7de8818e.png"
+      }
+    ],
+    "toolLinks": "Existing TOOLS_REGISTRY routes, filtered by current user tools access."
+  },
+  "questAndHangingV10": {
+    "generator": "built-in image_gen",
+    "generatedOn": "2026-11-22",
+    "assets": [
+      {
+        "file": "home-quest-paper.webp",
+        "width": 2127,
+        "height": 651,
+        "bytes": 203090,
+        "transparent": true
+      },
+      {
+        "file": "companions-quests-paper-top.webp",
+        "width": 837,
+        "height": 217,
+        "bytes": 21132,
+        "transparent": true
+      },
+      {
+        "file": "companions-quests-paper-middle.webp",
+        "width": 837,
+        "height": 48,
+        "bytes": 1902,
+        "transparent": true
+      },
+      {
+        "file": "companions-quests-paper-bottom.webp",
+        "width": 837,
+        "height": 217,
+        "bytes": 22186,
+        "transparent": true
+      },
+      {
+        "file": "page-hanging-title-left.webp",
+        "width": 427,
+        "height": 486,
+        "bytes": 32822,
+        "transparent": true
+      },
+      {
+        "file": "page-hanging-title-middle.webp",
+        "width": 48,
+        "height": 486,
+        "bytes": 2518,
+        "transparent": true
+      },
+      {
+        "file": "page-hanging-title-right.webp",
+        "width": 427,
+        "height": 486,
+        "bytes": 34466,
+        "transparent": true
+      },
+      {
+        "file": "page-market-awning-background.png",
+        "width": 2172,
+        "height": 565,
+        "bytes": 1836264,
+        "transparent": true
+      }
+    ]
   }
 }

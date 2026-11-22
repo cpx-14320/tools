@@ -44,3 +44,39 @@
 ## 可延伸任務紙（2026-11-22）
 
 重新生成直立側邊的紙張母圖，裁切為 `ui/task-paper-slip-top.png`、`ui/task-paper-slip-middle.png`、`ui/task-paper-slip-bottom.png`。上下段使用固定 aspect-ratio，中段 background-size:100% auto / repeat-y，隨文字長度延伸；原 task-paper-slip.png 保留。母圖位於 source/task-paper-slices/，提示詞及裁切尺寸保存在 asset-prompts.json/taskPaperSlices。
+
+## 花園插畫介面 V6
+
+價牌配合寵物線條重繪並加入地面接觸陰影；任務紙以較高的上下圓角切片銜接可重複中段。新增 companion-nameplate.png、companion-level-ribbon.png、companion-growth-frame.png、companion-water-button.png、companion-play-button.png。文字、進度及按鈕互動由 HTML 保持可讀可用，所有樣式集中 game.css。原生尺寸與倍率見 manifest，完整內建 image_gen 提示詞位於 asset-prompts.json/gardenPolishV6。
+
+### V6 延伸與素材整理
+
+按鈕、等級牌及成長框實際使用 `*-left.png`、`*-middle.png`、`*-right.png`，左右依高度維持比例，中段 repeat-x 隨文案寬度延伸。夥伴名稱 h2 已依要求移除。未引用的名稱牌及完整切片母圖移入 unused/，對照記錄於 manifest/unusedMovesV6；其他動態品項、角色和圖示保留。
+
+## 寵物互動表情 V7（2026-11-22）
+
+六位夥伴各有驚訝 `surprised`、開心 `happy`、難過 `sad`、疑問 `curious` 四張獨立透明 WebP，命名 `pet-<食材>-<角色>-<表情>.webp`，平放 public/freshwise/。以內建 image_gen 逐張編輯原角色；保留實心深色眼睛，糰糰與蹦蹦保留 ω 雙弧嘴型，波波只保留鼻子、沒有嘴巴線條。每張保留原畫布尺寸並校準外框、腳底位置，不使用表情圖集。原生 1254px 在 200px 顯示為 6.27 倍，首頁最大 212px 時約 5.92 倍。
+
+首頁與夥伴頁可點角色或用 Enter／空白鍵隨機切換，不會連續抽到同一表情；切換不消耗露珠或改變養成進度。點擊後才載入下一張壓縮 WebP，新圖解碼完成前保持舊圖；載入失敗保留舊圖並允許重試。微動效遵守 prefers-reduced-motion。完整提示詞及素材資料見 asset-prompts.json、assets-manifest.json 的 petExpressionsV7。
+
+波波的平常表情另外使用 "pet-eggplant-bobo-neutral.webp"，原 "pet-eggplant-bobo.png" 也同步修正為只有鼻子的參考原圖；前一版含嘴巴的原圖保存在 "unused/pet-eggplant-bobo-before-nose-only.png"。暖暖依原始側臉只露出右側一隻眼睛，嘴巴保持在左側鼻子下方。
+
+## 圖示與小價牌修正 V8（2026-11-22）
+
+使用內建 image_gen 重新生成 market-small-price-card.png（528×648，88×108 版位的六倍素材）、ui-calendar.png 與 ui-leaf.png（皆256×256）。小價牌加強與首頁寵物一致的棕色輪廓，日曆保留完整三個線圈與外框，雙葉移除右側殘片並依可見主體置中，四周保留透明安全邊距。舊圖保存在 unused/*-before-v8.png，完整提示詞與尺寸見兩份 JSON 的 uiAssetPolishV8。
+
+夥伴頁澆水、陪玩恢復 CSS 漸層膠囊按鈕，六張舊按鈕切片移入 unused/；角色區取消固定最小高度，縮短至成長進度條的留白，等級名牌縮小。詳情頁移除角落寵物結構，紙卡內距四邊統一16px。樣式集中 game.css。
+
+首頁、行情與菜籃的 ItemRow 以及詳情頁的場所比價、各市場簡表共用 PriceListRow；外框統一使用 Paper variant=list。完整行情表保留表格結構，單位換算、來源與估算標示繼續使用原本資料。
+
+## 其他小工具 V9（2026-11-22）
+
+設定頁新增「其他小工具」，使用 ui-tool-transit.png、ui-tool-expenses.png、ui-tool-compress.png，皆256×256獨立透明PNG。由內建 image_gen 參考 ui-home.png、ui-market.png 逐張生成，統一棕色粗線、水彩紙紋和透明留白；連結沿用 TOOLS_REGISTRY 與登入帳號的工具權限。提示詞與尺寸保存於兩份JSON的 otherToolsV9。
+
+菜籃分類新增入口移至右下浮動操作列，回到頂部按鈕位於其下，清單短時也保留新增入口；標題右側及清單底部重複入口移除。操作列避開底部導覽與安全區，預留清單底部空間；彈窗沿用原本 GroupEditorSheet。
+
+## 任務與吊牌 V10
+
+單任務使用 home-quest-paper.webp；三任務使用 companions-quests-paper-top/middle/bottom.webp，上下固定圓角、中段垂直重複延伸。三個頁面的標題使用 page-hanging-title-left/middle/right.webp，由共用 PageTitle 與 SlicedArtwork 依文字長度延伸。皆內建 image_gen 生成，文字／進度／獎勵保持 HTML。完整提示詞與實際尺寸見 JSON 的 questAndHangingV10，未放大冒充原生六倍。
+
+三頁頂部共用透明 page-market-awning-background.png：棚布延伸至頂部，無天空、無下方米色底；行情副標位於棚內。菜籃標題22px並上移，其他吊牌20px。露珠與圖鑑按鈕共用 paper-deep 純底色。行情頁移除條件摘要、清除按鈕及清除函式，搜尋與分類、篩選切換保留。
