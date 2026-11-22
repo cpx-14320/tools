@@ -711,17 +711,20 @@ run("偏好設定（存在帳號底下）", () => {
 
   // 資料庫裡可能留著改版前的舊格式，API 也是使用者送得進來的，所以逐欄位驗證、壞的
   // 退回預設值——一個壞欄位不該讓整組設定重置。
-  const kept = prefsModule.normalizePrefs({ ...prefs, venue: "wholesale", unit: "kg", marketCode: "109" });
-  check("合法的值原樣保留", kept.venue === "wholesale" && kept.unit === "kg" && kept.marketCode === "109");
+  const kept = prefsModule.normalizePrefs({ ...prefs, venue: "super", unit: "kg", marketCode: "109" });
+  check("合法的值原樣保留", kept.venue === "super" && kept.unit === "kg" && kept.marketCode === "109");
   check("沒有資料時回預設值", prefsModule.normalizePrefs(undefined).venue === prefs.venue);
   check("不是物件時回預設值", prefsModule.normalizePrefs("not-an-object").venue === prefs.venue);
   check("不認識的場所退回預設值", prefsModule.normalizePrefs({ venue: "costco" }).venue === prefs.venue);
+  // 批發不是消費者買得到的地方，不能停在那裡——舊的偏好要被搬回傳統市場。
+  check("舊的批發偏好退回傳統市場", prefsModule.normalizePrefs({ venue: "wholesale" }).venue === "market");
+  check("可選場所不含批發", catalog.SELECTABLE_VENUES.every((v: { key: string }) => v.key !== "wholesale"));
   check("超出範圍的提醒門檻退回預設值", prefsModule.normalizePrefs({ alertPercent: 999 }).alertPercent === prefs.alertPercent);
   check(
     "合法欄位會被保留、只有壞欄位退回預設",
     (() => {
-      const mixed = prefsModule.normalizePrefs({ venue: "wholesale", unit: "斤" });
-      return mixed.venue === "wholesale" && mixed.unit === prefs.unit;
+      const mixed = prefsModule.normalizePrefs({ venue: "super", unit: "斤" });
+      return mixed.venue === "super" && mixed.unit === prefs.unit;
     })(),
   );
 

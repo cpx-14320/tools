@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { IllustratedArt } from "@/components/freshwise/game-art";
 import { TOOLS_REGISTRY } from "@/lib/tools-registry";
@@ -25,16 +26,15 @@ import { OptionPickerModal } from "@/components/freshwise/option-picker-modal";
 import { EditorSheet } from "@/components/freshwise/editor-sheet";
 import { useFreshwise } from "@/components/freshwise/store";
 import { colors, copy, text } from "@/components/freshwise/theme";
-import { VENUES, venueMeta } from "@/lib/freshwise/catalog";
+import { SELECTABLE_VENUES } from "@/lib/freshwise/catalog";
 import { formatShortDate } from "@/lib/freshwise/dates";
 import { resetBasket } from "@/lib/freshwise/storage";
 import { defaultBasket } from "@/lib/freshwise/basket";
-import { KG_PER_CATTY } from "@/lib/freshwise/price";
 import type { MarketOption, UnitKey, VenueKey } from "@/lib/freshwise/types";
 
 const OTHER_TOOL_ICONS: Record<string, string> = { transit: "/freshwise/ui-tool-transit.png", expenses: "/freshwise/ui-tool-expenses.png", compress: "/freshwise/ui-tool-compress.png" };
 
-const VENUE_TABS = VENUES.map((v) => ({ key: v.key, label: v.name, icon: v.icon }));
+const VENUE_TABS = SELECTABLE_VENUES.map((v) => ({ key: v.key, label: v.name, icon: v.icon }));
 
 const UNIT_OPTIONS: readonly { key: UnitKey; label: string; note: string }[] = [
   { key: "catty", label: "台斤", note: "台灣市場的習慣單位" },
@@ -100,15 +100,19 @@ export function MoreView({
   itemCount: number;
 }) {
   const { prefs, setPrefs, setVenue, setMarket, setBasket } = useFreshwise();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, logout } = useAuth();
   const otherTools = TOOLS_REGISTRY.filter((tool) => OTHER_TOOL_ICONS[tool.toolId] && user?.tools.includes(tool.toolId));
   const { reset: resetCompanions } = useCompanion();
   const [marketPickerOpen, setMarketPickerOpen] = useState(false);
+  const router = useRouter();
   const [resetOpen, setResetOpen] = useState(false);
   const [unitPickerOpen, setUnitPickerOpen] = useState(false);
   const [alertPickerOpen, setAlertPickerOpen] = useState(false);
 
-  const venue = venueMeta(prefs.venue);
+  async function handleLogout() {
+    await logout();
+    router.push("/login");
+  }
 
   return (
     <div className="fw-page fw-settings-page">
@@ -118,7 +122,6 @@ export function MoreView({
       <section className="flex flex-col gap-2.5">
         <SectionTitle leaf>預設{copy.venue}</SectionTitle>
         <SegmentedTabs items={VENUE_TABS} value={prefs.venue} onChange={(key: VenueKey) => setVenue(key)} scroll />
-        <Note>{venue.description}</Note>
 
         <Field label={`預設${copy.market}`} as="div">
           <SelectButton
@@ -143,16 +146,11 @@ export function MoreView({
             onClick={() => setUnitPickerOpen(true)}
           />
         </Field>
-        <Hint>
-          1 台斤 = {KG_PER_CATTY} 公斤。開放資料裡批發行情是元/公斤、零售訪價是元/台斤，這個工具一律換算成你選的單位再顯示，切換{copy.venue}時會自動換成那邊的慣用單位。
-        </Hint>
 
         <Field label="大漲大跌的提醒門檻" as="div">
           <SelectButton icon="arrow-trend-up" value={`${prefs.alertPercent}%`} onClick={() => setAlertPickerOpen(true)} />
         </Field>
-        {/* 誠實標示：這個門檻目前還沒有任何畫面在用（原本要拿來標「要注意」與推播，
-            兩者都還沒做）。寫清楚比讓使用者調了半天沒反應好。 */}
-        <Hint>設定多少幅度算「大漲大跌」。提醒功能還在規劃，目前調整這個值畫面不會有變化。</Hint>
+        <Hint>漲跌超過這個幅度的品項，在清單上會多一個「要注意」的標記。</Hint>
       </section>
 
       {/* ── 資料來源 ───────────────────────────────────────── */}
@@ -228,24 +226,14 @@ export function MoreView({
         </Paper>
       </section>
 
-      {/* ── 關於 ───────────────────────────────────────────── */}
+      {/* ── 帳號 ───────────────────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
-        <SectionTitle leaf>關於</SectionTitle>
-        <Paper variant="flush" className="fw-stack">
-          <DividedRow>
-            <span className="min-w-0 flex-1">
-              <span className={text.bodyStrong}>
-                {copy.appName}（{copy.appNameEn}）
-              </span>
-              <span className={`block ${text.meta}`}>查今天的蔬果魚肉蛋行情，順便記住你常買的那幾樣。</span>
-            </span>
-          </DividedRow>
-          <DividedRow>
-            <Link href="/" className="flex w-full items-center gap-3">
-              <span className={`min-w-0 flex-1 ${text.bodyStrong}`}>回到小工具入口頁</span>
-              <FaIcon icon="chevron-right" size={12} color={colors.placeholder} />
-            </Link>
-          </DividedRow>
+        <SectionTitle leaf>帳號</SectionTitle>
+        <Paper variant="flush" className="flex flex-col gap-2.5">
+          <Note>{user?.name ? `目前登入：${user.name}` : "目前登入中"}</Note>
+          <DangerButton size="md" onClick={() => void handleLogout()}>
+            登出
+          </DangerButton>
         </Paper>
       </section>
 

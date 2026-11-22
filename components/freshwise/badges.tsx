@@ -17,7 +17,7 @@ import type { ValueLevel } from "@/lib/freshwise/types";
 
 /** 漲跌徽章。持平時預設不顯示——一整頁都是「持平」的灰色徽章只是視覺雜訊，真正該被
  *  注意的漲跌反而不明顯。需要固定佔位（例如表格對齊）時才傳 showFlat。 */
-export function TrendBadge({ trend, showFlat = false, size = "md" }: { trend: Trend; showFlat?: boolean; size?: "md" | "sm" }) {
+export function TrendBadge({ trend, showFlat = false, size = "md", alert = false }: { trend: Trend; showFlat?: boolean; size?: "md" | "sm"; alert?: boolean }) {
   if (trend.direction === "flat" && !showFlat) return null;
 
   const palette =
@@ -28,7 +28,11 @@ export function TrendBadge({ trend, showFlat = false, size = "md" }: { trend: Tr
         : { bg: colors.surfaceSoft, fg: colors.muted };
 
   return (
-    <Badge size={size} style={{ backgroundColor: palette.bg, color: palette.fg }}>{trendLabel(trend)}</Badge>
+    <Badge size={size} style={{ backgroundColor: palette.bg, color: palette.fg }}>
+      {trendLabel(trend)}
+      {/* 超過設定頁訂的門檻才加這個字——每一列都寫「要注意」就等於沒有重點。 */}
+      {alert && <span>要注意</span>}
+    </Badge>
   );
 }
 

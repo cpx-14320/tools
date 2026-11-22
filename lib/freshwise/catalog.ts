@@ -59,17 +59,25 @@ export const VENUES: VenueMeta[] = [
     defaultUnit: "catty",
     estimated: true,
   },
+  // 批發市場**不列為可選場所**：那是菜販的進貨成本，一般人不能去批發市場買一顆高麗菜。
+  // 甘藍批發 18 元/公斤、傳統市場 50 元/台斤，差 2.8 倍——讓「不懂買菜價格的人」看到
+  // 18 這個數字，等於給了他一個去市場會被打臉的期待。
+  //
+  // 批發的**資料**沒有拿掉，它在底層有兩個用途：臺中沒有訪價的品項用批發價推估零售價
+  // （標示「估算」），以及「有機／產銷履歷要多付多少」的比較基礎。
   {
     key: "wholesale",
-    // 從「批發行情」改名成「批發市場」——這一排分頁問的是「你在哪裡買」，三個都用地點
-    // 命名才一致。它不是消費者會去的地方，所以說明文字要把這件事講明。
     name: "批發市場",
     description: "果菜批發市場的拍賣價，是菜販的進貨成本，不是你在市場付的錢。",
     icon: "truck-ramp-box",
     defaultUnit: "kg",
     estimated: false,
+    selectable: false,
   },
 ];
+
+/** 使用者可以選的場所（畫面上的分頁、設定頁的預設場所都用這個，不要用 VENUES）。 */
+export const SELECTABLE_VENUES: VenueMeta[] = VENUES.filter((v) => v.selectable !== false);
 
 export function venueMeta(key: VenueKey): VenueMeta {
   return VENUES.find((v) => v.key === key) ?? VENUES[0];

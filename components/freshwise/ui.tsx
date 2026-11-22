@@ -465,19 +465,13 @@ export function FieldRow({ children, className = "" }: { children: ReactNode; cl
  */
 export type PaperVariant = "plain" | "divided" | "list" | "flush";
 
-const PAPER_BASE: CSSProperties = {
-  background: v.paperSunk,
-  border: `1.5px solid ${v.lineCard}`,
-  borderRadius: "12px 9px 11px 13px",
-  boxShadow: `2px 3px 0 ${v.shadowPaper}`,
-  padding: "var(--fw-paper-pad, 16px)",
-};
-
-const PAPER_VARIANT: Record<PaperVariant, CSSProperties> = {
-  plain: {},
-  divided: { padding: "2px 0" },
-  list: { borderRadius: "12px 7px 14px 7px", padding: "4px 12px", position: "relative" },
-  flush: { border: 0, borderBottom: `1px dashed ${v.lineCard}`, borderRadius: 0, boxShadow: "none", background: "transparent" },
+/** 每種紙對應一個 class，樣式在 game.css 的 .fw-paper* 一處——元件不再用 inline style
+ *  畫紙（那是上一輪拆 !important 的過渡做法，現在沒有東西會跟它打架了）。 */
+const PAPER_CLASS: Record<PaperVariant, string> = {
+  plain: "fw-paper",
+  divided: "fw-paper fw-notebook fw-stack flex flex-col",
+  list: "fw-paper fw-price-list",
+  flush: "fw-paper fw-paper-flush",
 };
 
 export function Paper({
@@ -492,9 +486,8 @@ export function Paper({
   className?: string;
   style?: CSSProperties;
 } & Omit<HTMLAttributes<HTMLDivElement>, "className" | "children" | "style">) {
-  const cls = variant === "divided" ? "fw-notebook flex flex-col" : variant === "list" ? "fw-price-list" : "fw-paper";
   return (
-    <div className={`${cls} ${className}`} style={{ ...PAPER_BASE, ...PAPER_VARIANT[variant], ...style }} {...rest}>
+    <div className={`${PAPER_CLASS[variant]} ${className}`} style={style} {...rest}>
       {children}
     </div>
   );
@@ -523,7 +516,7 @@ export function ListCard({
 /** 列與列之間有淡分隔線的清單容器。 */
 export function DividedCard({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <Paper variant="divided" className={`fw-stack ${className}`}>
+    <Paper variant="divided" className={className}>
       {children}
     </Paper>
   );

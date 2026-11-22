@@ -47,6 +47,9 @@ export interface VenueMeta {
   defaultUnit: UnitKey;
   /** 這個場所的數字是不是推估值（超市量販沒有開放資料，是推估的）。 */
   estimated: boolean;
+  /** 使用者可不可以選這個場所。批發市場是 false——那是菜販的進貨成本，一般人買不到。
+   *  沒給就是可選。 */
+  selectable?: boolean;
 }
 
 export interface MarketMeta {

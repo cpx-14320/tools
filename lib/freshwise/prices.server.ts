@@ -1272,7 +1272,10 @@ export async function getItemDetail(code: string, venue: VenueKey, today: string
   const k = sourceQuote && sourceQuote.avgKg > 0 ? quote.avgKg / sourceQuote.avgKg : 1;
   const series: PricePoint[] = (doc?.points ?? []).map(([date, avgKg]) => ({ date, avgKg: round1(avgKg * k) }));
 
-  const venues = (["market", "super", "wholesale"] as VenueKey[]).map((v) => ({
+  // 只列消費者真的買得到的場所。批發價是菜販的進貨成本（甘藍批發 18、傳統市場 50，
+  // 差 2.8 倍），把它擺進「哪裡買比較便宜」只會讓不熟價格的人記住一個他付不到的數字。
+  // 批發資料仍然留著——它是「臺中沒訪價的品項」推估零售價的來源，也是標章比較的基礎。
+  const venues = (["market", "super"] as VenueKey[]).map((v) => ({
     venue: v,
     // 比價一律看「全部市場」的代表價，不套用使用者選的市場——三個場所的市場清單不一樣，
     // 其中一個套了篩選、另外兩個沒套，數字就不能並排比較了。

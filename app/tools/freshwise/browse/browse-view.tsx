@@ -3,6 +3,7 @@ import {useMemo,useState} from "react";
 import {Callout,EmptyState,FilterPill,Hint,PageTitle,Paper,SearchInput,SegmentedTabs} from "@/components/freshwise/ui";
 import {ItemRow} from "@/components/freshwise/item-row";
 import {GameIcon} from "@/components/freshwise/game-art";
+import {StickyShelf} from "@/components/freshwise/sticky-shelf";
 import {MarketContext} from "@/components/freshwise/market-context";
 import {GoTopButton} from "@/components/freshwise/go-top-button";
 import {useFreshwise} from "@/components/freshwise/store";
@@ -23,7 +24,7 @@ export function BrowseView({today,book,initialKeyword,initialCategory}:{today:st
  return <div className="fw-page fw-browse-page">
  <PageTitle hanging>逛逛行情</PageTitle>
  <MarketContext book={book} today={today}/>
- <div className="fw-category-shelf" role="group" aria-label="食材分類"><button type="button" aria-pressed={!category} onClick={()=>setCategory("")}><GameIcon name="book" size={48}/><span>全部</span></button>{CATEGORIES.map(c=><button key={c.key} type="button" aria-pressed={category===c.key} onClick={()=>setCategory(c.key)}><GameIcon name={c.key} size={48}/><span>{c.name}</span></button>)}</div>
+ <StickyShelf className="fw-category-shelf"><div role="group" aria-label="食材分類" className="contents"><button type="button" aria-pressed={!category} onClick={()=>setCategory("")}><GameIcon name="book" size={40}/><span>全部</span></button>{CATEGORIES.map(c=><button key={c.key} type="button" aria-pressed={category===c.key} onClick={()=>setCategory(c.key)}><GameIcon name={c.key} size={40}/><span>{c.name}</span></button>)}</div></StickyShelf>
  <SearchInput value={keyword} onChange={setKeyword} placeholder="搜尋食材或常用名稱"/>
  {/* 排序與篩選一開始就看得到、直接能點。以前要先點「推薦 ▼」才展開分頁，等於把一個
      單純的切換做成兩段操作——使用者還沒看到有哪些選項，就得先按一下。 */}

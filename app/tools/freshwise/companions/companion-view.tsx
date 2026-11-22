@@ -85,11 +85,11 @@ export function CompanionView() {
               </Link>
             )}
           </section>
-          {state.dew < 3 && <p className="fw-helper-note">完成下面的探索任務，就有露珠可以澆水。</p>}
         </>
       )}
 
       <QuestSlip all />
+      {state.dew < 3 && <p className="fw-helper-note">完成上面的探索任務，就有露珠可以澆水。</p>}
       {/* 進度正常保存時不用特別說——那是預期行為。只有存不起來才需要告訴使用者。 */}
       {!storageAvailable && <p className="fw-helper-note">目前連不上伺服器，這次的進度可能沒辦法保存。</p>}
 

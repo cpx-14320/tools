@@ -305,7 +305,6 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
         </Paper>
       </section>
 
-      <QuestSlip />
       {/* ── 完整行情表（上/中/下/平均/量）───────────────────────
           這是菜價查詢的標準格式：農業部行情站與市面上的菜價網站都是這五欄，看得懂行情
           的人要的就是這張表。上面那張卡是給「不懂買菜價格的人」的結論，這張表是給要自己
@@ -447,6 +446,8 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
         </ListCard>
       </section>
 
+
+      <QuestSlip />
 
       <div className="flex justify-center">
         <Link href="/tools/freshwise/basket" className="fw-leaf-link">去看{copy.basket} →</Link>

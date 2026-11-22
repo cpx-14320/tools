@@ -13,7 +13,9 @@ export const DEFAULT_PREFS: FreshwisePrefs = {
   alertPercent: 15,
 };
 
-const VENUES: VenueKey[] = ["market", "super", "wholesale"];
+/** 使用者可以停留的場所。批發不在裡面——它不是可選場所（見 catalog.ts），舊的偏好
+ *  如果停在批發會被搬回傳統市場。 */
+const VENUES: VenueKey[] = ["market", "super"];
 
 function isVenue(value: unknown): value is VenueKey {
   return typeof value === "string" && VENUES.includes(value as VenueKey);

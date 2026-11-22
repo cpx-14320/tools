@@ -21,6 +21,7 @@ import {
 } from "@/components/freshwise/ui";
 import { FaIcon } from "@/components/freshwise/fa-icon";
 import { ItemRow } from "@/components/freshwise/item-row";
+import { PriceListRow } from "@/components/freshwise/price-list-row";
 import { ItemIcon } from "@/components/freshwise/item-icon";
 import { GoTopButton } from "@/components/freshwise/go-top-button";
 import { ItemPickerModal } from "@/components/freshwise/item-picker-modal";
@@ -307,14 +308,20 @@ function GroupEntries({
         // 靜靜消失的話使用者會以為自己的菜籃被動過了。
         if (!quote) {
           return (
-            <div key={entry.id} ref={drag.rowRef(index)} className={drag.rowClass(index)}><ListCard className="fw-basket-entry-card flex items-center gap-1.5">
-              {entries.length > 1 && <DragHandle label={`拖曳排序 ${item.name}`} {...drag.handleProps(index)} />}
-              <ItemIcon src={itemImage(item.code)} fallbackIcon={item.icon} alt={item.name} size={20} boxSize={40} className="opacity-60" />
-              <button type="button" onClick={() => onEdit(entry)} className="min-w-0 flex-1 text-left">
-                <span className={`block truncate ${text.cardTitle}`}>{item.name}</span>
-                <span className={`block ${text.meta}`}>今天這個場所沒有行情</span>
-              </button>
-            </ListCard></div>
+            // 沒有行情的項目一樣走 PriceListRow，只是價格欄放一個「—」。以前另外手刻
+            // 一份排版，結果同一份清單裡有兩種列高與兩種字級。
+            <div key={entry.id} ref={drag.rowRef(index)} className={drag.rowClass(index)}>
+              <ListCard className="fw-basket-entry-card">
+                <PriceListRow
+                  art={<ItemIcon src={itemImage(item.code)} fallbackIcon={item.icon} alt={item.name} size={20} boxSize={40} className="opacity-60" />}
+                  title={item.name}
+                  meta="今天這個場所沒有行情"
+                  price={<span className={text.hint}>—</span>}
+                  leading={entries.length > 1 ? <DragHandle label={`拖曳排序 ${item.name}`} {...drag.handleProps(index)} /> : undefined}
+                  onClick={() => onEdit(entry)}
+                />
+              </ListCard>
+            </div>
           );
         }
         const row = toRow(item, quote, month);
