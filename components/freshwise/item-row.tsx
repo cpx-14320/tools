@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { ItemIcon } from "./item-icon";
 import { PriceText } from "./price-text";
 import { EstimatedBadge, SeasonBadge, TrendBadge, ValueBadge } from "./badges";
-import { shadow, text } from "./theme";
+import { text } from "./theme";
 import { GameIcon } from "./game-art";
 import { itemImage } from "@/lib/freshwise/catalog";
 import { historyLabel } from "@/lib/freshwise/price";
@@ -53,7 +53,7 @@ export function ItemRow({
 
       <div className="fw-item-copy min-w-0 flex-1">
         <div className="fw-item-name flex items-center gap-1.5">
-          <span className={`truncate ${text.cardTitle}`}>{item.name}</span>
+          <span className="font-semibold" style={{ fontSize: "var(--fw-item-name-size, var(--fw-fs-lead))", color: "var(--fw-ink)" }}>{item.name}</span>
           {inSeason && <SeasonBadge />}
           {quote.estimated && <EstimatedBadge />}
         </div>
@@ -82,18 +82,22 @@ export function ItemRow({
   );
 
   return (
-    <div className="fw-item-row flex items-center gap-1.5" style={{ boxShadow: shadow.card }}>
+    // 清單列不是一張卡片，是「紙上的一行」：沒有底色、沒有陰影，只用一條虛線跟下一行
+    // 分開（最後一行的線由 .fw-item-row:last-child 收掉）。以前元件畫成白卡片、CSS 再用
+    // !important 把底色跟陰影清掉，兩邊互相抵銷。
+    <div className="fw-item-row flex items-center" // 內距留成變數，菜籃頁那種「列包在卡片裡」的版位才有辦法在 CSS 調整。
+      style={{ gap: 12, padding: "var(--fw-row-pad, 16px 0)" }}>
       {leading}
       {href ? (
-        <Link href={href} className="flex min-w-0 flex-1 items-center gap-3">
+        <Link href={href} className="flex min-w-0 flex-1 items-center" style={{ gap: 12, minHeight: 48 }}>
           {content}
         </Link>
       ) : onClick ? (
-        <button type="button" onClick={onClick} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+        <button type="button" onClick={onClick} className="flex min-w-0 flex-1 items-center text-left" style={{ gap: 12, minHeight: 48 }}>
           {content}
         </button>
       ) : (
-        <div className="flex min-w-0 flex-1 items-center gap-3">{content}</div>
+        <div className="flex min-w-0 flex-1 items-center" style={{ gap: 12 }}>{content}</div>
       )}
       {starred !== undefined && (
         <button

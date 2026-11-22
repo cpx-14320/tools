@@ -24,7 +24,7 @@ export function CompanionView() {
     </>}
     </div>
     {!ready ? <p className="fw-loading" role="status">夥伴正在準備小花園…</p> : tab === "care" ? <>
-      <section className="fw-diary"><h2><GameIcon name="leaf" size={48} />{pet.nickname}的小日記</h2><p>{pet.story}</p>{pet.code && <Link className="fw-leaf-link" href={`/tools/freshwise/browse/${pet.code}`}>一起去看看行情 →</Link>}</section>
+      <section className="fw-diary"><h2><GameIcon name="leaf" size={30} />{pet.nickname}的小日記</h2><p>{pet.story}</p>{pet.code && <Link className="fw-leaf-link" href={`/tools/freshwise/browse/${pet.code}`}>一起去看看行情 →</Link>}</section>
       {state.dew < 3 && <p className="fw-helper-note">完成下面的探索任務，就有露珠可以澆水。每天第一次陪玩也能增加成長。</p>}
     </> : <section className="fw-collection-book"><h2>蔬果圖鑑 <small>已結識 {owned.length}／{COMPANIONS.length} 位</small></h2><p>每一次探索，都多認識一位朋友。</p><div className="fw-collection-grid">{COMPANIONS.map((p) => { const unlocked = p.threshold <= state.stamps; return <button type="button" key={p.id} className={`fw-collection-pet ${unlocked ? "" : "fw-pet-locked"}`} disabled={!unlocked} aria-pressed={state.active === p.id} onClick={() => { select(p.id); setTab("care"); }}><CollectionArtwork id={p.id} /><strong>{p.name}</strong><span>{state.active === p.id ? "陪伴中" : unlocked ? "一起陪伴 →" : `印章 ${Math.min(state.stamps, p.threshold)}／${p.threshold}`}</span></button>; })}</div><p className="fw-helper-note">完成探索就能結識，不需要購買食材。南瓜慢慢是花園夥伴，目前沒有對應的查價品項。</p></section>}
     <QuestSlip all />

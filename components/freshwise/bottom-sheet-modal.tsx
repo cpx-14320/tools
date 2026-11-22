@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { colors } from "./theme";
+import { colors, v } from "./theme";
 
 /** 這個工具所有彈窗的共用外殼：手機寬度從底部彈出、桌面寬度對齊手機框，標題列＋關閉鈕
  *  在上、內容在中間、可選的 footer 在下。
@@ -69,33 +69,33 @@ export function BottomSheetModal({
   if (!open || !mounted) return null;
 
   return createPortal(
-    <div className="fw-modal fixed inset-0 z-50" onClick={onClose}>
-      <div className="fw-modal-backdrop absolute inset-0 bg-black/30" />
+    <div className="fw-modal fixed inset-0" style={{ zIndex: 60 }} onClick={onClose}>
+      <div className="fw-modal-backdrop absolute inset-0" />
       {/* 這一層刻意複製手機框容器本身的版面公式（justify-center、px-0/sm:px-4、
           h-dvh／sm:h-[850px]），不是量測卡片位置來算座標——彈窗 portal 到 body 之後，
           單純的 fixed inset-0 只會貼齊瀏覽器視窗，貼不齊卡片。兩邊用同一套公式，不管
           視窗多大，算出來的框永遠跟卡片疊在一起。 */}
-      <div className="fw-modal-align relative flex h-full w-full justify-center px-0 py-0 sm:px-4 sm:py-6">
-        <div className="fw-modal-frame flex h-dvh w-full max-w-[430px] items-end sm:h-[850px]">
+      <div className="fw-modal-align relative flex h-full w-full justify-center">
+        <div className="fw-modal-frame flex w-full max-w-[430px] items-end">
           <div
             ref={dialog}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
-            className={`fw-modal-paper flex max-h-[90%] w-full ${maxWidthClassName} flex-col overflow-y-auto rounded-t-[1.75rem] bg-white`}
+            className={`fw-modal-paper flex max-h-[90%] w-full ${maxWidthClassName} flex-col overflow-y-auto`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div data-modal-heading className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: colors.border }}>
-              <p id={titleId} data-modal-title className="text-base font-semibold" style={{ color: colors.ink }}>
+            <div data-modal-heading className="flex items-center justify-between">
+              <p id={titleId} data-modal-title className="font-semibold" style={{ color: colors.ink, fontSize: v.fsSection }}>
                 {title}
               </p>
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="關閉"
-                className="fw-modal-close grid size-8 place-items-center rounded-full transition-colors hover:bg-[#F6EEDB]"
-                style={{ color: colors.muted }}
+                className="fw-modal-close grid place-items-center rounded-full transition-colors hover:bg-[#F6EEDB]"
+                style={{ width: 44, height: 44, fontSize: v.fsPage, color: colors.muted }}
               >
                 ✕
               </button>

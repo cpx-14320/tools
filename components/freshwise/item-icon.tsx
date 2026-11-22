@@ -32,7 +32,9 @@ export function ItemIcon({
   const art = code ? itemArtwork(code) : undefined;
   const categoryOfPath = CATEGORY_KEY.exec(src)?.[1] as GameIconName | undefined;
   const categoryOfItem = code ? (findItem(code)?.category as GameIconName | undefined) : undefined;
-  const artSize = Math.min(40, Math.max(size, boxSize ?? 32));
+  // 圖就畫滿盒子。以前這裡夾在 40px 以內，呼叫端傳再大也沒用，於是 CSS 只好用
+  // !important 從外面蓋尺寸——尺寸應該由呼叫端決定，不是由樣式表決定。
+  const artSize = boxSize ?? size;
   return (
     <span className={`fw-item-art ${className}`} style={{ width: boxSize ?? artSize, height: boxSize ?? artSize }} role="img" aria-label={alt}>
       {art ? <IllustratedArt src={art.file} size={artSize} /> : <GameIcon name={categoryOfPath ?? categoryOfItem ?? "veg"} size={artSize} />}

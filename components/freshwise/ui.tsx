@@ -37,8 +37,8 @@ export function SectionTitle({
   className?: string;
 }) {
   return (
-    <div className={`fw-section-title flex items-center gap-1.5 ${text.sectionTitle} ${className}`}>
-      {leaf && <FaIcon icon="leaf" size={48} className="text-[#ADC774]" />}
+    <div className={`fw-section-title flex items-center gap-1 ${text.sectionTitle} ${className}`}>
+      {leaf && <FaIcon icon="leaf" size={30} className="text-[#ADC774]" />}
       {children}
       {action && <span className="ml-auto shrink-0">{action}</span>}
     </div>
@@ -84,7 +84,10 @@ export function ErrorText({ children, className = "", center = false }: { childr
  */
 export function Callout({ children, icon = "circle-info" }: { children: ReactNode; icon?: string }) {
   return (
-    <div className="fw-callout flex items-start gap-2 rounded-2xl px-3 py-2.5" style={{ backgroundColor: v.paperSunk }}>
+    <div
+      className="fw-callout flex items-start gap-2"
+      style={{ backgroundColor: v.paperSunk, borderLeft: `3px solid ${v.gold}`, borderRadius: 3, padding: 12 }}
+    >
       <FaIcon icon={icon} size={12} className="mt-0.5 shrink-0" color={colors.warning} />
       <p className="leading-relaxed" style={{ color: colors.warning, fontSize: v.fsLabel }}>
         {children}
@@ -120,11 +123,12 @@ export function PrimaryButton({
   return (
     <button
       type="button"
-      className={`fw-primary shrink-0 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60 ${sizeCls} ${className}`}
-      style={{ background: gradient.primary, boxShadow: shadow.cta }}
+      // 顏色、邊框、漸層、立體陰影都在 .fw-primary 裡（插畫皮膚的按鈕長相）。這裡不要
+      // 再寫一套白字＋光暈陰影，不然兩邊會打架，CSS 就得用 !important 才蓋得過。
+      className={`fw-primary shrink-0 transition-opacity hover:opacity-90 disabled:opacity-60 ${sizeCls} ${className}`}
       {...rest}
     >
-      {icon && <FaIcon icon={icon} size={14} className="text-white" />}
+      {icon && <FaIcon icon={icon} size={14} />}
       {children}
       {trailingArrow && <span aria-hidden>→</span>}
     </button>
@@ -186,7 +190,7 @@ export function AddButton({ children, className = "", ...rest }: { children: Rea
   return (
     <button
       type="button"
-      className={`fw-add-button w-full rounded-xl border border-dashed border-[#B3A081] py-2.5 text-sm font-medium text-[#6E8C41] ${className}`}
+      className={`fw-add-button w-full border-dashed py-2.5 text-sm font-medium ${className}`}
       {...rest}
     >
       ＋ {children}
@@ -224,7 +228,7 @@ export function IconButton({
     <button
       type="button"
       className={`fw-icon-button grid shrink-0 place-items-center rounded-full text-[#6E8C41] ${toneCls} ${className}`}
-      style={{ width: size, height: size }}
+      style={{ width: size, height: size, minWidth: size, minHeight: size }}
       {...rest}
     >
       <FaIcon icon={icon} size={iconSize} className="text-current" />
@@ -244,7 +248,6 @@ export function SegmentedTabs<T extends string>({
   items,
   value,
   onChange,
-  tone = "soft",
   ready = true,
   scroll = false,
   className = "",
@@ -252,30 +255,38 @@ export function SegmentedTabs<T extends string>({
   items: readonly { key: T; label: string; icon?: string }[];
   value: T;
   onChange: (key: T) => void;
-  tone?: "soft" | "solid";
   /** 讀取使用者偏好前先不要標任何一個為選中，避免閃一下又跳走。 */
   ready?: boolean;
   scroll?: boolean;
   className?: string;
 }) {
-  const container = tone === "solid" ? "bg-white" : "bg-[#F6EEDB]";
+  // 以前還有個 tone="solid"（白底容器＋選中填滿品牌綠），插畫皮膚上線後 game.css 把兩種
+  // tone 都蓋成同一個長相，等於存在兩份只差顏色的設定卻畫出同一個東西。已經移除。
   return (
     <div
-      className={`fw-segmented-tabs ${scroll ? "no-scrollbar flex max-w-full overflow-x-auto" : "inline-flex"} items-center gap-1 rounded-full p-1 ${container} ${className}`}
+      className={`fw-segmented-tabs ${scroll ? "no-scrollbar flex max-w-full overflow-x-auto" : "inline-flex"} items-center ${className}`}
+      style={{ gap: 8, padding: "4px 0" }}
     >
       {items.map((item) => {
         const active = ready && value === item.key;
-        const activeCls = tone === "solid" ? "bg-[#6E8C41] text-white" : "bg-white text-[#6E8C41]";
         return (
           <button
             key={item.key}
             type="button"
             onClick={() => onChange(item.key)}
             aria-pressed={active}
-            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-              active ? activeCls : "text-[#836A54]"
-            }`}
-            style={active ? { boxShadow: shadow.pill } : undefined}
+            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap font-medium transition-colors"
+            style={{
+              minHeight: 44,
+              padding: "8px 12px",
+              // 手繪感的不等圓角，跟 Badge 同一套語彙。
+              borderRadius: "13px 8px 13px 9px",
+              border: `1.5px solid ${active ? v.leafLine : v.lineCard}`,
+              background: active ? v.leafSoft : v.paper,
+              color: v.ink,
+              fontSize: v.fsLabel,
+              boxShadow: active ? `0 2px 0 ${v.btnShadow}` : "none",
+            }}
           >
             {item.icon && <FaIcon icon={item.icon} size={11} className="text-current" />}
             {item.label}
@@ -286,19 +297,55 @@ export function SegmentedTabs<T extends string>({
   );
 }
 
+/**
+ * 篩選膠囊（只看當季／只看划算…）。以前寫在 browse-view.tsx 裡面，跟 SegmentedTabs
+ * 幾乎一樣只是可以多選，現在收進來——兩邊的選中態才不會各長各的。
+ */
+export function FilterPill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className="font-medium transition-colors"
+      style={{
+        minHeight: 44,
+        padding: "8px 12px",
+        borderRadius: 9999,
+        border: `1px solid ${active ? v.leafLine : "transparent"}`,
+        background: active ? v.leafSoft : v.paperSunk,
+        color: v.ink,
+        fontSize: v.fsLabel,
+      }}
+    >
+      {label}
+      {active ? " ✓" : ""}
+    </button>
+  );
+}
+
 /** 圓角徽章。配色由呼叫端傳（漲跌、划算、當季各有自己的語意色，見 trend-badge.tsx）。 */
 export function Badge({
   children,
+  size = "md",
   className = "",
   style,
 }: {
   children: ReactNode;
+  /** `sm` 給首頁「今天值得買」那種小卡用——同一顆徽章只是縮一號，不要為它另寫一個元件。 */
+  size?: "md" | "sm";
   className?: string;
   /** 顏色是執行期才決定的（語意色查表）時用這個，不要同時傳 className 的配色。 */
   style?: CSSProperties;
 }) {
+  const sizing: CSSProperties =
+    size === "sm" ? { padding: "1px 4px", fontSize: v.fsMicro } : { padding: "2px 8px", fontSize: v.fsNote };
   return (
-    <span className={`fw-badge inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 ${text.badge} ${className}`} style={style}>
+    <span
+      className={`fw-badge inline-flex shrink-0 items-center gap-1 font-medium ${className}`}
+      // 手繪感的不等圓角：四個角不一樣，看起來像手畫的標籤而不是系統元件。
+      style={{ borderRadius: "9px 5px 9px 5px", lineHeight: 1.4, ...sizing, ...style }}
+    >
       {children}
     </span>
   );
@@ -335,12 +382,25 @@ export function Field({
   );
 }
 
-const FIELD_SHELL = "fw-field flex items-center gap-2 rounded-2xl border border-[#D7C3A0] bg-white px-3 py-3 text-left";
+/** 輸入框／選擇器的共同外殼。外觀（邊框、底色、圓角、內陰影）全在這裡，game.css 不再覆蓋。 */
+const FIELD_SHELL = "fw-field flex items-center gap-2 text-left";
+const FIELD_STYLE: CSSProperties = {
+  minHeight: 48,
+  border: `1.5px solid ${v.lineField}`,
+  borderRadius: 12,
+  background: v.paperSunk,
+  padding: "8px 12px",
+  // 內凹的下緣，讓欄位看起來像壓在紙上的凹槽。
+  boxShadow: `inset 0 -2px 0 ${v.sandPale}`,
+  color: v.ink,
+  fontSize: v.fsLead,
+};
 
 export function TextInput({ className = "", ...rest }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className={`fw-input rounded-2xl border border-[#D7C3A0] bg-white px-4 py-3 text-sm font-medium text-[#624839] outline-none transition-colors placeholder:text-[#B3A081] focus:border-[#6E8C41] ${className}`}
+      className={`fw-input font-medium outline-none transition-colors placeholder:text-[#927D64] ${className}`}
+      style={FIELD_STYLE}
       {...rest}
     />
   );
@@ -362,7 +422,7 @@ export function SearchInput({
   autoFocus?: boolean;
 }) {
   return (
-    <div className={`${FIELD_SHELL} fw-search-field`}>
+    <div className={`${FIELD_SHELL} fw-search-field`} style={FIELD_STYLE}>
       <FaIcon icon="magnifying-glass" size={13} className="text-[#8C7864]" />
       <input
         value={value}
@@ -409,7 +469,7 @@ export function SelectButton({
   children?: ReactNode;
 }) {
   return (
-    <button type="button" onClick={onClick} className={`${FIELD_SHELL} ${className}`}>
+    <button type="button" onClick={onClick} className={`${FIELD_SHELL} ${className}`} style={FIELD_STYLE}>
       {icon && <FaIcon icon={icon} size={13} className="text-[#836A54]" />}
       {children ?? <span className={`flex-1 truncate ${value ? text.bodyStrong : text.placeholder}`}>{value || placeholder}</span>}
       {chevron && <FaIcon icon="chevron-down" size={12} className="text-[#B3A081]" />}
@@ -445,37 +505,87 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
 /* ───────────────────────── 容器 ───────────────────────── */
 
 /** 白底清單卡片。 */
+/**
+ * 紙卡片——這個工具的所有「一張紙」都是它。
+ *
+ * 以前同一張紙寫了四次：`.fw-paper`（ListCard）、`.fw-notebook`（DividedCard）、
+ * `.fw-price-list`（行情清單）、再加上設定頁用 `.fw-settings-page .fw-paper` 把前兩個
+ * 整組蓋掉——光這四份就用掉 16 個 `!important`，而它們的差別只有內距、圓角、和「要不要
+ * 邊框」。現在只有這一個元件，差異用 `variant` 表達。
+ *
+ * - `plain`：一般卡片（內距 16）
+ * - `divided`：清單容器，列與列之間有淡分隔線（內距 2/0）
+ * - `list`：行情清單，左上角多一個紙夾裝飾（裝飾本身是 `.fw-price-list:before`，
+ *   偽元素只有 CSS 做得到，留在 game.css）
+ * - `flush`：設定頁那種「不要框、只用一條虛線分隔」的貼平樣式
+ */
+export type PaperVariant = "plain" | "divided" | "list" | "flush";
+
+const PAPER_BASE: CSSProperties = {
+  background: v.paperSunk,
+  border: `1.5px solid ${v.lineCard}`,
+  borderRadius: "12px 9px 11px 13px",
+  boxShadow: `2px 3px 0 ${v.shadowPaper}`,
+  padding: "var(--fw-paper-pad, 16px)",
+};
+
+const PAPER_VARIANT: Record<PaperVariant, CSSProperties> = {
+  plain: {},
+  divided: { padding: "2px 0" },
+  list: { borderRadius: "12px 7px 14px 7px", padding: "4px 12px", position: "relative" },
+  flush: { border: 0, borderBottom: `1px dashed ${v.lineCard}`, borderRadius: 0, boxShadow: "none", background: "transparent" },
+};
+
+export function Paper({
+  children,
+  variant = "plain",
+  className = "",
+  style,
+  ...rest
+}: {
+  children: ReactNode;
+  variant?: PaperVariant;
+  className?: string;
+  style?: CSSProperties;
+} & Omit<HTMLAttributes<HTMLDivElement>, "className" | "children" | "style">) {
+  const cls = variant === "divided" ? "fw-notebook flex flex-col" : variant === "list" ? "fw-price-list" : "fw-paper";
+  return (
+    <div className={`${cls} ${className}`} style={{ ...PAPER_BASE, ...PAPER_VARIANT[variant], ...style }} {...rest}>
+      {children}
+    </div>
+  );
+}
+
+/** 一般卡片。`strong` 以前是「比較深的陰影」，插畫皮膚統一成同一種紙，留著只是相容。 */
 export function ListCard({
   children,
   className = "",
-  strong = false,
+  strong: _strong,
   ...rest
 }: {
   children: ReactNode;
   className?: string;
-  /** 價格卡用比較深的陰影。 */
+  /** 以前是「比較深的陰影」，插畫皮膚統一成同一張紙後沒有作用，留著讓呼叫端不用一次全改。 */
   strong?: boolean;
 } & Omit<HTMLAttributes<HTMLDivElement>, "className" | "children" | "style">) {
+  void _strong;
   return (
-    <div className={`fw-paper rounded-2xl bg-white p-3 ${className}`} style={{ boxShadow: strong ? shadow.cardStrong : shadow.card }} {...rest}>
+    <Paper className={className} {...rest}>
       {children}
-    </div>
+    </Paper>
   );
 }
 
-/** 白底、列與列之間有淡分隔線的清單容器。 */
+/** 列與列之間有淡分隔線的清單容器。 */
 export function DividedCard({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div
-      className={`fw-notebook flex flex-col divide-y divide-[#E9DFC8] overflow-hidden rounded-2xl bg-white ${className}`}
-      style={{ boxShadow: shadow.card }}
-    >
+    <Paper variant="divided" className={`divide-y ${className}`} style={{ borderColor: v.lineCard }}>
       {children}
-    </div>
+    </Paper>
   );
 }
 
-/** DividedCard 裡可點的一列（設定頁、市場選擇）。 */
+/** DividedCard 裡的一列。`onClick` 有傳才會變成可點的按鈕。 */
 export function DividedRow({
   children,
   onClick,
@@ -494,7 +604,6 @@ export function DividedRow({
   );
 }
 
-/** 有外框、可內部捲動的清單盒（品項選擇、市場清單）。 */
 export function ScrollList({ children, className = "", divided = false }: { children: ReactNode; className?: string; divided?: boolean }) {
   return (
     <div className={`flex flex-col overflow-y-auto rounded-2xl border border-[#E9DFC8] ${divided ? "divide-y divide-[#E9DFC8]" : ""} ${className}`}>
@@ -574,7 +683,7 @@ export function DragHandle({ label, ...rest }: { label: string } & ButtonHTMLAtt
     <button
       type="button"
       aria-label={label}
-      className="fw-drag-handle grid size-7 shrink-0 place-items-center rounded-lg text-[#B3A081] transition-colors hover:bg-[#F6EEDB] hover:text-[#6E8C41]"
+      className="fw-drag-handle grid size-7 shrink-0 place-items-center rounded-lg transition-colors hover:bg-[#F6EEDB] hover:text-[#6E8C41]"
       {...rest}
     >
       <FaIcon icon="grip-vertical" size={13} className="text-current" />

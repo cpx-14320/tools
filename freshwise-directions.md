@@ -727,6 +727,7 @@ npx tsx scripts/freshwise-sync.mts --days 120   # 另外往回補 120 天的批�
 | 2026-11-21 | **場所改名＋推估改區間**：場所用使用者會去的地點命名（傳統市場／超市／大賣場／批發市場）；沒有實測價的品項改顯示區間、倍數從自己的資料回推四分位距（青椒從「34～141」收斂成「48～88」）；推估的品項不再顯示漲跌與划算度。補上**中價**欄位與**完整行情表**（上/中/下/平均/量）；新增成交量與名稱兩種排序；標章比較加上佔比門檻。測試 263 項。 |
 | 2026-11-21 | **全流程實測**（夥伴素材接上之後）：五個頁面 × 三個場所全部 200、263 項功能測試與 17 組養成／素材測試全過；找到八個問題，記在第十五節（B1 批發當日快照殘缺導致水果整類消失最嚴重）。 |
 | 2026-11-22 | **修掉實測找到的問題＋樣式收斂**：B1 批發當日殘缺快照退回前一交易日、B2 肉品退回蔬菜圖示、B3 市場選單排序與重複縣市名、B4 詳情頁資料日期被擠成窄欄、B6 回頂按鈕蓋住清單、B7 走勢圖軸標籤重疊、B8 首頁標題對比；色票 114→48、字級 17→9 階；素材全部平放 `public/freshwise/`，未使用的 37 個移到 `unused/`；**夥伴養成改成跟著帳號走**（`freshwise.companions`，不再存 localStorage）。 |
+| 2026-11-22 | **樣式收斂第二批**：`!important` 95 → **0**（元件自己畫出最終樣式，CSS 只留偽元素／狀態／keyframes／media query；需要 CSS 調整 inline style 的地方改成「元件讀變數、CSS 設變數」）。合併重複元件：四份紙卡片 → 一個 `Paper`＋`variant`、`FilterPill` 收進 `ui.tsx`、`SegmentedTabs` 與 `Callout` 各砍掉一個只差顏色的變體、`Badge` 多 `size="sm"` 取代另一份覆蓋。間距 38 種 → 19 種（全為 4 的倍數）。 |
 
 ---
 
@@ -779,7 +780,7 @@ Codex 接上插畫皮膚之後，畫面變成**兩層樣式在打架**：`ui.tsx
 `game.css` 再用 `!important` 整個蓋掉換成插畫版。結果是
 
 - `game.css` 30KB、**114 個不重複色**（光「卡片邊框的棕色」就有 14 個差一兩階的版本）、
-  **17 種字級**、**36 個 `!important`**；
+  **17 種字級**、**95 個 `!important`**（33 行，這份 CSS 是壓縮的一行一規則）；
 - 同一顆按鈕有兩份顏色定義，改一邊不會生效，改兩邊才會，而且很容易漏。
 
 目標是回到 `components/expenses` 的做法：**元件自己畫完整的樣子，CSS 只做 CSS 才能做的事**
@@ -810,22 +811,50 @@ Codex 接上插畫皮膚之後，畫面變成**兩層樣式在打架**：`ui.tsx
 | **區塊標題** | `SectionTitle`／`.fw-quests>h2`／`.fw-diary h2`／`.fw-collection-book h2` | 30px 插畫圖示＋標題＋右側附註 | 統一走 `SectionTitle`，圖示尺寸由 prop 傳（現在是 CSS 用 `!important` 蓋掉元件的 inline 尺寸） |
 | **夥伴立繪** | `PetArtwork`／`CollectionArtwork` | 同一組角色、不同尺寸與素材 | 保留兩個（圖鑑是另一套姿勢的圖集），但共用 `petName()`／檔名表，不要各自寫一份 |
 
-### 還沒做：拆掉 36 個 `!important` ⬜
+### 已完成：`!important` 歸零 ✅（2026-11-22 第二批）
 
-分成四類，照「拆掉的風險由低到高」排：
+95 處全部拆掉，`game.css` 現在只剩註解裡提到這個詞。拆法分四類：
 
-1. **元件尺寸被 CSS 蓋掉**（`.fw-section-title>.fw-art{width:30px!important}` 這類，6 處）
-   ——`IllustratedArt` 的寬高是 inline style，CSS 一定要 `!important` 才蓋得過。
-   **改法**：呼叫端把 `size` 傳對，刪掉 CSS 規則。
-2. **Tailwind 任意值被 CSS 蓋掉**（`.fw-price-tag .text-\[38px\]{font-size:32px!important}`，3 處）
-   ——**改法**：價格字級改吃 `--fw-fs-price`，刪掉 Tailwind 的 `text-[38px]`。
-3. **整顆元件的外觀被換掉**（`fw-primary`／`fw-field`／`fw-paper`／`fw-badge`／`fw-item-row`／
-   `fw-segmented-tabs`／`fw-callout`／`fw-modal-*`，約 25 處）
-   ——**改法**：把插畫皮膚搬進元件（用 `v.*` 變數），刪掉 CSS 覆蓋。這一類要一個元件一個
-   元件改＋看畫面，是主要的工作量。
-4. **`prefers-reduced-motion` 的 `animation:none!important`**（1 處）
-   ——**改法**：改成只針對 `.fw-breathe` 等實際會動的 class 關閉，同權重後寫者勝，不需要
-   `!important`。
+| 類別 | 處理方式 |
+| --- | --- |
+| 元件尺寸被 CSS 蓋掉（圖示 30/48px） | 尺寸由**呼叫端**傳，`ItemIcon` 拿掉寫死的 40px 上限；CSS 規則整條刪 |
+| Tailwind 任意值被 CSS 蓋掉（`text-[38px]`／`text-[22px]`） | `PriceText` 改吃 `--fw-fs-*` 字級變數，多一個 `tag` 尺寸給首頁吊牌 |
+| 整顆元件外觀被換掉 | 把插畫皮膚**搬進元件**（用 `v.*` 變數），CSS 不再有競爭對手 |
+| `prefers-reduced-motion` 的萬用覆蓋 | 改成只關掉真的會動的 `.fw-breathe` 與帶 `transition` 的元素 |
+
+**留給 CSS 調整 inline style 的作法**：inline style 權重高過 class，CSS 想改只能用
+`!important`。遇到這種需求改成「元件讀一個變數、CSS 去設那個變數」：
+
+- `--fw-paper-pad`：詳情頁與菜籃摘要要右邊留空給夥伴立繪
+- `--fw-row-pad`：菜籃頁的清單列包在卡片裡，內距要歸零
+- `--fw-tag-price-size`：首頁吊牌的價格在窄螢幕縮一階
+- `--fw-item-name-size`：清單列品名在窄螢幕縮一階
+
+### 已完成：元件合併 ✅
+
+| 合併前 | 合併後 |
+| --- | --- |
+| `.fw-paper`／`.fw-notebook`／`.fw-price-list`／`.fw-settings-page` 的整組覆蓋（四份同一張紙，16 個 `!important`） | **`Paper`** 一個元件，`variant="plain" \| "divided" \| "list" \| "flush"`；`ListCard`／`DividedCard` 變成它的薄包裝 |
+| `SegmentedTabs` 的 `tone="soft" \| "solid"`（兩種設定被 CSS 蓋成同一個長相） | 只留一種 |
+| `FilterPill` 寫在 `browse-view.tsx` 裡、跟分頁幾乎一樣 | 收進 `ui.tsx`，選中態跟 `SegmentedTabs` 共用同一組語彙 |
+| `Callout` 的 `tone="warning" \| "neutral"`（只差底色字色） | 只留一種，底色 `--fw-paper-sunk` |
+| `Badge` 在首頁小卡要縮一號，原本靠 `.fw-market-price .fw-badge` 另外蓋 | `size="md" \| "sm"` prop，`TrendBadge` 透傳 |
+
+### 已完成：間距收斂 ✅
+
+38 種 → **19 種，全部是 4 的倍數**（4/8/12/16/20/24/28/32/36/48，加上 1～2px 的髮絲微調
+與 104px 的捲動底部偏移）。出血用的負值跟它抵銷的 padding 同一個數字（`.fw-page` 的
+24px 配 `-24px`），窄螢幕那組也一起對齊。
+
+### 收斂成果
+
+| 指標 | 之前 | 現在 |
+| --- | --- | --- |
+| `game.css` | 30 KB | 33 KB（多的是註解；規則本身少了四分之一） |
+| 不重複色 | 114 | **48 個具名變數**（literal 色碼只出現在變數定義處） |
+| 字級 | 17 種 literal px | **9 階變數**，CSS 裡 0 個 literal `font-size` |
+| 間距 | 38 種 | **19 種，全為 4 的倍數** |
+| `!important` | 95 | **0**（只剩註解提到這個詞） |
 
 ### 規則（之後寫新畫面照這個來）
 

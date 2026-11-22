@@ -6,11 +6,10 @@ import Link from "next/link";
 import {
   Callout,
   DangerButton,
-  DividedCard,
+  Paper,
   DividedRow,
   Field,
   Hint,
-  ListCard,
   Note,
   PageTitle,
   SectionTitle,
@@ -109,7 +108,7 @@ export function MoreView({
       {/* ── 預設看哪裡的價格 ───────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
         <SectionTitle leaf>預設{copy.venue}</SectionTitle>
-        <SegmentedTabs items={VENUE_TABS} value={prefs.venue} onChange={(key: VenueKey) => setVenue(key)} tone="solid" scroll />
+        <SegmentedTabs items={VENUE_TABS} value={prefs.venue} onChange={(key: VenueKey) => setVenue(key)} scroll />
         <Note>{venue.description}</Note>
 
         <Field label={`預設${copy.market}`} as="div">
@@ -138,7 +137,7 @@ export function MoreView({
       {/* ── 首頁 ───────────────────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
         <SectionTitle leaf>首頁</SectionTitle>
-        <DividedCard>
+        <Paper variant="flush" className="divide-y">
           <DividedRow>
             <span className="min-w-0 flex-1">
               <span className={text.bodyStrong}>顯示今天的買菜建議</span>
@@ -146,7 +145,7 @@ export function MoreView({
             </span>
             <Switch checked={prefs.showAdvice} onChange={(showAdvice) => setPrefs({ showAdvice })} label="顯示今天的買菜建議" />
           </DividedRow>
-        </DividedCard>
+        </Paper>
 
         <Field label="大漲大跌的提醒門檻" as="div">
           <SegmentedTabs items={ALERT_TABS} value={String(prefs.alertPercent)} onChange={(key) => setPrefs({ alertPercent: Number(key) })} />
@@ -157,7 +156,7 @@ export function MoreView({
       {/* ── 資料來源 ───────────────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
         <SectionTitle leaf>資料來源</SectionTitle>
-        <ListCard className="flex flex-col gap-1.5">
+        <Paper variant="flush" className="flex flex-col gap-1.5">
           <div className="flex items-baseline justify-between gap-3">
             <Hint>最新資料日期</Hint>
             <span className={text.bodyStrong}>{formatShortDate(dataDate)}</span>
@@ -167,9 +166,9 @@ export function MoreView({
             <span className={text.bodyStrong}>{itemCount} 項</span>
           </div>
           <Note>行情每天更新一次（農業部大約上午公布當天的資料），所以同一天內重新整理不會有新數字。</Note>
-        </ListCard>
+        </Paper>
 
-        <DividedCard>
+        <Paper variant="flush" className="divide-y">
           {DATA_SOURCES.map((source) => (
             <DividedRow key={source.name}>
               <span className="min-w-0 flex-1">
@@ -187,7 +186,7 @@ export function MoreView({
               </span>
             </DividedRow>
           ))}
-        </DividedCard>
+        </Paper>
 
         <Callout icon="circle-info">{copy.retailCoverageNote}</Callout>
       </section>
@@ -195,7 +194,7 @@ export function MoreView({
       {/* ── 資料管理 ───────────────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
         <SectionTitle leaf>這個工具的資料</SectionTitle>
-        <ListCard className="flex flex-col gap-2.5">
+        <Paper variant="flush" className="flex flex-col gap-2.5">
           <Note>
             夥伴與任務進度跟著帳號走，換裝置登入就會在。{copy.basket}目前還存在這台裝置，換裝置不會自動同步。
           </Note>
@@ -213,13 +212,13 @@ export function MoreView({
               清除全部資料
             </DangerButton>
           </div>
-        </ListCard>
+        </Paper>
       </section>
 
       {/* ── 關於 ───────────────────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
         <SectionTitle leaf>關於</SectionTitle>
-        <DividedCard>
+        <Paper variant="flush" className="divide-y">
           <DividedRow>
             <span className="min-w-0 flex-1">
               <span className={text.bodyStrong}>
@@ -234,7 +233,7 @@ export function MoreView({
               <FaIcon icon="chevron-right" size={12} color={colors.placeholder} />
             </Link>
           </DividedRow>
-        </DividedCard>
+        </Paper>
       </section>
 
       <MarketPickerModal

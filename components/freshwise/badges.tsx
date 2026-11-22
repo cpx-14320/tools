@@ -17,7 +17,7 @@ import type { ValueLevel } from "@/lib/freshwise/types";
 
 /** 漲跌徽章。持平時預設不顯示——一整頁都是「持平」的灰色徽章只是視覺雜訊，真正該被
  *  注意的漲跌反而不明顯。需要固定佔位（例如表格對齊）時才傳 showFlat。 */
-export function TrendBadge({ trend, showFlat = false }: { trend: Trend; showFlat?: boolean }) {
+export function TrendBadge({ trend, showFlat = false, size = "md" }: { trend: Trend; showFlat?: boolean; size?: "md" | "sm" }) {
   if (trend.direction === "flat" && !showFlat) return null;
 
   const palette =
@@ -28,7 +28,7 @@ export function TrendBadge({ trend, showFlat = false }: { trend: Trend; showFlat
         : { bg: colors.surfaceSoft, fg: colors.muted };
 
   return (
-    <Badge style={{ backgroundColor: palette.bg, color: palette.fg }}>{trendLabel(trend)}</Badge>
+    <Badge size={size} style={{ backgroundColor: palette.bg, color: palette.fg }}>{trendLabel(trend)}</Badge>
   );
 }
 
