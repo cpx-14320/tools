@@ -255,6 +255,23 @@ export const CATALOG: CatalogItem[] = [
   { code: "FE2", name: "杏鮑菇", category: "veg", aliases: [], icon: "seedling", baseKg: 70, season: ALL_YEAR },
   { code: "FE3", name: "九層塔", category: "veg", aliases: ["羅勒"], icon: "leaf", baseKg: 80, season: ALL_YEAR },
   { code: "FE4", name: "香菜", category: "veg", aliases: ["芫荽"], icon: "leaf", baseKg: 130, season: [11, 12, 1, 2, 3] },
+  // 第二批（2026-11-22）：市場常見、原本查不到的。**不分品種**——菜攤上只會跟你說
+  // 「南瓜」「萵苣」「辣椒」，不會分「南瓜-木瓜型 阿成」「萵苣菜-本島尖葉」。
+  // source-map 那邊用基底名稱比對，一個品項把它底下的品種全部收進來算代表價。
+  { code: "FF1", name: "南瓜", category: "veg", aliases: ["金瓜"], icon: "seedling", baseKg: 30, season: [3, 4, 5, 6, 7, 8, 9, 10] },
+  { code: "FF2", name: "茼蒿", category: "veg", aliases: ["打某菜"], icon: "leaf", baseKg: 45, season: [11, 12, 1, 2, 3] },
+  { code: "FF3", name: "芋頭", category: "veg", aliases: ["檳榔心芋"], icon: "circle", baseKg: 70, season: [9, 10, 11, 12, 1] },
+  { code: "FF4", name: "萵苣", category: "veg", aliases: ["大陸妹", "福山萵苣", "油麥菜", "A菜"], icon: "leaf", baseKg: 35, season: ALL_YEAR },
+  { code: "FF5", name: "辣椒", category: "veg", aliases: ["朝天椒", "糯米椒", "青龍椒"], icon: "pepper-hot", baseKg: 120, season: ALL_YEAR },
+  { code: "FF6", name: "冬瓜", category: "veg", aliases: [], icon: "seedling", baseKg: 18, season: [5, 6, 7, 8, 9] },
+  { code: "FF7", name: "黃秋葵", category: "veg", aliases: ["秋葵"], icon: "seedling", baseKg: 65, season: [5, 6, 7, 8, 9, 10] },
+  { code: "FF8", name: "茭白筍", category: "veg", aliases: ["美人腿"], icon: "seedling", baseKg: 55, season: [5, 6, 7, 8, 9, 10] },
+  { code: "FF9", name: "青花苔", category: "veg", aliases: ["青江花", "油菜花"], icon: "leaf", baseKg: 50, season: [11, 12, 1, 2, 3] },
+  { code: "FG1", name: "芥菜", category: "veg", aliases: ["刈菜", "長年菜"], icon: "leaf", baseKg: 35, season: [11, 12, 1, 2] },
+  { code: "FG2", name: "豌豆", category: "veg", aliases: ["甜豌豆", "豌豆莢", "荷蘭豆"], icon: "seedling", baseKg: 120, season: [11, 12, 1, 2, 3] },
+  { code: "FG3", name: "玉米筍", category: "veg", aliases: [], icon: "seedling", baseKg: 85, season: ALL_YEAR },
+  { code: "FG4", name: "西洋芹", category: "veg", aliases: ["西芹"], icon: "leaf", baseKg: 50, season: [11, 12, 1, 2, 3] },
+  { code: "FG5", name: "皇宮菜", category: "veg", aliases: ["落葵"], icon: "leaf", baseKg: 40, season: [5, 6, 7, 8, 9, 10] },
 
   // ── 水果 ──────────────────────────────────────────────────
   { code: "GA1", name: "香蕉", category: "fruit", aliases: ["芎蕉"], icon: "apple-whole", baseKg: 30, season: ALL_YEAR },
@@ -299,6 +316,11 @@ export const CATALOG: CatalogItem[] = [
   { code: "HB5", name: "牡蠣", category: "seafood", aliases: ["蚵仔", "生蠔"], icon: "shrimp", baseKg: 185, season: [3, 4, 5, 10, 11, 12] },
   { code: "HB6", name: "透抽", category: "seafood", aliases: ["中卷", "小卷"], icon: "shrimp", baseKg: 350, season: [5, 6, 7, 8, 9] },
   { code: "HB7", name: "花枝", category: "seafood", aliases: ["烏賊", "墨魚"], icon: "shrimp", baseKg: 300, season: ALL_YEAR },
+  { code: "HB8", name: "肉魚", category: "seafood", aliases: ["瓜子鯧"], icon: "fish", baseKg: 200, season: ALL_YEAR },
+  { code: "HB9", name: "黃魚", category: "seafood", aliases: ["黃花魚", "黃花"], icon: "fish", baseKg: 180, season: ALL_YEAR },
+  { code: "HC1", name: "黑鯧", category: "seafood", aliases: ["烏鯧"], icon: "fish", baseKg: 260, season: ALL_YEAR },
+  { code: "HC2", name: "四破魚", category: "seafood", aliases: ["四破"], icon: "fish", baseKg: 60, season: [5, 6, 7, 8, 9] },
+  { code: "HC4", name: "虱目魚肚", category: "seafood", aliases: ["魚肚"], icon: "fish", baseKg: 240, season: ALL_YEAR },
 
   // ── 肉類 ──────────────────────────────────────────────────
   { code: "MA1", name: "豬里肌", category: "meat", aliases: ["里肌肉", "大里肌"], icon: "bacon", baseKg: 205, season: ALL_YEAR },

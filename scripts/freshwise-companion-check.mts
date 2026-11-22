@@ -3,7 +3,7 @@ import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
 import assert from "node:assert/strict";
 import { careForCompanion, claimCompanionQuest, companionDay, COMPANIONS, dailyState, initialCompanionState, newlyFilledQuantity, parseCompanionState, questProgress, recordCompanionEvent, selectCompanion } from "../lib/freshwise/companions";
-import { TRACKED_CATALOG } from "../lib/freshwise/catalog";
+import { CATALOG } from "../lib/freshwise/catalog";
 import { ITEM_ART_GROUPS, itemArtwork } from "../lib/freshwise/art-assets";
 
 let passed = 0;
@@ -25,7 +25,20 @@ check("重新載入會保留已領獎狀態，不能重領", () => { let s = rec
 check("只有原本未填而現在填入正份量，才算整理完成", () => { const before = [{ id: "one", qtyCatty: null }]; assert.equal(newlyFilledQuantity(before, [{ id: "one", qtyCatty: 2 }]), true); for (const qtyCatty of [0, -1, Infinity, NaN]) assert.equal(newlyFilledQuantity(before, [{ id: "one", qtyCatty }]), false); assert.equal(newlyFilledQuantity([{ id: "one", qtyCatty: 1 }], [{ id: "one", qtyCatty: 2 }]), false); });
 check("讀取新日期的儲存不帶入舊日任務", () => { const s = recordCompanionEvent(initialCompanionState("2026-11-20"), { type: "view", code: "FA1" }, "2026-11-20"); assert.deepEqual(parseCompanionState(JSON.stringify(s), day).visited, []); });
 check("每位夥伴各自成長，切換不會覆蓋另一位進度", () => { let s = { ...initialCompanionState(day), stamps: 2 }; s = careForCompanion(s, "water", day); s = selectCompanion(s, "radish"); assert.equal(s.xp, 0); s = careForCompanion(s, "water", day); s = careForCompanion(s, "play", day); assert.equal(s.xp, 5); s = selectCompanion(s, "cabbage"); assert.equal(s.xp, 3); const loaded = parseCompanionState(JSON.stringify(s), day); assert.equal(loaded.growth.radish, 5); assert.equal(selectCompanion(loaded, "corn"), loaded); });
-check("所有有資料來源的品項都有固定圖集對應，沒有重複代碼", () => { const codes = ITEM_ART_GROUPS.flatMap((group) => group.codes); assert.equal(new Set(codes).size, codes.length); for (const item of TRACKED_CATALOG) assert.ok(itemArtwork(item.code), item.code); assert.equal(itemArtwork("unknown"), undefined); });
+// 插畫對照表本身要乾淨：代碼不重複、而且每一個都真的在目錄裡（圖畫給一個不存在的
+// 代碼＝那張圖永遠不會出現）。**不要求每個品項都有圖**——新加的品項還沒畫，沒圖的
+// 會退回分類的通用圖示（見 item-icon.tsx），那是設計好的退路而不是缺陷。
+check("插畫對照表的代碼不重複、而且都存在於目錄", () => {
+  const codes = ITEM_ART_GROUPS.flatMap((group) => group.codes);
+  assert.equal(new Set(codes).size, codes.length);
+  const known = new Set(CATALOG.map((i: { code: string }) => i.code));
+  for (const code of codes) assert.ok(known.has(code), code);
+  assert.equal(itemArtwork("unknown"), undefined);
+});
+check("有圖的品項查得到自己的圖", () => {
+  const withArt = ITEM_ART_GROUPS.flatMap((g) => g.codes);
+  for (const code of withArt) assert.ok(itemArtwork(code), code);
+});
 check("表情隨機切換排除目前狀態，每種情緒都抽得到", () => { for (const current of ["neutral", ...PET_EMOTIONS] as const) { const expected = PET_EMOTIONS.filter((mood) => mood !== current); const chosen = expected.map((_, index) => nextPetEmotion(current, (index + 0.5) / expected.length)); assert.deepEqual(chosen, expected); assert.equal(chosen.includes(current as typeof PET_EMOTIONS[number]), false); } });
 check("表情抽樣的邊界與無效值不會產生錯誤路徑", () => { for (const current of ["neutral", ...PET_EMOTIONS] as const) for (const sample of [-1, 0, 0.999, 1, Infinity, NaN]) assert.ok(PET_EMOTIONS.includes(nextPetEmotion(current, sample))); });
 check("六位夥伴各有四張獨立輕量表情素材", () => { const paths = new Set<string>(); for (const pet of COMPANIONS) for (const mood of PET_EMOTIONS) { const url = petEmotionFile(pet.id, mood); assert.match(url, /^\/freshwise\/pet-[a-z-]+\.webp$/); assert.ok(!paths.has(url)); paths.add(url); const file = join(process.cwd(), "public", url); assert.ok(existsSync(file), file); assert.ok(statSync(file).size <= 135 * 1024, file); } assert.equal(paths.size, 24); });

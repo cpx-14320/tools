@@ -27,16 +27,18 @@ export function CompanionView() {
       {/* 標題跟菜籃頁、行情頁、設定頁完全一樣（遮雨棚）——用同一顆 PageTitle hanging，
           不要為這一頁另外做一個。露珠與圖鑑移到標題下面自己一列：擠在標題列裡會把
           標題牌壓窄，而且那兩顆是「這一頁的工具」，不是標題的一部分。 */}
-      <PageTitle hanging>我的蔬果夥伴</PageTitle>
-      <div className="fw-companion-tools">
-        <DewBalance />
-        <button type="button" className="fw-book-button" onClick={() => setBookOpen(true)} aria-label={`蔬果圖鑑，已結識 ${owned.length} 位`}>
-          <GameIcon name="book" size={30} />
-          <span>蔬果圖鑑</span>
-        </button>
-      </div>
-
+      {/* 花園背景從頁面最上緣開始、**穿過遮雨棚後面**：標題與遮雨棚包在 hero 裡面，
+          背景的 :before 用負 z-index 躺在它們下面。這一頁的主角是花園，讓天空接到
+          頂端比在遮雨棚下方切一條邊自然。 */}
       <div className="fw-companions-hero">
+        <PageTitle hanging>我的蔬果夥伴</PageTitle>
+        <div className="fw-companion-tools">
+          <DewBalance />
+          <button type="button" className="fw-book-button" onClick={() => setBookOpen(true)} aria-label={`蔬果圖鑑，已結識 ${owned.length} 位`}>
+            <GameIcon name="book" size={30} />
+            <span>蔬果圖鑑</span>
+          </button>
+        </div>
 
         {ready && (
           <>
@@ -89,7 +91,6 @@ export function CompanionView() {
       )}
 
       <QuestSlip all />
-      {state.dew < 3 && <p className="fw-helper-note">完成上面的探索任務，就有露珠可以澆水。</p>}
       {/* 進度正常保存時不用特別說——那是預期行為。只有存不起來才需要告訴使用者。 */}
       {!storageAvailable && <p className="fw-helper-note">目前連不上伺服器，這次的進度可能沒辦法保存。</p>}
 

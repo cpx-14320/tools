@@ -79,6 +79,7 @@ export const SOURCE_MAP: Record<string, SourceRef> = {
   FB7: { farm: { match: ["薑-老薑", "薑-嫩薑", "薑-粉薑"] } },
   FB8: { farm: { match: ["馬鈴薯"] } },
   FB9: { farm: { match: ["甘薯-"], exclude: ["甘薯葉"] } },
+  FC1: { farm: { match: ["山藥"], exclude: ["進口"] } },
   FC2: { farm: { match: ["竹筍"] } },
   FC3: { farm: { match: ["番茄-牛番茄", "番茄-黑柿"] } },
   FC4: { farm: { match: ["小番茄"] }, taichung: ["小番茄_玉女", "小番茄_聖女"] },
@@ -102,6 +103,22 @@ export const SOURCE_MAP: Record<string, SourceRef> = {
   FE2: { farm: { match: ["杏鮑菇"] } },
   FE3: { farm: { match: ["九層塔"] } },
   FE4: { farm: { match: ["芫荽"], exclude: ["進口"] } },
+  /* 第二批：市場常見、原本查不到的。**用基底名稱收整個品種群**——菜攤上只說「南瓜」，
+     不會說「南瓜-木瓜型 阿成」。進口的一律排掉（跟既有品項同一個規則）。 */
+  FF1: { farm: { match: ["南瓜-"], exclude: ["進口"] } },
+  FF2: { farm: { match: ["茼蒿"], exclude: ["進口"] } },
+  FF3: { farm: { match: ["芋-"], exclude: ["進口", "芋頭蕃薯"] } },
+  FF4: { farm: { match: ["萵苣菜-"], exclude: ["進口", "結球萵"] } },
+  FF5: { farm: { match: ["辣椒-"], exclude: ["進口", "乾"] } },
+  FF6: { farm: { match: ["冬瓜-"], exclude: ["進口"] } },
+  FF7: { farm: { match: ["黃秋葵"] } },
+  FF8: { farm: { match: ["茭白筍"] } },
+  FF9: { farm: { match: ["青花苔"], exclude: ["進口"] } },
+  FG1: { farm: { match: ["芥菜-"], exclude: ["進口", "芥菜心"] } },
+  FG2: { farm: { match: ["豌豆-"], exclude: ["進口", "豌豆苗"] } },
+  FG3: { farm: { match: ["玉米-玉米筍"], exclude: ["進口"] } },
+  FG4: { farm: { match: ["芹菜-西洋芹菜"], exclude: ["進口"] } },
+  FG5: { farm: { match: ["皇宮菜"] } },
 
   /* ── 水果 ───────────────────────────────────────────── */
   GA1: { farm: { match: ["香蕉"], exclude: ["芭蕉", "旦蕉", "越旦"] }, taichung: ["香蕉(內銷)"] },
@@ -146,6 +163,15 @@ export const SOURCE_MAP: Record<string, SourceRef> = {
   HB5: { aquatic: { match: ["牡蠣"] } },
   HB6: { aquatic: { match: ["小卷"], exclude: ["凍"] } },
   HB7: { aquatic: { match: ["花枝"], exclude: ["凍"] } },
+  // 目錄本來就有鬼頭刀，只是一直沒有來源對應（CSV 的 A 組），補上。
+  HA9: { aquatic: { match: ["鬼頭刀"], exclude: ["凍", "加工"] } },
+  HB8: { aquatic: { match: ["肉魚"], exclude: ["凍"] } },
+  HB9: { aquatic: { match: ["黃花"], exclude: ["凍", "加工"] } },
+  HC1: { aquatic: { match: ["黑鯧"], exclude: ["凍"] } },
+  HC2: { aquatic: { match: ["四破"], exclude: ["凍", "加工"] } },
+  // 虱目魚肚本來被 HA2 的 exclude 擋掉（那是為了不讓魚肚混進整尾虱目魚的均價）。
+  // 現在它自己是一個品項——魚攤上「虱目魚」跟「虱目魚肚」是分開賣、價差很大的兩樣東西。
+  HC4: { aquatic: { match: ["虱目魚肚"] } },
 
   /* ── 肉類（只有臺中的零售訪價，沒有任何批發來源）────── */
   MA1: { taichung: ["里肌肉"] },

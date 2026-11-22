@@ -104,7 +104,8 @@
 @media(min-width:366px) and (max-width:400px){.fw-price-tag{width:162px;padding-inline:12px}}
 @media(max-width:365px){.fw-hero-stage{gap:4px}}
 
-/* 夥伴頁花園延伸至標題頂端，取代標題原本的棚架裝飾。 */.fw-companions-hero{position:relative;isolation:isolate;display:flex;flex-direction:column;gap:16px;margin:0 -20px;padding:16px 20px 12px}.fw-companions-hero:before{content:"";position:absolute;inset:0;z-index:-1;background:var(--fw-garden) url('/freshwise/garden-day-background.png') center top/cover no-repeat;mask-image:linear-gradient(#000 0%,#000 92%,transparent 100%);pointer-events:none}
+/* 夥伴頁花園延伸至標題頂端，取代標題原本的棚架裝飾。 */.fw-companions-hero{position:relative;isolation:isolate;display:flex;flex-direction:column;gap:12px;margin:-24px -20px 0;padding:0 20px 12px}.fw-companions-hero>.fw-page-title{margin-top:0}
+.fw-companions-hero:before{content:"";position:absolute;inset:0;z-index:-1;background:var(--fw-garden) url('/freshwise/garden-day-background.png') center top/cover no-repeat;mask-image:linear-gradient(#000 0%,#000 92%,transparent 100%);pointer-events:none}
 @media(max-width:365px){.fw-companions-hero{margin-inline:-16px;padding-inline:16px}.fw-companions-hero>.fw-companion-garden{margin-inline:-16px;padding-inline:16px}}
 
 /* 標題圖示與文字置中；包含菜籃群組、任務及日記標題。 */.fw-section-title,.fw-quests>h2,.fw-diary>h2{display:flex;align-items:center;gap:8px}
