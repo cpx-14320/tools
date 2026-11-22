@@ -85,14 +85,9 @@ export function ErrorText({ children, className = "", center = false }: { childr
  */
 export function Callout({ children, icon = "circle-info" }: { children: ReactNode; icon?: string }) {
   return (
-    <div
-      className="fw-callout flex items-start gap-2"
-      style={{ backgroundColor: v.paperSunk, borderLeft: `3px solid ${v.gold}`, borderRadius: 3, padding: 12 }}
-    >
+    <div className="fw-callout">
       <FaIcon icon={icon} size={12} className="mt-0.5 shrink-0" color={colors.warning} />
-      <p className="leading-relaxed" style={{ color: colors.warning, fontSize: v.fsLabel }}>
-        {children}
-      </p>
+      <p>{children}</p>
     </div>
   );
 }
@@ -208,30 +203,19 @@ export function AddButton({ children, className = "", ...rest }: { children: Rea
 export function IconButton({
   icon,
   tone = "plain",
-  size = 32,
-  iconSize = 14,
+  iconSize = 40,
   className = "",
   ...rest
 }: {
   icon: string;
-  tone?: "plain" | "soft" | "white";
-  size?: number;
+  tone?: "plain" | "soft";
+  /** 圖示要多大。按鈕的大小由圖示＋內距決定，不要再另外鎖 width/height——以前鎖成
+   *  32px、圖示卻是 24px，插畫被塞在一個比它小的框裡，看起來糊糊的。 */
   iconSize?: number;
   className?: string;
 } & ButtonBaseProps) {
-  const toneCls =
-    tone === "soft"
-      ? "bg-[#F6EEDB]"
-      : tone === "white"
-        ? "border border-white/50 bg-white/85 shadow-sm backdrop-blur"
-        : "";
   return (
-    <button
-      type="button"
-      className={`fw-icon-button grid shrink-0 place-items-center rounded-full text-[#6E8C41] ${toneCls} ${className}`}
-      style={{ width: size, height: size, minWidth: size, minHeight: size }}
-      {...rest}
-    >
+    <button type="button" className={`fw-icon-button ${tone === "soft" ? "fw-icon-button-soft" : ""} ${className}`} {...rest}>
       <FaIcon icon={icon} size={iconSize} className="text-current" />
     </button>
   );
@@ -265,8 +249,7 @@ export function SegmentedTabs<T extends string>({
   // tone 都蓋成同一個長相，等於存在兩份只差顏色的設定卻畫出同一個東西。已經移除。
   return (
     <div
-      className={`fw-segmented-tabs ${scroll ? "no-scrollbar flex max-w-full overflow-x-auto" : "inline-flex"} items-center ${className}`}
-      style={{ gap: 8, padding: "4px 0" }}
+      className={`fw-segmented-tabs ${scroll ? "fw-tabs-scroll" : "inline-flex"} ${className}`}
     >
       {items.map((item) => {
         const active = ready && value === item.key;
@@ -276,18 +259,7 @@ export function SegmentedTabs<T extends string>({
             type="button"
             onClick={() => onChange(item.key)}
             aria-pressed={active}
-            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap font-medium transition-colors"
-            style={{
-              minHeight: 44,
-              padding: "8px 12px",
-              // 手繪感的不等圓角，跟 Badge 同一套語彙。
-              borderRadius: "13px 8px 13px 9px",
-              border: `1.5px solid ${active ? v.leafLine : v.lineCard}`,
-              background: active ? v.leafSoft : v.paper,
-              color: v.ink,
-              fontSize: v.fsLabel,
-              boxShadow: active ? `0 2px 0 ${v.btnShadow}` : "none",
-            }}
+            className="fw-tab"
           >
             {item.icon && <FaIcon icon={item.icon} size={11} className="text-current" />}
             {item.label}
@@ -308,16 +280,7 @@ export function FilterPill({ label, active, onClick }: { label: string; active: 
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className="font-medium transition-colors"
-      style={{
-        minHeight: 44,
-        padding: "8px 12px",
-        borderRadius: 9999,
-        border: `1px solid ${active ? v.leafLine : "transparent"}`,
-        background: active ? v.leafSoft : v.paperSunk,
-        color: v.ink,
-        fontSize: v.fsLabel,
-      }}
+      className="fw-filter-pill"
     >
       {label}
       {active ? " ✓" : ""}
@@ -339,14 +302,8 @@ export function Badge({
   /** 顏色是執行期才決定的（語意色查表）時用這個，不要同時傳 className 的配色。 */
   style?: CSSProperties;
 }) {
-  const sizing: CSSProperties =
-    size === "sm" ? { padding: "1px 4px", fontSize: v.fsMicro } : { padding: "2px 8px", fontSize: v.fsNote };
   return (
-    <span
-      className={`fw-badge inline-flex shrink-0 items-center gap-1 font-medium ${className}`}
-      // 手繪感的不等圓角：四個角不一樣，看起來像手畫的標籤而不是系統元件。
-      style={{ borderRadius: "9px 5px 9px 5px", lineHeight: 1.4, ...sizing, ...style }}
-    >
+    <span className={`fw-badge ${size === "sm" ? "fw-badge-sm" : ""} ${className}`} style={style}>
       {children}
     </span>
   );

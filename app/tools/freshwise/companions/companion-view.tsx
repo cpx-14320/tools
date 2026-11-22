@@ -42,9 +42,10 @@ export function CompanionView() {
           <>
             <section className="fw-companion-garden">
               <h2>{pet.name}</h2>
-              <span className="fw-level-ribbon">{label}</span>
               <p className="fw-pet-speech">一起看看今天的菜價吧！</p>
               <PetArtwork id={pet.id} size={200} priority className="fw-breathe" />
+              {/* 等級牌放在立繪下方：名字在上、角色在中、等級在下，視線一路往下走。 */}
+              <span className="fw-level-ribbon">{label}</span>
             </section>
             <section className="fw-growth">
               <div className="fw-growth-vine">
@@ -90,9 +91,8 @@ export function CompanionView() {
       )}
 
       <QuestSlip all />
-      <p className="fw-helper-note">
-        {storageAvailable ? "夥伴與任務進度跟著你的帳號，換手機、換瀏覽器都會在。" : "目前連不上伺服器，這次的進度可能沒辦法保存。"}
-      </p>
+      {/* 進度正常保存時不用特別說——那是預期行為。只有存不起來才需要告訴使用者。 */}
+      {!storageAvailable && <p className="fw-helper-note">目前連不上伺服器，這次的進度可能沒辦法保存。</p>}
 
       <BottomSheetModal
         open={bookOpen}
@@ -116,7 +116,7 @@ export function CompanionView() {
                   setBookOpen(false);
                 }}
               >
-                <CollectionArtwork id={p.id} />
+                <CollectionArtwork id={p.id} size={92} />
                 <strong>{p.name}</strong>
                 <span>{state.active === p.id ? "陪伴中" : unlocked ? "一起陪伴 →" : `印章 ${Math.min(state.stamps, p.threshold)}／${p.threshold}`}</span>
               </button>

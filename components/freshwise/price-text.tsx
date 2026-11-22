@@ -53,11 +53,11 @@ export function PriceText({
       {isRange ? (
         // 區間用「～」連接。字級比單一數字小一階（區間一定比較長，用同一階會擠爆
         // 清單那一列的右欄）。
-        <span className="fw-price-range font-bold" style={{ fontSize: rangeFontSize, color: "var(--fw-ink)" }}>
+        <span className="fw-price-range" style={{ fontSize: rangeFontSize }}>
           {formatPriceIn(rangeLowKg as number, unit)}～{formatPriceIn(rangeHighKg as number, unit)}
         </span>
       ) : (
-        <span className="fw-price-amount font-bold leading-none" style={{ fontSize, color: "var(--fw-ink)" }}>
+        <span className="fw-price-amount" style={{ fontSize }}>
           {formatPriceIn(priceKg, unit)}
         </span>
       )}

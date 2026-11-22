@@ -147,8 +147,6 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
                     <IconButton
                       icon="pen"
                       aria-label={`編輯${group.name}`}
-                      iconSize={12}
-                      size={28}
                       onClick={() => setGroupEditing(group)}
                     />
                     {/* 只有兩個以上的分類才給握把——只有一個的時候拖曳沒有意義。 */}

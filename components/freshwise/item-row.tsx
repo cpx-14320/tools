@@ -53,7 +53,7 @@ export function ItemRow({
 
       <div className="fw-item-copy min-w-0 flex-1">
         <div className="fw-item-name flex items-center gap-1.5">
-          <span className="font-semibold" style={{ fontSize: "var(--fw-item-name-size, var(--fw-fs-lead))", color: "var(--fw-ink)" }}>{item.name}</span>
+          <span className="fw-item-title">{item.name}</span>
           {inSeason && <SeasonBadge />}
           {quote.estimated && <EstimatedBadge />}
         </div>
@@ -85,19 +85,18 @@ export function ItemRow({
     // 清單列不是一張卡片，是「紙上的一行」：沒有底色、沒有陰影，只用一條虛線跟下一行
     // 分開（最後一行的線由 .fw-item-row:last-child 收掉）。以前元件畫成白卡片、CSS 再用
     // !important 把底色跟陰影清掉，兩邊互相抵銷。
-    <div className="fw-item-row flex items-center" // 內距留成變數，菜籃頁那種「列包在卡片裡」的版位才有辦法在 CSS 調整。
-      style={{ gap: 12, padding: "var(--fw-row-pad, 16px 0)" }}>
+    <div className="fw-item-row">
       {leading}
       {href ? (
-        <Link href={href} className="flex min-w-0 flex-1 items-center" style={{ gap: 12, minHeight: 48 }}>
+        <Link href={href} className="fw-item-link">
           {content}
         </Link>
       ) : onClick ? (
-        <button type="button" onClick={onClick} className="flex min-w-0 flex-1 items-center text-left" style={{ gap: 12, minHeight: 48 }}>
+        <button type="button" onClick={onClick} className="fw-item-link text-left">
           {content}
         </button>
       ) : (
-        <div className="flex min-w-0 flex-1 items-center" style={{ gap: 12 }}>{content}</div>
+        <div className="fw-item-link">{content}</div>
       )}
       {starred !== undefined && (
         <button
