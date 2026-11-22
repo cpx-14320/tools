@@ -180,6 +180,8 @@ export const text = {
   sectionTitle: "text-[20px] font-semibold text-[#624839]",
   cardTitle: "text-base font-semibold text-[#624839]",
   body: "text-base text-[#624839]",
+  /** body 小一階。給「清單本身就是附註」的地方用，例如設定頁的資料來源清單。 */
+  bodySm: "text-sm text-[#624839]",
   bodyStrong: "text-base font-medium text-[#624839]",
   label: "text-[13px] font-medium text-[#836A54]",
   note: "text-[13px] text-[#836A54]",
@@ -251,5 +253,7 @@ export const copy = {
    *  18」會看起來自相矛盾。 */
   cheapestNote: "「最便宜」是在你買得到的地方之間比。批發價是菜販的進貨成本，不是你付的錢。",
   /** 零售訪價只有臺中市公開完整資料，這件事要在設定頁與詳情頁說清楚。 */
-  retailCoverageNote: "蔬果、魚肉與蛋品的零售訪價以臺中市為主；糧食另有 20 個縣市的訪價。標示「估算」的是推估區間，並非實際報價。",
+  // 只留會改變使用者怎麼讀數字的兩句。「糧食另有 20 個縣市」是我們的資料覆蓋率細節，
+  // 買菜的人不會因為知道它而做出不同的決定。
+  retailCoverageNote: "零售訪價以臺中市的公有市場為主。標示「估算」的是依批發價推算的區間，不是實際報價。",
 } as const;

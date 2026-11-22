@@ -20,7 +20,9 @@ export function QuestSlip({ all = false, variant = "slip" }: { all?: boolean; va
     <h2>今日小任務</h2>
     {quests.map((quest) => { const progress = questProgress(state, quest.id); const claimed = state.claimed.includes(quest.id); const done = progress >= quest.target;
       const reward = <><GameIcon name="dew" size={26} /><span>+{quest.reward}</span></>;
-      return <div key={quest.id} className="fw-quest-row"><GameIcon name={all ? quest.icon : "water"} size={all ? 36 : 56} /><div className="fw-quest-copy"><strong>{quest.title}</strong><p>{quest.description}</p><MeterBar value={progress} max={quest.target} label={`${progress}／${quest.target}`} ariaLabel={`${quest.title}，${progress}／${quest.target}`} /></div><div className="fw-quest-action">{claimed ? <span className="fw-quest-reward">{reward}<small>已領取</small></span> : done ? <button type="button" className="fw-quest-reward" aria-label={`領取${quest.title}獎勵 ${quest.reward}露珠`} onClick={() => claim(quest.id)}>{reward}<small>領取</small></button> : <Link className="fw-quest-reward" href={quest.href} aria-label={`前往${quest.title}，獎勵 ${quest.reward}露珠`}>{reward}</Link>}</div></div>;
+      return <div key={quest.id} className="fw-quest-row"><GameIcon name={all ? quest.icon : "water"} size={all ? 36 : 56} className="fw-quest-icon" /><div className="fw-quest-copy"><strong>{quest.title}</strong><p>{quest.description}</p><MeterBar value={progress} max={quest.target} label={`${progress}／${quest.target}`} ariaLabel={`${quest.title}，${progress}／${quest.target}`} /></div><div className="fw-quest-action">{/* 三種狀態都是同一顆按鈕、都打得開小紙條：那張紙條同時是「做完會拿到什麼」的說明，
+          還沒做完的時候最需要看。這一格只負責說現在是哪一種狀態，要不要入帳由紙條上的按鈕決定。 */}
+        <button type="button" className="fw-quest-reward" aria-label={`${quest.title}，獎勵 ${quest.reward} 露珠，${claimed ? "已領取" : done ? "可領取" : "尚未完成"}`} onClick={() => claim(quest.id)}>{reward}<small className={claimed ? "fw-quest-claimed" : ""}>{claimed ? "已領取" : done ? "領取" : "看看"}</small></button></div></div>;
     })}
   </section>;
 }

@@ -34,8 +34,8 @@ export function BrowseView({today,book,initialKeyword,initialCategory}:{today:st
  <PageTitle hanging>逛逛行情</PageTitle>
  {/* 資料日期放在最上面：使用者看價格之前要先知道這是哪一天的數字。 */}
  {book.dataDate!==today&&<Callout icon="calendar-xmark">目前顯示的是 {book.dataDate} 的資料。</Callout>}
- <MarketContext book={book} today={today} showDate={false}/>
- <StickyShelf className="fw-category-shelf"><div role="group" aria-label="食材分類" className="contents"><button type="button" aria-pressed={!category} onClick={()=>setCategory("")}><GameIcon name="book" size={40}/><span className="sr-only">全部</span></button>{CATEGORIES.map(c=><button key={c.key} type="button" aria-pressed={category===c.key} onClick={()=>setCategory(c.key)}><GameIcon name={c.key} size={40}/><span className="sr-only">{c.name}</span></button>)}</div></StickyShelf>
+ <MarketContext book={book}/>
+ <StickyShelf className="fw-category-shelf" role="group" label="食材分類"><button type="button" aria-pressed={!category} onClick={()=>setCategory("")}><GameIcon name="book" size={40}/><span className="sr-only">全部</span></button>{CATEGORIES.map(c=><button key={c.key} type="button" aria-pressed={category===c.key} onClick={()=>setCategory(c.key)}><GameIcon name={c.key} size={40}/><span className="sr-only">{c.name}</span></button>)}</StickyShelf>
  <SearchInput value={keyword} onChange={setKeyword} placeholder="搜尋食材或常用名稱"/>
  <div className="flex items-center justify-between gap-2"><h2 className={text.sectionTitle}>{category?CATEGORIES.find(c=>c.key===category)?.name:"食材"}行情</h2><Hint>共 {rows.length} 項 · {unitLabel(prefs.unit)}</Hint></div>
  <SortBar options={SORT_COLUMNS} value={sort} onChange={setSort} filterCount={activeFilters} onFilter={()=>setFiltersOpen(!filtersOpen)} filterOpen={filtersOpen}/>

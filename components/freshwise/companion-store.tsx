@@ -9,6 +9,7 @@ import {
   dailyState,
   initialCompanionState,
   QUESTS,
+  questProgress,
   recordCompanionEvent,
   selectCompanion,
   type CompanionEvent,
@@ -16,6 +17,7 @@ import {
   type CompanionState,
   type QuestId,
 } from "@/lib/freshwise/companions";
+import Link from "next/link";
 import { BottomSheetModal } from "./bottom-sheet-modal";
 import { GameIcon, PetArtwork } from "./game-art";
 
@@ -204,17 +206,18 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   );
 
   /**
-   * 按「領取」只是**打開小紙條**，還沒真的領。
+   * 打開任務的小紙條。**三種狀態都打得開**，還沒真的領。
    *
    * 以前按下去就直接記成已領取、順便開彈窗——使用者如果只是想看看獎勵是什麼、按了
    * 關閉，獎勵已經入帳而他沒看到那封信。真正入帳的動作是彈窗裡的「收下心意」
-   * （confirmClaim）。這裡只先驗證「這個任務現在真的可以領」，不可以領就不開窗。
+   * （confirmClaim）。
+   *
+   * 也不再限定「可以領的時候才打得開」：這張紙條同時是「完成這個任務會拿到什麼」的
+   * 說明，還沒做完的時候最需要看。按鈕隨狀態換（去完成／收下心意／已領取），清單上
+   * 那一格就只負責表示現在是哪一種狀態。
    */
   const claim = useCallback((id: QuestId) => {
     if (!readyRef.current) return;
-    const preview = claimCompanionQuest(current.current, id, companionDay());
-    const claimable = preview !== current.current && preview.claimed.includes(id) && !current.current.claimed.includes(id);
-    if (!claimable) return;
     setReward(id);
   }, []);
 
@@ -265,6 +268,9 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   }, [apply, send]);
 
   const quest = QUESTS.find((q) => q.id === reward);
+  // 小紙條的三種樣子都從同一份狀態算，清單那一格與彈窗不會各說各話。
+  const questClaimed = !!quest && state.claimed.includes(quest.id);
+  const questDone = !!quest && questProgress(state, quest.id) >= quest.target;
 
   return (
     <Context.Provider value={{ state, ready, storageAvailable, record, claim, care, select, reset }}>
@@ -276,11 +282,11 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
       )}
       <BottomSheetModal open={!!reward} title="夥伴寄來的小紙條" onClose={() => setReward(null)} bodyClassName="fw-reward-letter">
         <PetArtwork id={state.active} size={128} />
-        <h2>又多一點買菜的把握！</h2>
+        <h2>{questDone ? "又多一點買菜的把握！" : "還差一點點！"}</h2>
         <p>
-          「{quest?.title}」完成了。
+          {questDone ? `「${quest?.title}」完成了。` : `「${quest?.title}」${quest?.description}`}
           <br />
-          謝謝你，陪我一起把行情看懂。
+          {questDone ? "謝謝你，陪我一起把行情看懂。" : "完成之後，這份心意就是你的。"}
         </p>
         <div className="fw-letter-rewards">
           <span>
@@ -291,9 +297,19 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
             探索印章 +1
           </span>
         </div>
-        <button type="button" className="fw-game-button" onClick={() => reward && confirmClaim(reward)}>
-          收下心意，繼續探索
-        </button>
+        {questClaimed ? (
+          <button type="button" className="fw-game-button" disabled>
+            已經收下了
+          </button>
+        ) : questDone ? (
+          <button type="button" className="fw-game-button" onClick={() => reward && confirmClaim(reward)}>
+            收下心意，繼續探索
+          </button>
+        ) : (
+          <Link className="fw-game-button" href={quest?.href ?? "/tools/freshwise"} onClick={() => setReward(null)}>
+            去完成任務
+          </Link>
+        )}
       </BottomSheetModal>
     </Context.Provider>
   );

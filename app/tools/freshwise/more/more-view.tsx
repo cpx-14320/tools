@@ -117,7 +117,7 @@ export function MoreView({
         <Paper variant="flush" className="fw-stack">
           {DATA_SOURCES.map((name) => (
             <DividedRow key={name}>
-              <span className={`min-w-0 flex-1 ${text.body}`}>{name}</span>
+              <span className={`min-w-0 flex-1 ${text.bodySm}`}>{name}</span>
               <span
                 className={`shrink-0 rounded-full px-2 py-0.5 ${text.badge}`}
                 style={{ backgroundColor: colors.downBg, color: colors.down }}
@@ -128,13 +128,13 @@ export function MoreView({
           ))}
         </Paper>
 
-        <Callout icon="circle-info">{copy.retailCoverageNote}</Callout>
+        <Callout icon="circle-info" size="sm">{copy.retailCoverageNote}</Callout>
       </section>
 
       <section className="flex flex-col gap-2.5" aria-label="其他小工具">
         <SectionTitle leaf>其他小工具</SectionTitle>
         <Paper variant="flush" className="fw-stack fw-other-tools">
-          {authLoading ? <Hint>{copy.loading}</Hint> : otherTools.length === 0 ? <Hint>目前沒有其他小工具的使用權限</Hint> : otherTools.map((tool) => <Link key={tool.toolId} href={tool.href} className="fw-other-tool-link">
+          {authLoading ? <Hint>{copy.loading}</Hint> : otherTools.length === 0 ? <Hint>目前沒有其他小工具的使用權限</Hint> : otherTools.map((tool) => <Link key={tool.toolId} href={tool.href} className="fw-other-tool-link fw-stack-row">
             <IllustratedArt src={OTHER_TOOL_ICONS[tool.toolId]} size={48}/>
             <span className={`min-w-0 flex-1 ${text.bodyStrong}`}>{tool.name}</span>
             <FaIcon icon="chevron-right" size={12} color={colors.placeholder}/>

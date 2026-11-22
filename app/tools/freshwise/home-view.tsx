@@ -56,7 +56,7 @@ export function HomeView({today,book}:{today:string;book:PriceBook}){
  return <div className="fw-page fw-home">
  <div className="fw-home-garden">
  <header className="fw-home-brand"><div><small>{copy.appNameEn} · 今天買菜看這裡</small><h1>{copy.appName}</h1></div><DewBalance/></header>
- <MarketContext book={book} today={today} showDate={false}/>
+ <MarketContext book={book}/>
  <section className="fw-home-hero" aria-label="今天的買菜建議">
  <h2 className="fw-home-speech">{brief.advice}{headline?.quote.estimated&&!brief.advice.includes("推估")&&<small>（推估參考）</small>}</h2>
  <div className="fw-hero-stage">

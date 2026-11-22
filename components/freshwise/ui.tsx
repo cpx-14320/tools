@@ -54,7 +54,7 @@ export function SectionTitle({
           ?
         </button>
       )}
-      {action && <span className="ml-auto shrink-0">{action}</span>}
+      {action && <span className="fw-section-action ml-auto shrink-0">{action}</span>}
     </div>
   );
 }
@@ -96,9 +96,11 @@ export function ErrorText({ children, className = "", center = false }: { childr
  * 圖示用語意名稱傳（`database`／`calendar-xmark`／`triangle-exclamation`…），
  * fa-icon.tsx 會對應到插畫圖示。
  */
-export function Callout({ children, icon = "circle-info" }: { children: ReactNode; icon?: string }) {
+/** `size="sm"` 把說明降一級（13px→12px）。給「附註的附註」用——設定頁的資料來源底下
+ *  那一條就是，它說明的是上面那份清單，不是畫面上的主要資訊。 */
+export function Callout({ children, icon = "circle-info", size = "md" }: { children: ReactNode; icon?: string; size?: "md" | "sm" }) {
   return (
-    <div className="fw-callout">
+    <div className={`fw-callout ${size === "sm" ? "fw-callout-sm" : ""}`}>
       <FaIcon icon={icon} size={12} className="mt-0.5 shrink-0" color={colors.warning} />
       <p>{children}</p>
     </div>
@@ -659,7 +661,7 @@ export function DividedRow({
 }) {
   // 左右不留內距：帶分隔線的區塊才會跟同一張紙上「只用 gap 疊起來」的區塊對齊在
   // 同一條直線上，兩種版式看起來像同一個東西。
-  const cls = `flex w-full items-center gap-3 py-3 text-left ${onClick ? "transition-colors hover:bg-[#FCF7EB]" : ""} ${className}`;
+  const cls = `fw-stack-row flex w-full items-center gap-3 py-3 text-left ${onClick ? "transition-colors hover:bg-[#FCF7EB]" : ""} ${className}`;
   if (!onClick) return <div className={cls}>{children}</div>;
   return (
     <button type="button" onClick={onClick} className={cls}>

@@ -12,7 +12,10 @@ import { useEffect, useRef, type ReactNode } from "react";
  * 用 IntersectionObserver 而不是監聽 scroll——後者每一幀都要算，而這裡只需要知道
  * 「越過了沒有」這一個布林值。
  */
-export function StickyShelf({ children, className = "" }: { children: ReactNode; className?: string }) {
+/** `role`／`label` 直接掛在這個容器上。以前呼叫端是在裡面再包一層 `div.contents`
+ *  來帶 role，結果 game.css 裡所有 `.fw-category-shelf > button` 的規則都被那一層
+ *  擋掉、整組分類樣式等於沒套——有語意就寫在同一個元素上，不要為了 aria 多一層。 */
+export function StickyShelf({ children, className = "", role, label }: { children: ReactNode; className?: string; role?: string; label?: string }) {
   const sentinel = useRef<HTMLDivElement>(null);
   const shelf = useRef<HTMLDivElement>(null);
 
@@ -34,7 +37,7 @@ export function StickyShelf({ children, className = "" }: { children: ReactNode;
   return (
     <>
       <div ref={sentinel} aria-hidden className="h-px" />
-      <div ref={shelf} className={className} data-stuck="false">
+      <div ref={shelf} className={className} data-stuck="false" role={role} aria-label={label}>
         {children}
       </div>
     </>

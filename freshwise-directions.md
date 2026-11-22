@@ -1223,3 +1223,114 @@ Codex 幾輪改動下來，新規則多半是**接在檔尾**而不是改原本�
 | 詳情頁 | 今日小任務移到「去看我的菜籃」上方 |
 | 返回 | 改用 `public/freshwise/ui-back.png`（圖檔待補） |
 
+
+---
+
+## 二十一、第 8 輪：領獎流程、死 CSS 清除、選擇器不再用 combinator
+
+### 1. 領取露珠改成兩段式（按鈕按下才入帳）
+
+本來點「領取」就直接記成已領取，小紙條彈窗變成**事後通知**——使用者還沒看到夥伴
+寫了什麼，獎勵就已經進帳，關掉彈窗也收不回來。
+
+`claim()` 拆成兩段：
+
+| 函式 | 做的事 |
+| --- | --- |
+| `claim(id)` | 只開小紙條，**不動任何狀態** |
+| `confirmClaim(id)` | 樂觀更新 → `flush()` 把累積的瀏覽事件送完 → `send({action:"claim"})` |
+
+用 X 或點背景關掉＝沒領，按鈕仍停在可領取。`id` 由彈窗按鈕的 onClick 當參數帶進來，
+不另外開 ref——在算繪期間寫 ref 會被 React 擋下來（`Cannot update ref during render`）。
+
+### 2. 小紙條三種狀態都打得開
+
+那張紙條同時是「做完這個任務會拿到什麼」的說明，**還沒做完的時候最需要看**。所以
+清單上那一格改成一顆按鈕，三種狀態都開同一個彈窗，只有彈窗裡的按鈕隨狀態換：
+
+| 狀態 | 清單那一格 | 彈窗標題 | 彈窗按鈕 |
+| --- | --- | --- | --- |
+| 尚未完成 | `看看` | 還差一點點！ | 去完成任務（連到任務頁） |
+| 可領取 | `領取` | 又多一點買菜的把握！ | 收下心意，繼續探索（入帳） |
+| 已領取 | `已領取` | 又多一點買菜的把握！ | 已經收下了（disabled） |
+
+### 3. 陪玩按鈕的桃色被蓋掉
+
+`.fw-care-actions .fw-peach-button` 與 `.fw-care-actions .fw-game-button` **特異度一樣**，
+而綠色那條排在後面 → 桃色只剩邊框、底色是綠的。兩顆的底色改寫在一起、綠色在前桃色在後。
+順手把重複的 `.fw-care-actions .fw-game-button` 與兩個 `max-width:365px` 區塊各併成一個。
+
+### 4. `div.contents` 讓整組分類樣式失效
+
+`browse-view` 為了掛 `role="group"` 在貨架裡多包了一層 `div.contents`，於是 game.css 裡
+**所有 `.fw-category-shelf > button` 的規則一條都沒套上**（透明度、位移、選中態全失效）。
+
+修法是把 `role`/`aria-label` 移到 `StickyShelf` 自己身上，拿掉那層 wrapper。
+分類名稱是 `sr-only`，所以原本畫紙牌的 `span:last-child` 規則一併刪掉——它們一旦生效
+會把隱藏文字變回可見。
+
+### 5. 分類圖示站到檯面上
+
+`:before` 本來是 `inset:0`，木檯被拉到整個區塊高度，圖示再怎麼移都還是在桌板中間。
+改成木檯只佔下緣 52px、區塊上方留 28px 給圖示站，圖示 `translateY(-28px)`。
+（區塊有 `overflow-x:auto`，垂直方向也會裁切，所以位移量不能大於上方的 padding。）
+
+### 6. CSS 選擇器不再使用 `>` / `+`
+
+理由就是第 4 點：`>` 只要中間多包一層就整組失效，而那種 wrapper 常常是為了無障礙或
+排版臨時加的。全部改成後代選擇器；三處靠 class 保住原本的語意：
+
+| 原本 | 現在 | 為什麼不能直接改後代 |
+| --- | --- | --- |
+| `.fw-stack>*+*` | `.fw-stack-row:not(:first-child)` | 相鄰兄弟沒有後代寫法 |
+| `.fw-sort-item+.fw-sort-item` | `.fw-sort-item:not(:first-child)` | 同上 |
+| `.fw-quests-compact>.fw-quest-row>.fw-art` | `.fw-quests-compact .fw-quest-icon` | 任務列裡還有獎勵區的 `.fw-art`，後代會一起吃到 |
+| `.fw-section-title>span:last-child` | `.fw-section-action` | 標題裡可能有巢狀 span |
+| `.fw-letter-rewards>span` | `.fw-letter-rewards span:not(.fw-art)` | 獎勵文字裡包著圖示 span |
+
+### 7. 刪掉對畫面沒有作用的 CSS
+
+做法不是用看的：把 game.css 的 292 個選擇器丟進瀏覽器，逐頁（首頁／行情／詳情／菜籃／
+夥伴／設定＋六個彈窗）跑 `document.querySelector`，命中 250 個。沒命中的再逐一確認是
+「狀態類（:hover、[data-stuck]、執行時才加的 class）」還是真的死掉。
+
+刪掉的：`.fw-clear-button`、`.fw-list-toolbar`、`.fw-filter-toggle`、`.fw-toolbar-label`、
+`.fw-detail-hero .fw-price-actions`（class 在 TSX 完全沒出現）；
+`.fw-category-shelf>a`×3（貨架裡沒有 `<a>`）、`.fw-companion-garden>.fw-art`、
+`.fw-quest-action>span:first-child`、`.fw-quests>h2>span`×2、`.fw-quest-copy progress`
+（MeterBar 不是 `<progress>`）、`.fw-collection-book h2`×2（彈窗標題是 `<p>`）、
+`.fw-reward-letter small`、`.fw-basket-summary>div`、`.fw-basket-summary .text-right`、
+`.fw-price-tag>div`、`.fw-growth strong`、`.fw-hero-level a`。
+
+`.fw-data-date` 連同 `MarketContext` 的 `showDate` 分支一起拿掉：兩個呼叫端都傳
+`showDate={false}`，那段 JSX 永遠不會算繪。`today` prop 也因此沒人用了。
+
+### 8. 設定頁的資料來源
+
+- 來源清單字級降一階（`text.body` 16px → 新增的 `text.bodySm` 14px）。
+- 底下的說明用新的 `Callout size="sm"`（13px → 12px）——它說明的是上面那份清單，
+  不是畫面上的主要資訊。
+- 文案從
+  「蔬果、魚肉與蛋品的零售訪價以臺中市為主；糧食另有 20 個縣市的訪價。標示「估算」的是推估區間，並非實際報價。」
+  改成
+  「零售訪價以臺中市的公有市場為主。標示「估算」的是依批發價推算的區間，不是實際報價。」
+  砍掉的是「糧食另有 20 個縣市」——那是我們的資料覆蓋率細節，買菜的人不會因為知道它
+  而做出不同的決定。
+
+### 9. 夥伴頁露珠與圖鑑
+
+`.fw-companion-tools` 之前**完全沒有樣式**，兩顆之間只靠 HTML 的換行空白（寬度隨字型
+變動），整列還靠左。改成 flex 置中、gap 8px。
+
+### 10. 插畫進度
+
+| 類別 | 狀態 |
+| --- | --- |
+| 品項插畫 | 127 項中 **119 項有圖**，待補 8 項：`item-FG4`（西洋芹）、`item-FG5`（皇宮菜）、`item-HA9`（鬼頭刀）、`item-HB8`（肉魚）、`item-HB9`（黃魚）、`item-HC1`（黑鯧）、`item-HC2`（四破魚）、`item-HC4`（虱目魚肚） |
+| 料理圖示 | `DISH_ICONS` 100 項，**全部到齊** |
+| `ui-back.png` | 已補上 |
+
+另外 codex 多產了 17 張目錄裡還沒有的食材圖（蘆筍／牛蒡／蓮藕／紅蔥頭／木耳／秀珍菇／
+鴻喜菇／洋菇／芥藍菜／百香果／楊桃／釋迦／葡萄柚／紅柿／桶柑／海梨柑／豆腐）。
+對 2026-11-20 的農業部行情查過，**除了桶柑、海梨柑（冬末柑橘，現在不在產季）與豆腐
+（沒有任何公開行情）之外，其餘 14 項都查得到來源**，可以進目錄。這件事還沒做。

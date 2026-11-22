@@ -80,3 +80,25 @@
 單任務使用 home-quest-paper.webp；三任務使用 companions-quests-paper-top/middle/bottom.webp，上下固定圓角、中段垂直重複延伸。三個頁面的標題使用 page-hanging-title-left/middle/right.webp，由共用 PageTitle 與 SlicedArtwork 依文字長度延伸。皆內建 image_gen 生成，文字／進度／獎勵保持 HTML。完整提示詞與實際尺寸見 JSON 的 questAndHangingV10，未放大冒充原生六倍。
 
 三頁頂部共用透明 page-market-awning-background.png：棚布延伸至頂部，無天空、無下方米色底；行情副標位於棚內。菜籃標題22px並上移，其他吊牌20px。露珠與圖鑑按鈕共用 paper-deep 純底色。行情頁移除條件摘要、清除按鈕及清除函式，搜尋與分類、篩選切換保留。
+
+## 常見食材與料理 V12（2026-11-22）
+
+新增40種常見食材與30道料理，各自為獨立256×256透明PNG，平放本資料夾。既有目錄缺圖沿用item-<code>.png；預備擴充食材使用item-<ingredient>.png；料理使用dish-<dish>.png。兩份JSON的foodAndDishesV12列出中文名稱、檔名、實際原生尺寸與完整內建image_gen提示詞。
+
+料理另提供WebP供分類選擇器使用，只有開啟新增／編輯分類時載入。DISH_ICONS保存30道料理名稱與圖示key；新分類點料理會帶入名稱，自訂名稱保留。新增食材及常買份量沿用既有菜籃功能，價格與資料來源對應不因素材而改動。40種食材中尚未接上行情的素材保留供後續資料擴充使用。
+## 100道料理 V13（2026-11-22）
+
+在原30道料理之外再新增70道，現在DISH_ICONS共100道。每道料理皆有獨立256×256透明PNG與輕量WebP，平放本資料夾，沿用dish-<dish>.png/webp命名。新增素材的原生尺寸、完整內建image_gen提示詞及名稱保存在兩份JSON的dishes100V13。常見料理選單使用四欄，料理圖示透過next/image延後載入原有WebP，原30道圖案與已儲存圖示key保留相容。
+## 食材代碼補圖 V14（2026-11-23）
+
+11 張既有預備食材直接更名為 FF1–FF8、FG1–FG3 對應檔名，PNG 內容不變，兩份 JSON 中的引用一併更新。青花苔 FF9 依農業部食農平台的青花菜別名說明，複用 FD4 插畫；保留原 FD4 檔案供青花菜使用，不更動目錄或行情映射。
+
+西洋芹 FG4、皇宮菜 FG5、鬼頭刀 HA9、肉魚 HB8、黃魚 HB9、黑鯧 HC1、四破魚 HC2、虱目魚肚 HC4 使用內建 image_gen 各別生成，參考既有食材圖的粗線與紙紋。全部以獨立256×256透明PNG平放本資料夾。完整提示詞、原生尺寸、更名前後對照與檔案資訊見兩份JSON的missingItemArtV14。
+
+## CSV 未顯示食材補圖 V15（2026-11-23）
+
+逐列核對402筆來源資料，385筆具名資料規劃對應294張插畫。目前已備妥145張（73張既有、72張本次新生成），尚有149張待生成；17筆未具名品項列在略過清單。相同食材的進口、包裝與可共用規格不重複生成，外觀有差異者各自補圖。既有16張英文預備食材檔直接改名，圖像內容不變。鳳梨花B4依北農具名來源列另備花序插畫，僅備素材，不因此加入食材或行情目錄。
+
+新素材皆為獨立256×256透明PNG，使用內建image_gen參考原食材系列生成。來源代碼與專案內碼不同，因此新預備圖採item-farm-<來源代碼>.png及item-aquatic-<來源代碼>.png，零售沒有來源代碼者採item-retail-<流水號>.png，避免覆蓋原本item-FA1等插畫。不自動新增行情品項、價格或來源映射。完整來源對照見csv-ingredient-art-map.csv/json，略過列見csv-ingredient-art-skipped.csv，尚待生成清單見csv-ingredient-art-pending.csv；完整已完成與待生成提示詞見兩份JSON的csvMissingIngredientsV15。
+
+本批暫因內建生成服務回覆usage_limit_reached而未完成，工具回報預計2026-11-23 17:37（台北時間）恢復。續作須先比對已完成檔與紀錄，僅生成pending列。

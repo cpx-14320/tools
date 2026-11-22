@@ -5,7 +5,6 @@ import { useFreshwise } from "./store";
 import { GameIcon } from "./game-art";
 import { MarketPickerModal } from "./market-picker-modal";
 import { SegmentedTabs } from "./ui";
-import { formatShortDate } from "@/lib/freshwise/dates";
 import type { PriceBook, UnitKey } from "@/lib/freshwise/types";
 
 const UNIT_TABS: readonly { key: UnitKey; label: string }[] = [
@@ -26,7 +25,7 @@ const UNIT_TABS: readonly { key: UnitKey; label: string }[] = [
  *
  * `showDate`：首頁不畫資料日期——那裡已經有「目前顯示的是 X 的資料」的提示條。
  */
-export function MarketContext({ book, today, showDate = true }: { book: PriceBook; today: string; showDate?: boolean }) {
+export function MarketContext({ book }: { book: PriceBook }) {
   const { prefs, setMarket, setPrefs } = useFreshwise();
   const [marketsOpen, setMarketsOpen] = useState(false);
   const market = book.markets.find((m) => m.code === prefs.marketCode);
@@ -45,14 +44,6 @@ export function MarketContext({ book, today, showDate = true }: { book: PriceBoo
             先讀懂現在是哪一個、再推論按下去會變成什麼。跟排序、分類同一種互動語彙。 */}
         <SegmentedTabs items={UNIT_TABS} value={prefs.unit} onChange={(unit) => setPrefs({ unit })} />
       </div>
-
-      {showDate && (
-        <p className="fw-data-date">
-          <GameIcon name="calendar" size={24} />
-          資料日期 {formatShortDate(book.dataDate)}
-          {book.dataDate !== today && " · 尚未更新至今日"}
-        </p>
-      )}
 
       <MarketPickerModal
         open={marketsOpen}
