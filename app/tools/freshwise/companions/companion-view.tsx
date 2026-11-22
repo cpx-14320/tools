@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { COMPANIONS } from "@/lib/freshwise/companions";
+import { COMPANIONS, companionLevel } from "@/lib/freshwise/companions";
 import { useCompanion } from "@/components/freshwise/companion-store";
 import { CollectionArtwork, GameIcon, PetArtwork } from "@/components/freshwise/game-art";
 import { DewBalance, QuestSlip } from "@/components/freshwise/companion-widgets";
@@ -10,16 +10,16 @@ import { PageTitle } from "@/components/freshwise/ui";
 export function CompanionView() {
   const { state, ready, care, select, storageAvailable } = useCompanion();
   const [tab, setTab] = useState<"care" | "collection">("care");
-  const pet = COMPANIONS.find((p) => p.id === state.active) ?? COMPANIONS[0];
   const owned = COMPANIONS.filter((p) => p.threshold <= state.stamps);
-  const level = 1 + Math.floor(state.xp / 40);
+  // 等級與稱呼跟首頁共用同一份計算（lib/freshwise/companions.ts），兩頁不會再長不一樣。
+  const { pet, progress, max, label } = companionLevel(state);
   return <div className="fw-page fw-companions-page">
     <div className="fw-companions-hero">
     <PageTitle actions={<DewBalance />}>我的蔬果夥伴</PageTitle>
     <div className="fw-book-tabs" role="group" aria-label="夥伴頁面"><button type="button" aria-pressed={tab === "care"} onClick={() => setTab("care")}><GameIcon name="companions" />陪伴夥伴</button><button type="button" aria-pressed={tab === "collection"} onClick={() => setTab("collection")}><GameIcon name="book" />蔬果圖鑑</button></div>
-    {ready && tab === "care" && <section className="fw-companion-garden"><h2>{pet.name}</h2><span className="fw-level-ribbon">Lv.{level} · {level < 3 ? "萌芽" : level < 8 ? "幼苗" : "葉葉"}夥伴</span><p className="fw-pet-speech">一起看看今天的菜價吧！</p><PetArtwork id={pet.id} size={200} priority className="fw-breathe" /></section>}
+    {ready && tab === "care" && <section className="fw-companion-garden"><h2>{pet.name}</h2><span className="fw-level-ribbon">{label}</span><p className="fw-pet-speech">一起看看今天的菜價吧！</p><PetArtwork id={pet.id} size={200} priority className="fw-breathe" /></section>}
     {ready && tab === "care" && <>
-      <section className="fw-growth"><div className="fw-growth-vine"><GameIcon name="leaf" /><progress value={state.xp % 40} max={40} aria-label={`成長 ${state.xp % 40}／40`} /><GameIcon name="leaf" /></div><strong>成長 {state.xp % 40}／40</strong><p>再陪伴一點，就能升級囉。</p></section>
+      <section className="fw-growth"><div className="fw-growth-vine"><GameIcon name="leaf" /><progress value={progress} max={max} aria-label={`${pet.nickname}的成長 ${progress}／${max}`} /><GameIcon name="leaf" /></div><strong>成長 {progress}／{max}</strong><p>再陪伴一點，就能升級囉。</p></section>
       <div className="fw-care-actions"><button type="button" className="fw-game-button" disabled={state.dew < 3} onClick={() => care("water")}><GameIcon name="water" size={40} />澆水 · 3 露珠</button><button type="button" className="fw-game-button fw-peach-button" disabled={state.played} onClick={() => care("play")}><GameIcon name="play" size={40} />{state.played ? "今天玩過囉" : "陪玩"}</button></div>
     </>}
     </div>

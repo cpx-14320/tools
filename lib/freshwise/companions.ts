@@ -61,6 +61,32 @@ export function parseCompanionState(raw: string | null, day: string): CompanionS
     }, day);
   } catch { return fallback; }
 }
+/** 升一級要多少成長值。等級、進度條、稱呼全部從這裡算，不要在畫面各自寫一次
+ *  `1 + Math.floor(xp / 40)`——以前首頁與夥伴頁各算一次、稱呼還長得不一樣
+ *  （首頁「Lv.1 蹦蹦」、夥伴頁「Lv.1 · 萌芽夥伴」），同一隻夥伴在兩頁看起來像兩回事。 */
+export const XP_PER_LEVEL = 40;
+
+export interface CompanionLevel {
+  level: number;
+  /** 這一級已經累積的成長值（0 ～ XP_PER_LEVEL）。 */
+  progress: number;
+  max: number;
+  /** 畫面上的稱呼，兩頁共用：`Lv.1 蹦蹦`。 */
+  label: string;
+  pet: (typeof COMPANIONS)[number];
+}
+
+export function companionLevel(state: CompanionState): CompanionLevel {
+  const pet = COMPANIONS.find((p) => p.id === state.active) ?? COMPANIONS[0];
+  return {
+    level: 1 + Math.floor(state.xp / XP_PER_LEVEL),
+    progress: state.xp % XP_PER_LEVEL,
+    max: XP_PER_LEVEL,
+    label: `Lv.${1 + Math.floor(state.xp / XP_PER_LEVEL)} ${pet.nickname}`,
+    pet,
+  };
+}
+
 export function recordCompanionEvent(state: CompanionState, event: CompanionEvent, day: string): CompanionState {
   const current = dailyState(state, day);
   if (event.type === "view") {

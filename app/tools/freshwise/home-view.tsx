@@ -17,7 +17,7 @@ import {allCodes} from "@/lib/freshwise/basket";
 import {categoryImage,itemImage,CATEGORIES} from "@/lib/freshwise/catalog";
 import {buildBrief,briefReason} from "@/lib/freshwise/advice";
 import {rowsFromBook} from "@/lib/freshwise/search";
-import {COMPANIONS} from "@/lib/freshwise/companions";
+import {companionLevel} from "@/lib/freshwise/companions";
 import type {PriceBook} from "@/lib/freshwise/types";
 
 export function HomeView({today,book}:{today:string;book:PriceBook}){
@@ -30,8 +30,8 @@ export function HomeView({today,book}:{today:string;book:PriceBook}){
  const headline=[...brief.cheapest,...brief.risers,...brief.seasonal].find(row=>brief.advice.includes(row.item.name))??brief.cheapest[0]??brief.seasonal[0]??rows.find(r=>!r.quote.estimated)??rows[0];
  const basketCodes=allCodes(basket);
  const basketRows=rows.filter(row=>basketCodes.includes(row.item.code)).slice(0,4);
- const pet=COMPANIONS.find(p=>p.id===state.active)??COMPANIONS[0];
- const growthInLevel=state.xp%40;
+ // 等級、進度、稱呼跟夥伴頁共用同一份計算，兩頁不會長不一樣。
+ const {pet,progress:growthInLevel,max:growthMax,label:levelLabel}=companionLevel(state);
  function search(){router.push(keyword.trim()?`/tools/freshwise/browse?q=${encodeURIComponent(keyword.trim())}`:"/tools/freshwise/browse")}
  return <div className="fw-page fw-home">
  <div className="fw-home-garden">
@@ -42,10 +42,10 @@ export function HomeView({today,book}:{today:string;book:PriceBook}){
  <div className="fw-hero-stage">
  <div className="fw-hero-companion">
    <PetArtwork id={state.active} size={200} priority className="fw-breathe"/>
-   <span className="fw-hero-level">{ready?`Lv.${1+Math.floor(state.xp/40)} ${pet.nickname}`:"夥伴準備中…"}</span>
+   <span className="fw-hero-level">{ready?levelLabel:"夥伴準備中…"}</span>
    {ready&&<div className="fw-hero-growth">
-     <span>成長 <strong>{growthInLevel}／40</strong></span>
-     <progress value={growthInLevel} max={40} aria-label={`${pet.nickname}的成長 ${growthInLevel}／40`}/>
+     <span>成長 <strong>{growthInLevel}／{growthMax}</strong></span>
+     <progress value={growthInLevel} max={growthMax} aria-label={`${pet.nickname}的成長 ${growthInLevel}／${growthMax}`}/>
    </div>}
  </div>
  <div className="fw-hero-price-column">

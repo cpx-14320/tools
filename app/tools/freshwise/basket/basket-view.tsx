@@ -47,7 +47,7 @@ import type { BasketEntry, BasketGroup, PriceBook, PriceQuote, UnitKey } from "@
 
 export function BasketView({ today, book }: { today: string; book: PriceBook }) {
   const { prefs, basketReady, basket, setBasket, toast } = useFreshwise();
-  const { record } = useCompanion();
+  const { record, state: companion } = useCompanion();
   const month = monthOf(today);
 
   // 開著哪一個彈窗。三個彈窗（分類編輯、項目編輯、品項選擇）各自需要知道「在哪個分類
@@ -100,28 +100,25 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
       {/* 這一籃今天大概要花多少錢。這是菜籃頁存在的理由——分開看每一樣菜多少錢沒有感覺，
           加起來的數字才有。 */}
       <ListCard strong className="fw-basket-summary flex flex-col gap-1.5">
-        <PetArtwork id="radish" size={100} className="fw-basket-pet" />
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <Hint>今天買整籃大概要 · 估算</Hint>
-            <p className="mt-0.5">
-              <span className={text.priceBig}>{cost.counted > 0 ? formatMoney(cost.total) : "—"}</span>
-              <span className={`ml-1.5 ${text.meta}`}>元</span>
-            </p>
-          </div>
-          <div className="text-right">
-            <Hint>
-              {venueMeta(prefs.venue).name}・{unitShort(prefs.unit)}價
-            </Hint>
-            <Hint>{formatShortDate(book.dataDate)}</Hint>
-            <Hint>
-              共 {basket.entries.length} 項
-              {cost.skipped > 0 && `，其中 ${cost.skipped} 項沒填份量`}
-            </Hint>
-          </div>
-        </div>
-        {cost.counted === 0 && <Note>幫項目填上常買的份量（例如 2 {unitShort("catty")}），這裡就會估算整籃的金額。</Note>}
-        {basketReady && basket.entries.some((entry) => !quotes.has(entry.code)) && <Note>沒有行情的項目不計入總額，不會當成 0 元。</Note>}
+        {/* 夥伴要跟著使用者選的那一隻，不要寫死。 */}
+        <PetArtwork id={companion.active} size={100} className="fw-basket-pet" />
+        {/* 三行就夠：標題、金額、條件。以前右欄把場所／日期／項目數拆成三行，加上左欄
+            兩行、底下再兩行註解，一張卡片六七行文字，重點（金額）反而不突出。場所、
+            單位、日期、項目數都是同一件事的條件，併成一行用「・」分隔。 */}
+        <Hint>今天買整籃大概要</Hint>
+        <p>
+          <span className={text.priceBig}>{cost.counted > 0 ? formatMoney(cost.total) : "—"}</span>
+          <span className={`ml-1.5 ${text.meta}`}>元</span>
+        </p>
+        <Hint>
+          {venueMeta(prefs.venue).name}・{unitShort(prefs.unit)}價・{formatShortDate(book.dataDate)}・{basket.entries.length} 項
+          {cost.skipped > 0 && `（${cost.skipped} 項沒填份量）`}
+        </Hint>
+        {cost.counted === 0 ? (
+          <Note>幫項目填上常買的份量（例如 2 {unitShort("catty")}），這裡就會估算整籃的金額。</Note>
+        ) : (
+          basketReady && basket.entries.some((entry) => !quotes.has(entry.code)) && <Note>估算值；沒有行情的項目不計入總額。</Note>
+        )}
       </ListCard>
 
       {/* ready 之前不要畫空狀態：localStorage 還沒讀完，這時候 basket 是預設值，先閃一次
