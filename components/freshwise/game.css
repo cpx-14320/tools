@@ -323,3 +323,9 @@
 /* 價格數字。字級由元件決定（版位不同大小不同），顏色與字重固定。 */
 .fw-price-amount{font-weight:700;line-height:1;color:var(--fw-ink)}
 .fw-price-range{font-weight:700;color:var(--fw-ink)}
+
+/* 場所名稱：以前是可點的下拉按鈕，分頁常駐之後它只剩「現在在哪」的標示。 */
+.fw-venue-label{display:flex;flex:1;min-width:0;align-items:center;gap:4px;min-height:44px;font-size:var(--fw-fs-label);color:var(--fw-ink)}
+.fw-venue-label strong{font-size:var(--fw-fs-body)}
+/* 排序列左邊的標示，跟右邊的「篩選」按鈕對齊成同一條工具列。 */
+.fw-toolbar-label{display:flex;align-items:center;gap:4px;min-height:44px;font-size:var(--fw-fs-body);font-weight:700;color:var(--fw-ink)}

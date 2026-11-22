@@ -15,7 +15,7 @@ import type {CategoryKey,PriceBook} from "@/lib/freshwise/types";
 export function BrowseView({today,book,initialKeyword,initialCategory}:{today:string;book:PriceBook;initialKeyword:string;initialCategory:CategoryKey|""}){
  const {prefs,basket,toggleBasket}=useFreshwise();
  const [keyword,setKeyword]=useState(initialKeyword),[category,setCategory]=useState<CategoryKey|"">(initialCategory),[sort,setSort]=useState<SortKey>("recommended");
- const [inSeasonOnly,setInSeasonOnly]=useState(false),[cheapOnly,setCheapOnly]=useState(false),[measuredOnly,setMeasuredOnly]=useState(false),[filtersOpen,setFiltersOpen]=useState(false),[sortOpen,setSortOpen]=useState(false);
+ const [inSeasonOnly,setInSeasonOnly]=useState(false),[cheapOnly,setCheapOnly]=useState(false),[measuredOnly,setMeasuredOnly]=useState(false),[filtersOpen,setFiltersOpen]=useState(false);
  const allRows=useMemo(()=>rowsFromBook(book.quotes,today),[book.quotes,today]);
  const rows=useMemo(()=>sortRows(filterRows(allRows,{category,keyword,inSeasonOnly,cheapOnly,measuredOnly}),sort),[allRows,category,keyword,inSeasonOnly,cheapOnly,measuredOnly,sort]);
  const activeFilters=Number(inSeasonOnly)+Number(cheapOnly)+Number(measuredOnly);
@@ -27,8 +27,10 @@ export function BrowseView({today,book,initialKeyword,initialCategory}:{today:st
  <SearchInput value={keyword} onChange={setKeyword} placeholder="搜尋食材或常用名稱"/>
  <MarketContext book={book} today={today}/>
  <div className="fw-category-shelf" role="group" aria-label="食材分類"><button type="button" aria-pressed={!category} onClick={()=>setCategory("")}><GameIcon name="book" size={48}/><span>全部</span></button>{CATEGORIES.map(c=><button key={c.key} type="button" aria-pressed={category===c.key} onClick={()=>setCategory(c.key)}><GameIcon name={c.key} size={48}/><span>{c.name}</span></button>)}</div>
- <div className="fw-list-toolbar"><button type="button" className="fw-filter-toggle" aria-expanded={sortOpen} onClick={()=>setSortOpen(!sortOpen)}><GameIcon name="pencil" size={28}/>{SORT_OPTIONS.find(s=>s.key===sort)?.label}<span className="fw-dropdown-arrow" aria-hidden="true">▼</span></button><button type="button" className="fw-filter-toggle" aria-expanded={filtersOpen} onClick={()=>setFiltersOpen(!filtersOpen)}><GameIcon name="filter" size={32}/>篩選{activeFilters? ` ${activeFilters}`:""}</button></div>
- {sortOpen&&<SegmentedTabs items={SORT_OPTIONS} value={sort} onChange={value=>{setSort(value);setSortOpen(false)}} scroll/>}
+ {/* 排序與篩選一開始就看得到、直接能點。以前要先點「推薦 ▼」才展開分頁，等於把一個
+     單純的切換做成兩段操作——使用者還沒看到有哪些選項，就得先按一下。 */}
+ <div className="fw-list-toolbar"><span className="fw-toolbar-label"><GameIcon name="pencil" size={28}/>排序</span><button type="button" className="fw-filter-toggle" aria-expanded={filtersOpen} onClick={()=>setFiltersOpen(!filtersOpen)}><GameIcon name="filter" size={32}/>篩選{activeFilters? ` ${activeFilters}`:""}</button></div>
+ <SegmentedTabs items={SORT_OPTIONS} value={sort} onChange={setSort} scroll/>
  {filtersOpen&&<div className="fw-filter-panel"><div className="fw-filter-pills"><FilterPill label="只看當季" active={inSeasonOnly} onClick={()=>setInSeasonOnly(!inSeasonOnly)}/><FilterPill label="只看划算" active={cheapOnly} onClick={()=>setCheapOnly(!cheapOnly)}/><FilterPill label="只看實際訪價" active={measuredOnly} onClick={()=>setMeasuredOnly(!measuredOnly)}/></div>{filtering&&<GhostButton onClick={clear}>清除條件</GhostButton>}</div>}
  {prefs.venue==="super"&&<Callout>{copy.estimatedNote}</Callout>}
  {prefs.venue==="market"&&estimatedCount>0&&<Callout>{copy.retailCoverageNote}</Callout>}
