@@ -203,21 +203,35 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
     [apply, flush],
   );
 
-  const claim = useCallback(
-    (id: QuestId) => {
-      if (!readyRef.current) return;
-      const next = claimCompanionQuest(current.current, id, companionDay());
-      if (next === current.current || !next.claimed.includes(id) || (current.current.claimed.includes(id) && current.current.day === next.day)) return;
-      apply(next);
-      setReward(id);
-      void (async () => {
-        // 先把累積的瀏覽事件送完，伺服器才看得到任務已經達標。
-        await flush();
-        await send({ action: "claim", quest: id });
-      })();
-    },
-    [apply, flush, send],
-  );
+  /**
+   * 按「領取」只是**打開小紙條**，還沒真的領。
+   *
+   * 以前按下去就直接記成已領取、順便開彈窗——使用者如果只是想看看獎勵是什麼、按了
+   * 關閉，獎勵已經入帳而他沒看到那封信。真正入帳的動作是彈窗裡的「收下心意」
+   * （confirmClaim）。這裡只先驗證「這個任務現在真的可以領」，不可以領就不開窗。
+   */
+  const claim = useCallback((id: QuestId) => {
+    if (!readyRef.current) return;
+    const preview = claimCompanionQuest(current.current, id, companionDay());
+    const claimable = preview !== current.current && preview.claimed.includes(id) && !current.current.claimed.includes(id);
+    if (!claimable) return;
+    setReward(id);
+  }, []);
+
+  /** 小紙條上的「收下心意」：這一步才真的入帳。id 由呼叫端（彈窗）傳，它知道現在
+   *  開的是哪一封信。 */
+  const confirmClaim = useCallback((id: QuestId) => {
+    setReward(null);
+    if (!readyRef.current) return;
+    const next = claimCompanionQuest(current.current, id, companionDay());
+    if (next === current.current || current.current.claimed.includes(id)) return;
+    apply(next);
+    void (async () => {
+      // 先把累積的瀏覽事件送完，伺服器才看得到任務已經達標。
+      await flush();
+      await send({ action: "claim", quest: id });
+    })();
+  }, [apply, flush, send]);
 
   const care = useCallback(
     (action: "water" | "play") => {
@@ -277,7 +291,7 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
             探索印章 +1
           </span>
         </div>
-        <button type="button" className="fw-game-button" onClick={() => setReward(null)}>
+        <button type="button" className="fw-game-button" onClick={() => reward && confirmClaim(reward)}>
           收下心意，繼續探索
         </button>
       </BottomSheetModal>
