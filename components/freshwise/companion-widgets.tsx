@@ -10,8 +10,7 @@ export function QuestSlip({ all = false }: { all?: boolean }) {
   const { state, ready, claim } = useCompanion();
   if (!ready) return null;
   const quests = all ? QUESTS : [QUESTS.find((q) => !state.claimed.includes(q.id)) ?? QUESTS[0]];
-  return <section className={`fw-quests ${all ? "fw-quests-all" : "fw-quests-compact fw-paper"}`} aria-label="今日探索任務">
-    <div className="fw-quest-paper" aria-hidden="true"><span className="fw-quest-paper-top"/><span className="fw-quest-paper-middle"/><span className="fw-quest-paper-bottom"/></div>
+  return <section className={`fw-quests ${all ? "fw-quests-all" : "fw-quests-compact"}`} aria-label="今日探索任務">
     <h2>今日小任務</h2>
     {quests.map((quest) => { const progress = questProgress(state, quest.id); const claimed = state.claimed.includes(quest.id); const done = progress >= quest.target;
       const reward = <><GameIcon name="dew" size={26} /><span>+{quest.reward}</span></>;
