@@ -98,13 +98,6 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
     <div className="fw-page fw-basket-page">
       <PageTitle hanging>{copy.basket}</PageTitle>
 
-      {/* 單位切換跟首頁、行情頁同一顆 SegmentedTabs，而且改的是同一份偏好——在菜籃換成
-          公斤，回首頁看到的也是公斤。這一頁本來寫死台斤，習慣看公斤的人沒得換。
-          （份量欄位仍然是台斤：那是使用者自己填的「我都買幾斤」，不該跟著顯示單位跑。） */}
-      <div className="flex justify-end">
-        <SegmentedTabs items={UNIT_TABS} value={prefs.unit} onChange={(unit) => setPrefs({ unit })} />
-      </div>
-
       {/* 這一籃今天大概要花多少錢。這是菜籃頁存在的理由——分開看每一樣菜多少錢沒有感覺，
           加起來的數字才有。 */}
       <ListCard strong className="fw-basket-summary flex flex-col gap-1.5">
@@ -123,6 +116,14 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
           {formatShortDate(book.dataDate)}・{basket.entries.length} 項
         </Hint>
       </ListCard>
+
+      {/* 單位切換放在總額下面、清單上面——它影響的是底下每一列的價格與份量，不是上面
+          那個總額（總額是「元」，換單位不會變）。擺在總額上方會讓人以為按了金額會跟著變。
+          跟首頁、行情頁同一顆 SegmentedTabs，改的也是同一份偏好：在菜籃換成公斤，回首頁
+          看到的也是公斤。 */}
+      <div className="flex justify-end">
+        <SegmentedTabs items={UNIT_TABS} value={prefs.unit} onChange={(unit) => setPrefs({ unit })} />
+      </div>
 
       {/* ready 之前不要畫空狀態：localStorage 還沒讀完，這時候 basket 是預設值，先閃一次
           「菜籃是空的」再跳出一堆項目會很突兀。 */}
