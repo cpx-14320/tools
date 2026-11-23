@@ -1,6 +1,6 @@
 import Image from "next/image";
-import { PetInteraction } from "./pet-interaction";
-import type { CSSProperties } from "react";
+import { PetInteraction, type PetReactionHandle } from "./pet-interaction";
+import type { CSSProperties, Ref } from "react";
 import { COMPANIONS, type CompanionId } from "@/lib/freshwise/companions";
 
 // 插畫素材的進入點。插畫只負責圖案，文字與可點選狀態一律由 HTML 提供，所以這裡畫出來
@@ -53,10 +53,10 @@ function petName(id: CompanionId): string {
  * 直接畫下去的話，選了別隻的人每次進頁面都會先看到糰糰、再「啪」地換成自己的夥伴。
  * 傳 `ready={false}` 就只佔位不畫圖——同樣的尺寸，所以換上來的時候版面不會跳。
  */
-export function PetArtwork({ id = "cabbage", size = 160, className = "", priority = false, interactive = false, ready = true }: { id?: CompanionId; size?: number; className?: string; priority?: boolean; interactive?: boolean; ready?: boolean }) {
+export function PetArtwork({ id = "cabbage", size = 160, className = "", priority = false, interactive = false, ready = true, reactionRef }: { id?: CompanionId; size?: number; className?: string; priority?: boolean; interactive?: boolean; ready?: boolean; reactionRef?: Ref<PetReactionHandle> }) {
   return (
     <span className={`fw-pet-art ${className}`} style={{ width: size, height: size }} aria-busy={ready ? undefined : true}>
-      {!ready ? null : interactive ? <PetInteraction key={id} id={id} name={petName(id)} baseSrc={petFile(id)} size={size} priority={priority}/> : <Image src={petFile(id)} alt={petName(id)} fill sizes={`${size}px`} priority={priority} />}
+      {!ready ? null : interactive ? <PetInteraction key={id} id={id} name={petName(id)} baseSrc={petFile(id)} size={size} priority={priority} reactionRef={reactionRef}/> : <Image src={petFile(id)} alt={petName(id)} fill sizes={`${size}px`} priority={priority} />}
     </span>
   );
 }

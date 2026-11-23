@@ -1,14 +1,16 @@
 {
   "date": "2026-11-23",
-  "status": "partial-batch-complete",
+  "status": "aquatic-in-progress",
   "source": "FreshWise_未顯示食材清單.csv",
   "sourceRowCount": 402,
   "expectedNewImageCount": 221,
-  "generatedCount": 122,
-  "pendingCount": 99,
+  "generatedCount": 151,
+  "pendingCount": 70,
   "mappedRowCount": 385,
   "skippedRowCount": 17,
   "naming": "item-farm-<sourceCode>.png / item-aquatic-<sourceCode>.png; retail rows without source codes use item-retail-<sequence>.png. These source codes are separate from application catalog IDs.",
+  "pausedCategories": [],
+  "pauseReason": null,
   "rows": [
     {
       "index": 0,
@@ -39,9 +41,11 @@
       "代碼": "FH1",
       "未納入原因": "未建立此品種對應",
       "assetName": "長形扁蒲",
-      "file": "item-farm-FH1.png",
+      "file": "unused/item-farm-FH1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FH1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 3,
@@ -61,9 +65,11 @@
       "代碼": "FH4",
       "未納入原因": "未建立此品種對應",
       "assetName": "梨子蒲",
-      "file": "item-farm-FH4.png",
+      "file": "unused/item-farm-FH4.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FH4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 5,
@@ -72,9 +78,11 @@
       "代碼": "FK3",
       "未納入原因": "未建立此品種對應",
       "assetName": "甜椒－新香",
-      "file": "item-farm-FK3.png",
+      "file": "unused/item-farm-FK3.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FK3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 6,
@@ -94,9 +102,11 @@
       "代碼": "FL5",
       "未納入原因": "未建立此品種對應",
       "assetName": "豌豆苗",
-      "file": "item-farm-FL5.png",
+      "file": "unused/item-farm-FL5.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FL5.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 8,
@@ -149,9 +159,11 @@
       "代碼": "FT1",
       "未納入原因": "未建立此品種對應",
       "assetName": "木瓜形南瓜",
-      "file": "item-farm-FT1.png",
+      "file": "unused/item-farm-FT1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FT1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 13,
@@ -160,9 +172,11 @@
       "代碼": "FT11",
       "未納入原因": "未建立此品種對應",
       "assetName": "木瓜形南瓜",
-      "file": "item-farm-FT1.png",
+      "file": "unused/item-farm-FT1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FT1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 14,
@@ -182,9 +196,11 @@
       "代碼": "FT5",
       "未納入原因": "未建立此品種對應",
       "assetName": "青如意南瓜",
-      "file": "item-farm-FT5.png",
+      "file": "unused/item-farm-FT5.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FT5.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 16,
@@ -193,9 +209,11 @@
       "代碼": "FT7",
       "未納入原因": "未建立此品種對應",
       "assetName": "栗子南瓜",
-      "file": "item-farm-FT7.png",
+      "file": "unused/item-farm-FT7.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FT7.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 17,
@@ -237,9 +255,11 @@
       "代碼": "FV5",
       "未納入原因": "未建立此品種對應",
       "assetName": "青龍／糯米椒",
-      "file": "item-farm-FV2.png",
+      "file": "unused/item-farm-FV2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FV2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 21,
@@ -248,9 +268,11 @@
       "代碼": "FV6",
       "未納入原因": "未建立此品種對應",
       "assetName": "青龍／糯米椒",
-      "file": "item-farm-FV2.png",
+      "file": "unused/item-farm-FV2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FV2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 22,
@@ -259,9 +281,11 @@
       "代碼": "FX1",
       "未納入原因": "未建立此品種對應",
       "assetName": "花豆",
-      "file": "item-farm-FX1.png",
+      "file": "unused/item-farm-FX1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FX1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 23,
@@ -270,9 +294,11 @@
       "代碼": "FX2",
       "未納入原因": "未建立此品種對應",
       "assetName": "虎豆／福豆",
-      "file": "item-farm-FX2.png",
+      "file": "unused/item-farm-FX2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FX2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 24,
@@ -303,9 +329,11 @@
       "代碼": "LA6",
       "未納入原因": "被現有排除規則擋下",
       "assetName": "甘藍芽",
-      "file": "item-farm-LA6.png",
+      "file": "unused/item-farm-LA6.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LA6.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 27,
@@ -402,9 +430,11 @@
       "代碼": "LI1",
       "未納入原因": "未建立此品種對應",
       "assetName": "廣東萵苣",
-      "file": "item-farm-LI1.png",
+      "file": "unused/item-farm-LI1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LI1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 36,
@@ -413,9 +443,11 @@
       "代碼": "LI2",
       "未納入原因": "未建立此品種對應",
       "assetName": "結球萵苣",
-      "file": "item-farm-LI2.png",
+      "file": "unused/item-farm-LI2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LI2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 37,
@@ -435,9 +467,11 @@
       "代碼": "LI4",
       "未納入原因": "未建立此品種對應",
       "assetName": "尖葉／油麥菜",
-      "file": "item-farm-LI4.png",
+      "file": "unused/item-farm-LI4.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LI4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 39,
@@ -446,9 +480,11 @@
       "代碼": "LI5",
       "未納入原因": "未建立此品種對應",
       "assetName": "尖葉／油麥菜",
-      "file": "item-farm-LI4.png",
+      "file": "unused/item-farm-LI4.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LI4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 40,
@@ -457,9 +493,11 @@
       "代碼": "LI6",
       "未納入原因": "未建立此品種對應",
       "assetName": "蘿美萵苣",
-      "file": "item-farm-LI6.png",
+      "file": "unused/item-farm-LI6.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LI6.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 41,
@@ -468,9 +506,11 @@
       "代碼": "LI92",
       "未納入原因": "未建立此品種對應",
       "assetName": "結球萵苣",
-      "file": "item-farm-LI2.png",
+      "file": "unused/item-farm-LI2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LI2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 42,
@@ -479,9 +519,11 @@
       "代碼": "LJ1",
       "未納入原因": "未建立此品種對應",
       "assetName": "芥菜仁",
-      "file": "item-farm-LJ1.png",
+      "file": "unused/item-farm-LJ1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LJ1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 43,
@@ -512,9 +554,11 @@
       "代碼": "LJ5",
       "未納入原因": "未建立此品種對應",
       "assetName": "翡翠娃娃菜",
-      "file": "item-farm-LJ5.png",
+      "file": "unused/item-farm-LJ5.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LJ5.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 46,
@@ -523,9 +567,11 @@
       "代碼": "LK3",
       "未納入原因": "未建立此品種對應",
       "assetName": "芥藍芽",
-      "file": "item-farm-LK3.png",
+      "file": "unused/item-farm-LK3.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LK3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 47,
@@ -545,9 +591,11 @@
       "代碼": "LL2",
       "未納入原因": "未建立此品種對應",
       "assetName": "山茼蒿",
-      "file": "item-farm-LL2.png",
+      "file": "unused/item-farm-LL2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LL2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 49,
@@ -567,9 +615,11 @@
       "代碼": "LN3",
       "未納入原因": "未建立此品種對應",
       "assetName": "油菜花",
-      "file": "item-farm-LN3.png",
+      "file": "unused/item-farm-LN3.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LN3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 51,
@@ -578,9 +628,11 @@
       "代碼": "LS1",
       "未納入原因": "未建立此品種對應",
       "assetName": "茴香",
-      "file": "item-farm-LS1.png",
+      "file": "unused/item-farm-LS1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LS1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 52,
@@ -589,9 +641,11 @@
       "代碼": "LU1",
       "未納入原因": "未建立此品種對應",
       "assetName": "菾菜",
-      "file": "item-farm-LU1.png",
+      "file": "unused/item-farm-LU1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LU1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 54,
@@ -600,9 +654,11 @@
       "代碼": "SA7",
       "未納入原因": "未建立此品種對應",
       "assetName": "甜菜根",
-      "file": "item-farm-SA7.png",
+      "file": "unused/item-farm-SA7.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SA7.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 55,
@@ -622,9 +678,11 @@
       "代碼": "SF2",
       "未納入原因": "未建立此品種對應",
       "assetName": "韭黃",
-      "file": "item-farm-SF2.png",
+      "file": "unused/item-farm-SF2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SF2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 57,
@@ -633,9 +691,11 @@
       "代碼": "SF3",
       "未納入原因": "未建立此品種對應",
       "assetName": "韭菜花",
-      "file": "item-farm-SF3.png",
+      "file": "unused/item-farm-SF3.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SF3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 58,
@@ -644,9 +704,11 @@
       "代碼": "SG1",
       "未納入原因": "未建立此品種對應",
       "assetName": "青蒜",
-      "file": "item-farm-SG1.png",
+      "file": "unused/item-farm-SG1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SG1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 59,
@@ -655,9 +717,11 @@
       "代碼": "SG2",
       "未納入原因": "未建立此品種對應",
       "assetName": "青蒜",
-      "file": "item-farm-SG1.png",
+      "file": "unused/item-farm-SG1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SG1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 60,
@@ -688,9 +752,11 @@
       "代碼": "SJ5",
       "未納入原因": "未建立此品種對應",
       "assetName": "芋角",
-      "file": "item-farm-SJ5.png",
+      "file": "unused/item-farm-SJ5.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SJ5.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 63,
@@ -820,9 +886,11 @@
       "代碼": "FM3",
       "未納入原因": "未建立此品種對應",
       "assetName": "紅色菜豆",
-      "file": "item-farm-FM3.png",
+      "file": "unused/item-farm-FM3.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FM3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 75,
@@ -831,9 +899,11 @@
       "代碼": "FP1",
       "未納入原因": "未建立此品種對應",
       "assetName": "萊豆莢",
-      "file": "item-farm-FP1.png",
+      "file": "unused/item-farm-FP1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FP1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 76,
@@ -842,9 +912,11 @@
       "代碼": "FR2",
       "未納入原因": "未建立此品種對應",
       "assetName": "青花筍",
-      "file": "item-farm-FR2.png",
+      "file": "unused/item-farm-FR2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FR2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 77,
@@ -853,9 +925,11 @@
       "代碼": "FS2",
       "未納入原因": "未建立此品種對應",
       "assetName": "白色越瓜",
-      "file": "item-farm-FS2.png",
+      "file": "unused/item-farm-FS2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FS2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 78,
@@ -875,9 +949,11 @@
       "代碼": "FT12",
       "未納入原因": "未建立此品種對應",
       "assetName": "木瓜形南瓜",
-      "file": "item-farm-FT1.png",
+      "file": "unused/item-farm-FT1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FT1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 80,
@@ -886,9 +962,11 @@
       "代碼": "FT3",
       "未納入原因": "未建立此品種對應",
       "assetName": "黃如意南瓜",
-      "file": "item-farm-FT3.png",
+      "file": "unused/item-farm-FT3.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FT3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 81,
@@ -897,9 +975,11 @@
       "代碼": "FT91",
       "未納入原因": "未建立此品種對應",
       "assetName": "木瓜形南瓜",
-      "file": "item-farm-FT1.png",
+      "file": "unused/item-farm-FT1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FT1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 82,
@@ -908,9 +988,11 @@
       "代碼": "FT96",
       "未納入原因": "未建立此品種對應",
       "assetName": "東昇南瓜",
-      "file": "item-farm-FT6.png",
+      "file": "unused/item-farm-FT6.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FT6.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 83,
@@ -919,9 +1001,11 @@
       "代碼": "FT97",
       "未納入原因": "未建立此品種對應",
       "assetName": "栗子南瓜",
-      "file": "item-farm-FT7.png",
+      "file": "unused/item-farm-FT7.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FT7.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 84,
@@ -941,9 +1025,11 @@
       "代碼": "FU3",
       "未納入原因": "未建立此品種對應",
       "assetName": "石蓮花",
-      "file": "item-farm-FU3.png",
+      "file": "unused/item-farm-FU3.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FU3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 86,
@@ -952,9 +1038,11 @@
       "代碼": "FV2",
       "未納入原因": "未建立此品種對應",
       "assetName": "青龍／糯米椒",
-      "file": "item-farm-FV2.png",
+      "file": "unused/item-farm-FV2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FV2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 87,
@@ -974,9 +1062,11 @@
       "代碼": "FW2",
       "未納入原因": "未建立此品種對應",
       "assetName": "洛神花",
-      "file": "item-farm-FW2.png",
+      "file": "unused/item-farm-FW2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FW2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 89,
@@ -1007,9 +1097,11 @@
       "代碼": "FZ2",
       "未納入原因": "未建立此品種對應",
       "assetName": "熟花生",
-      "file": "item-farm-FZ2.png",
+      "file": "unused/item-farm-FZ2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FZ2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 92,
@@ -1018,9 +1110,11 @@
       "代碼": "LA94",
       "未納入原因": "被現有排除規則擋下",
       "assetName": "紫甘藍",
-      "file": "item-farm-LA94.png",
+      "file": "unused/item-farm-LA94.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LA94.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 93,
@@ -1084,9 +1178,11 @@
       "代碼": "LI71",
       "未納入原因": "未建立此品種對應",
       "assetName": "紅捲萵苣",
-      "file": "item-farm-LI7.png",
+      "file": "unused/item-farm-LI7.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LI7.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 99,
@@ -1128,9 +1224,11 @@
       "代碼": "LI96",
       "未納入原因": "未建立此品種對應",
       "assetName": "蘿美萵苣",
-      "file": "item-farm-LI6.png",
+      "file": "unused/item-farm-LI6.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LI6.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 103,
@@ -1150,9 +1248,11 @@
       "代碼": "LN2",
       "未納入原因": "未建立此品種對應",
       "assetName": "小松菜",
-      "file": "item-farm-LN2.png",
+      "file": "unused/item-farm-LN2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LN2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 105,
@@ -1172,9 +1272,11 @@
       "代碼": "LQ1",
       "未納入原因": "未建立此品種對應",
       "assetName": "紅鳳菜",
-      "file": "item-farm-LQ1.png",
+      "file": "unused/item-farm-LQ1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LQ1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 107,
@@ -1183,9 +1285,11 @@
       "代碼": "LT2",
       "未納入原因": "未建立此品種對應",
       "assetName": "海帶",
-      "file": "item-farm-LT2.png",
+      "file": "unused/item-farm-LT2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LT2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 108,
@@ -1205,9 +1309,11 @@
       "代碼": "LV1",
       "未納入原因": "未建立此品種對應",
       "assetName": "巴西利",
-      "file": "item-farm-LV1.png",
+      "file": "unused/item-farm-LV1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LV1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 110,
@@ -1216,9 +1322,11 @@
       "代碼": "LX1",
       "未納入原因": "未建立此品種對應",
       "assetName": "過貓",
-      "file": "item-farm-LX1.png",
+      "file": "unused/item-farm-LX1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LX1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 111,
@@ -1227,9 +1335,11 @@
       "代碼": "LX2",
       "未納入原因": "未建立此品種對應",
       "assetName": "山蘇",
-      "file": "item-farm-LX2.png",
+      "file": "unused/item-farm-LX2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LX2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 112,
@@ -1238,9 +1348,11 @@
       "代碼": "LY2",
       "未納入原因": "未建立此品種對應",
       "assetName": "黑甜仔菜",
-      "file": "item-farm-LY2.png",
+      "file": "unused/item-farm-LY2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LY2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 113,
@@ -1249,9 +1361,11 @@
       "代碼": "LZ2",
       "未納入原因": "未建立此品種對應",
       "assetName": "川七葉",
-      "file": "item-farm-LZ2.png",
+      "file": "unused/item-farm-LZ2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LZ2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 114,
@@ -1282,9 +1396,11 @@
       "代碼": "MB1",
       "未納入原因": "未建立此品種對應",
       "assetName": "草菇",
-      "file": "item-farm-MB1.png",
+      "file": "unused/item-farm-MB1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-MB1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 117,
@@ -1304,9 +1420,11 @@
       "代碼": "MF1",
       "未納入原因": "未建立此品種對應",
       "assetName": "鮑魚菇",
-      "file": "item-farm-MF1.png",
+      "file": "unused/item-farm-MF1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-MF1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 119,
@@ -1348,9 +1466,11 @@
       "代碼": "ML1",
       "未納入原因": "未建立此品種對應",
       "assetName": "珊瑚菇",
-      "file": "item-farm-ML1.png",
+      "file": "unused/item-farm-ML1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-ML1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 123,
@@ -1359,9 +1479,11 @@
       "代碼": "MN1",
       "未納入原因": "未建立此品種對應",
       "assetName": "柳松菇",
-      "file": "item-farm-MN1.png",
+      "file": "unused/item-farm-MN1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-MN1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 125,
@@ -1370,9 +1492,11 @@
       "代碼": "OA2",
       "未納入原因": "未建立此品種對應",
       "assetName": "帶葉鹹菜",
-      "file": "item-farm-OA2.png",
+      "file": "unused/item-farm-OA2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-OA2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 126,
@@ -1381,9 +1505,11 @@
       "代碼": "OB1",
       "未納入原因": "未建立此品種對應",
       "assetName": "雪里紅",
-      "file": "item-farm-OB1.png",
+      "file": "unused/item-farm-OB1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-OB1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 127,
@@ -1392,9 +1518,11 @@
       "代碼": "OD1",
       "未納入原因": "未建立此品種對應",
       "assetName": "蘿蔔乾",
-      "file": "item-farm-OD1.png",
+      "file": "unused/item-farm-OD1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-OD1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 128,
@@ -1403,9 +1531,11 @@
       "代碼": "OE2",
       "未納入原因": "未建立此品種對應",
       "assetName": "醃瓜",
-      "file": "item-farm-OE2.png",
+      "file": "unused/item-farm-OE2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-OE2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 129,
@@ -1414,9 +1544,11 @@
       "代碼": "OI4",
       "未納入原因": "未建立此品種對應",
       "assetName": "筍茸",
-      "file": "item-farm-OI4.png",
+      "file": "unused/item-farm-OI4.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-OI4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 130,
@@ -1425,9 +1557,11 @@
       "代碼": "OL1",
       "未納入原因": "未建立此品種對應",
       "assetName": "朴菜",
-      "file": "item-farm-OL1.png",
+      "file": "unused/item-farm-OL1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-OL1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 131,
@@ -1458,9 +1592,11 @@
       "代碼": "SG9",
       "未納入原因": "未建立此品種對應",
       "assetName": "青蒜",
-      "file": "item-farm-SG1.png",
+      "file": "unused/item-farm-SG1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SG1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 134,
@@ -1469,9 +1605,11 @@
       "代碼": "SJ3",
       "未納入原因": "未建立此品種對應",
       "assetName": "里芋",
-      "file": "item-farm-SJ3.png",
+      "file": "unused/item-farm-SJ3.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SJ3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 135,
@@ -1480,9 +1618,11 @@
       "代碼": "SK2",
       "未納入原因": "未建立此品種對應",
       "assetName": "加工荸薺",
-      "file": "item-farm-SK2.png",
+      "file": "unused/item-farm-SK2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SK2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 136,
@@ -1491,9 +1631,11 @@
       "代碼": "SP5",
       "未納入原因": "未建立此品種對應",
       "assetName": "薑黃",
-      "file": "item-farm-SP5.png",
+      "file": "unused/item-farm-SP5.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SP5.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 137,
@@ -1524,9 +1666,11 @@
       "代碼": "SR3",
       "未納入原因": "未建立此品種對應",
       "assetName": "去殼菱角",
-      "file": "item-farm-SR3.png",
+      "file": "unused/item-farm-SR3.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SR3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 140,
@@ -1546,9 +1690,11 @@
       "代碼": "SU21",
       "未納入原因": "未建立此品種對應",
       "assetName": "人參山藥",
-      "file": "item-farm-SU21.png",
+      "file": "unused/item-farm-SU21.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SU21.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 142,
@@ -1557,9 +1703,11 @@
       "代碼": "SU3",
       "未納入原因": "未建立此品種對應",
       "assetName": "樹薯",
-      "file": "item-farm-SU3.png",
+      "file": "unused/item-farm-SU3.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SU3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 143,
@@ -1579,9 +1727,11 @@
       "代碼": "SV3",
       "未納入原因": "未建立此品種對應",
       "assetName": "蘆筍花",
-      "file": "item-farm-SV3.png",
+      "file": "unused/item-farm-SV3.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SV3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 145,
@@ -1612,9 +1762,11 @@
       "代碼": "SX2",
       "未納入原因": "未建立此品種對應",
       "assetName": "黃豆芽",
-      "file": "item-farm-SX2.png",
+      "file": "unused/item-farm-SX2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SX2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 149,
@@ -1623,9 +1775,11 @@
       "代碼": "SX3",
       "未納入原因": "未建立此品種對應",
       "assetName": "豌豆苗",
-      "file": "item-farm-FL5.png",
+      "file": "unused/item-farm-FL5.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FL5.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 150,
@@ -1634,9 +1788,11 @@
       "代碼": "SX4",
       "未納入原因": "未建立此品種對應",
       "assetName": "苜蓿芽",
-      "file": "item-farm-SX4.png",
+      "file": "unused/item-farm-SX4.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SX4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 151,
@@ -1645,9 +1801,11 @@
       "代碼": "SZ1",
       "未納入原因": "未建立此品種對應",
       "assetName": "半天筍",
-      "file": "item-farm-SZ1.png",
+      "file": "unused/item-farm-SZ1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SZ1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 152,
@@ -1656,9 +1814,11 @@
       "代碼": "SZ7",
       "未納入原因": "未建立此品種對應",
       "assetName": "晚香玉筍",
-      "file": "item-farm-SZ7.png",
+      "file": "unused/item-farm-SZ7.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SZ7.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 153,
@@ -1667,9 +1827,11 @@
       "代碼": "SZ8",
       "未納入原因": "未建立此品種對應",
       "assetName": "香茅",
-      "file": "item-farm-SZ8.png",
+      "file": "unused/item-farm-SZ8.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SZ8.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 155,
@@ -1678,9 +1840,11 @@
       "代碼": "FH2",
       "未納入原因": "未建立此品種對應",
       "assetName": "圓形扁蒲",
-      "file": "item-farm-FH2.png",
+      "file": "unused/item-farm-FH2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FH2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 156,
@@ -1755,9 +1919,11 @@
       "代碼": "FV3",
       "未納入原因": "未建立此品種對應",
       "assetName": "雞心椒",
-      "file": "item-farm-FV3.png",
+      "file": "unused/item-farm-FV3.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FV3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 163,
@@ -1788,9 +1954,11 @@
       "代碼": "LI7",
       "未納入原因": "未建立此品種對應",
       "assetName": "紅捲萵苣",
-      "file": "item-farm-LI7.png",
+      "file": "unused/item-farm-LI7.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LI7.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 166,
@@ -1821,9 +1989,11 @@
       "代碼": "ML2",
       "未納入原因": "未建立此品種對應",
       "assetName": "珊瑚菇",
-      "file": "item-farm-ML1.png",
+      "file": "unused/item-farm-ML1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-ML1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 169,
@@ -1832,9 +2002,11 @@
       "代碼": "OC1",
       "未納入原因": "未建立此品種對應",
       "assetName": "榨菜",
-      "file": "item-farm-OC1.png",
+      "file": "unused/item-farm-OC1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-OC1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 170,
@@ -1843,9 +2015,11 @@
       "代碼": "OI3",
       "未納入原因": "未建立此品種對應",
       "assetName": "筍片",
-      "file": "item-farm-OI3.png",
+      "file": "unused/item-farm-OI3.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-OI3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 171,
@@ -1854,9 +2028,11 @@
       "代碼": "SA4",
       "未納入原因": "未建立此品種對應",
       "assetName": "櫻桃蘿蔔",
-      "file": "item-farm-SA4.png",
+      "file": "unused/item-farm-SA4.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SA4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 172,
@@ -1865,9 +2041,11 @@
       "代碼": "SL2",
       "未納入原因": "未建立此品種對應",
       "assetName": "雪蓮薯",
-      "file": "item-farm-SL2.png",
+      "file": "unused/item-farm-SL2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SL2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 173,
@@ -1887,9 +2065,11 @@
       "代碼": "SN2",
       "未納入原因": "未建立此品種對應",
       "assetName": "蓮子",
-      "file": "item-farm-SN2.png",
+      "file": "unused/item-farm-SN2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SN2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 175,
@@ -1909,9 +2089,11 @@
       "代碼": "SU1",
       "未納入原因": "未建立此品種對應",
       "assetName": "紅山藥",
-      "file": "item-farm-SU1.png",
+      "file": "unused/item-farm-SU1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SU1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 177,
@@ -1920,9 +2102,11 @@
       "代碼": "SU4",
       "未納入原因": "未建立此品種對應",
       "assetName": "粉薯",
-      "file": "item-farm-SU4.png",
+      "file": "unused/item-farm-SU4.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SU4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 178,
@@ -1931,9 +2115,11 @@
       "代碼": "SV1",
       "未納入原因": "未建立此品種對應",
       "assetName": "白蘆筍",
-      "file": "item-farm-SV1.png",
+      "file": "unused/item-farm-SV1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SV1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 179,
@@ -1942,9 +2128,11 @@
       "代碼": "SZ3",
       "未納入原因": "未建立此品種對應",
       "assetName": "金針筍",
-      "file": "item-farm-SZ3.png",
+      "file": "unused/item-farm-SZ3.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SZ3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 180,
@@ -1975,9 +2163,11 @@
       "代碼": "FT72",
       "未納入原因": "未建立此品種對應",
       "assetName": "栗子南瓜",
-      "file": "item-farm-FT7.png",
+      "file": "unused/item-farm-FT7.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FT7.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 183,
@@ -1997,9 +2187,11 @@
       "代碼": "OI1",
       "未納入原因": "未建立此品種對應",
       "assetName": "筍乾",
-      "file": "item-farm-OI1.png",
+      "file": "unused/item-farm-OI1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-OI1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 185,
@@ -2030,9 +2222,11 @@
       "代碼": "FT6",
       "未納入原因": "未建立此品種對應",
       "assetName": "東昇南瓜",
-      "file": "item-farm-FT6.png",
+      "file": "unused/item-farm-FT6.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FT6.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 188,
@@ -2041,9 +2235,11 @@
       "代碼": "OA1",
       "未納入原因": "未建立此品種對應",
       "assetName": "清心鹹菜",
-      "file": "item-farm-OA1.png",
+      "file": "unused/item-farm-OA1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-OA1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 189,
@@ -2052,9 +2248,11 @@
       "代碼": "OE1",
       "未納入原因": "未建立此品種對應",
       "assetName": "乾醃瓜",
-      "file": "item-farm-OE1.png",
+      "file": "unused/item-farm-OE1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-OE1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 190,
@@ -2063,9 +2261,11 @@
       "代碼": "OI2",
       "未納入原因": "未建立此品種對應",
       "assetName": "筍絲",
-      "file": "item-farm-OI2.png",
+      "file": "unused/item-farm-OI2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-OI2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 191,
@@ -2074,9 +2274,11 @@
       "代碼": "FE3",
       "未納入原因": "未建立此品種對應",
       "assetName": "毛瓜",
-      "file": "item-farm-FE3.png",
+      "file": "unused/item-farm-FE3.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FE3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 192,
@@ -2096,9 +2298,11 @@
       "代碼": "LY4",
       "未納入原因": "未建立此品種對應",
       "assetName": "人參葉",
-      "file": "item-farm-LY4.png",
+      "file": "unused/item-farm-LY4.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-LY4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 194,
@@ -2107,9 +2311,11 @@
       "代碼": "SG4",
       "未納入原因": "未建立此品種對應",
       "assetName": "蔥蒜",
-      "file": "item-farm-SG4.png",
+      "file": "unused/item-farm-SG4.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SG4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 195,
@@ -2118,9 +2324,11 @@
       "代碼": "SK1",
       "未納入原因": "未建立此品種對應",
       "assetName": "荸薺",
-      "file": "item-farm-SK1.png",
+      "file": "unused/item-farm-SK1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SK1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 196,
@@ -2140,9 +2348,11 @@
       "代碼": "FS1",
       "未納入原因": "未建立此品種對應",
       "assetName": "青色越瓜",
-      "file": "item-farm-FS1.png",
+      "file": "unused/item-farm-FS1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FS1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 198,
@@ -2162,9 +2372,11 @@
       "代碼": "FW1",
       "未納入原因": "未建立此品種對應",
       "assetName": "金針花",
-      "file": "item-farm-FW1.png",
+      "file": "unused/item-farm-FW1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-FW1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 200,
@@ -2184,9 +2396,11 @@
       "代碼": "SJ4",
       "未納入原因": "未建立此品種對應",
       "assetName": "芋莖",
-      "file": "item-farm-SJ4.png",
+      "file": "unused/item-farm-SJ4.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-SJ4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 202,
@@ -2195,9 +2409,11 @@
       "代碼": "11",
       "未納入原因": "未建立此品種對應",
       "assetName": "椰子",
-      "file": "item-farm-11.png",
+      "file": "unused/item-farm-11.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-11.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 203,
@@ -2206,9 +2422,11 @@
       "代碼": "129",
       "未納入原因": "未建立此品種對應",
       "assetName": "去殼椰子",
-      "file": "item-farm-12.png",
+      "file": "unused/item-farm-12.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-12.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 204,
@@ -2283,9 +2501,11 @@
       "代碼": "859",
       "未納入原因": "未建立此品種對應",
       "assetName": "榴槤",
-      "file": "item-farm-859.png",
+      "file": "unused/item-farm-859.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-859.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 212,
@@ -2294,9 +2514,11 @@
       "代碼": "A2",
       "未納入原因": "被現有排除規則擋下",
       "assetName": "紅芭蕉",
-      "file": "item-farm-A2.png",
+      "file": "unused/item-farm-A2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-A2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 213,
@@ -2338,9 +2560,11 @@
       "代碼": "C6",
       "未納入原因": "未建立此品種對應",
       "assetName": "佛利蒙柑",
-      "file": "item-farm-C6.png",
+      "file": "unused/item-farm-C6.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-C6.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 217,
@@ -2349,9 +2573,11 @@
       "代碼": "C8",
       "未納入原因": "未建立此品種對應",
       "assetName": "珍珠柑",
-      "file": "item-farm-C8.png",
+      "file": "unused/item-farm-C8.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-C8.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 218,
@@ -2371,9 +2597,11 @@
       "代碼": "E3",
       "未納入原因": "未建立此品種對應",
       "assetName": "紅肉柳橙",
-      "file": "item-farm-E3.png",
+      "file": "unused/item-farm-E3.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-E3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 220,
@@ -2393,9 +2621,11 @@
       "代碼": "F2",
       "未納入原因": "未建立此品種對應",
       "assetName": "金棗",
-      "file": "item-farm-F2.png",
+      "file": "unused/item-farm-F2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-F2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 222,
@@ -2404,9 +2634,11 @@
       "代碼": "F4",
       "未納入原因": "未建立此品種對應",
       "assetName": "小桔子",
-      "file": "item-farm-F4.png",
+      "file": "unused/item-farm-F4.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-F4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 223,
@@ -2415,9 +2647,11 @@
       "代碼": "G1",
       "未納入原因": "未建立此品種對應",
       "assetName": "蛋黃果",
-      "file": "item-farm-G1.png",
+      "file": "unused/item-farm-G1.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-G1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 224,
@@ -2426,9 +2660,11 @@
       "代碼": "G2",
       "未納入原因": "未建立此品種對應",
       "assetName": "黃金果",
-      "file": "item-farm-G2.png",
+      "file": "unused/item-farm-G2.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-G2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 225,
@@ -2437,9 +2673,11 @@
       "代碼": "G7",
       "未納入原因": "未建立此品種對應",
       "assetName": "橄欖",
-      "file": "item-farm-G7.png",
+      "file": "unused/item-farm-G7.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-G7.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 226,
@@ -2448,9 +2686,11 @@
       "代碼": "G8",
       "未納入原因": "未建立此品種對應",
       "assetName": "栗子",
-      "file": "item-farm-G8.png",
+      "file": "unused/item-farm-G8.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-G8.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 227,
@@ -2470,9 +2710,11 @@
       "代碼": "H6",
       "未納入原因": "未建立此品種對應",
       "assetName": "西施柚",
-      "file": "item-farm-H6.png",
+      "file": "unused/item-farm-H6.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-H6.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 229,
@@ -2492,9 +2734,11 @@
       "代碼": "I4",
       "未納入原因": "未建立此品種對應",
       "assetName": "青木瓜",
-      "file": "item-farm-I4.png",
+      "file": "unused/item-farm-I4.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-I4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 231,
@@ -2503,9 +2747,11 @@
       "代碼": "K4",
       "未納入原因": "未建立此品種對應",
       "assetName": "帶殼龍眼乾",
-      "file": "item-farm-K4.png",
+      "file": "unused/item-farm-K4.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-K4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 232,
@@ -2514,9 +2760,11 @@
       "代碼": "K41",
       "未納入原因": "未建立此品種對應",
       "assetName": "龍眼肉",
-      "file": "item-farm-K41.png",
+      "file": "unused/item-farm-K41.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-K41.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 233,
@@ -2536,9 +2784,11 @@
       "代碼": "S49",
       "未納入原因": "未建立此品種對應",
       "assetName": "無籽葡萄",
-      "file": "item-farm-S49.png",
+      "file": "unused/item-farm-S49.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "originalFile": "item-farm-S49.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 235,
@@ -2569,9 +2819,11 @@
       "代碼": "T5",
       "未納入原因": "未建立此品種對應",
       "assetName": "黃肉西瓜",
-      "file": "item-farm-T5.png",
+      "file": "unused/item-farm-T5.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "originalFile": "item-farm-T5.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 238,
@@ -2590,10 +2842,10 @@
       "API名稱或目錄名稱": "甜瓜-美濃",
       "代碼": "V1",
       "未納入原因": "未建立此品種對應",
-      "assetName": "美濃瓜",
+      "assetName": "甜瓜（美濃瓜）",
       "file": "item-farm-V1.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated"
     },
     {
       "index": 240,
@@ -2601,7 +2853,7 @@
       "API名稱或目錄名稱": "甜瓜-溫室吊瓜",
       "代碼": "V2",
       "未納入原因": "未建立此品種對應",
-      "assetName": "甜瓜",
+      "assetName": "溫室吊瓜",
       "file": "item-GC4.png",
       "existing": true,
       "status": "reused"
@@ -2613,9 +2865,11 @@
       "代碼": "Z3",
       "未納入原因": "未建立此品種對應",
       "assetName": "柿餅",
-      "file": "item-farm-Z3.png",
+      "file": "unused/item-farm-Z3.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "originalFile": "item-farm-Z3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 242,
@@ -2624,9 +2878,11 @@
       "代碼": "Z39",
       "未納入原因": "未建立此品種對應",
       "assetName": "柿餅",
-      "file": "item-farm-Z3.png",
+      "file": "unused/item-farm-Z3.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "originalFile": "item-farm-Z3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 243,
@@ -2635,9 +2891,11 @@
       "代碼": "Z5",
       "未納入原因": "未建立此品種對應",
       "assetName": "筆柿",
-      "file": "item-farm-Z5.png",
+      "file": "unused/item-farm-Z5.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "originalFile": "item-farm-Z5.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 244,
@@ -2657,9 +2915,11 @@
       "代碼": "61",
       "未納入原因": "未建立此品種對應",
       "assetName": "甘蔗",
-      "file": "item-farm-61.png",
+      "file": "unused/item-farm-61.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "originalFile": "item-farm-61.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 246,
@@ -2668,9 +2928,11 @@
       "代碼": "849",
       "未納入原因": "未建立此品種對應",
       "assetName": "石榴",
-      "file": "item-farm-849.png",
+      "file": "unused/item-farm-849.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "originalFile": "item-farm-849.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 247,
@@ -2679,9 +2941,11 @@
       "代碼": "87",
       "未納入原因": "未建立此品種對應",
       "assetName": "紅毛丹",
-      "file": "item-farm-87.png",
+      "file": "unused/item-farm-87.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "originalFile": "item-farm-87.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 248,
@@ -2712,9 +2976,11 @@
       "代碼": "C7",
       "未納入原因": "未建立此品種對應",
       "assetName": "豔陽柑",
-      "file": "item-farm-C7.png",
+      "file": "unused/item-farm-C7.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-C7.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 251,
@@ -2756,9 +3022,11 @@
       "代碼": "G9",
       "未納入原因": "未建立此品種對應",
       "assetName": "波羅蜜",
-      "file": "item-farm-G9.png",
+      "file": "unused/item-farm-G9.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "originalFile": "item-farm-G9.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 255,
@@ -2800,9 +3068,11 @@
       "代碼": "R8",
       "未納入原因": "被現有排除規則擋下",
       "assetName": "芒果青",
-      "file": "item-farm-R8.png",
+      "file": "unused/item-farm-R8.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "originalFile": "item-farm-R8.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 259,
@@ -2865,10 +3135,10 @@
       "API名稱或目錄名稱": "甜瓜-其他",
       "代碼": "V0",
       "未納入原因": "未建立此品種對應",
-      "assetName": "甜瓜",
-      "file": "item-GC4.png",
-      "existing": true,
-      "status": "reused"
+      "assetName": "甜瓜（美濃瓜）",
+      "file": "item-farm-V1.png",
+      "existing": false,
+      "status": "generated"
     },
     {
       "index": 266,
@@ -2899,9 +3169,11 @@
       "代碼": "B4",
       "未納入原因": "被現有排除規則擋下",
       "assetName": "鳳梨花",
-      "file": "item-farm-B4.png",
+      "file": "unused/item-farm-B4.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-B4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 269,
@@ -2921,9 +3193,11 @@
       "代碼": "12",
       "未納入原因": "未建立此品種對應",
       "assetName": "去殼椰子",
-      "file": "item-farm-12.png",
+      "file": "unused/item-farm-12.png",
       "existing": false,
-      "status": "generated"
+      "status": "generated",
+      "originalFile": "item-farm-12.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 271,
@@ -2932,9 +3206,11 @@
       "代碼": "H5",
       "未納入原因": "未建立此品種對應",
       "assetName": "白肉葡萄柚",
-      "file": "item-farm-H5.png",
+      "file": "unused/item-farm-H5.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "originalFile": "item-farm-H5.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 272,
@@ -2945,7 +3221,8 @@
       "assetName": "豆仔魚",
       "file": "item-aquatic-1061.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 273,
@@ -2956,7 +3233,8 @@
       "assetName": "田蛙",
       "file": "item-aquatic-1141.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 274,
@@ -2967,7 +3245,8 @@
       "assetName": "三牙",
       "file": "item-aquatic-2062.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 275,
@@ -2978,7 +3257,8 @@
       "assetName": "白鯧",
       "file": "item-aquatic-2091.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 278,
@@ -2989,7 +3269,8 @@
       "assetName": "魷魚",
       "file": "item-aquatic-2161.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 279,
@@ -3000,7 +3281,8 @@
       "assetName": "魴仔",
       "file": "item-aquatic-2351.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 280,
@@ -3011,7 +3293,8 @@
       "assetName": "扁魚",
       "file": "item-aquatic-2401.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 282,
@@ -3022,7 +3305,8 @@
       "assetName": "熟卷",
       "file": "item-aquatic-6050.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 284,
@@ -3033,7 +3317,8 @@
       "assetName": "烏仔魚",
       "file": "item-aquatic-1051.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 285,
@@ -3044,7 +3329,8 @@
       "assetName": "加州鱸",
       "file": "item-aquatic-1072.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 286,
@@ -3055,7 +3341,8 @@
       "assetName": "青斑",
       "file": "item-aquatic-1171.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 287,
@@ -3066,7 +3353,8 @@
       "assetName": "黃臘鰺／紅杉",
       "file": "item-aquatic-1181.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 288,
@@ -3077,7 +3365,8 @@
       "assetName": "紅喉",
       "file": "item-aquatic-2060.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 289,
@@ -3088,7 +3377,8 @@
       "assetName": "白北",
       "file": "item-aquatic-2143.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 290,
@@ -3099,7 +3389,8 @@
       "assetName": "海鰻",
       "file": "item-aquatic-2221.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 291,
@@ -3176,7 +3467,8 @@
       "assetName": "黑鯛",
       "file": "item-aquatic-1163.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 298,
@@ -3187,7 +3479,8 @@
       "assetName": "淡水珍珠石斑",
       "file": "item-aquatic-1172.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 300,
@@ -4065,9 +4358,11 @@
       "代碼": "",
       "未納入原因": "零售欄位未對應",
       "assetName": "牛心柿",
-      "file": "item-retail-01.png",
+      "file": "unused/item-retail-01.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "originalFile": "item-retail-01.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "index": 386,
@@ -4383,5 +4678,14 @@
       "未納入原因": "未建立此品種對應",
       "reason": "依使用者選擇略過未具名品項"
     }
-  ]
+  ],
+  "assetArchive": {
+    "date": "2026-11-24",
+    "index": "unused/asset-archive-index.json",
+    "pendingCsvRetained": true
+  },
+  "latestScope": {
+    "date": "2026-11-24",
+    "scope": "Resume remaining aquatic ingredient art after completion of the six app introduction designs."
+  }
 }

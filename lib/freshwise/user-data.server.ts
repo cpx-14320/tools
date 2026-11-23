@@ -15,7 +15,7 @@
 
 import type { Collection } from "mongodb";
 import { getDb } from "../mongodb";
-import { defaultBasket, normalizeBasket, type BasketState } from "./basket";
+import { defaultBasket, emptyBasket, normalizeBasket, type BasketState } from "./basket";
 import { DEFAULT_PREFS, normalizePrefs } from "./prefs";
 import type { FreshwisePrefs } from "./types";
 
@@ -50,7 +50,7 @@ export async function loadUserData(userId: string): Promise<FreshwiseUserData> {
     prefs: normalizePrefs(doc.prefs),
     // 沒有 basket 欄位＝這個帳號還沒存過菜籃，給預設的那幾樣；存過但是空的要尊重那個
     // 空的狀態，不然使用者清空菜籃之後預設項目又全部回來，看起來像刪不掉。
-    basket: doc.basket ? normalizeBasket(doc.basket) : defaultBasket(),
+    basket: doc.basket === undefined ? defaultBasket() : normalizeBasket(doc.basket),
     fresh: doc.basket === undefined && doc.prefs === undefined,
   };
 }
@@ -69,5 +69,10 @@ export async function saveBasket(userId: string, basket: unknown): Promise<Baske
 
 /** 設定頁的「清除全部資料」。 */
 export async function clearUserData(userId: string): Promise<void> {
-  await (await coll()).deleteOne({ _id: userId });
+  // 保留空菜籃紀錄，區分「使用者已清空」與「新帳號尚未使用」，避免下次載入又補回預設。
+  await (await coll()).updateOne(
+    { _id: userId },
+    { $set: { prefs: { ...DEFAULT_PREFS }, basket: emptyBasket(), updatedAt: new Date() } },
+    { upsert: true },
+  );
 }

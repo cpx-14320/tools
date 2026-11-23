@@ -21,30 +21,30 @@ import {rowsFromBook} from "@/lib/freshwise/search";
 import {companionLevel} from "@/lib/freshwise/companions";
 import type {PriceBook} from "@/lib/freshwise/types";
 
-/** 兩個區塊的挑選規則。使用者看到一份清單卻不知道「為什麼是這幾樣」，就只能猜。 */
+/** 首頁三個區塊的口語說明，依實際挑選與排序規則呈現。 */
 const SECTION_HELP = {
   seasonal: {
-    title: "「現在正當季」是怎麼挑的",
+    title: "現在當季，怎麼挑？",
     lines: [
-      "這個月正在產季的食材。產季的東西通常品質比較好、供應也比較穩。",
-      "會排掉「比平常貴」的品項——當季不等於便宜，產季剛開始的搶鮮價反而偏高，推薦給不熟價格的人只會讓你買貴。",
-      "有實際訪價的排前面，用批發價推估的排後面（標示「估算」）。",
+      "這裡挑的是這個月正當季的食材，今天煮什麼，可以從它們找靈感。",
+      "有足夠紀錄、又比平常貴的食材會先略過，挑當季也順便顧荷包。",
+      "有實際訪價的先放前面；「估算」是抓個大概，買之前可以再比一比。",
     ],
   },
   risers: {
-    title: "「漲價了，慢慢挑」是怎麼挑的",
+    title: "漲價了，怎麼挑？",
     lines: [
-      "跟前一個交易日比，今天價格上漲的食材，漲幅大的排前面。",
-      "不是叫你別買，是提醒你今天這幾樣比昨天貴，可以多比較或改買別的。",
-      "標示「估算」的品項也會列入：它的價位是推估的，但「跟昨天差幾趴」就是批發的實際變化。",
+      "這些食材的行情，比前一個有交易的日子漲了一些。",
+      "有實際訪價的先放前面，估算價放後面；各自再把漲比較多的排前面。",
+      "想買可以多比幾攤，或換道菜煮。「估算」的漲跌參考批發行情，攤位售價可能不同。",
     ],
   },
   fallers: {
-    title: "「跌價了，可以買」是怎麼挑的",
+    title: "跌價了，怎麼挑？",
     lines: [
-      "跟前一個交易日比，今天價格下跌的食材，跌幅大的排前面。",
-      "跟上面那一區是一對：只講漲的那一半，等於只告訴你壞消息。",
-      "標示「估算」的品項也會列入：它的價位是推估的，但「跟昨天差幾趴」就是批發的實際變化。",
+      "這些食材的行情，比前一個有交易的日子降了一些。",
+      "有實際訪價的先放前面，估算價放後面；各自再把跌比較多的排前面。",
+      "剛好要用，可以挑幾樣帶回家。也能點進價格詳情，看看和平常差多少；「估算」的漲跌參考批發行情。",
     ],
   },
 } as const;
@@ -98,9 +98,9 @@ export function HomeView({today,book}:{today:string;book:PriceBook}){
  <section><SectionTitle leaf action={<Link href="/tools/freshwise/basket" className="fw-leaf-link">查看菜籃 →</Link>}>我的菜籃</SectionTitle>
  {!basketReady?<Hint center>{copy.loading}</Hint>:basketRows.length? <Paper variant="list"><CollapsibleList>{basketRows.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`}/>)}</CollapsibleList></Paper>:<EmptyState icon="basket-shopping" title={basketCodes.length?"菜籃裡的食材目前沒有行情":"先挑幾樣你常買的菜"} description="把常買的食材加入菜籃，下次就能直接看價格。" action={<Link href="/tools/freshwise/browse" className="fw-game-button">去逛逛行情</Link>}/>}
  </section>
- {brief.seasonal.length>0&&<section><SectionTitle leaf onHelp={()=>setHelp("seasonal")} helpLabel="現在正當季是怎麼挑的">現在正當季</SectionTitle><Paper variant="list"><CollapsibleList>{brief.seasonal.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`} meta={briefReason(row,"season")}/>)}</CollapsibleList></Paper></section>}
- {brief.risers.length>0&&<section><SectionTitle leaf onHelp={()=>setHelp("risers")} helpLabel="漲價了，慢慢挑是怎麼挑的">漲價了，慢慢挑</SectionTitle><Paper variant="list"><CollapsibleList>{brief.risers.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`}/>)}</CollapsibleList></Paper></section>}
- {brief.fallers.length>0&&<section><SectionTitle leaf onHelp={()=>setHelp("fallers")} helpLabel="跌價了，可以買是怎麼挑的">跌價了，可以買</SectionTitle><Paper variant="list"><CollapsibleList>{brief.fallers.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`}/>)}</CollapsibleList></Paper></section>}
+ {brief.seasonal.length>0&&<section><SectionTitle leaf onHelp={()=>setHelp("seasonal")} helpLabel="了解現在正當季怎麼挑">現在正當季</SectionTitle><Paper variant="list"><CollapsibleList>{brief.seasonal.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`} meta={briefReason(row,"season")}/>)}</CollapsibleList></Paper></section>}
+ {brief.risers.length>0&&<section><SectionTitle leaf onHelp={()=>setHelp("risers")} helpLabel="了解漲價食材怎麼挑">漲價了，慢慢挑</SectionTitle><Paper variant="list"><CollapsibleList>{brief.risers.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`}/>)}</CollapsibleList></Paper></section>}
+ {brief.fallers.length>0&&<section><SectionTitle leaf onHelp={()=>setHelp("fallers")} helpLabel="了解跌價食材怎麼挑">跌價了，可以買</SectionTitle><Paper variant="list"><CollapsibleList>{brief.fallers.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`}/>)}</CollapsibleList></Paper></section>}
  {brief.total===0&&<EmptyState icon="cloud-arrow-down" title="今天還沒有行情資料" description="資料來源可能尚未更新。可以先整理菜籃，再晚一點回來看看。"/>}
  <GoTopButton visible={brief.seasonal.length+brief.risers.length+brief.fallers.length>=8}/>
  <BottomSheetModal open={help!==null} title={help?SECTION_HELP[help].title:""} onClose={()=>setHelp(null)} bodyClassName="flex flex-col gap-3 px-5 py-5">

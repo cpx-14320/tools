@@ -17,3 +17,13 @@ export function nextPetEmotion(current: PetMood, sample = Math.random()): PetEmo
   const index = Number.isFinite(sample) ? Math.min(choices.length - 1, Math.max(0, Math.floor(sample * choices.length))) : 0;
   return choices[index];
 }
+
+/** 照護按鈕對應獨立輕量圖，與隨機表情分開命名。 */
+export const PET_CARE_ACTIONS = ["water", "play"] as const;
+export type PetCareAction = typeof PET_CARE_ACTIONS[number];
+export type PetPose = PetMood | PetCareAction;
+export const PET_POSE_LABELS: Record<PetPose, string> = { ...PET_EMOTION_LABELS, water: "開心接受澆水", play: "開心玩球" };
+
+export function petCareFile(id: CompanionId, action: PetCareAction): string {
+  return `/freshwise/${PET_IMAGE_FILES[id].replace(/\.png$/, `-action-${action}.webp`)}`;
+}

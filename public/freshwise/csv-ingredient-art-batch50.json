@@ -8,36 +8,42 @@
   "files": [
     {
       "name": "朴菜",
-      "file": "item-farm-OL1.png",
+      "file": "unused/item-farm-OL1.png",
       "sourceCodes": [
         "OL1"
       ],
       "width": 256,
       "height": 256,
       "bytes": 56224,
-      "sha256": "6a07bf42d8ffe0704c4dbb2d3d59f2b6f43cddbc6323763d0103aae4696f9b3b"
+      "sha256": "6a07bf42d8ffe0704c4dbb2d3d59f2b6f43cddbc6323763d0103aae4696f9b3b",
+      "originalFile": "item-farm-OL1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "蓮子",
-      "file": "item-farm-SN2.png",
+      "file": "unused/item-farm-SN2.png",
       "sourceCodes": [
         "SN2"
       ],
       "width": 256,
       "height": 256,
       "bytes": 58049,
-      "sha256": "d2b510d2a5bce642ae02334748f4cb133330804a6a35197bec8df5bec4b3acf1"
+      "sha256": "d2b510d2a5bce642ae02334748f4cb133330804a6a35197bec8df5bec4b3acf1",
+      "originalFile": "item-farm-SN2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "蔥蒜",
-      "file": "item-farm-SG4.png",
+      "file": "unused/item-farm-SG4.png",
       "sourceCodes": [
         "SG4"
       ],
       "width": 256,
       "height": 256,
       "bytes": 56044,
-      "sha256": "c1db63a4ea78fa0d315dcbebc91a2cfb35d158c91bfb81ef8ba0c82c7321964e"
+      "sha256": "c1db63a4ea78fa0d315dcbebc91a2cfb35d158c91bfb81ef8ba0c82c7321964e",
+      "originalFile": "item-farm-SG4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "萵苣莖",
@@ -52,36 +58,42 @@
     },
     {
       "name": "里芋",
-      "file": "item-farm-SJ3.png",
+      "file": "unused/item-farm-SJ3.png",
       "sourceCodes": [
         "SJ3"
       ],
       "width": 256,
       "height": 256,
       "bytes": 65900,
-      "sha256": "75174087c1eae00d97aa4f76a1b08614d1f6f9bd2559e1550c65bd4b1b8fbe60"
+      "sha256": "75174087c1eae00d97aa4f76a1b08614d1f6f9bd2559e1550c65bd4b1b8fbe60",
+      "originalFile": "item-farm-SJ3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "芋莖",
-      "file": "item-farm-SJ4.png",
+      "file": "unused/item-farm-SJ4.png",
       "sourceCodes": [
         "SJ4"
       ],
       "width": 256,
       "height": 256,
       "bytes": 52566,
-      "sha256": "7e7b414af6dbb29c6c407423424832e088f2e7af3cbd652c82d16b663897d81c"
+      "sha256": "7e7b414af6dbb29c6c407423424832e088f2e7af3cbd652c82d16b663897d81c",
+      "originalFile": "item-farm-SJ4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "芋角",
-      "file": "item-farm-SJ5.png",
+      "file": "unused/item-farm-SJ5.png",
       "sourceCodes": [
         "SJ5"
       ],
       "width": 256,
       "height": 256,
       "bytes": 55749,
-      "sha256": "4b9efcd68fa0b00b3fe6fb8c34e3557f023ade05325b4a684ba268084e5ab050"
+      "sha256": "4b9efcd68fa0b00b3fe6fb8c34e3557f023ade05325b4a684ba268084e5ab050",
+      "originalFile": "item-farm-SJ5.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "豆薯",
@@ -96,47 +108,55 @@
     },
     {
       "name": "雪蓮薯",
-      "file": "item-farm-SL2.png",
+      "file": "unused/item-farm-SL2.png",
       "sourceCodes": [
         "SL2"
       ],
       "width": 256,
       "height": 256,
       "bytes": 49633,
-      "sha256": "c01e2336cab1988ab4956cb3195ae16cdbde1859a4a8e628dbdd32b40873ce35"
+      "sha256": "c01e2336cab1988ab4956cb3195ae16cdbde1859a4a8e628dbdd32b40873ce35",
+      "originalFile": "item-farm-SL2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "荸薺",
-      "file": "item-farm-SK1.png",
+      "file": "unused/item-farm-SK1.png",
       "sourceCodes": [
         "SK1"
       ],
       "width": 256,
       "height": 256,
       "bytes": 57484,
-      "sha256": "8362d0898f3f38cdfbe0b6111a730f806bf722c87a54b8051b07274929d34f74"
+      "sha256": "8362d0898f3f38cdfbe0b6111a730f806bf722c87a54b8051b07274929d34f74",
+      "originalFile": "item-farm-SK1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "加工荸薺",
-      "file": "item-farm-SK2.png",
+      "file": "unused/item-farm-SK2.png",
       "sourceCodes": [
         "SK2"
       ],
       "width": 256,
       "height": 256,
       "bytes": 49260,
-      "sha256": "8124bc7183cafc4a80b399e9ca57055784187919e825daf919898dfc8b08e4ca"
+      "sha256": "8124bc7183cafc4a80b399e9ca57055784187919e825daf919898dfc8b08e4ca",
+      "originalFile": "item-farm-SK2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "薑黃",
-      "file": "item-farm-SP5.png",
+      "file": "unused/item-farm-SP5.png",
       "sourceCodes": [
         "SP5"
       ],
       "width": 256,
       "height": 256,
       "bytes": 53001,
-      "sha256": "0b0bfb15f36038560e4691dba70f7ab3a508660c8ec0de02b1d434e24d2eab21"
+      "sha256": "0b0bfb15f36038560e4691dba70f7ab3a508660c8ec0de02b1d434e24d2eab21",
+      "originalFile": "item-farm-SP5.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "生菱角",
@@ -151,14 +171,16 @@
     },
     {
       "name": "去殼菱角",
-      "file": "item-farm-SR3.png",
+      "file": "unused/item-farm-SR3.png",
       "sourceCodes": [
         "SR3"
       ],
       "width": 256,
       "height": 256,
       "bytes": 50106,
-      "sha256": "1e108a91ab9360f3fcf45695a6be92054b76f557aa2dce051027ca81611c4e84"
+      "sha256": "1e108a91ab9360f3fcf45695a6be92054b76f557aa2dce051027ca81611c4e84",
+      "originalFile": "item-farm-SR3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "大心菜",
@@ -174,183 +196,215 @@
     },
     {
       "name": "紅山藥",
-      "file": "item-farm-SU1.png",
+      "file": "unused/item-farm-SU1.png",
       "sourceCodes": [
         "SU1"
       ],
       "width": 256,
       "height": 256,
       "bytes": 58452,
-      "sha256": "11683e63c54b322277b6030f204906141884f56073fdbf1e04c652371c4096fc"
+      "sha256": "11683e63c54b322277b6030f204906141884f56073fdbf1e04c652371c4096fc",
+      "originalFile": "item-farm-SU1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "人參山藥",
-      "file": "item-farm-SU21.png",
+      "file": "unused/item-farm-SU21.png",
       "sourceCodes": [
         "SU21"
       ],
       "width": 256,
       "height": 256,
       "bytes": 55184,
-      "sha256": "d6b168b11a2f6219a451011d5b9a477341065bb63cc308a824b658f7253a7bb9"
+      "sha256": "d6b168b11a2f6219a451011d5b9a477341065bb63cc308a824b658f7253a7bb9",
+      "originalFile": "item-farm-SU21.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "樹薯",
-      "file": "item-farm-SU3.png",
+      "file": "unused/item-farm-SU3.png",
       "sourceCodes": [
         "SU3"
       ],
       "width": 256,
       "height": 256,
       "bytes": 54918,
-      "sha256": "4d87b31d5d396324c94aa9c33a5d8dfdb9b7c323149c7e14201cbb39a4b2855d"
+      "sha256": "4d87b31d5d396324c94aa9c33a5d8dfdb9b7c323149c7e14201cbb39a4b2855d",
+      "originalFile": "item-farm-SU3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "粉薯",
-      "file": "item-farm-SU4.png",
+      "file": "unused/item-farm-SU4.png",
       "sourceCodes": [
         "SU4"
       ],
       "width": 256,
       "height": 256,
       "bytes": 55378,
-      "sha256": "ccc7f865257a2d1db6485527c05cf972967a159f9c5c389e0bebfa7ea9782ff0"
+      "sha256": "ccc7f865257a2d1db6485527c05cf972967a159f9c5c389e0bebfa7ea9782ff0",
+      "originalFile": "item-farm-SU4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "白蘆筍",
-      "file": "item-farm-SV1.png",
+      "file": "unused/item-farm-SV1.png",
       "sourceCodes": [
         "SV1"
       ],
       "width": 256,
       "height": 256,
       "bytes": 52133,
-      "sha256": "82d5297f4706db375e0339d41105667ef9e9a0bbebefeac751ee6bda4548ee6f"
+      "sha256": "82d5297f4706db375e0339d41105667ef9e9a0bbebefeac751ee6bda4548ee6f",
+      "originalFile": "item-farm-SV1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "蘆筍花",
-      "file": "item-farm-SV3.png",
+      "file": "unused/item-farm-SV3.png",
       "sourceCodes": [
         "SV3"
       ],
       "width": 256,
       "height": 256,
       "bytes": 62949,
-      "sha256": "206bf9b2d0bd6f6256e571fcf93e1cb362b59a97491d0ad61beae8e288490a4d"
+      "sha256": "206bf9b2d0bd6f6256e571fcf93e1cb362b59a97491d0ad61beae8e288490a4d",
+      "originalFile": "item-farm-SV3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "黃豆芽",
-      "file": "item-farm-SX2.png",
+      "file": "unused/item-farm-SX2.png",
       "sourceCodes": [
         "SX2"
       ],
       "width": 256,
       "height": 256,
       "bytes": 57868,
-      "sha256": "f3f3b34b2c0547cb961b1dcd206d9804496a7f46050e1c5ae83127857572ce3a"
+      "sha256": "f3f3b34b2c0547cb961b1dcd206d9804496a7f46050e1c5ae83127857572ce3a",
+      "originalFile": "item-farm-SX2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "苜蓿芽",
-      "file": "item-farm-SX4.png",
+      "file": "unused/item-farm-SX4.png",
       "sourceCodes": [
         "SX4"
       ],
       "width": 256,
       "height": 256,
       "bytes": 64928,
-      "sha256": "7ad02d07e0118408d8e043b929f7ef93115f8d39188596a5de0414d5c6ed56dc"
+      "sha256": "7ad02d07e0118408d8e043b929f7ef93115f8d39188596a5de0414d5c6ed56dc",
+      "originalFile": "item-farm-SX4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "半天筍",
-      "file": "item-farm-SZ1.png",
+      "file": "unused/item-farm-SZ1.png",
       "sourceCodes": [
         "SZ1"
       ],
       "width": 256,
       "height": 256,
       "bytes": 52188,
-      "sha256": "1b18b47243f764f576ea18fb1f71389939630410f094aee932c2fd73ede1549a"
+      "sha256": "1b18b47243f764f576ea18fb1f71389939630410f094aee932c2fd73ede1549a",
+      "originalFile": "item-farm-SZ1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "金針筍",
-      "file": "item-farm-SZ3.png",
+      "file": "unused/item-farm-SZ3.png",
       "sourceCodes": [
         "SZ3"
       ],
       "width": 256,
       "height": 256,
       "bytes": 52210,
-      "sha256": "7bdf1c3bdd084443426ab409d9b51cb1b8603385f18a66e505a9743c9a3b87aa"
+      "sha256": "7bdf1c3bdd084443426ab409d9b51cb1b8603385f18a66e505a9743c9a3b87aa",
+      "originalFile": "item-farm-SZ3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "晚香玉筍",
-      "file": "item-farm-SZ7.png",
+      "file": "unused/item-farm-SZ7.png",
       "sourceCodes": [
         "SZ7"
       ],
       "width": 256,
       "height": 256,
       "bytes": 52344,
-      "sha256": "bacf5ccc0c756161848fb5604b478c93014bcda33a8bd9f7fe42909675af6e55"
+      "sha256": "bacf5ccc0c756161848fb5604b478c93014bcda33a8bd9f7fe42909675af6e55",
+      "originalFile": "item-farm-SZ7.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "香茅",
-      "file": "item-farm-SZ8.png",
+      "file": "unused/item-farm-SZ8.png",
       "sourceCodes": [
         "SZ8"
       ],
       "width": 256,
       "height": 256,
       "bytes": 54610,
-      "sha256": "797a4ca4920eceece6c13f818ba84ec50222457ef528c5635d78e44608f17917"
+      "sha256": "797a4ca4920eceece6c13f818ba84ec50222457ef528c5635d78e44608f17917",
+      "originalFile": "item-farm-SZ8.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "人參葉",
-      "file": "item-farm-LY4.png",
+      "file": "unused/item-farm-LY4.png",
       "sourceCodes": [
         "LY4"
       ],
       "width": 256,
       "height": 256,
       "bytes": 51259,
-      "sha256": "84fb8986d5491ba110e291a76d8e7b9321a18dfa1a35e148e0d07a533946e377"
+      "sha256": "84fb8986d5491ba110e291a76d8e7b9321a18dfa1a35e148e0d07a533946e377",
+      "originalFile": "item-farm-LY4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "毛瓜",
-      "file": "item-farm-FE3.png",
+      "file": "unused/item-farm-FE3.png",
       "sourceCodes": [
         "FE3"
       ],
       "width": 256,
       "height": 256,
       "bytes": 61885,
-      "sha256": "4673573a1c0293cc31fd327c67c8ac1d11ec5321319d9bbed32091f46dc27955"
+      "sha256": "4673573a1c0293cc31fd327c67c8ac1d11ec5321319d9bbed32091f46dc27955",
+      "originalFile": "item-farm-FE3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "金針花",
-      "file": "item-farm-FW1.png",
+      "file": "unused/item-farm-FW1.png",
       "sourceCodes": [
         "FW1"
       ],
       "width": 256,
       "height": 256,
       "bytes": 52211,
-      "sha256": "be416e8e7bd2bb4adc6f62213a4e7523e8a4baf0f0385c0e67abaaa6965569ef"
+      "sha256": "be416e8e7bd2bb4adc6f62213a4e7523e8a4baf0f0385c0e67abaaa6965569ef",
+      "originalFile": "item-farm-FW1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "椰子",
-      "file": "item-farm-11.png",
+      "file": "unused/item-farm-11.png",
       "sourceCodes": [
         "11"
       ],
       "width": 256,
       "height": 256,
       "bytes": 60961,
-      "sha256": "bd62d53a24d3992b23ff1845455a08bd96f3e54004ba7dca6caba3e9bcd35271"
+      "sha256": "bd62d53a24d3992b23ff1845455a08bd96f3e54004ba7dca6caba3e9bcd35271",
+      "originalFile": "item-farm-11.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "去殼椰子",
-      "file": "item-farm-12.png",
+      "file": "unused/item-farm-12.png",
       "sourceCodes": [
         "12",
         "129"
@@ -358,7 +412,9 @@
       "width": 256,
       "height": 256,
       "bytes": 56174,
-      "sha256": "2b0c4eb5a63d6e33c49cebef0761b4630d880cbf3a7254bb17688932349373ea"
+      "sha256": "2b0c4eb5a63d6e33c49cebef0761b4630d880cbf3a7254bb17688932349373ea",
+      "originalFile": "item-farm-12.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "藍莓",
@@ -384,179 +440,216 @@
     },
     {
       "name": "榴槤",
-      "file": "item-farm-859.png",
+      "file": "unused/item-farm-859.png",
       "sourceCodes": [
         "859"
       ],
       "width": 256,
       "height": 256,
       "bytes": 66126,
-      "sha256": "5d30b00bf466ec8ec68abfda5a4b3ab002edbf707b9d42e787faf6b58d5b5ce6"
+      "sha256": "5d30b00bf466ec8ec68abfda5a4b3ab002edbf707b9d42e787faf6b58d5b5ce6",
+      "originalFile": "item-farm-859.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "紅芭蕉",
-      "file": "item-farm-A2.png",
+      "file": "unused/item-farm-A2.png",
       "sourceCodes": [
         "A2"
       ],
       "width": 256,
       "height": 256,
       "bytes": 50780,
-      "sha256": "ceabc855267904db80f246481ff532d9c658e0c1d2c350a2f0563a1ca1ac4f59"
+      "sha256": "ceabc855267904db80f246481ff532d9c658e0c1d2c350a2f0563a1ca1ac4f59",
+      "originalFile": "item-farm-A2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "佛利蒙柑",
-      "file": "item-farm-C6.png",
+      "file": "unused/item-farm-C6.png",
       "sourceCodes": [
         "C6"
       ],
       "width": 256,
       "height": 256,
       "bytes": 57428,
-      "sha256": "0a13f938d680504b20290ceb7cc5b59a0517596bb82916dce33e79a7984c1c9e"
+      "sha256": "0a13f938d680504b20290ceb7cc5b59a0517596bb82916dce33e79a7984c1c9e",
+      "originalFile": "item-farm-C6.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "豔陽柑",
-      "file": "item-farm-C7.png",
+      "file": "unused/item-farm-C7.png",
       "sourceCodes": [
         "C7"
       ],
       "width": 256,
       "height": 256,
       "bytes": 57212,
-      "sha256": "5bef8de64d85f2e319a96357c6342cfe2b25c83a2df813c1c92dda363b59e3b2"
+      "sha256": "5bef8de64d85f2e319a96357c6342cfe2b25c83a2df813c1c92dda363b59e3b2",
+      "originalFile": "item-farm-C7.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "珍珠柑",
-      "file": "item-farm-C8.png",
+      "file": "unused/item-farm-C8.png",
       "sourceCodes": [
         "C8"
       ],
       "width": 256,
       "height": 256,
       "bytes": 53718,
-      "sha256": "86191c3d85f4fc6a3cd82d03e0045611dbf400f6a9a47dde3ffac2724f9551a3"
+      "sha256": "86191c3d85f4fc6a3cd82d03e0045611dbf400f6a9a47dde3ffac2724f9551a3",
+      "originalFile": "item-farm-C8.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "紅肉柳橙",
-      "file": "item-farm-E3.png",
+      "file": "unused/item-farm-E3.png",
       "sourceCodes": [
         "E3"
       ],
       "width": 256,
       "height": 256,
       "bytes": 61149,
-      "sha256": "cbc37047795eebf49f2f51c9c1f86a60c52d922a9f57a1ac6347cd381baeaf1f"
+      "sha256": "cbc37047795eebf49f2f51c9c1f86a60c52d922a9f57a1ac6347cd381baeaf1f",
+      "originalFile": "item-farm-E3.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "金棗",
-      "file": "item-farm-F2.png",
+      "file": "unused/item-farm-F2.png",
       "sourceCodes": [
         "F2"
       ],
       "width": 256,
       "height": 256,
       "bytes": 56346,
-      "sha256": "c74eedd35dfdd0362b85fc106ab653ee3149c5d7fd386cf314699274d5c68eec"
+      "sha256": "c74eedd35dfdd0362b85fc106ab653ee3149c5d7fd386cf314699274d5c68eec",
+      "originalFile": "item-farm-F2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "小桔子",
-      "file": "item-farm-F4.png",
+      "file": "unused/item-farm-F4.png",
       "sourceCodes": [
         "F4"
       ],
       "width": 256,
       "height": 256,
       "bytes": 60536,
-      "sha256": "96c9a4492ecd0ef6391be9364a8ecd9d5f10690ac7b2e96cb4f025c3ee4a0d26"
+      "sha256": "96c9a4492ecd0ef6391be9364a8ecd9d5f10690ac7b2e96cb4f025c3ee4a0d26",
+      "originalFile": "item-farm-F4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "蛋黃果",
-      "file": "item-farm-G1.png",
+      "file": "unused/item-farm-G1.png",
       "sourceCodes": [
         "G1"
       ],
       "width": 256,
       "height": 256,
       "bytes": 61460,
-      "sha256": "cf162ea61b6e4f4f236372ab44db94ee498b89f11eb79f47d5e1f64580710910"
+      "sha256": "cf162ea61b6e4f4f236372ab44db94ee498b89f11eb79f47d5e1f64580710910",
+      "originalFile": "item-farm-G1.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "黃金果",
-      "file": "item-farm-G2.png",
+      "file": "unused/item-farm-G2.png",
       "sourceCodes": [
         "G2"
       ],
       "width": 256,
       "height": 256,
       "bytes": 61054,
-      "sha256": "7f5b0c8951d786ba30fad19accb45bbbd94f55628d556fed8f4f651553d41f57"
+      "sha256": "7f5b0c8951d786ba30fad19accb45bbbd94f55628d556fed8f4f651553d41f57",
+      "originalFile": "item-farm-G2.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "橄欖",
-      "file": "item-farm-G7.png",
+      "file": "unused/item-farm-G7.png",
       "sourceCodes": [
         "G7"
       ],
       "width": 256,
       "height": 256,
       "bytes": 52719,
-      "sha256": "0142226a0102193f3dccd6d5370a6635b55386aa63c41ab63f2c57d76971283c"
+      "sha256": "0142226a0102193f3dccd6d5370a6635b55386aa63c41ab63f2c57d76971283c",
+      "originalFile": "item-farm-G7.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "栗子",
-      "file": "item-farm-G8.png",
+      "file": "unused/item-farm-G8.png",
       "sourceCodes": [
         "G8"
       ],
       "width": 256,
       "height": 256,
       "bytes": 68466,
-      "sha256": "a058312915a11a20c0dd0079473919897439a58e33a57ccf2f8457652b68a3ba"
+      "sha256": "a058312915a11a20c0dd0079473919897439a58e33a57ccf2f8457652b68a3ba",
+      "originalFile": "item-farm-G8.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "西施柚",
-      "file": "item-farm-H6.png",
+      "file": "unused/item-farm-H6.png",
       "sourceCodes": [
         "H6"
       ],
       "width": 256,
       "height": 256,
       "bytes": 65679,
-      "sha256": "5ef4a7a4f6089d7dc35112bc462c233df48558dd82efbda194dcf4e46456715a"
+      "sha256": "5ef4a7a4f6089d7dc35112bc462c233df48558dd82efbda194dcf4e46456715a",
+      "originalFile": "item-farm-H6.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "青木瓜",
-      "file": "item-farm-I4.png",
+      "file": "unused/item-farm-I4.png",
       "sourceCodes": [
         "I4"
       ],
       "width": 256,
       "height": 256,
       "bytes": 54436,
-      "sha256": "f4d1ca6aba0340b4b047eb1ee9236b772a2efaaa3b25ffb1c9f31f9062e1288a"
+      "sha256": "f4d1ca6aba0340b4b047eb1ee9236b772a2efaaa3b25ffb1c9f31f9062e1288a",
+      "originalFile": "item-farm-I4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "帶殼龍眼乾",
-      "file": "item-farm-K4.png",
+      "file": "unused/item-farm-K4.png",
       "sourceCodes": [
         "K4"
       ],
       "width": 256,
       "height": 256,
       "bytes": 62377,
-      "sha256": "f63915cded3da18069d77bc0e77b26a3efd04a4d104ab8c010711f54187481db"
+      "sha256": "f63915cded3da18069d77bc0e77b26a3efd04a4d104ab8c010711f54187481db",
+      "originalFile": "item-farm-K4.png",
+      "runtimeUsage": "archived-unused"
     },
     {
       "name": "龍眼肉",
-      "file": "item-farm-K41.png",
+      "file": "unused/item-farm-K41.png",
       "sourceCodes": [
         "K41"
       ],
       "width": 256,
       "height": 256,
       "bytes": 54101,
-      "sha256": "d921d43b212578b8edace8e9f600ba0c9619ade58af469d8e7a11b42dc0f6fc6"
+      "sha256": "d921d43b212578b8edace8e9f600ba0c9619ade58af469d8e7a11b42dc0f6fc6",
+      "originalFile": "item-farm-K41.png",
+      "runtimeUsage": "archived-unused"
     }
-  ]
+  ],
+  "assetArchive": {
+    "date": "2026-11-24",
+    "index": "unused/asset-archive-index.json",
+    "pendingCsvRetained": true
+  }
 }

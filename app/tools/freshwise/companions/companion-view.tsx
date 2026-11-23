@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { COMPANIONS, companionLevel } from "@/lib/freshwise/companions";
 import { useCompanion } from "@/components/freshwise/companion-store";
@@ -7,6 +7,8 @@ import { CollectionArtwork, GameIcon, PetArtwork, SlicedArtwork } from "@/compon
 import { DewBalance, QuestSlip } from "@/components/freshwise/companion-widgets";
 import { BottomSheetModal } from "@/components/freshwise/bottom-sheet-modal";
 import { MeterBar, PageTitle } from "@/components/freshwise/ui";
+import type { PetReactionHandle } from "@/components/freshwise/pet-interaction";
+import type { PetCareAction } from "@/lib/freshwise/pet-expressions";
 
 /**
  * 夥伴頁。
@@ -18,6 +20,13 @@ import { MeterBar, PageTitle } from "@/components/freshwise/ui";
 export function CompanionView() {
   const { state, ready, care, select, storageAvailable } = useCompanion();
   const [bookOpen, setBookOpen] = useState(false);
+  const petReaction = useRef<PetReactionHandle>(null);
+
+  function handleCare(action: PetCareAction) {
+    if (!ready || (action === "water" ? state.dew < 3 : state.played)) return;
+    care(action);
+    petReaction.current?.react(action);
+  }
   const owned = COMPANIONS.filter((p) => p.threshold <= state.stamps);
   // 等級與稱呼跟首頁共用同一份計算（lib/freshwise/companions.ts），兩頁不會再長不一樣。
   const { pet, progress, max, label } = companionLevel(state);
@@ -44,7 +53,7 @@ export function CompanionView() {
           <>
             <section className="fw-companion-garden">
               <p className="fw-pet-speech">一起看看今天的菜價吧！</p>
-              <PetArtwork id={pet.id} size={200} priority interactive className="fw-breathe" />
+              <PetArtwork id={pet.id} size={200} priority interactive reactionRef={petReaction} className="fw-breathe" />
               {/* 小尺寸等級牌接在角色下方，與成長進度保持緊湊。 */}
               <span className="fw-level-ribbon"><SlicedArtwork name="companion-level-ribbon" className="fw-sliced-ribbon"/>{label}</span>
             </section>
@@ -57,10 +66,10 @@ export function CompanionView() {
               <p>再陪伴一點，就能升級囉。</p>
             </section>
             <div className="fw-care-actions">
-              <button type="button" className="fw-game-button" disabled={state.dew < 3} onClick={() => care("water")}>
+              <button type="button" className="fw-game-button" disabled={state.dew < 3} onClick={() => handleCare("water")}>
                 <GameIcon name="water" size={40} /><span className="fw-care-label">澆水 · 3 露珠</span>
               </button>
-              <button type="button" className="fw-game-button fw-peach-button" disabled={state.played} onClick={() => care("play")}>
+              <button type="button" className="fw-game-button fw-peach-button" disabled={state.played} onClick={() => handleCare("play")}>
                 <GameIcon name="play" size={40} />
                 <span className="fw-care-label">{state.played ? "今天玩過囉" : "陪牠玩耍"}</span>
               </button>

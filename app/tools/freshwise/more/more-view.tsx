@@ -26,7 +26,7 @@ import { EditorSheet } from "@/components/freshwise/editor-sheet";
 import { useFreshwise } from "@/components/freshwise/store";
 import { colors, copy, text } from "@/components/freshwise/theme";
 import { formatShortDate } from "@/lib/freshwise/dates";
-import { defaultBasket } from "@/lib/freshwise/basket";
+import { emptyBasket } from "@/lib/freshwise/basket";
 import type { MarketOption, UnitKey } from "@/lib/freshwise/types";
 
 const OTHER_TOOL_ICONS: Record<string, string> = { transit: "/freshwise/ui-tool-transit.png", expenses: "/freshwise/ui-tool-expenses.png", compress: "/freshwise/ui-tool-compress.png" };
@@ -192,7 +192,7 @@ export function MoreView({
       <EditorSheet
         open={resetOpen}
         title="清除全部資料"
-        description={`${copy.basket}、夥伴進度與偏好設定都會被清掉，回到第一次使用的狀態。這個動作沒辦法復原。`}
+        description={`${copy.basket}會清空，夥伴進度與價格單位會重設。這個動作沒辦法復原。`}
         onClose={() => setResetOpen(false)}
         footer={
           <>
@@ -205,7 +205,7 @@ export function MoreView({
                 // 三種資料都在帳號底下：夥伴進度走自己的 API，偏好與菜籃走 store
                 // （它會寫回伺服器）。不用再清 localStorage／cookie——那裡已經沒有資料了。
                 resetCompanions();
-                setBasket(defaultBasket());
+                setBasket(emptyBasket());
                 setPrefs({ unit: "catty" });
                 setResetOpen(false);
               }}
@@ -215,7 +215,7 @@ export function MoreView({
           </>
         }
       >
-        <Hint>清除之後{copy.basket}會回到預設的那幾樣常見家常菜。</Hint>
+        <Hint>清空後不會自動補回預設內容，也可以在菜籃頁自行刪除不需要的分類。</Hint>
       </EditorSheet>
     </div>
   );

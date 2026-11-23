@@ -9,6 +9,7 @@ import {
   dailyState,
   initialCompanionState,
   QUESTS,
+  QUEST_STAMP_REWARD,
   questProgress,
   recordCompanionEvent,
   selectCompanion,
@@ -294,7 +295,7 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
           </span>
           <span>
             <GameIcon name="book" />
-            探索印章 +1
+            探索印章 +{QUEST_STAMP_REWARD}
           </span>
         </div>
         {questClaimed ? (

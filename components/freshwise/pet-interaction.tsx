@@ -1,24 +1,40 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
-import { nextPetEmotion, petEmotionFile, PET_EMOTION_LABELS, type PetMood, type PetEmotion } from "@/lib/freshwise/pet-expressions";
+import { useImperativeHandle, useRef, useState, type Ref } from "react";
+import { nextPetEmotion, petEmotionFile, petCareFile, PET_EMOTION_LABELS, PET_POSE_LABELS, type PetPose, type PetEmotion, type PetCareAction } from "@/lib/freshwise/pet-expressions";
 import type { CompanionId } from "@/lib/freshwise/companions";
 
-type Frame = { mood: PetMood; src: string };
-type PendingFrame = { mood: PetEmotion; src: string };
+type Frame = { mood: PetPose; src: string };
+type PendingFrame = { mood: PetEmotion | PetCareAction; src: string };
 
-/** 固定畫框內切圖；只在點擊後載入單張 WebP，舊圖保留至新圖已解碼。 */
-export function PetInteraction({ id, name, baseSrc, size, priority }: { id: CompanionId; name: string; baseSrc: string; size: number; priority: boolean }) {
+export interface PetReactionHandle {
+  react: (action: PetCareAction) => void;
+}
+
+/** 畫框固定；新圖片解碼完成後才切換，照護動作可優先取代還在載入的隨機表情。 */
+export function PetInteraction({ id, name, baseSrc, size, priority, reactionRef }: { id: CompanionId; name: string; baseSrc: string; size: number; priority: boolean; reactionRef?: Ref<PetReactionHandle> }) {
   const [frame, setFrame] = useState<Frame>({ mood: "neutral", src: baseSrc });
   const [pending, setPending] = useState<PendingFrame | null>(null);
   const [reaction, setReaction] = useState(0);
   const [message, setMessage] = useState("");
   const request = useRef<PendingFrame | null>(null);
 
+  useImperativeHandle(reactionRef, () => ({
+    react(action) {
+      const src = petCareFile(id, action);
+      if (!src) return;
+      const next = { mood: action, src };
+      request.current = next;
+      setPending(next);
+      setMessage("");
+    },
+  }), [id]);
+
   function interact() {
     if (request.current) return;
-    const mood = nextPetEmotion(frame.mood);
+    const currentMood = frame.mood === "water" || frame.mood === "play" ? "neutral" : frame.mood;
+    const mood = nextPetEmotion(currentMood);
     const next = { mood, src: petEmotionFile(id, mood) };
     request.current = next;
     setPending(next);
@@ -30,15 +46,15 @@ export function PetInteraction({ id, name, baseSrc, size, priority }: { id: Comp
     setFrame(next);
     setPending(null);
     setReaction((value) => value + 1);
-    setMessage(`${name}換成${PET_EMOTION_LABELS[next.mood]}的表情`);
+    setMessage(next.mood === "water" ? `${name}收到澆水，好舒服！` : next.mood === "play" ? `${name}和你一起玩球，好開心！` : `${name}換成${PET_EMOTION_LABELS[next.mood]}的表情`);
   }
   function failed(next: PendingFrame) {
     if (request.current !== next) return;
     request.current = null;
     setPending(null);
-    setMessage("表情暫時載入失敗，可以再點一次。");
+    setMessage("圖片暫時載入失敗，可以再試一次。");
   }
-  return <button type="button" className="fw-pet-trigger" onClick={interact} aria-busy={pending !== null} aria-label={`和${name}互動，隨機換表情，目前${PET_EMOTION_LABELS[frame.mood]}`}>
+  return <button type="button" className="fw-pet-trigger" onClick={interact} aria-busy={pending !== null} aria-label={`和${name}互動，隨機換表情，目前${PET_POSE_LABELS[frame.mood]}`}>
     <span key={reaction} className="fw-pet-visual" data-mood={frame.mood} data-reacted={reaction > 0 ? "true" : "false"}>
       <Image src={frame.src} alt={name} fill sizes={`${size}px`} priority={priority && frame.mood === "neutral"} unoptimized={frame.mood !== "neutral"} draggable={false}/>
     </span>
@@ -46,3 +62,4 @@ export function PetInteraction({ id, name, baseSrc, size, priority }: { id: Comp
     <span className="sr-only" role="status" aria-live="polite">{message}</span>
   </button>;
 }
+

@@ -9,10 +9,12 @@ export const COMPANIONS = [
 ] as const;
 export type CompanionId = typeof COMPANIONS[number]["id"];
 export type QuestId = "explore" | "chart" | "basket";
+/** 每次完成今日任務可獲得的探索印章，顯示與實際領取共用。 */
+export const QUEST_STAMP_REWARD = 4;
 export const QUESTS = [
-  { id: "explore", title: "和夥伴逛逛行情", description: "看看 3 種不同食材的價格", target: 3, reward: 5, href: "/tools/freshwise/browse", icon: "market" },
-  { id: "chart", title: "學會看價格走勢", description: "在有走勢的詳情頁切換一次期間", target: 1, reward: 3, href: "/tools/freshwise/browse", icon: "chart" },
-  { id: "basket", title: "整理自己的採買份量", description: "幫菜籃中還沒填份量的項目填好份量", target: 1, reward: 3, href: "/tools/freshwise/basket", icon: "basket" },
+  { id: "explore", title: "和夥伴逛逛行情", description: "看看 3 種不同食材的價格", target: 3, reward: 12, href: "/tools/freshwise/browse", icon: "market" },
+  { id: "chart", title: "學會看價格走勢", description: "在有走勢的詳情頁切換一次期間", target: 1, reward: 12, href: "/tools/freshwise/browse", icon: "chart" },
+  { id: "basket", title: "整理自己的採買份量", description: "幫菜籃中還沒填份量的項目填好份量", target: 1, reward: 12, href: "/tools/freshwise/basket", icon: "basket" },
 ] as const;
 export interface CompanionState {
   version: 1;
@@ -102,7 +104,7 @@ export function claimCompanionQuest(state: CompanionState, id: QuestId, day: str
   const current = dailyState(state, day);
   const quest = QUESTS.find((q) => q.id === id);
   if (!quest || current.claimed.includes(id) || questProgress(current, id) < quest.target) return current;
-  return { ...current, claimed: [...current.claimed, id], dew: current.dew + quest.reward, stamps: current.stamps + 1 };
+  return { ...current, claimed: [...current.claimed, id], dew: current.dew + quest.reward, stamps: current.stamps + QUEST_STAMP_REWARD };
 }
 export function careForCompanion(state: CompanionState, action: "water" | "play", day: string): CompanionState {
   const current = dailyState(state, day);
