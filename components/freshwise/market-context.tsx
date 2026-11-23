@@ -10,6 +10,7 @@ import type { PriceBook, UnitKey } from "@/lib/freshwise/types";
 const UNIT_TABS: readonly { key: UnitKey; label: string }[] = [
   { key: "catty", label: "台斤" },
   { key: "kg", label: "公斤" },
+  { key: "g", label: "公克" },
 ];
 
 /**

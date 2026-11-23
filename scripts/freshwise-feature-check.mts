@@ -181,7 +181,7 @@ run("日期工具", () => {
   // 民國年：農產品的 API 用 115.11.20、漁產品用 1151120，兩種格式都要出得來。
   check("toROC 帶點的格式", dates.toROC(DAY) === "115.11.20");
   check("toROC 不帶點的格式", dates.toROC(DAY, "") === "1151120");
-  check("formatShortDate 帶星期", dates.formatShortDate(DAY) === "11/20（五）");
+  check("formatShortDate 是年-月-日（星期）", dates.formatShortDate(DAY) === `${DAY}（五）`);
   // todayISO 必須以台灣時間為準，不是伺服器時區（正式環境在 Vercel，時區是 UTC）。
   // 原本用 UTC 日界算，台灣時間凌晨 0～8 點整個工具會顯示「昨天」。
   check("todayISO 回傳 YYYY-MM-DD", /^\d{4}-\d{2}-\d{2}$/.test(dates.todayISO()));

@@ -384,7 +384,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
           )}
           {item.note && <Note>{item.note}</Note>}
           <Note>
-            份量換算：1 {unitShort("catty")} = 0.6 公斤。{prefs.unit === "catty" ? "目前顯示的是台斤價。" : "目前顯示的是公斤價。"}
+            份量換算：1 {unitShort("catty")} = 0.6 公斤 = 600 公克。目前顯示的是{unitShort(prefs.unit)}價。
           </Note>
         </ListCard>
       </section>
@@ -415,6 +415,7 @@ function BackRow({ unit, onUnitChange }: { unit: UnitKey; onUnitChange: (unit: U
         items={[
           { key: "catty", label: "台斤" },
           { key: "kg", label: "公斤" },
+          { key: "g", label: "公克" },
         ]}
         value={unit}
         onChange={(key) => onUnitChange(key as UnitKey)}

@@ -13,23 +13,28 @@ export const KG_PER_CATTY = 0.6;
 
 /* ───────────────────── 單位換算與格式化 ───────────────────── */
 
+/** 一個單位等於幾公斤。資料層一律是元/公斤，換算就只是乘這個係數。 */
+const KG_PER_UNIT: Record<UnitKey, number> = { catty: KG_PER_CATTY, kg: 1, g: 0.001 };
+
 /** 元/公斤 → 指定單位的價格。 */
 export function toUnit(priceKg: number, unit: UnitKey): number {
-  return unit === "catty" ? priceKg * KG_PER_CATTY : priceKg;
+  return priceKg * KG_PER_UNIT[unit];
 }
 
 /** 指定單位的價格 → 元/公斤。使用者自己輸入價格（之後的「回報價格」功能）時要用。 */
 export function fromUnit(price: number, unit: UnitKey): number {
-  return unit === "catty" ? price / KG_PER_CATTY : price;
+  return price / KG_PER_UNIT[unit];
 }
 
+const UNIT_SHORT: Record<UnitKey, string> = { catty: "台斤", kg: "公斤", g: "公克" };
+
 export function unitLabel(unit: UnitKey): string {
-  return unit === "catty" ? "元/台斤" : "元/公斤";
+  return `元/${UNIT_SHORT[unit]}`;
 }
 
 /** 單位的短名稱，接在數量後面（「2 台斤」）。 */
 export function unitShort(unit: UnitKey): string {
-  return unit === "catty" ? "台斤" : "公斤";
+  return UNIT_SHORT[unit];
 }
 
 /**
@@ -44,7 +49,12 @@ export function unitShort(unit: UnitKey): string {
 export function formatPrice(price: number): string {
   if (!Number.isFinite(price) || price <= 0) return "—";
   const rounded = Math.round(price * 10) / 10;
-  return rounded >= 10 ? String(Math.round(price)) : rounded.toFixed(1);
+  if (rounded >= 10) return String(Math.round(price));
+  // 以公克計價時整個數量級會掉到小數點後兩三位（18 元/公斤＝0.018 元/公克），
+  // 一位小數會把一整批不同價格的菜全部印成「0.0」。小到那個程度就多給幾位。
+  if (rounded >= 1) return rounded.toFixed(1);
+  if (price >= 0.1) return price.toFixed(2);
+  return price.toFixed(3);
 }
 
 /** 直接把元/公斤的價格換算成指定單位再格式化，呼叫端最常用的就是這一支。 */

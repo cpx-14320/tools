@@ -3,7 +3,7 @@ export const COMPANIONS = [
   { id: "cabbage", name: "高麗菜糰糰", nickname: "糰糰", threshold: 0, story: "把小小的行情看懂，每天都多一點買菜的把握。", code: "FA1" },
   { id: "radish", name: "蘿蔔蹦蹦", nickname: "蹦蹦", threshold: 2, story: "一台斤是 0.6 公斤。份量寫清楚，整籃的價格就更有底。", code: "FB2" },
   { id: "strawberry", name: "草莓啾啾", nickname: "啾啾", threshold: 5, story: "季節慢慢走，每一種當季食材都有自己的故事。", code: "GC3" },
-  { id: "pumpkin", name: "南瓜慢慢", nickname: "慢慢", threshold: 8, story: "探索不用急，偶爾回來看看，也能慢慢長大。", code: null },
+  { id: "pumpkin", name: "南瓜慢慢", nickname: "慢慢", threshold: 8, story: "探索不用急，偶爾回來看看，也能慢慢長大。", code: "FF1" },
   { id: "eggplant", name: "茄子波波", nickname: "波波", threshold: 12, story: "同樣的食材，在不同場所的價格也會不一樣。", code: "FC9" },
   { id: "corn", name: "玉米暖暖", nickname: "暖暖", threshold: 16, story: "把常買的份量放進菜籃，讓下一次出門更輕鬆。", code: "FD5" },
 ] as const;

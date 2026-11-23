@@ -27,6 +27,8 @@ export interface DailyBrief {
   cheapest: PriceRow[];
   /** 今天漲最多的幾項。 */
   risers: PriceRow[];
+  /** 今天跌最多的幾項。跟 risers 是一對——只講漲的那一半，等於只告訴使用者壞消息。 */
+  fallers: PriceRow[];
   /** 當季而且不貴的幾項——「現在正是吃這個的時候」。 */
   seasonal: PriceRow[];
   /** 一句話建議。 */
@@ -61,9 +63,18 @@ export function buildBrief(rows: PriceRow[], todayISO: string, dataDate: string)
     BRIEF_LIMIT,
   );
 
+  // 漲跌兩區**收推估價的品項**。推估價＝批發價 × 固定係數，所以它的「跟昨天比差幾
+  // 趴」剛好把係數約掉、等於批發的變化幅度——不可靠的是價位本身，不是變化幅度。
+  // （試過只收實測價：臺中訪價的更新頻率低，當天沒有任何一項算得出漲跌，兩區直接空掉。）
   const risers = measuredFirst(
     rows.filter((row) => row.trend.direction === "up"),
     (a, b) => b.trend.percent - a.trend.percent,
+  );
+
+  // 跌價那一半。排序是「跌最多的在前」——trend.percent 在下跌時是負數，所以由小到大。
+  const fallers = measuredFirst(
+    rows.filter((row) => row.trend.direction === "down"),
+    (a, b) => a.trend.percent - b.trend.percent,
   );
 
   // 當季區塊刻意排除「偏貴」的品項：當季卻比平常貴的東西（產季初期的搶鮮價）推薦給不懂
@@ -83,6 +94,7 @@ export function buildBrief(rows: PriceRow[], todayISO: string, dataDate: string)
     delayed: dataDate !== todayISO,
     cheapest,
     risers,
+    fallers,
     seasonal,
     advice: buildAdvice({ month, cheapest, risers, seasonal, upCount, downCount, total: rows.length }),
     upCount,
@@ -157,8 +169,7 @@ function buildAdvice({
 }
 
 /** 快報裡每一列的右側說明文字。 */
-export function briefReason(row: PriceRow, kind: "cheap" | "rise" | "season"): string {
-  if (kind === "rise") return `比前一個交易日漲 ${Math.abs(row.trend.percent)}%`;
+export function briefReason(row: PriceRow, kind: "cheap" | "season"): string {
   if (kind === "season") {
     if (!row.reliable) return "當季盛產";
     return row.value.level === "cheap" ? `當季・比平常便宜 ${Math.abs(row.value.percent)}%` : "當季・正常價";

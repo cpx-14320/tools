@@ -54,13 +54,20 @@ export function weekdayOf(iso: string): number {
 
 const WEEKDAY_NAMES = ["日", "一", "二", "三", "四", "五", "六"];
 
-/** 「11/20（四）」這種短日期，給卡片標題與圖表座標用。 */
+/**
+ * 「2026-11-20（四）」——畫面上顯示日期**一律用這一個**。
+ *
+ * 本來是「11/20（四）」。省略年份在「今天的行情」那種情境看起來沒問題，但這個工具會
+ * 顯示歷史資料日期與走勢區間，跨年之後「1/3」到底是哪一年要使用者自己猜。格式跟資料
+ * 本身的流通格式（YYYY-MM-DD）一致，也省得兩種寫法在同一頁並存。
+ */
 export function formatShortDate(iso: string): string {
   const d = new Date(parseISO(iso));
-  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}（${WEEKDAY_NAMES[d.getUTCDay()]}）`;
+  return `${iso}（${WEEKDAY_NAMES[d.getUTCDay()]}）`;
 }
 
-/** 「11/20」——圖表座標軸這種空間很窄的地方用，不帶星期。 */
+/** 「11/20」——**只給圖表座標軸**用。那兩個端點標籤各只有十幾 px 的寬度，放完整日期
+ *  會疊在一起；軸上的點本來就在同一段區間內，不會有跨年看不懂的問題。 */
 export function formatMonthDay(iso: string): string {
   const d = new Date(parseISO(iso));
   return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;

@@ -34,9 +34,9 @@ export function CompanionView() {
         <PageTitle hanging>我的蔬果夥伴</PageTitle>
         <div className="fw-companion-tools">
           <DewBalance />
-          <button type="button" className="fw-book-button" onClick={() => setBookOpen(true)} aria-label={`蔬果圖鑑，已結識 ${owned.length} 位`}>
+          <button type="button" className="fw-book-button" onClick={() => setBookOpen(true)} aria-label={`圖鑑，已結識 ${owned.length} 位`}>
             <GameIcon name="book" size={30} />
-            <span>蔬果圖鑑</span>
+            <span>圖鑑</span>
           </button>
         </div>
 
@@ -62,7 +62,7 @@ export function CompanionView() {
               </button>
               <button type="button" className="fw-game-button fw-peach-button" disabled={state.played} onClick={() => care("play")}>
                 <GameIcon name="play" size={40} />
-                <span className="fw-care-label">{state.played ? "今天玩過囉" : "陪玩"}</span>
+                <span className="fw-care-label">{state.played ? "今天玩過囉" : "陪牠玩耍"}</span>
               </button>
             </div>
           </>
@@ -81,11 +81,10 @@ export function CompanionView() {
               {pet.nickname}的小日記
             </h2>
             <p>{pet.story}</p>
-            {pet.code && (
-              <Link className="fw-leaf-link" href={`/tools/freshwise/browse/${pet.code}`}>
-                一起去看看行情 →
-              </Link>
-            )}
+            {/* 六位夥伴都對應得到一個查價品項（南瓜補上 FF1 之後），不用再判斷有沒有。 */}
+            <Link className="fw-leaf-link" href={`/tools/freshwise/browse/${pet.code}`}>
+              一起去看看行情 →
+            </Link>
           </section>
         </>
       )}
@@ -96,7 +95,7 @@ export function CompanionView() {
 
       <BottomSheetModal
         open={bookOpen}
-        title={`蔬果圖鑑 · 已結識 ${owned.length}／${COMPANIONS.length} 位`}
+        title={`圖鑑 · 已結識 ${owned.length}／${COMPANIONS.length} 位`}
         onClose={() => setBookOpen(false)}
         bodyClassName="fw-collection-book"
       >
@@ -123,7 +122,6 @@ export function CompanionView() {
             );
           })}
         </div>
-        <p className="fw-helper-note">完成探索就能結識，不需要購買食材。南瓜慢慢是花園夥伴，目前沒有對應的查價品項。</p>
       </BottomSheetModal>
     </div>
   );

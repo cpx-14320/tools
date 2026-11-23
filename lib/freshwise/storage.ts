@@ -57,6 +57,3 @@ export function takeLegacyDeviceData(): LegacyDeviceData | null {
 
   return data.basket || data.prefs ? data : null;
 }
-
-/** 設定頁的「還原預設菜籃」。實際的寫入由 store 走 API 做，這裡只給預設值。 */
-export { defaultBasket as resetBasket } from "./basket";

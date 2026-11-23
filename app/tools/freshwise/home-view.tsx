@@ -7,13 +7,13 @@ import {GoTopButton} from "@/components/freshwise/go-top-button";
 import {ItemIcon} from "@/components/freshwise/item-icon";
 import {ItemRow} from "@/components/freshwise/item-row";
 import {PriceText} from "@/components/freshwise/price-text";
-import {TrendBadge} from "@/components/freshwise/badges";
 import {MarketContext} from "@/components/freshwise/market-context";
 import {useFreshwise} from "@/components/freshwise/store";
 import {useCompanion} from "@/components/freshwise/companion-store";
 import {DewBalance,QuestSlip} from "@/components/freshwise/companion-widgets";
 import {GameIcon,PetArtwork,SlicedArtwork} from "@/components/freshwise/game-art";
 import {copy} from "@/components/freshwise/theme";
+import {unitShort} from "@/lib/freshwise/price";
 import {allCodes} from "@/lib/freshwise/basket";
 import {itemImage} from "@/lib/freshwise/catalog";
 import {buildBrief,briefReason} from "@/lib/freshwise/advice";
@@ -36,7 +36,15 @@ const SECTION_HELP = {
     lines: [
       "跟前一個交易日比，今天價格上漲的食材，漲幅大的排前面。",
       "不是叫你別買，是提醒你今天這幾樣比昨天貴，可以多比較或改買別的。",
-      "推估價格的品項不列入——那是批發價乘係數算出來的，漲跌講的其實是批發的變化。",
+      "標示「估算」的品項也會列入：它的價位是推估的，但「跟昨天差幾趴」就是批發的實際變化。",
+    ],
+  },
+  fallers: {
+    title: "「跌價了，可以買」是怎麼挑的",
+    lines: [
+      "跟前一個交易日比，今天價格下跌的食材，跌幅大的排前面。",
+      "跟上面那一區是一對：只講漲的那一半，等於只告訴你壞消息。",
+      "標示「估算」的品項也會列入：它的價位是推估的，但「跟昨天差幾趴」就是批發的實際變化。",
     ],
   },
 } as const;
@@ -69,9 +77,8 @@ export function HomeView({today,book}:{today:string;book:PriceBook}){
    <h2>{headline.item.name}</h2>
    <span className="fw-tag-price-line">
      <PriceText priceKg={headline.quote.avgKg} rangeLowKg={headline.quote.rangeLowKg} rangeHighKg={headline.quote.rangeHighKg} unit={prefs.unit} size="tag" showUnit={false}/>
-     <span className="fw-tag-unit">元／{prefs.unit==="catty"?"台斤":"公斤"}</span>
+     <span className="fw-tag-unit">元／{unitShort(prefs.unit)}</span>
    </span>
-   {!headline.quote.estimated&&<TrendBadge trend={headline.trend}/>}
    <span className="fw-tag-unit">看價格詳情 →</span>
  </Link>:<div className="fw-price-tag"><GameIcon name="calendar" size={40}/><p>行情準備中</p></div>}
  </div>
@@ -87,14 +94,15 @@ export function HomeView({today,book}:{today:string;book:PriceBook}){
  </section>
  <QuestSlip/>
  </div>
- {brief.cheapest.length>0&&<section className="fw-feature-shelf"><SectionTitle leaf action={<Link href="/tools/freshwise/browse">看全部 →</Link>}>今天值得買</SectionTitle><div className="fw-market-display">{brief.cheapest.slice(0,2).map(row=><Link key={row.item.code} href={`/tools/freshwise/browse/${row.item.code}`} className="fw-market-product" aria-label={`${row.item.name}，${briefReason(row,"cheap")}，查看行情`}><span className="fw-market-food"><ItemIcon src={itemImage(row.item.code)} fallbackIcon={row.item.icon} alt={row.item.name} size={90}/></span><span className="fw-market-price"><h3>{row.item.name}</h3><PriceText priceKg={row.quote.avgKg} rangeLowKg={row.quote.rangeLowKg} rangeHighKg={row.quote.rangeHighKg} unit={prefs.unit} size="row" showUnit={false}/><span className="fw-market-unit">元／{prefs.unit==="catty"?"台斤":"公斤"}{row.quote.estimated?" · 估算":""}</span>{!row.quote.estimated&&<TrendBadge trend={row.trend} size="sm"/>}</span></Link>)}</div></section>}
+ {brief.cheapest.length>0&&<section className="fw-feature-shelf"><SectionTitle leaf action={<Link href="/tools/freshwise/browse">看全部 →</Link>}>今天值得買</SectionTitle><div className="fw-market-display">{brief.cheapest.slice(0,2).map(row=><Link key={row.item.code} href={`/tools/freshwise/browse/${row.item.code}`} className="fw-market-product" aria-label={`${row.item.name}，${briefReason(row,"cheap")}，查看行情`}><span className="fw-market-food"><ItemIcon src={itemImage(row.item.code)} fallbackIcon={row.item.icon} alt={row.item.name} size={90}/></span><span className="fw-market-price"><h3>{row.item.name}</h3><PriceText priceKg={row.quote.avgKg} rangeLowKg={row.quote.rangeLowKg} rangeHighKg={row.quote.rangeHighKg} unit={prefs.unit} size="row" showUnit={false}/><span className="fw-market-unit">元／{unitShort(prefs.unit)}{row.quote.estimated?" · 估算":""}</span></span></Link>)}</div></section>}
  <section><SectionTitle leaf action={<Link href="/tools/freshwise/basket" className="fw-leaf-link">查看菜籃 →</Link>}>我的菜籃</SectionTitle>
  {!basketReady?<Hint center>{copy.loading}</Hint>:basketRows.length? <Paper variant="list"><CollapsibleList>{basketRows.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`}/>)}</CollapsibleList></Paper>:<EmptyState icon="basket-shopping" title={basketCodes.length?"菜籃裡的食材目前沒有行情":"先挑幾樣你常買的菜"} description="把常買的食材加入菜籃，下次就能直接看價格。" action={<Link href="/tools/freshwise/browse" className="fw-game-button">去逛逛行情</Link>}/>}
  </section>
  {brief.seasonal.length>0&&<section><SectionTitle leaf onHelp={()=>setHelp("seasonal")} helpLabel="現在正當季是怎麼挑的">現在正當季</SectionTitle><Paper variant="list"><CollapsibleList>{brief.seasonal.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`} meta={briefReason(row,"season")}/>)}</CollapsibleList></Paper></section>}
- {brief.risers.length>0&&<section><SectionTitle leaf onHelp={()=>setHelp("risers")} helpLabel="漲價了，慢慢挑是怎麼挑的">漲價了，慢慢挑</SectionTitle><Paper variant="list"><CollapsibleList>{brief.risers.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`} meta={briefReason(row,"rise")}/>)}</CollapsibleList></Paper></section>}
+ {brief.risers.length>0&&<section><SectionTitle leaf onHelp={()=>setHelp("risers")} helpLabel="漲價了，慢慢挑是怎麼挑的">漲價了，慢慢挑</SectionTitle><Paper variant="list"><CollapsibleList>{brief.risers.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`}/>)}</CollapsibleList></Paper></section>}
+ {brief.fallers.length>0&&<section><SectionTitle leaf onHelp={()=>setHelp("fallers")} helpLabel="跌價了，可以買是怎麼挑的">跌價了，可以買</SectionTitle><Paper variant="list"><CollapsibleList>{brief.fallers.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`}/>)}</CollapsibleList></Paper></section>}
  {brief.total===0&&<EmptyState icon="cloud-arrow-down" title="今天還沒有行情資料" description="資料來源可能尚未更新。可以先整理菜籃，再晚一點回來看看。"/>}
- <GoTopButton visible={brief.seasonal.length+brief.risers.length>=8}/>
+ <GoTopButton visible={brief.seasonal.length+brief.risers.length+brief.fallers.length>=8}/>
  <BottomSheetModal open={help!==null} title={help?SECTION_HELP[help].title:""} onClose={()=>setHelp(null)} bodyClassName="flex flex-col gap-3 px-5 py-5">
   {help&&SECTION_HELP[help].lines.map(line=><Hint key={line}>{line}</Hint>)}
  </BottomSheetModal>

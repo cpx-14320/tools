@@ -30,8 +30,9 @@ export function ItemRow({ row, unit, href, onClick, meta, leading, starred, onTo
     meta={meta ?? defaultMeta(row)}
     price={<>
       <PriceText priceKg={quote.avgKg} rangeLowKg={quote.rangeLowKg} rangeHighKg={quote.rangeHighKg} unit={unit} size="row" showUnit={false}/>
-      {/* 推估價不顯示批發漲跌；歷史足夠且持平時才顯示划算度。 */}
-      {!quote.estimated && <TrendBadge trend={trend}/>}
+      {/* 漲跌一律顯示，推估價也是——推估價＝批發價 × 固定係數，百分比變化把係數約掉
+          之後就是批發的真實變化幅度。不可靠的是「多少錢」，不是「漲跌幾趴」。 */}
+      <TrendBadge trend={trend}/>
     </>}
     leading={leading}
     href={href}

@@ -26,7 +26,6 @@ import { EditorSheet } from "@/components/freshwise/editor-sheet";
 import { useFreshwise } from "@/components/freshwise/store";
 import { colors, copy, text } from "@/components/freshwise/theme";
 import { formatShortDate } from "@/lib/freshwise/dates";
-import { resetBasket } from "@/lib/freshwise/storage";
 import { defaultBasket } from "@/lib/freshwise/basket";
 import type { MarketOption, UnitKey } from "@/lib/freshwise/types";
 
@@ -36,6 +35,7 @@ const OTHER_TOOL_ICONS: Record<string, string> = { transit: "/freshwise/ui-tool-
 const UNIT_OPTIONS: readonly { key: UnitKey; label: string; note: string }[] = [
   { key: "catty", label: "台斤", note: "台灣市場的習慣單位" },
   { key: "kg", label: "公斤", note: "開放資料的原始單位" },
+  { key: "g", label: "公克", note: "包裝標示常見的單位" },
 ];
 
 
@@ -77,7 +77,7 @@ export function MoreView({
 
   return (
     <div className="fw-page fw-settings-page">
-      <PageTitle hanging>我的小手帳</PageTitle>
+      <PageTitle hanging>我的設定</PageTitle>
 
       {/* ── 預設看哪裡的價格 ───────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
@@ -131,6 +131,19 @@ export function MoreView({
         <Callout icon="circle-info" size="sm">{copy.retailCoverageNote}</Callout>
       </section>
 
+      {/* ── 資料管理 ───────────────────────────────────────── */}
+      <section className="flex flex-col gap-2.5">
+        <SectionTitle leaf>買菜日記</SectionTitle>
+        <Paper variant="flush" className="flex flex-col gap-2.5">
+          <Note>
+            {copy.basket}、偏好與夥伴進度都跟著帳號走，換手機、換瀏覽器登入看到的是同一份。
+          </Note>
+          <DangerButton size="md" className="self-end" onClick={() => setResetOpen(true)}>
+            清除全部資料
+          </DangerButton>
+        </Paper>
+      </section>
+
       <section className="flex flex-col gap-2.5" aria-label="其他小工具">
         <SectionTitle leaf>其他小工具</SectionTitle>
         <Paper variant="flush" className="fw-stack fw-other-tools">
@@ -142,34 +155,11 @@ export function MoreView({
         </Paper>
       </section>
 
-      {/* ── 資料管理 ───────────────────────────────────────── */}
-      <section className="flex flex-col gap-2.5">
-        <SectionTitle leaf>這個工具的資料</SectionTitle>
-        <Paper variant="flush" className="flex flex-col gap-2.5">
-          <Note>
-            {copy.basket}、偏好與夥伴進度都跟著帳號走，換手機、換瀏覽器登入看到的是同一份。
-          </Note>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setBasket(resetBasket())}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 ${text.badge}`}
-              style={{ backgroundColor: colors.surfaceSoft, color: colors.brand }}
-            >
-              <FaIcon icon="rotate-left" size={11} className="" color={colors.brand} />
-              還原預設{copy.basket}
-            </button>
-            <DangerButton size="md" className="ml-auto" onClick={() => setResetOpen(true)}>
-              清除全部資料
-            </DangerButton>
-          </div>
-        </Paper>
-      </section>
 
       {/* ── 帳號 ───────────────────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
         <SectionTitle leaf>帳號</SectionTitle>
-        <Paper variant="flush" className="flex flex-col gap-2.5">
+        <Paper variant="flush" className="flex items-center justify-between gap-3">
           <Note>{user?.name ? `目前登入：${user.name}` : "目前登入中"}</Note>
           <DangerButton size="md" onClick={() => void handleLogout()}>
             登出

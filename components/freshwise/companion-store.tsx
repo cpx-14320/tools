@@ -281,7 +281,7 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
         </div>
       )}
       <BottomSheetModal open={!!reward} title="夥伴寄來的小紙條" onClose={() => setReward(null)} bodyClassName="fw-reward-letter">
-        <PetArtwork id={state.active} size={128} />
+        <PetArtwork id={state.active} size={200} />
         <h2>{questDone ? "又多一點買菜的把握！" : "還差一點點！"}</h2>
         <p>
           {questDone ? `「${quest?.title}」完成了。` : `「${quest?.title}」${quest?.description}`}

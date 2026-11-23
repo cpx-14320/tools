@@ -21,7 +21,7 @@ export type CategoryKey = "veg" | "fruit" | "seafood" | "meat" | "egg" | "grain"
 export type VenueKey = "market" | "super" | "wholesale";
 
 /** 顯示單位。台灣的傳統市場講台斤、批發行情講公斤，兩邊都要能看。 */
-export type UnitKey = "catty" | "kg";
+export type UnitKey = "catty" | "kg" | "g";
 
 /** 漲跌方向。台灣習慣漲紅跌綠，而菜價「跌」對買菜的人是好事，配色見 theme.ts。 */
 export type TrendDirection = "up" | "down" | "flat";

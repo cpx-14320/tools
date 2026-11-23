@@ -83,10 +83,10 @@ export function BottomSheetModal({
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
-            className={`fw-modal-paper flex max-h-[90%] w-full ${maxWidthClassName} flex-col overflow-y-auto`}
+            className={`fw-modal-paper flex max-h-[90%] w-full ${maxWidthClassName} flex-col overflow-hidden`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div data-modal-heading className="flex items-center justify-between">
+            <div data-modal-heading className="flex shrink-0 items-center justify-between">
               <p id={titleId} data-modal-title className="font-semibold" style={{ color: colors.ink, fontSize: v.fsSection }}>
                 {title}
               </p>
@@ -101,10 +101,17 @@ export function BottomSheetModal({
               </button>
             </div>
 
-            <div className={bodyClassName}>{children}</div>
+            {/* 只有中間這一層捲動，標題與 footer 固定住——整張紙一起捲的話，使用者
+                往下看選項時「關閉」與「確定」都會捲出畫面。捲軸隱藏（.fw-modal-scroll）：
+                彈窗寬度就這麼窄，一條系統捲軸會壓掉一整欄內容。
+                外層再包一層的理由是 flex 子項目預設 min-height:auto、不會縮，捲動要發生
+                在一個「自己不長高」的容器上；呼叫端自己的版面維持原樣放在裡面。 */}
+            <div className="fw-modal-scroll">
+              <div className={bodyClassName}>{children}</div>
+            </div>
 
             {footer && (
-              <div className="flex items-center justify-end gap-2 border-t px-5 py-4" style={{ borderColor: colors.border }}>
+              <div className="flex shrink-0 items-center justify-end gap-2 border-t px-5 py-4" style={{ borderColor: colors.border }}>
                 {footer}
               </div>
             )}

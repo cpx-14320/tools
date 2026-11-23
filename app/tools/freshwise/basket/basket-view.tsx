@@ -103,9 +103,10 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
           <span className={text.priceBig}>{cost.counted > 0 ? formatMoney(cost.total) : "—"}</span>
           <span className={`ml-1.5 ${text.meta}`}>元</span>
         </p>
+        {/* 「還有幾項沒填份量」拿掉：那是一句責備，而且沒填份量的那幾項在清單上自己
+            就看得出來（份量欄是空的），不需要在總額旁邊再數一次。 */}
         <Hint>
           {formatShortDate(book.dataDate)}・{basket.entries.length} 項
-          {cost.skipped > 0 && `・${cost.skipped} 項還沒填份量`}
         </Hint>
       </ListCard>
 

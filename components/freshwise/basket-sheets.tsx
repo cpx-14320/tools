@@ -31,6 +31,7 @@ export function GroupEditorSheet({
 }) {
   const [name, setName] = useState(group?.name ?? "");
   const [icon, setIcon] = useState(group?.icon ?? DEFAULT_GROUP_ICON);
+  const [dishQuery, setDishQuery] = useState("");
 
   // 每次打開都重設成目前這個分類的值（理由同 MarketPickerModal 的說明）。
   const [lastOpen, setLastOpen] = useState(open);
@@ -39,8 +40,14 @@ export function GroupEditorSheet({
     if (open) {
       setName(group?.name ?? "");
       setIcon(group?.icon ?? DEFAULT_GROUP_ICON);
+      setDishQuery("");
     }
   }
+
+  // 一百道料理用捲的找太慢。選中的那一道永遠留在結果裡，不然打了字之後使用者會以為
+  // 自己剛剛選的被取消了。
+  const keyword = dishQuery.trim();
+  const dishes = keyword ? DISH_ICONS.filter((dish) => dish.name.includes(keyword) || dish.icon === icon) : DISH_ICONS;
 
   return (
     <EditorSheet
@@ -83,8 +90,10 @@ export function GroupEditorSheet({
       </Field>
 
       <Field label="常見料理" as="div">
+        <TextInput value={dishQuery} onChange={(e) => setDishQuery(e.target.value)} placeholder={`搜尋料理（共 ${DISH_ICONS.length} 道）`} />
+        {dishes.length === 0 && <Hint>找不到「{keyword}」，換個說法試試。</Hint>}
         <div className="fw-dish-options">
-          {DISH_ICONS.map((dish) => {
+          {dishes.map((dish) => {
             const active = icon === dish.icon;
             return (
               <button key={dish.icon} type="button" className="fw-dish-option" aria-label={`選擇料理圖示 ${dish.name}`} aria-pressed={active}
