@@ -7,11 +7,20 @@ const { CATALOG, TRACKED_CATALOG } = (await import("../lib/freshwise/catalog")) 
   CATALOG: { code: string; name: string; category: string }[];
   TRACKED_CATALOG: { code: string }[];
 };
+const { itemArtwork } = (await import("../lib/freshwise/art-assets")) as unknown as {
+  itemArtwork: (code: string) => { file: string } | undefined;
+};
 import { existsSync } from "node:fs";
 
 
-// 看磁碟上有沒有那張圖——註冊表只說「這個代碼叫什麼檔名」，不代表檔案存在。
-const haveArt = new Set(CATALOG.filter((i) => existsSync(`public/freshwise/item-${i.code}.png`)).map((i) => i.code));
+// 走 itemArtwork 再看磁碟——有些品項的圖不是叫 item-<code>.png（2026-11 那批是照農業部
+// 的作物代號出圖的，對照表在 art-assets.ts）。只比對檔名會把那些誤報成缺圖。
+const haveArt = new Set(
+  CATALOG.filter((i) => {
+    const art = itemArtwork(i.code);
+    return !!art && existsSync(`public${art.file}`);
+  }).map((i) => i.code),
+);
 const tracked = new Set(TRACKED_CATALOG.map((i) => i.code));
 const missing = CATALOG.filter((i) => !haveArt.has(i.code));
 

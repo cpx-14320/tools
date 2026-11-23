@@ -273,6 +273,34 @@ export const CATALOG: CatalogItem[] = [
   { code: "FG4", name: "西洋芹", category: "veg", aliases: ["西芹"], icon: "leaf", baseKg: 50, season: [11, 12, 1, 2, 3] },
   { code: "FG5", name: "皇宮菜", category: "veg", aliases: ["落葵"], icon: "leaf", baseKg: 40, season: [5, 6, 7, 8, 9, 10] },
 
+  // 第二批（2026-11）：拿 11/11–11/22 連續 12 個完整交易日比對農業部「農產品交易行情」，
+  // 這些品項 10/12 天以上都有報價。代號跳過 I（在網址列裡跟 1 分不出來）。
+  //
+  // 這一批**全部沒有臺中零售訪價**，畫面上一律是批發價推估的區間（帶「估算」）。
+  { code: "FH1", name: "扁蒲", category: "veg", aliases: ["蒲仔", "瓠瓜"], icon: "seedling", baseKg: 19, season: [4, 5, 6, 7, 8, 9] },
+  { code: "FH2", name: "油菜", category: "veg", aliases: [], icon: "leaf", baseKg: 43, season: [11, 12, 1, 2, 3] },
+  { code: "FH3", name: "菜豆", category: "veg", aliases: ["敏豆", "長豆"], icon: "seedling", baseKg: 57, season: [4, 5, 6, 9, 10, 11] },
+  { code: "FH4", name: "佛手瓜", category: "veg", aliases: ["隼人瓜", "香櫞瓜"], icon: "seedling", baseKg: 54, season: [3, 4, 5, 9, 10, 11] },
+  // 龍鬚菜在開放資料裡叫「隼人瓜-瓜苗」，跟佛手瓜共用基底名稱但是完全不同的菜。
+  // 用「隼人瓜」當品項名的話，攤位上指著龍鬚菜的人永遠搜不到。
+  { code: "FH5", name: "龍鬚菜", category: "veg", aliases: ["隼人瓜瓜苗", "佛手瓜苗"], icon: "leaf", baseKg: 76, season: [4, 5, 6, 7, 8, 9, 10] },
+  { code: "FH6", name: "芥藍菜", category: "veg", aliases: ["芥蘭"], icon: "leaf", baseKg: 46, season: [10, 11, 12, 1, 2, 3] },
+  { code: "FH7", name: "蓮藕", category: "veg", aliases: ["藕"], icon: "circle", baseKg: 42, season: [6, 7, 8, 9] },
+  { code: "FH8", name: "菱角", category: "veg", aliases: ["水栗"], icon: "circle", baseKg: 41, season: [9, 10, 11, 12] },
+  { code: "FH9", name: "豆薯", category: "veg", aliases: ["涼薯", "刈薯"], icon: "circle", baseKg: 20, season: [11, 12, 1, 2] },
+  { code: "FJ1", name: "花生", category: "veg", aliases: ["土豆", "落花生"], icon: "seedling", baseKg: 47, season: [7, 8, 9, 10, 11] },
+  { code: "FJ2", name: "木耳", category: "veg", aliases: ["黑木耳", "濕木耳"], icon: "leaf", baseKg: 86, season: ALL_YEAR },
+  { code: "FJ3", name: "秀珍菇", category: "veg", aliases: [], icon: "seedling", baseKg: 90, season: ALL_YEAR },
+  { code: "FJ4", name: "鴻喜菇", category: "veg", aliases: [], icon: "seedling", baseKg: 53, season: ALL_YEAR },
+  { code: "FJ5", name: "洋菇", category: "veg", aliases: ["蘑菇"], icon: "seedling", baseKg: 160, season: [11, 12, 1, 2, 3] },
+  { code: "FJ6", name: "紅蔥頭", category: "veg", aliases: ["油蔥"], icon: "circle", baseKg: 108, season: [1, 2, 3, 4] },
+  { code: "FJ7", name: "蘆筍", category: "veg", aliases: ["綠蘆筍"], icon: "seedling", baseKg: 248, season: [3, 4, 5, 6, 9, 10] },
+  { code: "FJ8", name: "菜心", category: "veg", aliases: ["萵苣莖", "A菜心", "嫩莖萵苣"], icon: "leaf", baseKg: 28, season: [11, 12, 1, 2, 3] },
+  { code: "FJ9", name: "大心菜", category: "veg", aliases: ["芥菜心", "莖用芥菜"], icon: "leaf", baseKg: 24, season: [11, 12, 1, 2, 3] },
+  // 水蓮同理，藏在「海菜-水蓮」底下——叫「海菜」沒人認得出那是美濃水蓮。
+  { code: "FK1", name: "水蓮", category: "veg", aliases: ["野蓮", "美濃水蓮"], icon: "leaf", baseKg: 90, season: [4, 5, 6, 7, 8, 9, 10] },
+  { code: "FK2", name: "牛蒡", category: "veg", aliases: [], icon: "circle", baseKg: 25, season: [1, 2, 3, 11, 12] },
+
   // ── 水果 ──────────────────────────────────────────────────
   { code: "GA1", name: "香蕉", category: "fruit", aliases: ["芎蕉"], icon: "apple-whole", baseKg: 30, season: ALL_YEAR },
   { code: "GA2", name: "鳳梨", category: "fruit", aliases: ["金鑽鳳梨", "旺來"], icon: "apple-whole", baseKg: 28, season: [3, 4, 5, 6, 7] },
@@ -298,6 +326,17 @@ export const CATALOG: CatalogItem[] = [
   { code: "GC4", name: "哈密瓜", category: "fruit", aliases: ["洋香瓜"], icon: "apple-whole", baseKg: 70, season: [4, 5, 6, 10, 11] },
   { code: "GC5", name: "奇異果", category: "fruit", aliases: ["進口奇異果"], icon: "apple-whole", baseKg: 105, season: ALL_YEAR },
   { code: "GC6", name: "酪梨", category: "fruit", aliases: [], icon: "apple-whole", baseKg: 70, season: [7, 8, 9, 10, 11] },
+
+  // 第二批水果。桶柑與海梨柑現在（11 月）批發完全沒有報價——它們的產季是 12–3 月，
+  // 而且是這一批裡**唯二臺中有零售訪價欄位**的兩項，進了產季會是實測價不是估算。
+  { code: "GC7", name: "甜瓜", category: "fruit", aliases: ["香瓜", "美濃瓜"], icon: "apple-whole", baseKg: 30, season: [4, 5, 6, 7, 10, 11] },
+  { code: "GC8", name: "百香果", category: "fruit", aliases: [], icon: "apple-whole", baseKg: 64, season: [7, 8, 9, 10, 11, 12] },
+  { code: "GC9", name: "釋迦", category: "fruit", aliases: [], icon: "apple-whole", baseKg: 72, season: [11, 12, 1, 2, 3] },
+  { code: "GD1", name: "楊桃", category: "fruit", aliases: [], icon: "apple-whole", baseKg: 33, season: [10, 11, 12, 1, 2] },
+  { code: "GD2", name: "葡萄柚", category: "fruit", aliases: [], icon: "apple-whole", baseKg: 20, season: [9, 10, 11] },
+  { code: "GD3", name: "紅柿", category: "fruit", aliases: ["軟柿", "水柿"], icon: "apple-whole", baseKg: 26, season: [9, 10, 11, 12] },
+  { code: "GD4", name: "桶柑", category: "fruit", aliases: ["年柑"], icon: "apple-whole", baseKg: 30, season: [1, 2, 3] },
+  { code: "GD5", name: "海梨柑", category: "fruit", aliases: ["海梨"], icon: "apple-whole", baseKg: 25, season: [12, 1, 2] },
 
   // ── 漁產 ──────────────────────────────────────────────────
   { code: "HA1", name: "吳郭魚", category: "seafood", aliases: ["台灣鯛"], icon: "fish", baseKg: 70, season: ALL_YEAR },

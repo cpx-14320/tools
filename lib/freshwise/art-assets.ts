@@ -139,8 +139,51 @@ export const ITEM_ART_CODES: readonly string[] = [
 /** @deprecated 舊的分組結構，只剩測試腳本在用。 */
 export const ITEM_ART_GROUPS: readonly { codes: readonly string[] }[] = [{ codes: ITEM_ART_CODES }];
 
+/**
+ * 檔名對不上 `item-<code>.png` 的品項。
+ *
+ * 2026-11 這批插畫是照**農業部開放資料自己的作物代號**出圖的（`item-farm-<作物代號>.png`、
+ * 臺中零售欄位則是 `item-retail-<序號>.png`），那組代號跟這個工具的目錄代號是兩回事。
+ * 與其把同一張圖複製一份改名（兩份位元組，之後重畫一邊會過期），不如在這裡記一行
+ * 「這個品項用哪一張圖」。
+ *
+ * 一個代號只會對到一張圖；同一張圖可以被多個代號共用（例如紅柿與水柿是同一種軟柿）。
+ */
+const ART_FILE_ALIAS: Record<string, string> = {
+  FH1: "item-farm-FH3.png", // 扁蒲（花蒲，量最大的品種）
+  FH2: "item-farm-LN1.png", // 油菜
+  FH3: "item-farm-FM1.png", // 菜豆（白色）
+  FH4: "item-farm-FU1.png", // 佛手瓜
+  FH5: "item-farm-FU2.png", // 龍鬚菜（隼人瓜-瓜苗）
+  FH6: "item-farm-LK2.png", // 芥藍菜
+  FH7: "item-farm-SN1.png", // 蓮藕
+  FH8: "item-farm-SR1.png", // 菱角（生菱角）
+  FH9: "item-farm-SL1.png", // 豆薯
+  FJ1: "item-farm-FZ1.png", // 花生（生）
+  FJ2: "item-farm-MC1.png", // 木耳
+  FJ3: "item-farm-MI1.png", // 秀珍菇
+  FJ4: "item-farm-MK1.png", // 鴻喜菇
+  FJ5: "item-farm-MA1.png", // 洋菇
+  FJ6: "item-farm-SE5.png", // 紅蔥頭
+  FJ7: "item-farm-SV2.png", // 蘆筍（綠蘆筍）
+  FJ8: "item-farm-SI1.png", // 菜心（萵苣莖）
+  FJ9: "item-farm-SS0.png", // 大心菜
+  FK1: "item-farm-LT3.png", // 水蓮（海菜-水蓮）
+  FK2: "item-farm-SM1.png", // 牛蒡
+  GC8: "item-farm-51.png", // 百香果
+  GC9: "item-farm-31.png", // 釋迦
+  GD1: "item-farm-M3.png", // 楊桃
+  GD2: "item-farm-H4.png", // 葡萄柚（紅肉）
+  GD3: "item-farm-Z1.png", // 紅柿
+  GD4: "item-retail-02.png", // 桶柑
+  GD5: "item-retail-03.png", // 海梨柑
+  // GC7 甜瓜（美濃瓜）還沒出圖——留白，不要拿哈密瓜頂替。
+};
+
 const ART_SET = new Set(ITEM_ART_CODES);
 
 export function itemArtwork(code: string) {
+  const alias = ART_FILE_ALIAS[code];
+  if (alias) return { file: `/freshwise/${alias}` };
   return ART_SET.has(code) ? { file: `/freshwise/item-${code}.png` } : undefined;
 }

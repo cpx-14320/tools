@@ -120,6 +120,35 @@ export const SOURCE_MAP: Record<string, SourceRef> = {
   FG4: { farm: { match: ["芹菜-西洋芹菜"], exclude: ["進口"] } },
   FG5: { farm: { match: ["皇宮菜"] } },
 
+  /* ── 第二批蔬菜（2026-11 加入）─────────────────────────
+   * 排除規則的理由都寫在旁邊，不要「看起來多餘」就刪掉：
+   *   - 菇類的「盒裝」是按盒報價不是按公斤，鴻喜菇散裝 53 元、盒裝 191 元，混在一起
+   *     會把均價拉高三倍多。
+   *   - 「芽」「苗」「去殼」「蓮子」都是同一個基底名稱底下的不同產品。
+   */
+  FH1: { farm: { match: ["扁蒲"] } },
+  FH2: { farm: { match: ["油菜"], exclude: ["油菜花", "小松菜"] } },
+  FH3: { farm: { match: ["菜豆"] } },
+  FH4: { farm: { match: ["隼人瓜"], exclude: ["瓜苗"] } },
+  FH5: { farm: { match: ["隼人瓜-瓜苗"] } },
+  FH6: { farm: { match: ["芥藍菜"], exclude: ["芥藍芽"] } },
+  FH7: { farm: { match: ["蓮藕"], exclude: ["蓮子"] } },
+  FH8: { farm: { match: ["菱角"], exclude: ["去殼"] } },
+  FH9: { farm: { match: ["豆薯"] } },
+  FJ1: { farm: { match: ["落花生"], exclude: ["熟"] } },
+  FJ2: { farm: { match: ["濕木耳"], exclude: ["盒裝"] } },
+  FJ3: { farm: { match: ["秀珍菇"], exclude: ["盒裝"] } },
+  FJ4: { farm: { match: ["鴻喜菇"], exclude: ["盒裝"] } },
+  FJ5: { farm: { match: ["洋菇"], exclude: ["盒裝"] } },
+  FJ6: { farm: { match: ["青蔥-紅蔥頭"] } },
+  FJ7: { farm: { match: ["蘆筍"], exclude: ["進口", "蘆筍花"] } },
+  FJ8: { farm: { match: ["萵苣莖"] } },
+  FJ9: { farm: { match: ["大心菜"] } },
+  FK1: { farm: { match: ["海菜-水蓮"] } },
+  // 牛蒡是這份對照表裡**唯一不排除進口**的品項：本土牛蒡一天只有 200 公斤，進口有
+  // 1,250 公斤，而且攤位上賣的就是進口的。排掉進口會讓這一項十二天裡有四天查不到價。
+  FK2: { farm: { match: ["牛蒡"] } },
+
   /* ── 水果 ───────────────────────────────────────────── */
   GA1: { farm: { match: ["香蕉"], exclude: ["芭蕉", "旦蕉", "越旦"] }, taichung: ["香蕉(內銷)"] },
   GA2: { farm: { match: ["鳳梨-金鑽鳳梨"] }, taichung: ["鳳梨(金鑽17號)", "鳳梨(開英)", "鳳梨(四號)"] },
@@ -146,6 +175,20 @@ export const SOURCE_MAP: Record<string, SourceRef> = {
   GC4: { farm: { match: ["洋香瓜"] } },
   GC5: { farm: { match: ["奇異果"] } },
   GC6: { farm: { match: ["酪梨"] } },
+
+  /* ── 第二批水果（2026-11 加入）───────────────────────── */
+  // 溫室吊瓜是 144 元/公斤的精品瓜，美濃瓜 30 元——差 4.8 倍，混進來「甜瓜多少錢」
+  // 就沒有意義了。
+  GC7: { farm: { match: ["甜瓜"], exclude: ["進口", "溫室吊瓜"] } },
+  GC8: { farm: { match: ["百香果"] } },
+  GC9: { farm: { match: ["釋迦"], exclude: ["鳳梨釋迦"] } },
+  GD1: { farm: { match: ["楊桃"] } },
+  GD2: { farm: { match: ["葡萄柚"] } },
+  // 紅柿與水柿是同一種軟柿（臺中的欄位就叫「紅柿(軟柿)」），合起來才有夠穩的量；
+  // 甜柿是 GB9，別跟這個搞混（85 元 vs 26 元）。
+  GD3: { farm: { match: ["柿子-紅柿", "柿子-水柿"] }, taichung: ["紅柿(軟柿)"] },
+  GD4: { farm: { match: ["桶柑"], exclude: ["進口"] }, taichung: ["桶柑"] },
+  GD5: { farm: { match: ["海梨"], exclude: ["進口"] }, taichung: ["海梨柑"] },
 
   /* ── 漁產 ───────────────────────────────────────────── */
   HA1: { aquatic: { match: ["吳郭魚", "其他吳郭"] }, taichung: ["吳郭魚"] },
