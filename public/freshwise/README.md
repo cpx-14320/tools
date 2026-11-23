@@ -131,6 +131,6 @@ csv-ingredient-art-pending.csv仍有87項水產待生成，依先前要求維持
 <!-- freshwise-aquatic-v25-start -->
 ## 水產食材補圖 V25（2026-11-24）
 
-依使用者要求恢復水產圖示製作，目前完成17／87張，剩餘70張。皆為獨立256×256透明PNG，平放本資料夾，依漁產品來源代碼命名。現有圖片先比對，未更動食材目錄、行情來源或API映射。原生生成尺寸與完整提示詞見兩份JSON的csvAquaticArtV25，完成對照表見csv-ingredient-art-aquatic.csv/json。尚待生成項目保留在csv-ingredient-art-pending.csv。
+依使用者要求恢復水產圖示製作，目前完成44／87張，剩餘43張。皆為獨立256×256透明PNG，平放本資料夾，依漁產品來源代碼命名。現有圖片先比對，未更動食材目錄、行情來源或API映射。原生生成尺寸與完整提示詞見兩份JSON的csvAquaticArtV25，完成對照表見csv-ingredient-art-aquatic.csv/json。尚待生成項目保留在csv-ingredient-art-pending.csv。
 
 <!-- freshwise-aquatic-v25-end -->

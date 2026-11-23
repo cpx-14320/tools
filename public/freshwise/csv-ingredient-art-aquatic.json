@@ -2,8 +2,8 @@
   "date": "2026-11-24",
   "status": "in-progress",
   "expectedCount": 87,
-  "generatedCount": 17,
-  "pendingCount": 70,
+  "generatedCount": 44,
+  "pendingCount": 43,
   "researchSources": [
     "https://efish.fa.gov.tw/efish/statistics/daymultidayonemarketonefish.htm",
     "https://fishdb.sinica.edu.tw/chi/import_already_pic.php?id=223",
@@ -374,6 +374,151 @@
       "nativeGeneration": "exec-d6767dc2-9739-470c-9b93-0e45fd978960.png"
     },
     {
+      "name": "尖梭",
+      "file": "item-aquatic-2301.png",
+      "codes": [
+        "2301"
+      ],
+      "subject": "One whole barracuda, left-facing side profile, very long slender silver-green body, pointed pike-like head with slightly protruding lower jaw, two separate dorsal fins and deeply forked tail.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 尖梭. Subject: One whole barracuda, left-facing side profile, very long slender silver-green body, pointed pike-like head with slightly protruding lower jaw, two separate dorsal fins and deeply forked tail.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 25,
+        "top": 453,
+        "width": 1204,
+        "height": 342
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 23691,
+      "sha256": "91e1db7aff3432105795d0e2071db48a3fefd694232f596307d172e5e4c58cc0",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-4ac2df57-48ed-4646-a653-c8ac50bb3536.png"
+    },
+    {
+      "name": "青鞭",
+      "file": "item-aquatic-2381.png",
+      "codes": [
+        "2381"
+      ],
+      "subject": "One whole bluespotted cornetfish, left-facing side profile, extremely long slender blue-gray body, long tubular snout, small fins toward the rear and a long thin tail filament, simplified compact diagonal arrangement.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 青鞭. Subject: One whole bluespotted cornetfish, left-facing side profile, extremely long slender blue-gray body, long tubular snout, small fins toward the rear and a long thin tail filament, simplified compact diagonal arrangement.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 30,
+        "top": 284,
+        "width": 1194,
+        "height": 588
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 17429,
+      "sha256": "99a1f8faae35190e8eec836fcfb7c872d80bc97937988c3966040052e0a3f4f3",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-b34b7015-2182-49c6-8070-007bfa1c3c01.png"
+    },
+    {
+      "name": "烏魚（烏母／烏公）",
+      "file": "item-aquatic-2601.png",
+      "codes": [
+        "2601",
+        "2602"
+      ],
+      "subject": "One whole flathead grey mullet, left-facing side profile, stout thick silver-gray cylindrical body and slightly plump belly, broad blunt head with small mouth, two widely separated small dorsal fins, broad dark gray horizontal scale rows and forked gray tail. No tuna finlets or crescent tail.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 烏魚（烏母／烏公）. Subject: One whole flathead grey mullet, left-facing side profile, stout thick silver-gray cylindrical body and slightly plump belly, broad blunt head with small mouth, two widely separated small dorsal fins, broad dark gray horizontal scale rows and forked gray tail. No tuna finlets or crescent tail.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 50,
+        "top": 366,
+        "width": 1155,
+        "height": 549
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 39444,
+      "sha256": "852b24510c99b41e4a968edb07db8a19f1edae1090da2927fd771a31357ae754",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-a3069760-6400-4c9c-827a-ce427dfc7664.png"
+    },
+    {
+      "name": "柳葉魚",
+      "file": "item-aquatic-3632.png",
+      "codes": [
+        "3632"
+      ],
+      "subject": "A compact group of three whole capelin fish, slim small silver bodies with olive backs, tiny fins and pointed heads, slightly overlapping with visible forked tails.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 柳葉魚. Subject: A compact group of three whole capelin fish, slim small silver bodies with olive backs, tiny fins and pointed heads, slightly overlapping with visible forked tails.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 83,
+        "top": 257,
+        "width": 1090,
+        "height": 710
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 61894,
+      "sha256": "cd646e78007cc19c7a7594f770b69cf4306ba91e98e381bf85fa699fb75b9b6f",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-ac631796-be93-40b3-b5f7-51af09cb391a.png"
+    },
+    {
+      "name": "比目魚片",
+      "file": "item-aquatic-6009.png",
+      "codes": [
+        "6009"
+      ],
+      "subject": "Two raw ivory-white flatfish fillets with thin gray skin edges, elongated triangular curved shapes and a few broad pale pink muscle bands, no plate.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 比目魚片. Subject: Two raw ivory-white flatfish fillets with thin gray skin edges, elongated triangular curved shapes and a few broad pale pink muscle bands, no plate.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 83,
+        "top": 220,
+        "width": 1094,
+        "height": 816
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 61382,
+      "sha256": "e3ce17709e05d4137c4d943652ac86f65ca505029b28aa0da50b976375930d35",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-35493170-eb8b-478b-9e9e-4bd44ddc096e.png"
+    },
+    {
+      "name": "草魚",
+      "file": "item-aquatic-1023.png",
+      "codes": [
+        "1023"
+      ],
+      "subject": "One whole grass carp, left-facing side profile, thick elongated silvery olive body, broad large scale hints, rounded head and forked dark gray tail.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 草魚. Subject: One whole grass carp, left-facing side profile, thick elongated silvery olive body, broad large scale hints, rounded head and forked dark gray tail.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 59,
+        "top": 331,
+        "width": 1143,
+        "height": 600
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 43237,
+      "sha256": "79efdb4ab59902da37b5458beabf3568e28f8b0e7881b3823c403a06235987f8",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-6ef1dff0-2997-4d65-a2fd-b92a70ab782a.png"
+    },
+    {
       "name": "黑鯛",
       "file": "item-aquatic-1163.png",
       "codes": [
@@ -420,114 +565,222 @@
       "generator": "built-in image_gen",
       "date": "2026-11-24",
       "nativeGeneration": "exec-e81f6206-f3d3-4811-8e22-4dc88a5a13e2.png"
-    }
-  ],
-  "pending": [
-    {
-      "name": "尖梭",
-      "file": "item-aquatic-2301.png",
-      "codes": [
-        "2301"
-      ]
-    },
-    {
-      "name": "青鞭",
-      "file": "item-aquatic-2381.png",
-      "codes": [
-        "2381"
-      ]
-    },
-    {
-      "name": "烏魚（烏母／烏公）",
-      "file": "item-aquatic-2601.png",
-      "codes": [
-        "2601",
-        "2602"
-      ]
-    },
-    {
-      "name": "柳葉魚",
-      "file": "item-aquatic-3632.png",
-      "codes": [
-        "3632"
-      ]
-    },
-    {
-      "name": "比目魚片",
-      "file": "item-aquatic-6009.png",
-      "codes": [
-        "6009"
-      ]
-    },
-    {
-      "name": "草魚",
-      "file": "item-aquatic-1023.png",
-      "codes": [
-        "1023"
-      ]
     },
     {
       "name": "赤宗",
       "file": "item-aquatic-2012.png",
       "codes": [
         "2012"
-      ]
+      ],
+      "subject": "One whole yellowback seabream (Dentex hypselosomus), left-facing side profile, moderately deep oval rosy-pink body, muted golden-yellow upper back, pale silver-pink belly, long spiny pink dorsal fin with no long filament, forked rosy tail.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 赤宗. Subject: One whole yellowback seabream (Dentex hypselosomus), left-facing side profile, moderately deep oval rosy-pink body, muted golden-yellow upper back, pale silver-pink belly, long spiny pink dorsal fin with no long filament, forked rosy tail.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 78,
+        "top": 258,
+        "width": 1107,
+        "height": 740
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 53072,
+      "sha256": "50dcfbe58d6e9c398f6580eddf3f00e8c7e8e00c9d6ef21e6c73d770b49af4bc",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-c1a8e330-d22b-4f05-981a-4c8292ac0c09.png"
     },
     {
       "name": "金線魚",
       "file": "item-aquatic-2021.png",
       "codes": [
         "2021"
-      ]
+      ],
+      "subject": "One whole golden threadfin bream, left-facing side profile, slender rosy silver body with a bold warm yellow longitudinal stripe and yellow-pink fins, forked tail.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 金線魚. Subject: One whole golden threadfin bream, left-facing side profile, slender rosy silver body with a bold warm yellow longitudinal stripe and yellow-pink fins, forked tail.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 59,
+        "top": 333,
+        "width": 1150,
+        "height": 581
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 41437,
+      "sha256": "09a46bbeb966779c53ee90cec1aff7bdd56ddc1141fc20d5b64edf9120869718",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-324448f3-4274-4a25-8793-d259d4ca6f66.png"
     },
     {
       "name": "紅目鰱",
       "file": "item-aquatic-2051.png",
       "codes": [
         "2051"
-      ]
+      ],
+      "subject": "One whole bigeye fish, left-facing side profile, deep oval coral-red body, particularly large natural dark eye with pale cream rim, small mouth and forked red tail.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 紅目鰱. Subject: One whole bigeye fish, left-facing side profile, deep oval coral-red body, particularly large natural dark eye with pale cream rim, small mouth and forked red tail.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 89,
+        "top": 237,
+        "width": 1094,
+        "height": 759
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 51653,
+      "sha256": "5a0dc79afb0915237cbadb1a11284209285fe2aa480da421e58d5b83f062b0f1",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-e3a4a378-e9d9-4f40-9ee2-680421cde2a3.png"
     },
     {
       "name": "黑口",
       "file": "item-aquatic-2063.png",
       "codes": [
         "2063"
-      ]
+      ],
+      "subject": "One whole blackmouth croaker, left-facing side profile, moderately elongated silver-gray body, dusky gray back and golden-cream belly, small dark mouth, small gray fins.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 黑口. Subject: One whole blackmouth croaker, left-facing side profile, moderately elongated silver-gray body, dusky gray back and golden-cream belly, small dark mouth, small gray fins.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 70,
+        "top": 360,
+        "width": 1125,
+        "height": 524
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 38350,
+      "sha256": "ce9aee1be3c33737995fcaa75d62bc2497797c6e39dccf05dd6997bf83c4dfad",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-b30a6bbe-b8da-4986-a460-94c111711fa1.png"
     },
     {
       "name": "白口",
       "file": "item-aquatic-2064.png",
       "codes": [
         "2064"
-      ]
+      ],
+      "subject": "One whole white croaker, left-facing side profile, moderately elongated pearly silver body with pale gold fins, rounded head with small pale mouth and gently tapered tail.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 白口. Subject: One whole white croaker, left-facing side profile, moderately elongated pearly silver body with pale gold fins, rounded head with small pale mouth and gently tapered tail.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 61,
+        "top": 331,
+        "width": 1138,
+        "height": 593
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 43259,
+      "sha256": "95bb3c245edd1868a7648d13e565ffcce3df47088b3b25b86be7d588b69de32c",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-1d453add-f1e1-4fbe-922e-e84068412ea1.png"
     },
     {
       "name": "小串仔",
       "file": "item-aquatic-2115.png",
       "codes": [
         "2115"
-      ]
+      ],
+      "subject": "One whole small juvenile tuna, left-facing side profile, compact stout torpedo shape with dark blue-gray back and clear silver belly, small golden-gray dorsal and anal fins, a few simple golden finlets near the narrow tail base and crescent tail. No bonito-style diagonal back stripes.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 小串仔. Subject: One whole small juvenile tuna, left-facing side profile, compact stout torpedo shape with dark blue-gray back and clear silver belly, small golden-gray dorsal and anal fins, a few simple golden finlets near the narrow tail base and crescent tail. No bonito-style diagonal back stripes.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 100,
+        "top": 308,
+        "width": 1082,
+        "height": 601
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 43887,
+      "sha256": "7a1d0be9afec779ce92712ee560de92991033c57acfa1b2b7dc5e11da6b0598d",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-15fd20a2-122a-4866-a722-65ee2f65ed2b.png"
     },
     {
       "name": "土魠",
       "file": "item-aquatic-2141.png",
       "codes": [
         "2141"
-      ]
+      ],
+      "subject": "One whole Spanish mackerel, left-facing side profile, long thick torpedo-shaped gray-blue body, pale silvery belly with a few broad faint dark vertical bars, pointed head and deeply forked tail.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 土魠. Subject: One whole Spanish mackerel, left-facing side profile, long thick torpedo-shaped gray-blue body, pale silvery belly with a few broad faint dark vertical bars, pointed head and deeply forked tail.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 54,
+        "top": 380,
+        "width": 1154,
+        "height": 483
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 33632,
+      "sha256": "087882a9686af75cb8856454b5c680e9ba044110263e31e3f0db8b3df99f2751",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-98ea28be-e762-408c-8512-539a41c0c2d3.png"
     },
     {
       "name": "狗母魚",
       "file": "item-aquatic-2211.png",
       "codes": [
         "2211"
-      ]
+      ],
+      "subject": "One whole lizardfish, left-facing side profile, elongated sandy-brown cylindrical body with broad darker mottled saddle patches, flattened pointed large head, large mouth, small fins and forked tail.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 狗母魚. Subject: One whole lizardfish, left-facing side profile, elongated sandy-brown cylindrical body with broad darker mottled saddle patches, flattened pointed large head, large mouth, small fins and forked tail.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 33,
+        "top": 453,
+        "width": 1186,
+        "height": 361
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 25879,
+      "sha256": "56a83f98892a146a0b054999c3bfa942ce0809ce96ce57a2011ae7b41a5ee994",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-f8a69e1a-5095-450a-b7d5-dec322d3e908.png"
     },
     {
       "name": "海鱺",
       "file": "item-aquatic-2491.png",
       "codes": [
         "2491"
-      ]
+      ],
+      "subject": "One whole cobia, left-facing side profile, long stout dark brown-gray body, broad cream longitudinal stripe, flattened blunt head, two long side pectoral fins and deeply forked tail.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 海鱺. Subject: One whole cobia, left-facing side profile, long stout dark brown-gray body, broad cream longitudinal stripe, flattened blunt head, two long side pectoral fins and deeply forked tail.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 40,
+        "top": 403,
+        "width": 1175,
+        "height": 428
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 33238,
+      "sha256": "949e82b68502a812753dfda041710f0b3082eb83c44f4bf324e6a9173361a3a4",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-3f45c262-54b3-456e-8271-dc4950cb84ac.png"
     },
     {
       "name": "吻仔魚",
@@ -535,49 +788,168 @@
       "codes": [
         "2106",
         "3106"
-      ]
+      ],
+      "subject": "A small compact loose pile of tiny raw whitebait fish with translucent ivory slender bodies and small natural dark eyes, a few clearly separated whole fish at the edge, no bowl.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 吻仔魚. Subject: A small compact loose pile of tiny raw whitebait fish with translucent ivory slender bodies and small natural dark eyes, a few clearly separated whole fish at the edge, no bowl.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 93,
+        "top": 267,
+        "width": 1065,
+        "height": 727
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 60926,
+      "sha256": "79dbf5ce889289a2fcc3cc64833d0d850c9faeb54521bac54a9bca099b748d37",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-14101cf9-ec14-43e9-8efe-e29a79567f79.png"
     },
     {
       "name": "比目魚／扁鱈",
       "file": "item-aquatic-3641.png",
       "codes": [
         "3641"
-      ]
+      ],
+      "subject": "One whole flatfish, overhead side view, oval flattened slate-gray body with both small eyes on the same upper side near the head, broad continuous side fins and short fan tail.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 比目魚／扁鱈. Subject: One whole flatfish, overhead side view, oval flattened slate-gray body with both small eyes on the same upper side near the head, broad continuous side fins and short fan tail.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 80,
+        "top": 264,
+        "width": 1100,
+        "height": 737
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 54087,
+      "sha256": "42148ed95fb2bf9969b3d7fb2085f757a0df92a46097f4952f19565c3fbefbb3",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-a5a1d3a3-b26a-4774-a68a-c76e3158bc8b.png"
     },
     {
       "name": "竹蟶",
       "file": "item-aquatic-5101.png",
       "codes": [
         "5101"
-      ]
+      ],
+      "subject": "Two long tan razor-clam shells with cream fleshy feet at one open end, one open shell showing pale ivory clam meat, elongated bamboo-like rectangular outline.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 竹蟶. Subject: Two long tan razor-clam shells with cream fleshy feet at one open end, one open shell showing pale ivory clam meat, elongated bamboo-like rectangular outline.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 72,
+        "top": 226,
+        "width": 1113,
+        "height": 791
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 63181,
+      "sha256": "077339f4f6736ab77912f0f49262c45492be1cadf7ccadc3f40aa12e28269986",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-b1b24a5e-a9f1-4fd7-945e-56fc89a3640b.png"
     },
     {
       "name": "鳳螺",
       "file": "item-aquatic-5111.png",
       "codes": [
         "5111"
-      ]
+      ],
+      "subject": "Three whelk sea-snail shells with pointed spiral towers, cream and tawny brown broad patch patterns, one opening showing ivory flesh, compact grouping.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 鳳螺. Subject: Three whelk sea-snail shells with pointed spiral towers, cream and tawny brown broad patch patterns, one opening showing ivory flesh, compact grouping.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 100,
+        "top": 143,
+        "width": 1056,
+        "height": 980
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 80451,
+      "sha256": "aeb72822e61fe80ab927c6d2c77dc55c3c99507c692e278370cf12c31d599906",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-b2361a8c-a99d-466c-82de-7ef39369063f.png"
     },
     {
       "name": "鹹魚",
       "file": "item-aquatic-6021.png",
       "codes": [
         "6021"
-      ]
+      ],
+      "subject": "One split salted dried fish laid flat, pale golden-brown flesh with broad simple bone-ridge hints, darker gray skin edge and a small retained tail, no blood.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 鹹魚. Subject: One split salted dried fish laid flat, pale golden-brown flesh with broad simple bone-ridge hints, darker gray skin edge and a small retained tail, no blood.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 77,
+        "top": 336,
+        "width": 1116,
+        "height": 583
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 47397,
+      "sha256": "31a9ee9b3ecf4789aa734d8722ad5cb9ca07c7d0675b5d2f4b3f852f346438de",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-46ef77e1-6f21-47ad-a580-09c95cb63e48.png"
     },
     {
       "name": "烏魚子",
       "file": "item-aquatic-6052.png",
       "codes": [
         "6052"
-      ]
+      ],
+      "subject": "One pair of golden-amber mullet roe lobes joined near the top, elongated flattened oval waxy texture and two neatly cut orange slices, no garnish.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 烏魚子. Subject: One pair of golden-amber mullet roe lobes joined near the top, elongated flattened oval waxy texture and two neatly cut orange slices, no garnish.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 141,
+        "top": 134,
+        "width": 972,
+        "height": 1008
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 79977,
+      "sha256": "d284aa8a81b00a7cdd81fcba78cf1e05d0b237cf6e63a849140c6096484aa705",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-a988ea6c-93ac-4694-ba2b-ca1c3bf8dddf.png"
     },
     {
       "name": "尼羅紅魚",
       "file": "item-aquatic-1012.png",
       "codes": [
         "1012"
-      ]
+      ],
+      "subject": "One whole red tilapia, left-facing side profile, pale coral-red oval body, soft pink belly, broad spiny pink dorsal fin and gray-pink rounded tail.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 尼羅紅魚. Subject: One whole red tilapia, left-facing side profile, pale coral-red oval body, soft pink belly, broad spiny pink dorsal fin and gray-pink rounded tail.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 110,
+        "top": 287,
+        "width": 1056,
+        "height": 692
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 55030,
+      "sha256": "66783c1ff2820ad79c7ee4c56b85ca2d2288fa67c71ce154d796b60067baf8c9",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-d96bac9b-c66a-4411-a457-2eef37c31451.png"
     },
     {
       "name": "章魚",
@@ -585,36 +957,123 @@
       "codes": [
         "2169",
         "3169"
-      ]
+      ],
+      "subject": "One compact raw octopus with round smooth purple-brown mantle and eight softly curled ivory-purple arms, a few broad pale sucker dots only, no cartoon face.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 章魚. Subject: One compact raw octopus with round smooth purple-brown mantle and eight softly curled ivory-purple arms, a few broad pale sucker dots only, no cartoon face.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 97,
+        "top": 159,
+        "width": 1041,
+        "height": 956
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 76361,
+      "sha256": "362261ae97259ed6b7088aba86b3df2b0bea0574778aaa3850757e43f01004b4",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-13ec5557-a969-4ed3-91e7-fc3a2dc34954.png"
     },
     {
       "name": "龍舌魚",
       "file": "item-aquatic-2411.png",
       "codes": [
         "2411"
-      ]
+      ],
+      "subject": "One whole tongue sole, upper-side view, long tapered tan-brown tongue-shaped flat body, tiny head with both eyes on one side and continuous narrow frill fins, no obvious separate fan tail.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 龍舌魚. Subject: One whole tongue sole, upper-side view, long tapered tan-brown tongue-shaped flat body, tiny head with both eyes on one side and continuous narrow frill fins, no obvious separate fan tail.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 73,
+        "top": 395,
+        "width": 1108,
+        "height": 494
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 39157,
+      "sha256": "5078ff3ad25536969e430a0aa53d001dd79bfe33581ecec02c7e6aa402d6c71f",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-69f1a63d-f95e-4d01-9817-6bfc9dd438a8.png"
     },
     {
       "name": "剝皮魚",
       "file": "item-aquatic-2571.png",
       "codes": [
         "2571"
-      ]
+      ],
+      "subject": "One whole filefish, left-facing side profile, angular compressed pale gray-green body, pointed tiny mouth, a single raised dorsal spine, small fins and broad fan-shaped tail.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 剝皮魚. Subject: One whole filefish, left-facing side profile, angular compressed pale gray-green body, pointed tiny mouth, a single raised dorsal spine, small fins and broad fan-shaped tail.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 71,
+        "top": 219,
+        "width": 1112,
+        "height": 805
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 50913,
+      "sha256": "8647de956814f6612954d8ae1cdbb74c824dbdf64c99189da92de623e8cc1442",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-49e6e321-f639-456f-8936-faf394aed4e5.png"
     },
     {
       "name": "魚皮",
       "file": "item-aquatic-6113.png",
       "codes": [
         "6113"
-      ]
+      ],
+      "subject": "A small compact pile of raw fish-skin strips, silvery charcoal-gray outer skin and ivory pink inner edges, broad folded rectangular pieces, no blood or scales detail.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 魚皮. Subject: A small compact pile of raw fish-skin strips, silvery charcoal-gray outer skin and ivory pink inner edges, broad folded rectangular pieces, no blood or scales detail.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 92,
+        "top": 248,
+        "width": 1071,
+        "height": 768
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 63804,
+      "sha256": "6880ee06bd050643a87f2b5a1d34bcbd8cc9df165dd85d1c7e070f3acef203a9",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-62d61b7e-7d76-4105-9034-0b0548a3994a.png"
     },
     {
       "name": "大頭鰱",
       "file": "item-aquatic-1024.png",
       "codes": [
         "1024"
-      ]
-    },
+      ],
+      "subject": "One whole bighead carp, left-facing side profile, broad large head with low-positioned small eye, deep silvery gray body, gray fins and deeply forked tail, no whiskers.",
+      "prompt": "Use case: stylized-concept. Asset: FreshWise Taiwanese grocery-game website individual ingredient icon. The input pictures are STYLE references only; do not copy their food subjects. Freshly draw the specified seafood ingredient below using the same warm hand-painted watercolor / colored-pencil paper grain, smooth chunky cocoa/olive-brown outlines, broad pastel colors and soft cream highlights. For display at 40–48 CSS pixels: a strong clear food silhouette and very few broad details. Outer contour should read about 3–4 pixels wide in the final 256px export, internal lines slightly thinner; no intricate scales, repeated tiny lines, realistic texture, fussy veins or complex highlights.\nExactly ONE individual ingredient icon, or the compact grouping explicitly specified. Fully isolated and centered in a SQUARE canvas, complete subject within the central 82% with ample transparent padding on all four sides. TRUE TRANSPARENT ALPHA background. Absolutely no colored haze, vignette, gradient backdrop, floor, ground shadow, plate, bowl, garnish, text, numerals, labels, letters, symbols, logos, decorations, sparkles or packaging. Fish may have one small normal natural dark eye with no cute/cartoon smile. Raw grocery food unless specified cooked or preserved. Clean recognizable grocery illustration, no blood or gore. Request highest genuine native square resolution, ideally 1536x1536; final project export will be a 256x256 PNG preserving alpha.\nIngredient name: 大頭鰱. Subject: One whole bighead carp, left-facing side profile, broad large head with low-positioned small eye, deep silvery gray body, gray fins and deeply forked tail, no whiskers.",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "sourceBounds": {
+        "left": 52,
+        "top": 291,
+        "width": 1167,
+        "height": 682
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 44791,
+      "sha256": "58726a910f37a2e1582f15706a10f633760f09170389eb4180e67c6273355cf8",
+      "generator": "built-in image_gen",
+      "date": "2026-11-24",
+      "nativeGeneration": "exec-e86fe14c-e496-4926-87fe-a191a3dd910d.png"
+    }
+  ],
+  "pending": [
     {
       "name": "烏鰡",
       "file": "item-aquatic-1027.png",

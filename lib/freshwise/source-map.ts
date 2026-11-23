@@ -207,7 +207,10 @@ export const SOURCE_MAP: Record<string, SourceRef> = {
   HB3: { aquatic: { match: ["白蝦"] }, taichung: ["白蝦"] },
   HB4: { aquatic: { match: ["文蛤"] }, taichung: ["文蛤"] },
   HB5: { aquatic: { match: ["牡蠣"] } },
-  HB6: { aquatic: { match: ["小卷"], exclude: ["凍"] } },
+  // 這一項的名字是「透抽」，來源本來卻比對「小卷」——開放資料裡那是兩筆不同的魚貨
+  // （透抽 230 元/公斤、4,403 公斤；小卷 183 元/公斤、922 公斤），價格與體型都不一樣。
+  // 名字叫透抽就要報透抽的價。小卷不另外開一項：對買菜的人來說那是同一攤的東西。
+  HB6: { aquatic: { match: ["透抽"], exclude: ["凍"] } },
   HB7: { aquatic: { match: ["花枝"], exclude: ["凍"] } },
   // 目錄本來就有鬼頭刀，只是一直沒有來源對應（CSV 的 A 組），補上。
   HA9: { aquatic: { match: ["鬼頭刀"], exclude: ["凍", "加工"] } },
@@ -218,6 +221,29 @@ export const SOURCE_MAP: Record<string, SourceRef> = {
   // 虱目魚肚本來被 HA2 的 exclude 擋掉（那是為了不讓魚肚混進整尾虱目魚的均價）。
   // 現在它自己是一個品項——魚攤上「虱目魚」跟「虱目魚肚」是分開賣、價差很大的兩樣東西。
   HC4: { aquatic: { match: ["虱目魚肚"] } },
+
+  /* ── 第二批漁產（2026-11 加入）─────────────────────────
+   * 一律排除「凍」：冷凍品是另一個價格帶（土魠 350 vs 土魠(凍) 173，差一倍），
+   * 混在一起算出來的均價哪一種都不是。
+   */
+  HC5: { aquatic: { match: ["土魠"], exclude: ["凍", "鯊"] } },
+  HC6: { aquatic: { match: ["白鯧"], exclude: ["凍"] } },
+  HC7: { aquatic: { match: ["紅目鰱"] } },
+  HC8: { aquatic: { match: ["七星鱸"] } },
+  HC9: { aquatic: { match: ["草魚"] } },
+  HD1: { aquatic: { match: ["大頭鰱"] } },
+  HD2: { aquatic: { match: ["烏仔魚"] } },
+  HD3: { aquatic: { match: ["香魚"], exclude: ["凍"] } },
+  // 「盤仔」是赤鯮的另一個攤商叫法，兩筆合起來才是這個品項當天的全部成交。
+  HD4: { aquatic: { match: ["赤宗", "盤仔"] } },
+  HD5: { aquatic: { match: ["黃臘鰺"] } },
+  // 「馬加鯊」是鯊魚不是馬加，名字很像但價格差四倍（222 vs 50）。
+  HD6: { aquatic: { match: ["馬加"], exclude: ["鯊"] } },
+  HD7: { aquatic: { match: ["勿仔"], exclude: ["凍"] } },
+  HD8: { aquatic: { match: ["魷魚"], exclude: ["凍"] } },
+  HD9: { aquatic: { match: ["蝦仁"] } },
+  // 「比目魚片」是切片的加工品（169 元），整尾的「比目魚、扁鱈」是 282 元。
+  HE1: { aquatic: { match: ["比目魚"], exclude: ["片"] } },
 
   /* ── 肉類（只有臺中的零售訪價，沒有任何批發來源）────── */
   MA1: { taichung: ["里肌肉"] },

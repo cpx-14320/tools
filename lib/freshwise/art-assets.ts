@@ -180,6 +180,19 @@ const ART_FILE_ALIAS: Record<string, string> = {
   GD5: "item-retail-03.png", // 海梨柑
   GD6: "item-farm-469.png", // 藍莓
   GD7: "item-farm-839.png", // 櫻桃
+  // 漁產第二批。這些是照漁產品交易行情的魚貨代號出圖的（item-aquatic-<代號>.png）。
+  HC5: "item-aquatic-2141.png", // 土魠
+  HC6: "item-aquatic-2091.png", // 白鯧
+  HC7: "item-aquatic-2051.png", // 紅目鰱
+  HC9: "item-aquatic-1023.png", // 草魚
+  HD1: "item-aquatic-1024.png", // 大頭鰱
+  HD2: "item-aquatic-1051.png", // 烏魚
+  HD4: "item-aquatic-2012.png", // 赤鯮
+  HD5: "item-aquatic-1181.png", // 紅杉（黃臘鰺）
+  HD7: "item-aquatic-2106.png", // 吻仔魚
+  HD8: "item-aquatic-2161.png", // 魷魚
+  HE1: "item-aquatic-3641.png", // 扁鱈
+  // 還沒出圖：HC8 七星鱸、HD3 香魚、HD6 馬加、HD9 蝦仁——留白，不要拿別的魚頂替。
 };
 
 const ART_SET = new Set(ITEM_ART_CODES);

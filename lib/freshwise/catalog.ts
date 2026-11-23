@@ -366,6 +366,28 @@ export const CATALOG: CatalogItem[] = [
   { code: "HC2", name: "四破魚", category: "seafood", aliases: ["四破"], icon: "fish", baseKg: 60, season: [5, 6, 7, 8, 9] },
   { code: "HC4", name: "虱目魚肚", category: "seafood", aliases: ["魚肚"], icon: "fish", baseKg: 240, season: ALL_YEAR },
 
+  // 第二批漁產（2026-11）：拿 11/12–11/23 的漁產品交易行情比對，這八個完整交易日
+  // （週日漁市休市）全部 8/8 有報價。挑選標準是「攤位上叫得出名字」——開放資料裡量
+  // 最大的其實是「其他」「什魚」「其他非凍結魚」這類統計分類，那些不是品項。
+  //
+  // 代號接在 HC4 之後；HC3 空著是因為它曾經被配給鬼頭刀、後來發現跟 HA9 重複而作廢，
+  // 不要回收再利用。
+  { code: "HC5", name: "土魠", category: "seafood", aliases: ["土魠魚", "馬鮫"], icon: "fish", baseKg: 374, season: [11, 12, 1, 2, 3] },
+  { code: "HC6", name: "白鯧", category: "seafood", aliases: ["正鯧", "斗鯧"], icon: "fish", baseKg: 330, season: [11, 12, 1, 2] },
+  { code: "HC7", name: "紅目鰱", category: "seafood", aliases: ["紅目鯛", "大目鰱"], icon: "fish", baseKg: 202, season: ALL_YEAR },
+  { code: "HC8", name: "七星鱸", category: "seafood", aliases: ["鱸魚", "七星"], icon: "fish", baseKg: 124, season: ALL_YEAR },
+  { code: "HC9", name: "草魚", category: "seafood", aliases: ["鯇魚"], icon: "fish", baseKg: 103, season: ALL_YEAR },
+  { code: "HD1", name: "大頭鰱", category: "seafood", aliases: ["鰱魚", "花鰱", "魚頭"], icon: "fish", baseKg: 71, season: ALL_YEAR },
+  { code: "HD2", name: "烏魚", category: "seafood", aliases: ["烏仔魚", "鯔魚"], icon: "fish", baseKg: 70, season: [11, 12, 1] },
+  { code: "HD3", name: "香魚", category: "seafood", aliases: [], icon: "fish", baseKg: 177, season: [6, 7, 8, 9, 10] },
+  { code: "HD4", name: "赤鯮", category: "seafood", aliases: ["赤宗", "盤仔"], icon: "fish", baseKg: 168, season: [10, 11, 12, 1, 2] },
+  { code: "HD5", name: "紅杉", category: "seafood", aliases: ["黃臘鰺", "紅沙"], icon: "fish", baseKg: 164, season: ALL_YEAR },
+  { code: "HD6", name: "馬加", category: "seafood", aliases: ["馬加魚", "白腹"], icon: "fish", baseKg: 210, season: [12, 1, 2, 3, 4] },
+  { code: "HD7", name: "吻仔魚", category: "seafood", aliases: ["勿仔", "魩仔魚"], icon: "fish", baseKg: 145, season: [3, 4, 5, 9, 10, 11] },
+  { code: "HD8", name: "魷魚", category: "seafood", aliases: ["魷魚乾"], icon: "shrimp", baseKg: 138, season: ALL_YEAR },
+  { code: "HD9", name: "蝦仁", category: "seafood", aliases: ["去殼蝦"], icon: "shrimp", baseKg: 241, season: ALL_YEAR },
+  { code: "HE1", name: "扁鱈", category: "seafood", aliases: ["比目魚", "大比目魚"], icon: "fish", baseKg: 282, season: ALL_YEAR },
+
   // ── 肉類 ──────────────────────────────────────────────────
   { code: "MA1", name: "豬里肌", category: "meat", aliases: ["里肌肉", "大里肌"], icon: "bacon", baseKg: 205, season: ALL_YEAR },
   { code: "MA2", name: "豬後腿", category: "meat", aliases: ["後腿肉", "腿肉"], icon: "bacon", baseKg: 175, season: ALL_YEAR },
