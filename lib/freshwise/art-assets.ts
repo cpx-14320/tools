@@ -170,6 +170,7 @@ const ART_FILE_ALIAS: Record<string, string> = {
   FJ9: "item-farm-SS0.png", // 大心菜
   FK1: "item-farm-LT3.png", // 水蓮（海菜-水蓮）
   FK2: "item-farm-SM1.png", // 牛蒡
+  GC7: "item-farm-V1.png", // 甜瓜（美濃瓜）
   GC8: "item-farm-51.png", // 百香果
   GC9: "item-farm-31.png", // 釋迦
   GD1: "item-farm-M3.png", // 楊桃
@@ -177,7 +178,6 @@ const ART_FILE_ALIAS: Record<string, string> = {
   GD3: "item-farm-Z1.png", // 紅柿
   GD4: "item-retail-02.png", // 桶柑
   GD5: "item-retail-03.png", // 海梨柑
-  // GC7 甜瓜（美濃瓜）還沒出圖——留白，不要拿哈密瓜頂替。
 };
 
 const ART_SET = new Set(ITEM_ART_CODES);

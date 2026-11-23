@@ -46,11 +46,17 @@ function petName(id: CompanionId): string {
   return (COMPANIONS.find((p) => p.id === id) ?? COMPANIONS[0]).name;
 }
 
-/** 主角夥伴（首頁花園、夥伴頁、詳情頁角落）。 */
-export function PetArtwork({ id = "cabbage", size = 160, className = "", priority = false, interactive = false }: { id?: CompanionId; size?: number; className?: string; priority?: boolean; interactive?: boolean }) {
+/**
+ * 主角夥伴（首頁花園、夥伴頁、菜籃、小紙條）。
+ *
+ * `ready`：夥伴進度是從 API 讀的，讀回來之前 store 裡的 `active` 是預設值（高麗菜糰糰）。
+ * 直接畫下去的話，選了別隻的人每次進頁面都會先看到糰糰、再「啪」地換成自己的夥伴。
+ * 傳 `ready={false}` 就只佔位不畫圖——同樣的尺寸，所以換上來的時候版面不會跳。
+ */
+export function PetArtwork({ id = "cabbage", size = 160, className = "", priority = false, interactive = false, ready = true }: { id?: CompanionId; size?: number; className?: string; priority?: boolean; interactive?: boolean; ready?: boolean }) {
   return (
-    <span className={`fw-pet-art ${className}`} style={{ width: size, height: size }}>
-      {interactive ? <PetInteraction key={id} id={id} name={petName(id)} baseSrc={petFile(id)} size={size} priority={priority}/> : <Image src={petFile(id)} alt={petName(id)} fill sizes={`${size}px`} priority={priority} />}
+    <span className={`fw-pet-art ${className}`} style={{ width: size, height: size }} aria-busy={ready ? undefined : true}>
+      {!ready ? null : interactive ? <PetInteraction key={id} id={id} name={petName(id)} baseSrc={petFile(id)} size={size} priority={priority}/> : <Image src={petFile(id)} alt={petName(id)} fill sizes={`${size}px`} priority={priority} />}
     </span>
   );
 }

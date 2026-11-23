@@ -29,7 +29,7 @@ function isVenue(value: unknown): value is VenueKey {
 }
 
 function isUnit(value: unknown): value is UnitKey {
-  return value === "catty" || value === "kg" || value === "g";
+  return value === "catty" || value === "kg";
 }
 
 /** 逐欄驗證，壞的退回預設值——一個壞欄位不該讓整組設定重置。 */

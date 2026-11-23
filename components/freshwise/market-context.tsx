@@ -4,14 +4,8 @@ import { useState } from "react";
 import { useFreshwise } from "./store";
 import { GameIcon } from "./game-art";
 import { MarketPickerModal } from "./market-picker-modal";
-import { SegmentedTabs } from "./ui";
-import type { PriceBook, UnitKey } from "@/lib/freshwise/types";
-
-const UNIT_TABS: readonly { key: UnitKey; label: string }[] = [
-  { key: "catty", label: "台斤" },
-  { key: "kg", label: "公斤" },
-  { key: "g", label: "公克" },
-];
+import { SegmentedTabs, UNIT_TABS } from "./ui";
+import type { PriceBook } from "@/lib/freshwise/types";
 
 /**
  * 目前查詢的條件：市場與單位。

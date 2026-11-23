@@ -35,7 +35,6 @@ const OTHER_TOOL_ICONS: Record<string, string> = { transit: "/freshwise/ui-tool-
 const UNIT_OPTIONS: readonly { key: UnitKey; label: string; note: string }[] = [
   { key: "catty", label: "台斤", note: "台灣市場的習慣單位" },
   { key: "kg", label: "公斤", note: "開放資料的原始單位" },
-  { key: "g", label: "公克", note: "包裝標示常見的單位" },
 ];
 
 

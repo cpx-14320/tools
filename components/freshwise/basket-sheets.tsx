@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { EditorSheet } from "./editor-sheet";
-import { Field, Hint, SelectButton, TextInput } from "./ui";
+import { Field, FieldLabel, Hint, SelectButton, TextInput } from "./ui";
 import { FaIcon } from "./fa-icon";
 import { DEFAULT_GROUP_ICON, GROUP_ICONS, DISH_ICONS } from "./group-icons";
 import { BottomSheetModal } from "./bottom-sheet-modal";
@@ -89,8 +89,15 @@ export function GroupEditorSheet({
         </div>
       </Field>
 
-      <Field label="常見料理" as="div">
-        <TextInput value={dishQuery} onChange={(e) => setDishQuery(e.target.value)} placeholder={`搜尋料理（共 ${DISH_ICONS.length} 道）`} />
+      {/* 料理清單**不自己開一個捲軸**。本來它有 max-height ＋ overflow，整個彈窗就有
+          兩層捲動區：上面的分類名稱與圖示把彈窗的空間吃掉，剩給料理的只有三排多一點，
+          一百道要捲很久。改成整張表單一起捲，捲到標題時讓「常見料理 ＋ 搜尋」黏在
+          上緣——往下就等於只在捲料理，而且搜尋框一直看得到。 */}
+      <div className="fw-dish-section">
+        <div className="fw-dish-sticky">
+          <FieldLabel>常見料理</FieldLabel>
+          <TextInput value={dishQuery} onChange={(e) => setDishQuery(e.target.value)} placeholder={`搜尋料理（共 ${DISH_ICONS.length} 道）`} />
+        </div>
         {dishes.length === 0 && <Hint>找不到「{keyword}」，換個說法試試。</Hint>}
         <div className="fw-dish-options">
           {dishes.map((dish) => {
@@ -108,7 +115,7 @@ export function GroupEditorSheet({
             );
           })}
         </div>
-      </Field>
+      </div>
 
       {onDelete && <Hint>刪除分類會把裡面的項目一起移除。</Hint>}
     </EditorSheet>

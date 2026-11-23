@@ -5,6 +5,7 @@ import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, InputHTMLAttr
 import { colors, gradient, shadow, text, v } from "./theme";
 import { FaIcon } from "./fa-icon";
 import { SlicedArtwork } from "./game-art";
+import type { UnitKey } from "@/lib/freshwise/types";
 
 // FreshWise 的通用元件庫（「長相」的部分），搭配 theme.ts 的 token 一起用。價格、漲跌
 // 徽章、品項列這些帶有這個工具自己的商業含意的元件不放這裡，各自一個檔案（price-text、
@@ -237,6 +238,13 @@ export function IconButton({
  * `scroll` 讓分頁列可以橫向捲動——分類有五個、場所有三個，再加上「全部」在 430px 寬的
  * 手機上塞不進一行，硬塞的結果是每個分頁的字被壓到換行。
  */
+/** 台斤／公斤的分頁選項。首頁、行情頁、菜籃頁共用同一份——三個地方各寫一份的話，
+ *  哪天加減單位就會有一頁忘了改。 */
+export const UNIT_TABS: readonly { key: UnitKey; label: string }[] = [
+  { key: "catty", label: "台斤" },
+  { key: "kg", label: "公斤" },
+];
+
 export function SegmentedTabs<T extends string>({
   items,
   value,

@@ -17,6 +17,7 @@ import {
   PrimaryButton,
   SectionTitle,
   SegmentedTabs,
+  UNIT_TABS,
 } from "@/components/freshwise/ui";
 import { FaIcon } from "@/components/freshwise/fa-icon";
 import { ItemIcon } from "@/components/freshwise/item-icon";
@@ -27,6 +28,7 @@ import { PriceChart } from "@/components/freshwise/price-chart";
 import { useFreshwise } from "@/components/freshwise/store";
 import { colors, copy, shadow, text } from "@/components/freshwise/theme";
 import { isInBasket } from "@/lib/freshwise/basket";
+import { GroupPickerModal } from "@/components/freshwise/group-picker-modal";
 import { categoryName, itemImage, itemOrPlaceholder } from "@/lib/freshwise/catalog";
 import { formatShortDate, monthOf } from "@/lib/freshwise/dates";
 import {
@@ -67,6 +69,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
   const month = monthOf(today);
   const inSeason = item.season.includes(month);
   const starred = isInBasket(basket, code);
+  const [pickingGroup, setPickingGroup] = useState(false);
 
   const days = RANGES.find((r) => r.key === rangeKey)?.days ?? 30;
   // 歷史只有幾天的品項（批發行情還在累積）切到「1 年」會跟「7 天」畫出同一張圖，
@@ -196,7 +199,19 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
             {formatShortDate(quote.date)}
             {prefs.marketCode ? `・${quote.markets[0]?.marketName ?? ""}` : markets.length > 1 ? `・${markets.length} 個市場的代表價` : ""}
           </Hint>
-          <PrimaryButton size="block" icon={starred ? "check" : "plus"} onClick={() => toggleBasket(code, item.name)}>
+          {/* 分類不只一個就先問要加到哪一個（跟行情頁同一顆 GroupPickerModal）——
+              一律丟進第一個分類的話，使用者分了「火鍋」「每週常買」也等於沒分。 */}
+          <PrimaryButton
+            size="block"
+            icon={starred ? "check" : "plus"}
+            onClick={() => {
+              if (!starred && basket.groups.length > 1) {
+                setPickingGroup(true);
+                return;
+              }
+              toggleBasket(code, item.name);
+            }}
+          >
             {starred ? `已在${copy.basket}` : `加入${copy.basket}`}
           </PrimaryButton>
         </div>
@@ -384,7 +399,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
           )}
           {item.note && <Note>{item.note}</Note>}
           <Note>
-            份量換算：1 {unitShort("catty")} = 0.6 公斤 = 600 公克。目前顯示的是{unitShort(prefs.unit)}價。
+            份量換算：1 {unitShort("catty")} = 0.6 公斤。目前顯示的是{unitShort(prefs.unit)}價。
           </Note>
         </ListCard>
       </section>
@@ -395,6 +410,17 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
       <div className="flex justify-center">
         <Link href="/tools/freshwise/basket" className="fw-leaf-link">去看{copy.basket} →</Link>
       </div>
+
+      <GroupPickerModal
+        open={pickingGroup}
+        basket={basket}
+        itemName={item.name}
+        onClose={() => setPickingGroup(false)}
+        onPick={(groupId) => {
+          toggleBasket(code, item.name, groupId);
+          setPickingGroup(false);
+        }}
+      />
     </div>
   );
 }
@@ -409,14 +435,9 @@ function BackRow({ unit, onUnitChange }: { unit: UnitKey; onUnitChange: (unit: U
           同一個 ui- 前綴）。 */}
       <Link href="/tools/freshwise/browse" className="fw-back-link" aria-label="回到行情">
         <IllustratedArt src="/freshwise/ui-back.png" size={40} />
-        <span>行情</span>
       </Link>
       <SegmentedTabs
-        items={[
-          { key: "catty", label: "台斤" },
-          { key: "kg", label: "公斤" },
-          { key: "g", label: "公克" },
-        ]}
+        items={UNIT_TABS}
         value={unit}
         onChange={(key) => onUnitChange(key as UnitKey)}
       />

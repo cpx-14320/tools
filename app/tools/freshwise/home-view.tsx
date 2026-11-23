@@ -69,7 +69,7 @@ export function HomeView({today,book}:{today:string;book:PriceBook}){
  <h2 className="fw-home-speech">{brief.advice}{headline?.quote.estimated&&!brief.advice.includes("推估")&&<small>（推估參考）</small>}</h2>
  <div className="fw-hero-stage">
  <div className="fw-hero-companion">
-   <PetArtwork id={state.active} size={200} priority interactive className="fw-breathe"/>
+   <PetArtwork id={state.active} size={200} priority interactive className="fw-breathe" ready={ready}/>
 
  </div>
  <div className="fw-hero-price-column">

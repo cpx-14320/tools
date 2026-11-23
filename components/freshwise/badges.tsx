@@ -40,7 +40,13 @@ const VALUE_PALETTE: Record<ValueLevel, { bg: string; fg: string }> = {
   pricey: { bg: colors.upBg, fg: colors.up },
 };
 
-/** 划算度徽章（划算／正常價／偏貴）。 */
+/**
+ * 划算度徽章（划算／正常價／偏貴）。
+ *
+ * **清單列上不用這顆**：那裡的紅綠徽章固定是漲跌（跟前一個交易日比），划算度比的是近
+ * 一年的平均，兩種都做成紅綠百分比的話，同一列會有兩個看起來一樣、基準卻不同的數字。
+ * 清單列的划算度走說明文字（見 item-row.tsx 的 defaultMeta）。
+ */
 export function ValueBadge({ value, showFair = false }: { value: ValueJudgement; showFair?: boolean }) {
   if (value.level === "fair" && !showFair) return null;
   const palette = VALUE_PALETTE[value.level];

@@ -26,6 +26,9 @@ export function ItemRow({ row, unit, href, onClick, meta, leading, starred, onTo
   return <PriceListRow
     art={<ItemIcon src={itemImage(item.code)} fallbackIcon={item.icon} alt={item.name} size={20} boxSize={40}/>}
     title={item.name}
+    // 列上**只有一種紅綠徽章**：漲跌（跟前一個交易日比）。划算度（跟近一年均價比）
+    // 留在說明文字裡——兩個都做成紅綠百分比徽章的話，同一列會出現兩個看起來一樣、
+    // 基準卻不同的數字，使用者沒辦法一眼分辨在講哪一件事。
     badges={<>{inSeason && <SeasonBadge/>}{quote.estimated && <EstimatedBadge/>}</>}
     meta={meta ?? defaultMeta(row)}
     price={<>
@@ -56,8 +59,8 @@ function defaultMeta(row: PriceRow): string {
   if (row.quote.estimated && row.quote.rangeLowKg !== undefined) {
     return `沒有實測價，依批發價推估的範圍`;
   }
-  // 有數字就只給數字。以前同一列會同時出現「比平常便宜 13%」這句話跟一個「划算」
-  // 徽章，兩個在講同一件事；形容詞留給沒有數字可講的情況。
+  // 划算度用文字講，不做成徽章——列上那顆紅綠徽章固定是「跟昨天比」的漲跌，划算度
+  // 比的是近一年的平均，兩個做成同一種樣子會被讀成同一個數字。
   if (row.reliable) {
     const abs = Math.abs(row.value.percent);
     const base = historyLabel(row.quote.historyDays);

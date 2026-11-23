@@ -16,6 +16,8 @@ import {
   PageTitle,
   PrimaryButton,
   SectionTitle,
+  SegmentedTabs,
+  UNIT_TABS,
 } from "@/components/freshwise/ui";
 import { FaIcon } from "@/components/freshwise/fa-icon";
 import { ItemRow } from "@/components/freshwise/item-row";
@@ -46,8 +48,8 @@ import { toRow } from "@/lib/freshwise/search";
 import type { BasketEntry, BasketGroup, PriceBook, PriceQuote, UnitKey } from "@/lib/freshwise/types";
 
 export function BasketView({ today, book }: { today: string; book: PriceBook }) {
-  const { prefs, basketReady, basket, setBasket, toast } = useFreshwise();
-  const { record, state: companion } = useCompanion();
+  const { prefs, setPrefs, basketReady, basket, setBasket, toast } = useFreshwise();
+  const { record, state: companion, ready: companionReady } = useCompanion();
   const month = monthOf(today);
 
   // 開著哪一個彈窗。三個彈窗（分類編輯、項目編輯、品項選擇）各自需要知道「在哪個分類
@@ -91,11 +93,18 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
     <div className="fw-page fw-basket-page">
       <PageTitle hanging>{copy.basket}</PageTitle>
 
+      {/* 單位切換跟首頁、行情頁同一顆 SegmentedTabs，而且改的是同一份偏好——在菜籃換成
+          公斤，回首頁看到的也是公斤。這一頁本來寫死台斤，習慣看公斤的人沒得換。
+          （份量欄位仍然是台斤：那是使用者自己填的「我都買幾斤」，不該跟著顯示單位跑。） */}
+      <div className="flex justify-end">
+        <SegmentedTabs items={UNIT_TABS} value={prefs.unit} onChange={(unit) => setPrefs({ unit })} />
+      </div>
+
       {/* 這一籃今天大概要花多少錢。這是菜籃頁存在的理由——分開看每一樣菜多少錢沒有感覺，
           加起來的數字才有。 */}
       <ListCard strong className="fw-basket-summary flex flex-col gap-1.5">
         {/* 夥伴要跟著使用者選的那一隻，不要寫死。 */}
-        <PetArtwork id={companion.active} size={100} className="fw-basket-pet" />
+        <PetArtwork id={companion.active} size={100} className="fw-basket-pet" ready={companionReady} />
         {/* 跟旁邊的夥伴立繪差不多高就好——兩行：金額，以及一行條件。場所已經沒有
             選項了不用再講，單位跟著數字走也不用另外說。 */}
         <Hint>今天買整籃大概要</Hint>
