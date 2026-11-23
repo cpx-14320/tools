@@ -124,9 +124,8 @@
    捲動時看起來才像一整條工具列而不是一塊浮在中間的卡片。 */.fw-category-shelf{display:flex;justify-content:space-between;gap:0;overflow-x:auto;padding:28px 20px 12px;background:transparent;position:sticky;top:0;z-index:12;isolation:isolate;border:0;transition:background-color .15s}
 /* 釘在上方時才需要不透明的底（底下的清單會從後面穿過去）。用 IntersectionObserver
    標記太重，改用 sticky 自己的位置判斷：scroll 容器頂端時 top:0 命中。 *//* 釘住時收起木檯裝飾、只留不透明底色——捲動中那張木頭圖會一直跟著走，很吵。 */
-/* 釘在上方時：補一層不透明紙底（清單會從它後面穿過去，透明的話字會疊在字上），
-   木檯**保留**不要淡出——那塊檯面就是這一列的身份，消失之後只剩七顆浮在紙上的
-   圖示。上下各留一點，不要整列貼死在畫面頂端。 */.fw-category-shelf[data-stuck=true]{background:var(--fw-paper) url('/freshwise/ui-paper-texture.png') center/128px repeat;background-blend-mode:multiply;padding-top:32px;padding-bottom:16px;box-shadow:0 4px 8px color-mix(in srgb, var(--fw-shadow-ink) 8%, transparent)}
+/* 釘在上方時只多留一點上下間距，**底色與陰影都不加**——木檯本身就是不透明的，
+   擋得住從後面捲上來的清單；再鋪一層紙底加投影，看起來像憑空多出一條橫幅。 */.fw-category-shelf[data-stuck=true]{padding-top:32px;padding-bottom:16px}
 /* 木檯只佔下緣 52px，上面那 28px 是留給圖示站的空間——`inset:0` 會把桌板拉高到
    整個區塊，圖示再怎麼往上移都還是在桌板中間。 */.fw-category-shelf:before{content:"";position:absolute;inset:auto 0 0;height:52px;z-index:-1;background:url('/freshwise/market-wood-counter.png') center/100% 100% no-repeat;pointer-events:none}.fw-category-shelf button{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:0;min-width:40px;flex:1;padding-bottom:4px;position:relative;isolation:isolate;color:var(--fw-ink);opacity:.45;transition:opacity .15s}/* 圖示要看起來是**擺在檯面上**，不是埋在桌板中間：往上提到木檯的檯面線，底下留
    桌板的厚度。父層 padding-bottom 不跟著加，桌板本身的高度就是那塊厚度。 */.fw-category-shelf button .fw-art{margin-bottom:-2px;transform:translateY(-28px)}/* 選中的那一類恢復不透明。這條本來留在 max-width:365px 的 media query 裡，而淡化
