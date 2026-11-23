@@ -337,6 +337,11 @@ export const CATALOG: CatalogItem[] = [
   { code: "GD3", name: "紅柿", category: "fruit", aliases: ["軟柿", "水柿"], icon: "apple-whole", baseKg: 26, season: [9, 10, 11, 12] },
   { code: "GD4", name: "桶柑", category: "fruit", aliases: ["年柑"], icon: "apple-whole", baseKg: 30, season: [1, 2, 3] },
   { code: "GD5", name: "海梨柑", category: "fruit", aliases: ["海梨"], icon: "apple-whole", baseKg: 25, season: [12, 1, 2] },
+  // 藍莓與櫻桃在批發行情裡 100% 是進口貨。這兩項不套「排除進口」的慣例——那條慣例
+  // 是給「本土與進口並存、價差很大」的品項用的（胡蘿蔔、牛蒡），而這兩種台灣幾乎
+  // 不產，排掉進口等於整項都不存在。蘋果（GA6）與奇異果（GC5）本來就是這樣處理的。
+  { code: "GD6", name: "藍莓", category: "fruit", aliases: [], icon: "apple-whole", baseKg: 253, season: ALL_YEAR },
+  { code: "GD7", name: "櫻桃", category: "fruit", aliases: [], icon: "apple-whole", baseKg: 446, season: [5, 6, 7, 11, 12, 1] },
 
   // ── 漁產 ──────────────────────────────────────────────────
   { code: "HA1", name: "吳郭魚", category: "seafood", aliases: ["台灣鯛"], icon: "fish", baseKg: 70, season: ALL_YEAR },

@@ -182,6 +182,11 @@ run("日期工具", () => {
   check("toROC 帶點的格式", dates.toROC(DAY) === "115.11.20");
   check("toROC 不帶點的格式", dates.toROC(DAY, "") === "1151120");
   check("formatShortDate 是年-月-日（星期）", dates.formatShortDate(DAY) === `${DAY}（五）`);
+  // 份量換算的方向跟價格相反，踩過一次（1 台斤被顯示成 0.4 台斤）。
+  check("份量：1 台斤 = 0.6 公斤", Math.round(price.qtyInUnit(0.6, "kg") * 10) / 10 === 0.6);
+  check("份量：0.6 公斤換回台斤是 1", Math.round(price.qtyInUnit(0.6, "catty") * 10) / 10 === 1);
+  check("份量換算來回不失真", Math.round(price.qtyInUnit(price.qtyToKg(2, "catty"), "catty") * 10) / 10 === 2);
+  check("份量與價格的換算方向相反", price.qtyInUnit(1, "catty") > 1 && price.toUnit(1, "catty") < 1);
   // todayISO 必須以台灣時間為準，不是伺服器時區（正式環境在 Vercel，時區是 UTC）。
   // 原本用 UTC 日界算，台灣時間凌晨 0～8 點整個工具會顯示「昨天」。
   check("todayISO 回傳 YYYY-MM-DD", /^\d{4}-\d{2}-\d{2}$/.test(dates.todayISO()));

@@ -28,6 +28,23 @@ export function fromUnit(price: number, unit: UnitKey): number {
 
 const UNIT_SHORT: Record<UnitKey, string> = { catty: "台斤", kg: "公斤" };
 
+/**
+ * 份量換算。**方向跟價格相反**，分成兩支函式就是為了不要再弄錯：
+ *
+ *   價格：元/公斤 → 元/台斤 是 **乘** 0.6（一台斤比較少，所以比較便宜）
+ *   份量：0.6 公斤 → 台斤   是 **除** 0.6（同樣的量，換個單位數字變大）
+ *
+ * 用 toUnit 去換份量會得到 0.36 台斤這種數字，而且看起來很像合理的小數，不會噴錯。
+ */
+export function qtyInUnit(kg: number, unit: UnitKey): number {
+  return kg / KG_PER_UNIT[unit];
+}
+
+export function qtyToKg(qty: number, unit: UnitKey): number {
+  return qty * KG_PER_UNIT[unit];
+}
+
+
 export function unitLabel(unit: UnitKey): string {
   return `元/${UNIT_SHORT[unit]}`;
 }

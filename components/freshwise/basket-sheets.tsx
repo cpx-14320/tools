@@ -7,8 +7,8 @@ import { FaIcon } from "./fa-icon";
 import { DEFAULT_GROUP_ICON, GROUP_ICONS, DISH_ICONS } from "./group-icons";
 import { BottomSheetModal } from "./bottom-sheet-modal";
 import { colors, copy, text } from "./theme";
-import { unitShort } from "@/lib/freshwise/price";
-import type { BasketGroup } from "@/lib/freshwise/types";
+import { KG_PER_CATTY, qtyInUnit, qtyToKg, unitShort } from "@/lib/freshwise/price";
+import type { BasketGroup, UnitKey } from "@/lib/freshwise/types";
 
 /* ───────────────────── 分類（新增／編輯） ───────────────────── */
 
@@ -134,6 +134,7 @@ export function EntryEditorSheet({
   open,
   itemName,
   qtyCatty,
+  unit,
   groupId,
   groups,
   onClose,
@@ -143,15 +144,22 @@ export function EntryEditorSheet({
   open: boolean;
   itemName: string;
   qtyCatty: number | null;
+  /** 使用者現在在看的單位。欄位用這個單位收數字，存回去一律換算成台斤。 */
+  unit: UnitKey;
   groupId: string;
   groups: BasketGroup[];
   onClose: () => void;
   onSave: (qtyCatty: number | null, groupId: string) => void;
   onDelete: () => void;
 }) {
+  // 份量**存的是台斤**（qtyCatty），但欄位用使用者現在看的單位收。切到公斤時 1 台斤
+  // 會顯示成 0.6 公斤——那是同一個份量換個講法，不是把 1 台斤改成 1 公斤（那會讓這一
+  // 籃無聲地多出 67% 的量）。
+  const toField = (catty: number | null) => (catty === null ? "" : String(Math.round(qtyInUnit(catty * KG_PER_CATTY, unit) * 10) / 10));
+
   // 數量用字串存，不用 number：輸入框打到一半（「1.」）在 number 型別裡是 NaN，會讓
   // 游標跳掉或字被吃掉。按儲存時才解析。
-  const [qtyText, setQtyText] = useState(qtyCatty === null ? "" : String(qtyCatty));
+  const [qtyText, setQtyText] = useState(() => toField(qtyCatty));
   const [pickedGroup, setPickedGroup] = useState(groupId);
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
 
@@ -159,7 +167,7 @@ export function EntryEditorSheet({
   if (open !== lastOpen) {
     setLastOpen(open);
     if (open) {
-      setQtyText(qtyCatty === null ? "" : String(qtyCatty));
+      setQtyText(toField(qtyCatty));
       setPickedGroup(groupId);
     }
   }
@@ -169,7 +177,13 @@ export function EntryEditorSheet({
 
   function save() {
     if (!qtyValid) return;
-    onSave(qtyText.trim() === "" ? null : Math.round(parsed * 10) / 10, pickedGroup);
+    if (qtyText.trim() === "") {
+      onSave(null, pickedGroup);
+      return;
+    }
+    // 欄位的數字是「現在這個單位」的量，換回台斤再存。
+    const catty = qtyToKg(parsed, unit) / KG_PER_CATTY;
+    onSave(Math.round(catty * 10) / 10, pickedGroup);
   }
 
   return (
@@ -184,7 +198,7 @@ export function EntryEditorSheet({
         onDelete={onDelete}
         deleteLabel={`從${copy.basket}移除`}
       >
-        <Field label={`常買份量（${unitShort("catty")}，可不填）`}>
+        <Field label={`常買份量（${unitShort(unit)}，可不填）`}>
           <TextInput
             value={qtyText}
             onChange={(e) => setQtyText(e.target.value)}

@@ -708,9 +708,8 @@ export function ListMessage({ children, tone = "hint" }: { children: ReactNode; 
 export function EmptyState({ icon, title, description, action }: { icon: string; title: string; description?: string; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center gap-2.5 px-6 py-10 text-center">
-      <div className="grid size-14 place-items-center rounded-2xl" style={{ border: `1.5px solid ${v.lineField}`, backgroundColor: v.paperSunk }}>
-        <FaIcon icon={icon} size={40} className="text-[#8C7864]" />
-      </div>
+      {/* 插畫自己就是完整的圖，不用再給它一個框——那個框是當初圖示還是線稿字型時留下的。 */}
+      <FaIcon icon={icon} size={56} className="text-[#8C7864]" />
       <p className={text.sectionTitle}>{title}</p>
       {description && <Hint center>{description}</Hint>}
       {action && <div className="mt-1">{action}</div>}

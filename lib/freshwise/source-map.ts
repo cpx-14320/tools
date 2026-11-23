@@ -189,6 +189,9 @@ export const SOURCE_MAP: Record<string, SourceRef> = {
   GD3: { farm: { match: ["柿子-紅柿", "柿子-水柿"] }, taichung: ["紅柿(軟柿)"] },
   GD4: { farm: { match: ["桶柑"], exclude: ["進口"] }, taichung: ["桶柑"] },
   GD5: { farm: { match: ["海梨"], exclude: ["進口"] }, taichung: ["海梨柑"] },
+  GD6: { farm: { match: ["藍莓"] } },
+  // 「蘿蔔-櫻桃」是櫻桃蘿蔔，不是櫻桃——基底名稱不同但關鍵字會命中，一定要排掉。
+  GD7: { farm: { match: ["櫻桃"], exclude: ["蘿蔔"] } },
 
   /* ── 漁產 ───────────────────────────────────────────── */
   HA1: { aquatic: { match: ["吳郭魚", "其他吳郭"] }, taichung: ["吳郭魚"] },

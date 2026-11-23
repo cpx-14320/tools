@@ -178,6 +178,8 @@ const ART_FILE_ALIAS: Record<string, string> = {
   GD3: "item-farm-Z1.png", // 紅柿
   GD4: "item-retail-02.png", // 桶柑
   GD5: "item-retail-03.png", // 海梨柑
+  GD6: "item-farm-469.png", // 藍莓
+  GD7: "item-farm-839.png", // 櫻桃
 };
 
 const ART_SET = new Set(ITEM_ART_CODES);

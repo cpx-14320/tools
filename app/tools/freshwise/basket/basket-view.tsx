@@ -43,7 +43,12 @@ import {
 } from "@/lib/freshwise/basket";
 import { itemImage, itemOrPlaceholder } from "@/lib/freshwise/catalog";
 import { formatShortDate, monthOf } from "@/lib/freshwise/dates";
-import { basketCost, entryCost, formatMoney, unitShort } from "@/lib/freshwise/price";
+import { basketCost, entryCost, formatMoney, KG_PER_CATTY, qtyInUnit, unitShort } from "@/lib/freshwise/price";
+
+/** 存起來的台斤份量 → 現在這個單位的數字。1 台斤在公斤模式下是 0.6，不是 1。 */
+function formatQty(qtyCatty: number | null, unit: UnitKey): number {
+  return Math.round(qtyInUnit((qtyCatty ?? 0) * KG_PER_CATTY, unit) * 10) / 10;
+}
 import { toRow } from "@/lib/freshwise/search";
 import type { BasketEntry, BasketGroup, PriceBook, PriceQuote, UnitKey } from "@/lib/freshwise/types";
 
@@ -209,6 +214,7 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
         open={entryEditing !== null}
         itemName={entryEditing ? itemOrPlaceholder(entryEditing.code).name : ""}
         qtyCatty={entryEditing?.qtyCatty ?? null}
+        unit={prefs.unit}
         groupId={entryEditing?.groupId ?? ""}
         groups={groups}
         onClose={() => setEntryEditing(null)}
@@ -338,10 +344,13 @@ function GroupEntries({
               leading={entries.length > 1 ? <DragHandle label={`拖曳排序 ${row.item.name}`} {...drag.handleProps(index)} /> : undefined}
               // 菜籃裡的說明文字講的是「我常買多少、大概多少錢」，不是划算度——划算度
               // 在價格旁邊的徽章已經有了，這裡重複講一次只是佔掉唯一能放份量的位置。
+              // 份量存的是台斤，顯示時換算成使用者現在看的單位——整頁價格都是公斤，
+              // 只有這一行寫台斤的話，同一列會有兩種單位。換算的是講法不是份量
+              // （1 台斤 → 0.6 公斤），數量本身沒有變。
               meta={
                 costOfEntry === null
                   ? "還沒填常買份量"
-                  : `常買 ${entry.qtyCatty} ${unitShort("catty")}・約 ${formatMoney(costOfEntry)} 元`
+                  : `常買 ${formatQty(entry.qtyCatty, unit)} ${unitShort(unit)}・約 ${formatMoney(costOfEntry)} 元`
               }
             />
             </ListCard>
