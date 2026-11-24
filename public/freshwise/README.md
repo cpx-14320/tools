@@ -103,7 +103,7 @@
 
 逐列核對402筆來源資料，385筆具名資料規劃對應294張插畫。目前已備妥207張（73張既有、134張本次新生成），尚有87張待生成；17筆未具名品項列在略過清單。相同食材的進口、包裝與可共用規格不重複生成，外觀有差異者各自補圖。既有16張英文預備食材檔直接改名，圖像內容不變。鳳梨花B4依北農具名來源列另備花序插畫，僅備素材，不因此加入食材或行情目錄。
 
-新素材皆為獨立256×256透明PNG，使用內建image_gen參考原食材系列生成。來源代碼與專案內碼不同，因此新預備圖採item-farm-<來源代碼>.png及item-aquatic-<來源代碼>.png，零售沒有來源代碼者採item-retail-<流水號>.png，避免覆蓋原本item-FA1等插畫。不自動新增行情品項、價格或來源映射。完整來源對照見csv-ingredient-art-map.csv/json，略過列見csv-ingredient-art-skipped.csv，尚待生成清單見csv-ingredient-art-pending.csv；完整已完成與待生成提示詞見兩份JSON的csvMissingIngredientsV15。
+新素材皆為獨立256×256透明PNG，使用內建image_gen參考原食材系列生成。來源代碼與專案內碼不同，因此新預備圖採item-farm-<來源代碼>.png及item-aquatic-<來源代碼>.png，零售沒有來源代碼者採item-retail-<流水號>.png，避免覆蓋原本item-FA1等插畫。不自動新增行情品項、價格或來源映射。完整來源對照見ingredient-art-inventory.csv，略過列見ingredient-art-inventory.csv，尚待生成清單見ingredient-art-inventory.csv；完整已完成與待生成提示詞見兩份JSON的csvMissingIngredientsV15。
 
 水果與零售食材圖片已完成；依使用者明確要求，水產87張先暫停，保留pending清單，不自動接續生成。
 
@@ -113,7 +113,7 @@
 
 ## 水果與零售食材補圖 V17（2026-11-23）
 
-本輪新增10張水果與1張零售牛心柿圖，共11張獨立256×256透明PNG。原本零售欄位的紅柿、桶柑與海梨柑沿用既有圖。至此CSV水果及零售具名品項皆有圖，CSV新圖累計134張；水產87張依使用者要求暫停，不自動續作。檔名與尺寸見csv-ingredient-art-fruit-retail.csv/json，完整提示詞在csvMissingIngredientsV15.generated。
+本輪新增10張水果與1張零售牛心柿圖，共11張獨立256×256透明PNG。原本零售欄位的紅柿、桶柑與海梨柑沿用既有圖。至此CSV水果及零售具名品項皆有圖，CSV新圖累計134張；水產87張依使用者要求暫停，不自動續作。檔名與尺寸見ingredient-art-inventory.csv，完整提示詞在csvMissingIngredientsV15.generated。
 
 ## 矮版行情木檯 V18（2026-11-23）
 
@@ -134,7 +134,7 @@
 <!-- freshwise-aquatic-v25-start -->
 ## 水產食材補圖 V25（2026-11-24）
 
-依使用者要求恢復水產圖示製作，目前完成87／87張，剩餘0張。皆為獨立256×256透明PNG，平放本資料夾，依漁產品來源代碼命名。現有圖片先比對，未更動食材目錄、行情來源或API映射。原生生成尺寸與完整提示詞見兩份JSON的csvAquaticArtV25，完成對照表見csv-ingredient-art-aquatic.csv/json。水產待生成清單已清空，csv-ingredient-art-pending.csv已移除，完成紀錄保存在水產對照表與完整素材對照表。
+依使用者要求恢復水產圖示製作，目前完成87／87張，剩餘0張。皆為獨立256×256透明PNG，平放本資料夾，依漁產品來源代碼命名。現有圖片先比對，未更動食材目錄、行情來源或API映射。原生生成尺寸與完整提示詞見兩份JSON的csvAquaticArtV25，完成對照表見ingredient-art-inventory.csv。水產待生成清單已清空，ingredient-art-inventory.csv已移除，完成紀錄保存在水產對照表與完整素材對照表。
 
 <!-- freshwise-aquatic-v25-end -->
 
@@ -154,3 +154,22 @@
 | 逛逛行情 | [PNG](app-intro-02-market-landscape-blank-1600x900.png) | [PNG](app-intro-02-market-landscape-copy-1600x900.png) | [PNG](app-intro-02-market-portrait-blank-900x1600.png) | [PNG](app-intro-02-market-portrait-copy-900x1600.png) |
 | 菜籃與夥伴 | [PNG](app-intro-03-basket-companions-landscape-blank-1600x900.png) | [PNG](app-intro-03-basket-companions-landscape-copy-1600x900.png) | [PNG](app-intro-03-basket-companions-portrait-blank-900x1600.png) | [PNG](app-intro-03-basket-companions-portrait-copy-900x1600.png) |
 <!-- freshwise-intro-v26-end -->
+
+
+<!-- freshwise-ingredient-inventory-start -->
+## 食材與圖片總對照表（2026-11-24）
+
+統一維護 ingredient-art-inventory.csv，移除原本9份分批CSV／JSON清單。總表包含365張已儲存的食材單圖（244張位於本層、121張位於unused），對應目前172個目錄品項；385筆具名來源對照均保留在「API來源品項」欄，17筆未具名資料另列為略過來源，共382筆記錄。
+
+欄位包含分類、食材名稱、專案品項代碼、網頁收錄狀態、資料來源、來源代碼與名稱、圖片檔名、相對路徑、用途、尺寸及行情比對規則。圖片路徑以public/freshwise為基準。已收錄代表程式有來源對照，不表示每個市場每天都有報價；預備圖片與unused歸檔圖片不等於已加入目錄。
+
+這份表供素材與資料維護使用，網頁不直接讀取CSV。新增顯示品項仍依catalog.ts、source-map.ts與art-assets.ts。完整生成提示詞繼續保存於兩份既有JSON；歷史章節提到的分批清單一律以本總表為準。
+<!-- freshwise-ingredient-inventory-end -->
+
+## 暖暖澆水動作修正（2026-11-24）
+
+使用內建image_gen移除左側胸前多出的手，保留原本單眼側臉、站姿與水滴。現用pet-corn-nuannuan-action-water.webp維持640×640輕量格式，1280×1280透明PNG母圖位於unused；修正前兩種檔案另以before-extra-paw-fix保存。提示詞與SHA-256見兩份JSON的petCornWaterFix20261124。
+
+## 常見料理改用PNG（2026-11-24）
+
+100道常見料理改用既有256×256透明PNG，從unused移回本層；對應的100張WebP已移至unused。DISH_ICONS.file為圖片路徑的唯一對照，FaIcon依這個欄位讀圖，新增／編輯分類與已儲存菜籃分類皆使用PNG。料理icon識別碼維持原值，保留延遲載入與原顯示尺寸。歷史V12／V13的WebP用法已由本次替換。完整路徑與SHA-256見unused/dish-format-switch-20261124.json，兩份素材JSON同步保存dishPngSwitch20261124。

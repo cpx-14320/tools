@@ -79,7 +79,10 @@ export const SOURCE_MAP: Record<string, SourceRef> = {
   FB7: { farm: { match: ["薑-老薑", "薑-嫩薑", "薑-粉薑"] } },
   FB8: { farm: { match: ["馬鈴薯"] } },
   FB9: { farm: { match: ["甘薯-"], exclude: ["甘薯葉"] } },
-  FC1: { farm: { match: ["山藥"], exclude: ["進口"] } },
+  // 開放資料裡山藥的作物名稱是「薯蕷-」（薯蕷-白薯蕷／紅薯蕷／粉薯／樹薯…），
+  // **沒有「山藥」兩個字**——原本的 match:["山藥"] 命中 0 列，這一項從加進目錄那天起
+  // 就一直沒有價格。排除樹薯（16 元，是做粉圓的原料，不是餐桌上的山藥）。
+  FC1: { farm: { match: ["薯蕷"], exclude: ["進口", "樹薯"] } },
   FC2: { farm: { match: ["竹筍"] } },
   FC3: { farm: { match: ["番茄-牛番茄", "番茄-黑柿"] } },
   FC4: { farm: { match: ["小番茄"] }, taichung: ["小番茄_玉女", "小番茄_聖女"] },
