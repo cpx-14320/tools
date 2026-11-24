@@ -196,6 +196,38 @@ const ART_FILE_ALIAS: Record<string, string> = {
   HD3: "item-aquatic-1191.png", // 香魚
   HD6: "item-aquatic-2142.png", // 馬加
   HD9: "item-aquatic-4016.png", // 蝦仁
+  // 第三批蔬果。檔名照農業部作物代號（item-farm-<代號>.png），同樣不複製位元組。
+  FK3: "item-farm-SG1.png", // 青蒜
+  FK4: "item-farm-LI2.png", // 結球萵苣
+  FK5: "item-farm-LQ1.png", // 紅鳳菜
+  FK6: "item-farm-LS1.png", // 茴香
+  FK7: "item-farm-SF2.png", // 韭黃
+  FK8: "item-farm-SX2.png", // 黃豆芽
+  FK9: "item-farm-SZ8.png", // 香茅
+  FL1: "item-farm-LX1.png", // 過貓
+  FL2: "item-farm-FP1.png", // 皇帝豆
+  FL3: "item-farm-MF1.png", // 鮑魚菇
+  FL4: "item-farm-LV1.png", // 巴西利
+  FL5: "item-farm-LA94.png", // 紫甘藍
+  FL6: "item-farm-LZ2.png", // 川七
+  FL7: "item-farm-LX2.png", // 山蘇
+  FL8: "item-farm-MN1.png", // 柳松菇
+  FL9: "item-farm-ML1.png", // 珊瑚菇
+  FM1: "item-farm-MB1.png", // 草菇
+  FM2: "item-farm-SK1.png", // 荸薺
+  GD8: "item-farm-11.png", // 椰子
+  GD9: "item-farm-61.png", // 甘蔗
+  GE1: "item-farm-I4.png", // 青木瓜
+  GE2: "item-farm-859.png", // 榴槤
+  GE3: "item-farm-F4.png", // 桔子
+  GE4: "item-farm-G2.png", // 黃金果
+  GE5: "item-farm-H6.png", // 西施柚
+  GE6: "item-farm-F2.png", // 金棗
+  GE7: "item-farm-G1.png", // 蛋黃果
+  GE8: "item-farm-G7.png", // 橄欖
+  GE9: "item-farm-87.png", // 紅毛丹
+  GF1: "item-farm-849.png", // 石榴
+  GF2: "item-farm-G8.png", // 栗子
 };
 
 const ART_SET = new Set(ITEM_ART_CODES);

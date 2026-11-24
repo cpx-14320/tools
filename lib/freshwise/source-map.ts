@@ -152,6 +152,29 @@ export const SOURCE_MAP: Record<string, SourceRef> = {
   // 1,250 公斤，而且攤位上賣的就是進口的。排掉進口會讓這一項十二天裡有四天查不到價。
   FK2: { farm: { match: ["牛蒡"] } },
 
+  /* ── 第三批蔬菜（2026-11 加入）───────────────────────── */
+  // 「硬梗／軟梗」是蒜苗（青蒜）的兩種梗性，不是蒜頭——蒜頭／蒜仁／蒜瓣在 FB6，
+  // 價格也差一截（青蒜 65～66、蒜頭 106）。
+  FK3: { farm: { match: ["大蒜-硬梗", "大蒜-軟梗"] } },
+  // FF4 萵苣刻意排除結球萵，因為葉菜跟結球的用途與價格都不同；這裡把它收成自己一項。
+  FK4: { farm: { match: ["萵苣菜-結球萵"], exclude: ["進口"] } },
+  FK5: { farm: { match: ["紅鳳菜"] } },
+  FK6: { farm: { match: ["茴香"] } },
+  FK7: { farm: { match: ["韭菜-韭菜黃"] } },
+  FK8: { farm: { match: ["芽菜類-黃豆芽"] } },
+  FK9: { farm: { match: ["香茅"] } },
+  FL1: { farm: { match: ["蕨菜-過貓"] } },
+  FL2: { farm: { match: ["萊豆"] } },
+  FL3: { farm: { match: ["蠔菇-鮑魚菇"] } },
+  FL4: { farm: { match: ["巴西利"] } },
+  FL5: { farm: { match: ["甘藍-進口 紫色"] } },
+  FL6: { farm: { match: ["藤川七"] } },
+  FL7: { farm: { match: ["蕨菜-山蘇"] } },
+  FL8: { farm: { match: ["柳松菇"] } },
+  FL9: { farm: { match: ["珊瑚菇"], exclude: ["盒裝"] } },
+  FM1: { farm: { match: ["草菇"] } },
+  FM2: { farm: { match: ["荸薺"], exclude: ["加工"] } },
+
   /* ── 水果 ───────────────────────────────────────────── */
   GA1: { farm: { match: ["香蕉"], exclude: ["芭蕉", "旦蕉", "越旦"] }, taichung: ["香蕉(內銷)"] },
   GA2: { farm: { match: ["鳳梨-金鑽鳳梨"] }, taichung: ["鳳梨(金鑽17號)", "鳳梨(開英)", "鳳梨(四號)"] },
@@ -195,6 +218,24 @@ export const SOURCE_MAP: Record<string, SourceRef> = {
   GD6: { farm: { match: ["藍莓"] } },
   // 「蘿蔔-櫻桃」是櫻桃蘿蔔，不是櫻桃——基底名稱不同但關鍵字會命中，一定要排掉。
   GD7: { farm: { match: ["櫻桃"], exclude: ["蘿蔔"] } },
+
+  /* ── 第三批水果（2026-11 加入）───────────────────────── */
+  GD8: { farm: { match: ["椰子"], exclude: ["剝殼"] } },
+  GD9: { farm: { match: ["甘蔗"] } },
+  GE1: { farm: { match: ["木瓜-青木瓜"] } },
+  GE2: { farm: { match: ["榴槤"] } },
+  GE3: { farm: { match: ["雜柑-桔子"] } },
+  GE4: { farm: { match: ["黃金果"] } },
+  GE5: { farm: { match: ["柚子-西施柚"] } },
+  GE6: { farm: { match: ["雜柑-金棗"] } },
+  GE7: { farm: { match: ["蛋黃果"] } },
+  GE8: { farm: { match: ["橄欖"] } },
+  GE9: { farm: { match: ["紅毛丹"] } },
+  // 「番石榴」含「石榴」兩個字，會被誤抓——而且它是 GA5，量差 50 倍
+  //（番石榴 101,728 公斤 vs 石榴 1,860 公斤），混進來這一項就整個變成芭樂價。
+  GF1: { farm: { match: ["石榴"], exclude: ["番石榴"] } },
+  // 同理：「南瓜-栗子」是栗子南瓜，量比真正的栗子多 14 倍。
+  GF2: { farm: { match: ["栗子"], exclude: ["南瓜"] } },
 
   /* ── 漁產 ───────────────────────────────────────────── */
   HA1: { aquatic: { match: ["吳郭魚", "其他吳郭"] }, taichung: ["吳郭魚"] },
