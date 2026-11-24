@@ -18,6 +18,7 @@ import {
   PageTitle,
   SectionTitle,
   SelectButton,
+  TextInput,
 } from "@/components/freshwise/ui";
 import { FaIcon } from "@/components/freshwise/fa-icon";
 import { MarketPickerModal } from "@/components/freshwise/market-picker-modal";
@@ -26,7 +27,6 @@ import { EditorSheet } from "@/components/freshwise/editor-sheet";
 import { useFreshwise } from "@/components/freshwise/store";
 import { colors, copy, text } from "@/components/freshwise/theme";
 import { formatShortDate } from "@/lib/freshwise/dates";
-import { emptyBasket } from "@/lib/freshwise/basket";
 import type { MarketOption, UnitKey } from "@/lib/freshwise/types";
 
 const OTHER_TOOL_ICONS: Record<string, string> = { transit: "/freshwise/ui-tool-transit.png", expenses: "/freshwise/ui-tool-expenses.png", compress: "/freshwise/ui-tool-compress.png" };
@@ -60,14 +60,41 @@ export function MoreView({
   dataDate: string;
   itemCount: number;
 }) {
-  const { prefs, setPrefs, setMarket, setBasket } = useFreshwise();
+  const { prefs, setPrefs, setMarket, clearBasket, toast } = useFreshwise();
   const { user, loading: authLoading, logout } = useAuth();
   const otherTools = TOOLS_REGISTRY.filter((tool) => OTHER_TOOL_ICONS[tool.toolId] && user?.tools.includes(tool.toolId));
-  const { reset: resetCompanions } = useCompanion();
+  const { reset: resetCompanions, redeem, ready: companionReady } = useCompanion();
   const [marketPickerOpen, setMarketPickerOpen] = useState(false);
   const router = useRouter();
   const [resetOpen, setResetOpen] = useState(false);
+  const [clearTargets, setClearTargets] = useState({ companion: false, basket: false });
+  const [resetting, setResetting] = useState(false);
+  const [activityCode, setActivityCode] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
+  const [activityResult, setActivityResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [unitPickerOpen, setUnitPickerOpen] = useState(false);
+
+  async function handleRedeem() {
+    if (redeeming || resetting || !activityCode.trim()) return;
+    setRedeeming(true);
+    setActivityResult(null);
+    try {
+      const result = await redeem(activityCode);
+      setActivityResult(result);
+      if (result.ok) setActivityCode("");
+    } finally { setRedeeming(false); }
+  }
+
+  async function handleReset() {
+    if ((!clearTargets.companion && !clearTargets.basket) || resetting || redeeming) return;
+    setResetting(true);
+    try {
+      if (clearTargets.companion && !await resetCompanions()) { toast("夥伴資料沒有清除成功，請稍後再試。"); return; }
+      if (clearTargets.basket && !await clearBasket()) { toast(clearTargets.companion ? "夥伴已清除，菜籃清除失敗，請再試一次。" : "菜籃資料沒有清除成功，請稍後再試。"); return; }
+      toast(clearTargets.companion && clearTargets.basket ? "夥伴與菜籃資料已清除。" : clearTargets.companion ? "夥伴資料已清除，菜籃已保留。" : "菜籃資料已清除，夥伴已保留。");
+      setResetOpen(false);
+    } finally { setResetting(false); }
+  }
 
   async function handleLogout() {
     await logout();
@@ -137,9 +164,28 @@ export function MoreView({
           <Note>
             {copy.basket}、偏好與夥伴進度都跟著帳號走，換手機、換瀏覽器登入看到的是同一份。
           </Note>
-          <DangerButton size="md" className="self-end" onClick={() => setResetOpen(true)}>
-            清除全部資料
+          <DangerButton size="md" className="self-end" disabled={!companionReady || redeeming || resetting} onClick={() => { setClearTargets({ companion: false, basket: false }); setResetOpen(true); }}>清除資料</DangerButton>
+        </Paper>
+      </section>
+
+
+
+      {/* ── 帳號 ───────────────────────────────────────────── */}
+      <section className="flex flex-col gap-2.5">
+        <SectionTitle leaf>帳號</SectionTitle>
+        <Paper variant="flush" className="flex flex-col gap-2.5">
+          <div className="flex items-center justify-between gap-3">
+          <Note>{user?.name ? `目前登入：${user.name}` : "目前登入中"}</Note>
+          <DangerButton size="md" onClick={() => void handleLogout()}>
+            登出
           </DangerButton>
+          </div>
+          <form className="flex flex-col gap-2" onSubmit={(event) => { event.preventDefault(); void handleRedeem(); }}>
+            <Field label="活動序號" as="div">
+              <TextInput aria-label="活動序號" placeholder="輸入活動序號" value={activityCode} maxLength={64} autoComplete="off" autoCapitalize="none" spellCheck={false} disabled={redeeming || resetting} onChange={(event) => { setActivityCode(event.target.value); setActivityResult(null); }} endAction={<button type="submit" className="min-h-7 px-2 text-sm font-medium text-[#6E8C41] disabled:opacity-50" disabled={!companionReady || !activityCode.trim() || redeeming || resetting}>{redeeming ? "兌換中…" : "兌換"}</button>} />
+            </Field>
+            {activityResult && <p className={text.bodySm} role="status" aria-live="polite" style={{ color: activityResult.ok ? colors.down : colors.up }}>{activityResult.message}</p>}
+          </form>
         </Paper>
       </section>
 
@@ -151,18 +197,6 @@ export function MoreView({
             <span className={`min-w-0 flex-1 ${text.bodyStrong}`}>{tool.name}</span>
             <FaIcon icon="chevron-right" size={12} color={colors.placeholder}/>
           </Link>)}
-        </Paper>
-      </section>
-
-
-      {/* ── 帳號 ───────────────────────────────────────────── */}
-      <section className="flex flex-col gap-2.5">
-        <SectionTitle leaf>帳號</SectionTitle>
-        <Paper variant="flush" className="flex items-center justify-between gap-3">
-          <Note>{user?.name ? `目前登入：${user.name}` : "目前登入中"}</Note>
-          <DangerButton size="md" onClick={() => void handleLogout()}>
-            登出
-          </DangerButton>
         </Paper>
       </section>
 
@@ -191,31 +225,26 @@ export function MoreView({
           ——原生對話框的樣式跟這個 App 完全不搭，而且在手機上會蓋掉整個畫面。 */}
       <EditorSheet
         open={resetOpen}
-        title="清除全部資料"
-        description={`${copy.basket}會清空，夥伴進度與價格單位會重設。這個動作沒辦法復原。`}
-        onClose={() => setResetOpen(false)}
+        title="清除資料"
+        description="勾選要清除的資料。查詢偏好會保留，清除後無法復原。"
+        onClose={() => { if (!resetting) setResetOpen(false); }}
         footer={
           <>
-            <button type="button" onClick={() => setResetOpen(false)} className="px-4 py-2 text-sm" style={{ color: colors.muted }}>
-              {copy.cancel}
-            </button>
-            <DangerButton
-              size="md"
-              onClick={() => {
-                // 三種資料都在帳號底下：夥伴進度走自己的 API，偏好與菜籃走 store
-                // （它會寫回伺服器）。不用再清 localStorage／cookie——那裡已經沒有資料了。
-                resetCompanions();
-                setBasket(emptyBasket());
-                setPrefs({ unit: "catty" });
-                setResetOpen(false);
-              }}
-            >
-              確定清除
-            </DangerButton>
+            <button type="button" disabled={resetting} onClick={() => setResetOpen(false)} className="px-4 py-2 text-sm" style={{ color: colors.muted }}>{copy.cancel}</button>
+            <DangerButton size="md" disabled={resetting || redeeming || (!clearTargets.companion && !clearTargets.basket)} onClick={() => void handleReset()}>{resetting ? "清除中…" : "確定清除"}</DangerButton>
           </>
         }
       >
-        <Hint>清空後不會自動補回預設內容，也可以在菜籃頁自行刪除不需要的分類。</Hint>
+        <div className="flex flex-col gap-3 py-3">
+          <label className="flex items-start gap-3">
+            <input type="checkbox" className="mt-1 size-4 shrink-0 accent-[#6E8C41]" checked={clearTargets.companion} disabled={resetting} onChange={(event) => setClearTargets((current) => ({ ...current, companion: event.target.checked }))} />
+            <span><span className={text.bodyStrong}>夥伴資料</span><span className={`block ${text.meta}`}>重設夥伴成長、露珠、印章與任務進度</span></span>
+          </label>
+          <label className="flex items-start gap-3">
+            <input type="checkbox" className="mt-1 size-4 shrink-0 accent-[#6E8C41]" checked={clearTargets.basket} disabled={resetting} onChange={(event) => setClearTargets((current) => ({ ...current, basket: event.target.checked }))} />
+            <span><span className={text.bodyStrong}>菜籃資料</span><span className={`block ${text.meta}`}>清空分類與食材，之後不會自動補回預設菜籃</span></span>
+          </label>
+        </div>
       </EditorSheet>
     </div>
   );

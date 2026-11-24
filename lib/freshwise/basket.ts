@@ -10,7 +10,7 @@
 // 第一層是「分類」（使用者自訂，例如每週常買／火鍋／便當菜），第二層是「項目」。用詞
 // 固定叫分類與項目，不要在畫面上出現群組、清單、收藏這些同義詞（見 theme.ts 的 copy）。
 
-import type { BasketEntry, BasketGroup, Recipe } from "./types";
+import type { BasketEntry, BasketGroup } from "./types";
 
 export interface BasketState {
   groups: BasketGroup[];
@@ -76,25 +76,10 @@ function newId(prefix: string): string {
  *
  * 伺服器端（寫進資料庫前）與舊 localStorage 的搬家都走這一支，驗證規則只有一份。
  */
-/** 食譜欄位的形狀檢查。只擋「會讓畫面壞掉」的程度，不做語意驗證。 */
-function isRecipe(raw: unknown): raw is Recipe {
-  if (!raw || typeof raw !== "object") return false;
-  const r = raw as Partial<Recipe>;
-  return (
-    typeof r.servings === "number" &&
-    typeof r.minutes === "number" &&
-    Array.isArray(r.steps) &&
-    r.steps.every((s) => typeof s === "string") &&
-    (r.kcalPerServing === null || typeof r.kcalPerServing === "number") &&
-    (r.source === "manual" || r.source === "ai") &&
-    typeof r.updatedAt === "string"
-  );
-}
-
-function stripRecipe(group: BasketGroup): BasketGroup {
-  if (!group.recipe) return group;
+function stripServings(group: BasketGroup): BasketGroup {
+  if (group.servings === undefined) return group;
   const next = { ...group };
-  delete next.recipe;
+  delete next.servings;
   return next;
 }
 
@@ -105,9 +90,10 @@ export function normalizeBasket(raw: unknown): BasketState {
 
   const groups = parsed.groups
     .filter((g): g is BasketGroup => !!g && typeof g.id === "string" && typeof g.name === "string" && typeof g.order === "number")
-    // 食譜是後來才加的欄位，舊資料沒有；格式不對就整個丟掉而不是讓它半壞地留著——
-    // 一個壞掉的 steps 會讓食譜頁整頁炸開，而「還沒有食譜」是這個欄位本來就有的狀態。
-    .map((g) => (g.recipe && isRecipe(g.recipe) ? g : stripRecipe(g)));
+    // servings 壞掉就當沒填（食譜頁會退回食譜本身的基準份數）。1～20 是刻意設寬的
+    // 上下界：真的有人要煮十幾人份，但 0 份、負數、小數都只會讓換算出來的份量變成
+    // 看不懂的數字。
+    .map((g) => (typeof g.servings === "number" && Number.isInteger(g.servings) && g.servings >= 1 && g.servings <= 20 ? g : stripServings(g)));
   const groupIds = new Set(groups.map((g) => g.id));
   const entries = parsed.entries.filter(
     (e): e is BasketEntry =>
@@ -169,13 +155,18 @@ export function addGroup(state: BasketState, name: string, icon: string): Basket
   return { ...state, groups: renumber([...groupsSorted(state), group]) };
 }
 
-export function updateGroup(state: BasketState, groupId: string, patch: { name?: string; icon?: string }): BasketState {
+export function updateGroup(state: BasketState, groupId: string, patch: { name?: string; icon?: string; servings?: number }): BasketState {
   return {
     ...state,
     groups: state.groups.map((group) => {
       if (group.id !== groupId) return group;
       const name = patch.name?.trim();
-      return { ...group, name: name || group.name, icon: patch.icon ?? group.icon };
+      return {
+        ...group,
+        name: name || group.name,
+        icon: patch.icon ?? group.icon,
+        servings: patch.servings ?? group.servings,
+      };
     }),
   };
 }

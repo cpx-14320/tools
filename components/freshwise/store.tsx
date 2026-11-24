@@ -1,9 +1,9 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { CenterToast } from "./center-toast";
-import { defaultBasket, toggleBasket as toggleBasketPure, type BasketState } from "@/lib/freshwise/basket";
+import { defaultBasket, emptyBasket, toggleBasket as toggleBasketPure, type BasketState } from "@/lib/freshwise/basket";
 import { venueDefaultUnit } from "@/lib/freshwise/catalog";
 import { takeLegacyDeviceData } from "@/lib/freshwise/storage";
 import type { FreshwisePrefs, VenueKey } from "@/lib/freshwise/types";
@@ -41,6 +41,7 @@ interface FreshwiseStore {
    *  是為了呼叫端不用一次全改（它們用它決定要不要畫「載入中」）。 */
   basketReady: boolean;
   setBasket: (next: BasketState) => void;
+  clearBasket: () => Promise<boolean>;
   /** 行情頁那顆星星：不在菜籃裡就加進第一個分類，已經在裡面就整個移除。 */
   toggleBasket: (code: string, itemName: string, groupId?: string) => void;
   toast: (message: string) => void;
@@ -60,6 +61,7 @@ export function FreshwiseProvider({
   children: ReactNode;
 }) {
   const router = useRouter();
+  const mutations = useRef<Promise<unknown>>(Promise.resolve());
   const [prefs, setPrefsState] = useState<FreshwisePrefs>(initialPrefs);
   const [basket, setBasketState] = useState<BasketState>(() => initialBasket ?? defaultBasket());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -109,19 +111,18 @@ export function FreshwiseProvider({
     })();
   }, [router]);
 
-  /** 存回伺服器。失敗就提示一次——靜靜失敗的話使用者會以為設定有存到。 */
-  const persist = useCallback(
-    async (payload: Record<string, unknown>) => {
+  /** 寫入依序執行，清除菜籃會等先前的儲存完成；成功後才更新畫面。 */
+  const persist = useCallback((payload: Record<string, unknown>): Promise<boolean> => {
+    const run = async () => {
       try {
         const res = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-        if (!res.ok) throw new Error(String(res.status));
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    [],
-  );
+        return res.ok;
+      } catch { return false; }
+    };
+    const next = mutations.current.then(run, run);
+    mutations.current = next;
+    return next;
+  }, []);
 
   const applyPrefs = useCallback(
     (patch: Partial<FreshwisePrefs>, refetch: boolean) => {
@@ -161,6 +162,13 @@ export function FreshwiseProvider({
     [persist],
   );
 
+  const clearBasket = useCallback(async () => {
+    const next = emptyBasket();
+    const ok = await persist({ basket: next });
+    if (ok) setBasketState(next);
+    return ok;
+  }, [persist]);
+
   const toast = useCallback((message: string) => {
     // 同一則提示連按兩次要能重新計時。先清掉再設定，CenterToast 會重新掛載一次。
     setToastMessage(null);
@@ -184,8 +192,8 @@ export function FreshwiseProvider({
   );
 
   const value = useMemo<FreshwiseStore>(
-    () => ({ prefs, setPrefs, setVenue, setMarket, basket, basketReady: true, setBasket, toggleBasket, toast }),
-    [prefs, setPrefs, setVenue, setMarket, basket, setBasket, toggleBasket, toast],
+    () => ({ prefs, setPrefs, setVenue, setMarket, basket, basketReady: true, setBasket, clearBasket, toggleBasket, toast }),
+    [prefs, setPrefs, setVenue, setMarket, basket, setBasket, clearBasket, toggleBasket, toast],
   );
 
   return (

@@ -1,163 +1,246 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ItemRow } from "@/components/freshwise/item-row";
 import { IllustratedArt } from "@/components/freshwise/game-art";
-import { FaIcon } from "@/components/freshwise/fa-icon";
-import { Callout, EmptyState, Hint, ListCard, Note, Paper, SectionTitle, PageTitle } from "@/components/freshwise/ui";
+import { DISH_ICONS } from "@/components/freshwise/group-icons";
+import { ItemIcon } from "@/components/freshwise/item-icon";
+import { PriceListRow } from "@/components/freshwise/price-list-row";
+import { Callout, EmptyState, Hint, ListCard, Note, Paper, PrimaryButton, SectionTitle, SegmentedTabs, UNIT_TABS } from "@/components/freshwise/ui";
 import { useFreshwise } from "@/components/freshwise/store";
-import { colors, copy, text } from "@/components/freshwise/theme";
-import { entriesOfGroup, groupsSorted } from "@/lib/freshwise/basket";
-import { itemOrPlaceholder } from "@/lib/freshwise/catalog";
-import { basketCost, formatMoney, qtyInUnit, KG_PER_CATTY, unitShort } from "@/lib/freshwise/price";
-import { toRow } from "@/lib/freshwise/search";
-import { monthOf } from "@/lib/freshwise/dates";
+import { copy, text, v } from "@/components/freshwise/theme";
+import { addEntry, entriesOfGroup, groupsSorted, updateEntry, updateGroup } from "@/lib/freshwise/basket";
+import { itemImage, itemOrPlaceholder } from "@/lib/freshwise/catalog";
+import { formatMoney, KG_PER_CATTY } from "@/lib/freshwise/price";
+import { recipeCost, recipeForGroup, ingredientQty, ingredientQuantityText, type RecipeIngredient, type RecipeUnit } from "@/lib/freshwise/recipes";
 import type { PriceBook } from "@/lib/freshwise/types";
+
+/** 人份選項。2 和 4 最常見，排在前面。 */
+const RECIPE_UNIT_TABS: readonly { key: RecipeUnit; label: string }[] = [...UNIT_TABS, { key: "g", label: "公克" }];
+
+const SERVING_OPTIONS = [1, 2, 3, 4, 6, 8].map((n) => ({ key: String(n), label: `${n} 人` }));
 
 /**
  * 一道菜的食譜。
  *
  * 版面由上而下回答三個問題，順序就是使用者站在攤位前的思考順序：
- *   1. 今天做這道菜要花多少錢、一份多少錢、一份多少熱量（最上面那張卡）
- *   2. 要買哪些、各買多少（食材清單，直接沿用菜籃的 ItemRow）
- *   3. 怎麼做（步驟）
+ *   1. 這道菜今天大概要花多少錢、幾人份
+ *   2. 要買哪些、各買多少（分「主食材」與「另外準備」兩區）
+ *   3. 怎麼做
  *
- * 金額與熱量刻意擺在一起：這個工具的主張是「買菜不要買貴」，而熱量是同一個決定的
- * 另一面——知道這一鍋 1,200 元、一份 480 大卡，才算真的知道自己煮了什麼。
+ * **食譜是固定的、不能改**（lib/freshwise/recipes.ts）。使用者的菜籃是他自己的，
+ * 兩者刻意不互相覆蓋——食譜說「這道菜 2 人份要 0.25 台斤白蝦」，使用者可能寫
+ * 「我每次都買 1 台斤」。兩個數字都對，意思不同，所以並排顯示，要不要套用由他決定。
  */
-export function RecipeView({ today, book, groupId }: { today: string; book: PriceBook; groupId: string }) {
-  const { prefs, basket, basketReady } = useFreshwise();
+export function RecipeView({ book, groupId }: { book: PriceBook; groupId: string }) {
+  const { basket, basketReady, setBasket, toast } = useFreshwise();
   const group = groupsSorted(basket).find((g) => g.id === groupId);
-  const recipe = group?.recipe;
-  const entries = group ? entriesOfGroup(basket, group.id) : [];
-  const month = monthOf(today);
-
-  const priced = entries.map((entry) => {
-    const quote = book.quotes[entry.code];
-    return { entry, quote, row: quote ? toRow(itemOrPlaceholder(entry.code), quote, month) : null };
-  });
-  const cost = basketCost(priced.filter((p) => p.quote).map((p) => ({ qtyCatty: p.entry.qtyCatty, priceKg: p.quote!.avgKg })));
+  const recipe = group ? recipeForGroup(group) : undefined;
+  const [busy, setBusy] = useState(false);
+  const [recipeUnit, setRecipeUnit] = useState<RecipeUnit>("g");
 
   if (!basketReady) return <div className="fw-page"><Hint center>{copy.loading}</Hint></div>;
-  if (!group) {
+  if (!group || !recipe) {
     return (
       <div className="fw-page">
-        <PageTitle hanging>食譜</PageTitle>
-        <EmptyState icon="book" title="找不到這道菜" description="它可能已經從菜籃裡移除了。" action={<Link href="/tools/freshwise/basket" className="fw-game-button">回到{copy.basket}</Link>} />
+        <BackRow unit={recipeUnit} onUnitChange={setRecipeUnit} />
+        <EmptyState
+          icon="book"
+          title={group ? "這道菜還沒有食譜" : "找不到這個分類"}
+          description={group ? "食譜還在陸續補上，之後回來看看。" : "它可能已經從菜籃裡移除了。"}
+          action={<Link href="/tools/freshwise/basket" className="fw-game-button">回到{copy.basket}</Link>}
+        />
       </div>
     );
   }
 
-  const servings = recipe?.servings ?? 0;
-  const perServing = servings > 0 && cost.counted > 0 ? Math.round(cost.total / servings) : null;
+  const servings = group.servings ?? recipe.baseServings;
+  const entries = entriesOfGroup(basket, group.id);
+  const priceOf = (code: string) => book.quotes[code]?.avgKg;
+  const cost = recipeCost(recipe, servings, priceOf);
+  const dishFile = DISH_ICONS.find((dish) => dish.icon === recipe.dish)?.file ?? "ui-basket.png";
+
+  /** 食譜要的這一樣，菜籃裡有沒有？ */
+  const inBasket = (code: string | null) => (code ? entries.find((e) => e.code === code) : undefined);
+  const missing = recipe.main.filter((ing) => ing.code && !inBasket(ing.code));
+  // 「份量跟食譜不一樣」的那幾項。沒填份量的不算——那是還沒填，不是填得不一樣。
+  const differs = recipe.main.filter((ing) => {
+    const entry = inBasket(ing.code);
+    const want = ingredientQty(ing, recipe, servings);
+    return entry && entry.qtyCatty !== null && want !== null && Math.abs(entry.qtyCatty - want) > 0.01;
+  });
+
+  function setServings(n: number) {
+    if (!group) return;
+    setBasket(updateGroup(basket, group.id, { servings: n }));
+  }
+
+  /** 把食譜裡菜籃還沒有的主食材加進這個分類，**不動已經有的那幾項**。 */
+  function addMissing() {
+    if (!group || busy) return;
+    setBusy(true);
+    let next = basket;
+    for (const ing of missing) {
+      if (!ing.code) continue;
+      next = addEntry(next, group.id, ing.code);
+    }
+    setBasket(next);
+    toast(`已加入 ${missing.length} 樣食材`);
+    setBusy(false);
+  }
+
+  /** 把份量改成食譜的量。**這會覆蓋使用者自己填的數字**，所以跟「補食材」分成兩顆
+   *  按鈕——想補齊卻被改掉常買份量，會很惱人。 */
+  function applyQuantities() {
+    if (!group || busy) return;
+    setBusy(true);
+    let next = basket;
+    for (const ing of recipe!.main) {
+      const entry = inBasket(ing.code);
+      const want = ingredientQty(ing, recipe!, servings);
+      if (!entry || want === null) continue;
+      next = updateEntry(next, entry.id, { qtyCatty: want });
+    }
+    setBasket(next);
+    toast("份量已改成食譜的量");
+    setBusy(false);
+  }
 
   return (
     <div className="fw-page fw-recipe-page">
-      <div className="flex items-center justify-between gap-2">
-        <Link href="/tools/freshwise/basket" className="fw-back-link" aria-label={`回到${copy.basket}`}>
-          <IllustratedArt src="/freshwise/ui-back.png" size={40} />
-        </Link>
-      </div>
+      <BackRow unit={recipeUnit} onUnitChange={setRecipeUnit} />
 
-      {/* ── 這道菜今天的成本與熱量 ───────────────────────── */}
-      <ListCard strong className="fw-recipe-hero flex flex-col gap-1.5">
-        <span className="fw-recipe-dish"><FaIcon icon={group.icon} size={56} /></span>
-        <h1 className={text.pageTitle}>{group.name}</h1>
-        <p>
-          <span className={text.priceBig}>{cost.counted > 0 ? formatMoney(cost.total) : "—"}</span>
-          <span className={`ml-1.5 ${text.meta}`}>元</span>
-        </p>
+      {/* ── 料理與所需時間 ───────────────────────── */}
+      <ListCard strong className="fw-recipe-hero">
+        <span className="fw-recipe-dish"><IllustratedArt src={`/freshwise/${dishFile}`} size={80} /></span>
+        <div className="min-w-0 flex-1">
+        <h1 className={text.pageTitle}>{recipe.name}</h1>
         <Hint>
-          {entries.length} 樣食材
-          {recipe && `・${recipe.servings} 人份・約 ${recipe.minutes} 分鐘`}
+          {servings} 人份・約 {recipe.minutes} 分鐘
+          {cost.skipped > 0 && `・${cost.skipped} 樣沒有行情`}
         </Hint>
+        </div>
       </ListCard>
 
-      {recipe && (
-        <div className="fw-recipe-stats">
-          <RecipeStat label="一份成本" value={perServing === null ? "—" : `${formatMoney(perServing)} 元`} />
-          <RecipeStat label="一份熱量" value={recipe.kcalPerServing === null ? "—" : `${recipe.kcalPerServing} 大卡`} />
-          <RecipeStat label="要花多久" value={`${recipe.minutes} 分鐘`} />
-        </div>
-      )}
-
-      {/* 熱量算不出來的時候要說清楚為什麼，不要只留一個「—」讓人以為壞了。 */}
-      {recipe && recipe.kcalPerServing === null && (
-        <Callout icon="circle-info" size="sm">這道菜的熱量還沒有估算。食材的熱量資料要另外建，目前只有成本是從今天的行情算出來的。</Callout>
-      )}
-
-      {/* ── 食材 ───────────────────────────────────────── */}
+      {/* 人份是使用者唯一能改的東西，所以擺在最顯眼的地方。 */}
       <section className="flex flex-col gap-2.5">
-        <SectionTitle leaf action={<Link href="/tools/freshwise/basket" className="fw-leaf-link">去{copy.basket}改 →</Link>}>要買的食材</SectionTitle>
-        {priced.length === 0 ? (
-          <EmptyState icon="basket-shopping" title="這道菜還沒有食材" description={`到${copy.basket}把要買的加進這個分類。`} />
-        ) : (
-          <Paper variant="list">
-            {priced.map(({ entry, row }) =>
-              row ? (
-                <ItemRow
-                  key={entry.id}
-                  row={row}
-                  unit={prefs.unit}
-                  href={`/tools/freshwise/browse/${entry.code}`}
-                  meta={entry.qtyCatty === null ? "還沒填份量" : `${qtyInUnit(entry.qtyCatty * KG_PER_CATTY, prefs.unit)} ${unitShort(prefs.unit)}`}
-                />
-              ) : (
-                <div key={entry.id} className="fw-item-row">
-                  <span className={`min-w-0 flex-1 ${text.body}`}>{itemOrPlaceholder(entry.code).name}</span>
-                  <span className={text.meta}>今天沒有行情</span>
-                </div>
-              ),
+        <SectionTitle leaf>要煮幾人份</SectionTitle>
+        <SegmentedTabs items={SERVING_OPTIONS} value={String(servings)} onChange={(v) => setServings(Number(v))} />
+      </section>
+
+      {/* ── 主食材 ──────────────────────────────────────── */}
+      <section className="flex flex-col gap-2.5">
+        <SectionTitle leaf action={<span className="fw-recipe-money" aria-live="polite">{cost.counted > 0 ? `約 ${formatMoney(cost.total)} 元` : "暫無行情"}</span>}>主食材</SectionTitle>
+        <Paper variant="list">
+          {recipe.main.map((ing, i) => (
+            <IngredientRow
+              key={i}
+              ing={ing}
+              quantityLabel={ingredientQuantityText(ing, recipe, servings, recipeUnit)}
+              qtyCatty={ingredientQty(ing, recipe, servings)}
+              priceKg={ing.code ? priceOf(ing.code) : undefined}
+              inBasket={!!inBasket(ing.code)}
+            />
+          ))}
+        </Paper>
+
+        {/* 兩顆按鈕刻意分開：補食材只是新增，改份量會覆蓋使用者自己填的數字。 */}
+        {(missing.length > 0 || differs.length > 0) && (
+          <div className="fw-recipe-actions">
+            {missing.length > 0 && (
+              <PrimaryButton size="block" icon="plus" disabled={busy} onClick={addMissing}>
+                把缺的 {missing.length} 樣加進{copy.basket}
+              </PrimaryButton>
             )}
-          </Paper>
+            {differs.length > 0 && (
+              <button type="button" className="fw-leaf-link" disabled={busy} onClick={applyQuantities}>
+                把 {differs.length} 樣的份量改成食譜的量 →
+              </button>
+            )}
+          </div>
         )}
+      </section>
+
+      {/* ── 另外準備 ────────────────────────────────────── */}
+      <section className="flex flex-col gap-2.5">
+        <SectionTitle leaf>另外準備</SectionTitle>
+        <Paper variant="flush" className="fw-recipe-extra">
+          {recipe.extra.map((ing, i) => (
+            <div key={i} className="fw-stack-row">
+              <span className={`min-w-0 flex-1 ${text.body}`}>{ing.name}</span>
+              <span className={text.meta}>{ingredientQuantityText(ing, recipe, servings, recipeUnit)}</span>
+            </div>
+          ))}
+        </Paper>
       </section>
 
       {/* ── 作法 ───────────────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
         <SectionTitle leaf>怎麼做</SectionTitle>
-        {!recipe ? (
-          <EmptyState
-            icon="book"
-            title="這道菜還沒有食譜"
-            description="可以自己寫，或用你自己的 API 金鑰讓它幫你生一份草稿。"
-          />
-        ) : (
-          <Paper variant="flush" className="fw-recipe-steps">
-            <ol>
-              {recipe.steps.map((step, i) => (
-                <li key={i}>
-                  <span className="fw-recipe-step-no">{i + 1}</span>
-                  <span>{step}</span>
-                </li>
-              ))}
-            </ol>
-          </Paper>
-        )}
+        <Paper variant="flush" className="fw-recipe-steps">
+          <ol>
+            {recipe.steps.map((step, i) => (
+              <li key={i}>
+                <span className="fw-recipe-step-no">{i + 1}</span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+        </Paper>
       </section>
 
-      {recipe?.tip && (
+      {recipe.tip && (
         <section className="flex flex-col gap-2.5">
           <SectionTitle leaf>小撇步</SectionTitle>
           <Paper variant="flush"><Note>{recipe.tip}</Note></Paper>
         </section>
       )}
 
-      {/* 來源要標：AI 生的步驟與熱量跟自己寫的可信度不一樣，使用者有權知道。 */}
-      {recipe && (
-        <Note className="text-center">
-          {recipe.source === "ai" ? "這份食譜是 AI 生成的草稿，份量與熱量僅供參考。" : "這份食譜是你自己寫的。"}
-        </Note>
-      )}
+      <Callout icon="circle-info" size="sm">
+        金額是用今天的行情 × 食譜份量估的，跟你在{copy.basket}填的常買份量是分開的兩件事。
+      </Callout>
     </div>
   );
 }
 
-function RecipeStat({ label, value }: { label: string; value: string }) {
+function BackRow({ unit, onUnitChange }: { unit: RecipeUnit; onUnitChange: (unit: RecipeUnit) => void }) {
   return (
-    <div className="fw-recipe-stat">
-      <span className={text.meta} style={{ color: colors.muted }}>{label}</span>
-      <strong>{value}</strong>
+    <div className="flex items-center justify-between gap-2">
+      <Link href="/tools/freshwise/basket" className="fw-back-link" aria-label={`回到${copy.basket}`}>
+        <IllustratedArt src="/freshwise/ui-back.png" size={40} />
+      </Link>
+      <SegmentedTabs items={RECIPE_UNIT_TABS} value={unit} onChange={onUnitChange} />
     </div>
   );
+}
+
+/**
+ * 食譜的一樣食材。
+ *
+ * 右邊顯示的是**這道菜要用掉多少錢**（份量 × 今天的單價），不是「一台斤多少錢」——
+ * 使用者要的是「這道菜多少錢」，不是查單價（那在行情頁）。
+ */
+function IngredientRow({
+  ing, quantityLabel, qtyCatty, priceKg, inBasket,
+}: {
+  ing: RecipeIngredient;
+  quantityLabel: string;
+  qtyCatty: number | null;
+  priceKg?: number;
+  inBasket: boolean;
+}) {
+  const item = ing.code ? itemOrPlaceholder(ing.code) : null;
+  const name = ing.name ?? item?.name ?? "";
+  const money = qtyCatty !== null && priceKg !== undefined ? Math.round(qtyCatty * KG_PER_CATTY * priceKg) : null;
+  return <PriceListRow
+    art={ing.code && <ItemIcon src={itemImage(ing.code)} alt={name} size={40} />}
+    title={name}
+    badges={!inBasket && <span className="fw-badge fw-badge-sm fw-recipe-missing">不在{copy.basket}</span>}
+    meta={quantityLabel}
+    price={money === null ? <span className={text.meta}>—</span> : <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
+      <span className="fw-price-amount" style={{ fontSize: v.fsSection }}>{formatMoney(money)}</span>
+      <span className={text.meta}>元</span>
+    </span>}
+    href={ing.code ? `/tools/freshwise/browse/${ing.code}` : undefined}
+  />;
 }

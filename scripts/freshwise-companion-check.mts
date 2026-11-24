@@ -1,4 +1,4 @@
-import { nextPetEmotion, petEmotionFile, PET_EMOTIONS, petCareFile, PET_CARE_ACTIONS } from "../lib/freshwise/pet-expressions";
+import { nextPetEmotion, petEmotionFile, PET_EMOTIONS, petCareFile, PET_CARE_ACTIONS, petStage, petBaseFile, petPoseFile } from "../lib/freshwise/pet-expressions";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
 import assert from "node:assert/strict";
@@ -42,6 +42,17 @@ check("有圖的品項查得到自己的圖", () => {
 });
 check("表情隨機切換排除目前狀態，每種情緒都抽得到", () => { for (const current of ["neutral", ...PET_EMOTIONS] as const) { const expected = PET_EMOTIONS.filter((mood) => mood !== current); const chosen = expected.map((_, index) => nextPetEmotion(current, (index + 0.5) / expected.length)); assert.deepEqual(chosen, expected); assert.equal(chosen.includes(current as typeof PET_EMOTIONS[number]), false); } });
 check("表情抽樣的邊界與無效值不會產生錯誤路徑", () => { for (const current of ["neutral", ...PET_EMOTIONS] as const) for (const sample of [-1, 0, 0.999, 1, Infinity, NaN]) assert.ok(PET_EMOTIONS.includes(nextPetEmotion(current, sample))); });
-check("六位夥伴各有四張獨立輕量表情素材", () => { const paths = new Set<string>(); for (const pet of COMPANIONS) for (const mood of PET_EMOTIONS) { const url = petEmotionFile(pet.id, mood); assert.match(url, /^\/freshwise\/pet-[a-z-]+\.webp$/); assert.ok(!paths.has(url)); paths.add(url); const file = join(process.cwd(), "public", url); assert.ok(existsSync(file), file); assert.ok(statSync(file).size <= 135 * 1024, file); } assert.equal(paths.size, 24); });
-check("六位夥伴各有澆水與玩球獨立輕量圖，與表情素材不共用檔案", () => { const paths = new Set<string>(); for (const pet of COMPANIONS) for (const action of PET_CARE_ACTIONS) { const url = petCareFile(pet.id, action); assert.match(url, /^\/freshwise\/pet-[a-z-]+-action-(water|play)\.webp$/); assert.ok(!paths.has(url)); paths.add(url); const file = join(process.cwd(), "public", url); assert.ok(existsSync(file), file); assert.ok(statSync(file).size <= 100 * 1024, file); for (const mood of PET_EMOTIONS) assert.notEqual(url, petEmotionFile(pet.id, mood)); } assert.equal(paths.size, 12); });
+check("六位夥伴各有四張獨立輕量表情素材", () => { const paths = new Set<string>(); for (const pet of COMPANIONS) for (const mood of PET_EMOTIONS) { const url = petEmotionFile(pet.id, mood); assert.match(url, /^\/freshwise\/pet-[a-z0-9-]+\.webp$/); assert.ok(!paths.has(url)); paths.add(url); const file = join(process.cwd(), "public", url); assert.ok(existsSync(file), file); assert.ok(statSync(file).size <= 135 * 1024, file); } assert.equal(paths.size, 24); });
+check("六位夥伴各有澆水與玩球獨立輕量圖，與表情素材不共用檔案", () => { const paths = new Set<string>(); for (const pet of COMPANIONS) for (const action of PET_CARE_ACTIONS) { const url = petCareFile(pet.id, action); assert.match(url, /^\/freshwise\/pet-[a-z0-9-]+-action-(water|play)\.webp$/); assert.ok(!paths.has(url)); paths.add(url); const file = join(process.cwd(), "public", url); assert.ok(existsSync(file), file); assert.ok(statSync(file).size <= 100 * 1024, file); for (const mood of PET_EMOTIONS) assert.notEqual(url, petEmotionFile(pet.id, mood)); } assert.equal(paths.size, 12); });
+check("六位夥伴依1–3、4–7、8以上等級切換，所有表情照護圖都屬於同階段", () => {
+  for (const pet of COMPANIONS) for (const [level, stage] of [[1,1],[3,1],[4,2],[7,2],[8,3],[25,3]]) {
+    assert.equal(petStage(pet.id, level), stage);
+    for (const pose of ["neutral", ...PET_EMOTIONS, ...PET_CARE_ACTIONS] as const) {
+      const url = petPoseFile(pet.id, pose, level);
+      assert.ok(existsSync(join(process.cwd(), "public", url)), url);
+      assert.equal(url.includes(`-stage-0${stage}`), stage < 3, url);
+    }
+    assert.equal(petPoseFile(pet.id, "neutral", level), petBaseFile(pet.id, level));
+  }
+});
 console.log(`\nFreshWise 養成與素材核心 ${passed} 組檢查通過。`);

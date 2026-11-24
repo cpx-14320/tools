@@ -60,7 +60,7 @@ export function HomeView({today,book}:{today:string;book:PriceBook}){
  // 菜籃裡所有「今天這個場所有行情」的項目都帶進來，顯示幾筆交給 CollapsibleList。
  const basketRows=rows.filter(row=>basketCodes.includes(row.item.code));
  // 等級、進度、稱呼跟夥伴頁共用同一份計算，兩頁不會長不一樣。
- const {pet,progress:growthInLevel,max:growthMax,label:levelLabel}=companionLevel(state);
+ const {pet,level,progress:growthInLevel,max:growthMax,label:levelLabel}=companionLevel(state);
  return <div className="fw-page fw-home">
  <div className="fw-home-garden">
  <header className="fw-home-brand"><div><small>{copy.appNameEn} · 今天買菜看這裡</small><h1>{copy.appName}</h1></div><DewBalance/></header>
@@ -69,7 +69,7 @@ export function HomeView({today,book}:{today:string;book:PriceBook}){
  <h2 className="fw-home-speech">{brief.advice}{headline?.quote.estimated&&!brief.advice.includes("推估")&&<small>（推估參考）</small>}</h2>
  <div className="fw-hero-stage">
  <div className="fw-hero-companion">
-   <PetArtwork id={state.active} size={200} priority interactive className="fw-breathe" ready={ready}/>
+   <PetArtwork id={state.active} level={level} size={200} priority interactive className="fw-breathe" ready={ready}/>
 
  </div>
  <div className="fw-hero-price-column">

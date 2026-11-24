@@ -29,7 +29,7 @@ export function CompanionView() {
   }
   const owned = COMPANIONS.filter((p) => p.threshold <= state.stamps);
   // 等級與稱呼跟首頁共用同一份計算（lib/freshwise/companions.ts），兩頁不會再長不一樣。
-  const { pet, progress, max, label } = companionLevel(state);
+  const { pet, level, progress, max, label } = companionLevel(state);
 
   return (
     <div className="fw-page fw-companions-page">
@@ -53,7 +53,7 @@ export function CompanionView() {
           <>
             <section className="fw-companion-garden">
               <p className="fw-pet-speech">一起看看今天的菜價吧！</p>
-              <PetArtwork id={pet.id} size={200} priority interactive reactionRef={petReaction} className="fw-breathe" />
+              <PetArtwork id={pet.id} level={level} size={200} priority interactive reactionRef={petReaction} className="fw-breathe" />
               {/* 小尺寸等級牌接在角色下方，與成長進度保持緊湊。 */}
               <span className="fw-level-ribbon"><SlicedArtwork name="companion-level-ribbon" className="fw-sliced-ribbon"/>{label}</span>
             </section>

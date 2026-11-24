@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCompanion } from "@/components/freshwise/companion-store";
 import { PetArtwork } from "@/components/freshwise/game-art";
 import { QuestSlip } from "@/components/freshwise/companion-widgets";
-import { newlyFilledQuantity } from "@/lib/freshwise/companions";
+import { companionLevel, newlyFilledQuantity } from "@/lib/freshwise/companions";
 import {
   AddButton,
   CollapsibleList,
@@ -21,6 +21,7 @@ import {
   UNIT_TABS,
 } from "@/components/freshwise/ui";
 import { FaIcon } from "@/components/freshwise/fa-icon";
+import { recipeStatus } from "@/lib/freshwise/recipes";
 import { ItemRow } from "@/components/freshwise/item-row";
 import { PriceListRow } from "@/components/freshwise/price-list-row";
 import { ItemIcon } from "@/components/freshwise/item-icon";
@@ -103,7 +104,7 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
           加起來的數字才有。 */}
       <ListCard strong className="fw-basket-summary flex flex-col gap-1.5">
         {/* 夥伴要跟著使用者選的那一隻，不要寫死。 */}
-        <PetArtwork id={companion.active} size={100} className="fw-basket-pet" ready={companionReady} />
+        <PetArtwork id={companion.active} level={companionLevel(companion).level} size={100} className="fw-basket-pet" ready={companionReady} />
         {/* 跟旁邊的夥伴立繪差不多高就好——兩行：金額，以及一行條件。場所已經沒有
             選項了不用再講，單位跟著數字走也不用另外說。 */}
         <Hint>今天買整籃大概要</Hint>
@@ -149,17 +150,12 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
               <SectionTitle
                 action={
                   <span className="flex items-center gap-1">
-                    {/* 食譜放在鉛筆左邊。**還沒有食譜就是反灰且點不下去**——給一顆點了
-                        會開出空白頁的按鈕，比不給還糟。有食譜才變成可點的連結。 */}
-                    {group.recipe ? (
-                      <Link href={`/tools/freshwise/recipe/${group.id}`} className="fw-icon-button" aria-label={`${group.name}的食譜`}>
-                        <FaIcon icon="book" size={32} />
-                      </Link>
-                    ) : (
-                      <span className="fw-icon-button fw-icon-button-off" aria-label={`${group.name}還沒有食譜`} title="還沒有食譜">
-                        <FaIcon icon="book" size={32} />
-                      </span>
-                    )}
+                    {/* 食譜放在鉛筆左邊。**沒有食譜就反灰且點不下去**——給一顆點了會開出
+                        空白頁的按鈕比不給還糟。
+                        「還在準備中」與「這不是料理」要分開講：前者是我們還沒寫，後者是
+                        使用者的分類本來就不是一道菜（「今天買菜」「冰箱補貨」）。寫成同
+                        一句會讓選了宮保雞丁的人以為是自己少做了什麼。 */}
+                    <RecipeIconButton group={group} />
                     <IconButton icon="pen" iconSize={32} aria-label={`編輯${group.name}`} onClick={() => setGroupEditing(group)} />
                   </span>
                 }
@@ -371,5 +367,23 @@ function GroupEntries({
       </CollapsibleList>
       <AddButton onClick={onAdd}>{`新增${copy.entry}`}</AddButton>
     </>
+  );
+}
+
+/** 分類標題列上的食譜圖示。三種狀態共用同一顆，差別只在能不能點與提示文字。 */
+function RecipeIconButton({ group }: { group: BasketGroup }) {
+  const status = recipeStatus(group);
+  if (status === "ready") {
+    return (
+      <Link href={`/tools/freshwise/recipe/${group.id}`} className="fw-icon-button" aria-label={`${group.name}的食譜`}>
+        <FaIcon icon="book" size={32} />
+      </Link>
+    );
+  }
+  const hint = status === "pending" ? "這道菜的食譜還在準備中" : "這個分類不是料理，沒有食譜";
+  return (
+    <span className="fw-icon-button fw-icon-button-off" aria-label={`${group.name}：${hint}`} title={hint}>
+      <FaIcon icon="book" size={32} />
+    </span>
   );
 }

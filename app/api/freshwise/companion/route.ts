@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireTool } from "@/lib/auth";
-import { applyCompanionAction, loadCompanion, migrateCompanionFromDevice, type CompanionAction } from "@/lib/freshwise/companions.server";
+import { applyCompanionAction, loadCompanion, migrateCompanionFromDevice, redeemCompanionCode, CompanionCodeError, type CompanionAction } from "@/lib/freshwise/companions.server";
 import { COMPANIONS, QUESTS, type CompanionEvent } from "@/lib/freshwise/companions";
 
 // 夥伴養成的進度。跟著帳號走（見 lib/freshwise/companions.server.ts 的說明）。
@@ -69,6 +69,15 @@ export async function POST(request: Request) {
   if (body.action === "migrate") {
     if (typeof body.raw !== "string") return NextResponse.json({ error: "缺少 raw" }, { status: 400 });
     return NextResponse.json({ state: await migrateCompanionFromDevice(user.id, body.raw, day) });
+  }
+
+  if (body.action === "redeem") {
+    try {
+      return NextResponse.json(await redeemCompanionCode(user.id, body.code, day));
+    } catch (error) {
+      if (!(error instanceof CompanionCodeError)) throw error;
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
   }
 
   const action = parseAction(body);

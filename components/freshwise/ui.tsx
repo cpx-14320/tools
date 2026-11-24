@@ -431,7 +431,13 @@ const FIELD_STYLE: CSSProperties = {
   fontSize: v.fsLead,
 };
 
-export function TextInput({ className = "", ...rest }: InputHTMLAttributes<HTMLInputElement>) {
+export function TextInput({ className = "", endAction, ...rest }: InputHTMLAttributes<HTMLInputElement> & { endAction?: ReactNode }) {
+  if (endAction) return (
+    <div className={FIELD_SHELL} style={FIELD_STYLE}>
+      <input className={`min-w-0 w-full flex-1 bg-transparent font-medium outline-none placeholder:text-[#927D64] ${className}`} style={{ color: "inherit", fontSize: "inherit" }} {...rest} />
+      <span className="flex shrink-0 items-center">{endAction}</span>
+    </div>
+  );
   return (
     <input
       className={`fw-input font-medium outline-none transition-colors placeholder:text-[#927D64] ${className}`}

@@ -16,10 +16,10 @@ export const dynamic = "force-dynamic";
  */
 export default async function FreshwiseRecipePage({ params }: { params: Promise<{ groupId: string }> }) {
   const { groupId } = await params;
-  const { today, book, basket } = await freshwisePageData();
+  const { book, basket } = await freshwisePageData();
   // 菜籃是跟著帳號的，所以這裡就能決定這個分類存不存在——不用等瀏覽器掛載後再判斷，
   // 也就不會先閃一下空白頁再跳走。
   const group = basket ? groupsSorted(basket).find((g) => g.id === groupId) : undefined;
   if (!group) notFound();
-  return <RecipeView today={today} book={book} groupId={groupId} />;
+  return <RecipeView book={book} groupId={groupId} />;
 }

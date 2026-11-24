@@ -15379,5 +15379,762 @@
       }
     ],
     "archiveIndex": "unused/dish-format-switch-20261124.json"
+  },
+  "petCabbageStagesV3": {
+    "date": "2026-11-24",
+    "status": "active",
+    "stages": [
+      {
+        "levels": "1–3",
+        "stage": 1
+      },
+      {
+        "levels": "4–7",
+        "stage": 2
+      },
+      {
+        "levels": "8+",
+        "stage": 3
+      }
+    ],
+    "masters": "UIUX示意設計稿/FreshWise_V2_蔬果夥伴/糰糰第一二階段_表情動作_V3/設計規格與生成提示詞.json",
+    "derivative": "Uniform full-canvas resize1254→640; WebP quality86, alpha100; original PNG masters retained.",
+    "files": [
+      {
+        "file": "pet-cabbage-tuantuan-stage-01-action-play.webp",
+        "source": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/糰糰第一二階段_表情動作_V3/pet-cabbage-tuantuan-stage-01-action-play.png",
+        "bytes": 35706,
+        "sha256": "89e066a8135ed9761dfd4ddd0aeab151e772e249174c570458c781a2b7b57b6a"
+      },
+      {
+        "file": "pet-cabbage-tuantuan-stage-01-action-water.webp",
+        "source": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/糰糰第一二階段_表情動作_V3/pet-cabbage-tuantuan-stage-01-action-water.png",
+        "bytes": 43670,
+        "sha256": "92c328845760734cac930a3f5e28030355d45b95346d0cfc8713bf4ef2569a76"
+      },
+      {
+        "file": "pet-cabbage-tuantuan-stage-01-curious.webp",
+        "source": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/糰糰第一二階段_表情動作_V3/pet-cabbage-tuantuan-stage-01-curious.png",
+        "bytes": 33754,
+        "sha256": "ce517ec7545cc00bf4c79de192ba78a59e3b872a2b7f1d5f0208f2d344dd752b"
+      },
+      {
+        "file": "pet-cabbage-tuantuan-stage-01-happy.webp",
+        "source": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/糰糰第一二階段_表情動作_V3/pet-cabbage-tuantuan-stage-01-happy.png",
+        "bytes": 34596,
+        "sha256": "868347d72112315700c86d12c484992eb20d1babf7422ff39364fbf2c866856d"
+      },
+      {
+        "file": "pet-cabbage-tuantuan-stage-01-sad.webp",
+        "source": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/糰糰第一二階段_表情動作_V3/pet-cabbage-tuantuan-stage-01-sad.png",
+        "bytes": 34736,
+        "sha256": "d6aeff792fe852784ff6042792a1937b3b99edc88bbc2d27ef18ae67eaef102d"
+      },
+      {
+        "file": "pet-cabbage-tuantuan-stage-01-surprised.webp",
+        "source": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/糰糰第一二階段_表情動作_V3/pet-cabbage-tuantuan-stage-01-surprised.png",
+        "bytes": 36764,
+        "sha256": "5b295b9705d79e64009cd01dcace0ad8e23d20cda1a09c3c64e38b7a4059bfaf"
+      },
+      {
+        "file": "pet-cabbage-tuantuan-stage-01.webp",
+        "source": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/糰糰第一二階段_表情動作_V3/pet-cabbage-tuantuan-stage-01.png",
+        "bytes": 41750,
+        "sha256": "ee8e976d3771238c319e5df15f405b74fa006d6aae27ebeaa37b2396967c64ac"
+      },
+      {
+        "file": "pet-cabbage-tuantuan-stage-02-action-play.webp",
+        "source": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/糰糰第一二階段_表情動作_V3/pet-cabbage-tuantuan-stage-02-action-play.png",
+        "bytes": 36702,
+        "sha256": "03d0eb7abfd5044080a80eeb62a09d4259bd43136df368185d640dba8d02dd2f"
+      },
+      {
+        "file": "pet-cabbage-tuantuan-stage-02-action-water.webp",
+        "source": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/糰糰第一二階段_表情動作_V3/pet-cabbage-tuantuan-stage-02-action-water.png",
+        "bytes": 59210,
+        "sha256": "f44effe7e0770ced79326fdef4ebf5ee2d871709b8cda2987253ae87b0d9ad33"
+      },
+      {
+        "file": "pet-cabbage-tuantuan-stage-02-curious.webp",
+        "source": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/糰糰第一二階段_表情動作_V3/pet-cabbage-tuantuan-stage-02-curious.png",
+        "bytes": 36410,
+        "sha256": "a289cd23ecbfe6deeab2cd3ddaa74962df50c17d8aee1ce8140e25771441908c"
+      },
+      {
+        "file": "pet-cabbage-tuantuan-stage-02-happy.webp",
+        "source": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/糰糰第一二階段_表情動作_V3/pet-cabbage-tuantuan-stage-02-happy.png",
+        "bytes": 37358,
+        "sha256": "6bb508e0b498c3c5e53c52553aee047df2469b57d117fde4e8e6b3deafee45ee"
+      },
+      {
+        "file": "pet-cabbage-tuantuan-stage-02-sad.webp",
+        "source": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/糰糰第一二階段_表情動作_V3/pet-cabbage-tuantuan-stage-02-sad.png",
+        "bytes": 36900,
+        "sha256": "74348a61089b3ec8d2ad9c5b8ff75af178195f07b10d2d195cc750dd2f863515"
+      },
+      {
+        "file": "pet-cabbage-tuantuan-stage-02-surprised.webp",
+        "source": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/糰糰第一二階段_表情動作_V3/pet-cabbage-tuantuan-stage-02-surprised.png",
+        "bytes": 36862,
+        "sha256": "e470b8f1c5af6ee8f1c5ab965050eed479dee4b17b37e66cda0fd5599694fe9e"
+      },
+      {
+        "file": "pet-cabbage-tuantuan-stage-02.webp",
+        "source": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/糰糰第一二階段_表情動作_V3/pet-cabbage-tuantuan-stage-02.png",
+        "bytes": 44970,
+        "sha256": "18c4290c339d98f88a44782550a829b72bc510bb3aced4f29fd7fc238df0aa23"
+      }
+    ]
+  },
+  "otherCompanionStagesV3": {
+    "date": "2026-11-25",
+    "generationMode": "built-in image_gen",
+    "levels": {
+      "stage1": "1–3",
+      "stage2": "4–7",
+      "stage3": "8+"
+    },
+    "canvas": [
+      1254,
+      1254
+    ],
+    "webCanvas": [
+      640,
+      640
+    ],
+    "alignment": "Uniform scaling; anchored to each original adult main-body bottom center; blue water drops excluded from alignment.",
+    "masters": "UIUX示意設計稿/FreshWise_V2_蔬果夥伴/<夥伴>第一二階段_表情動作_V3",
+    "assets": [
+      {
+        "pet": "corn",
+        "stage": 1,
+        "pose": "base",
+        "file": "pet-corn-nuannuan-stage-01.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/暖暖第一二階段_表情動作_V3/pet-corn-nuannuan-stage-01.png",
+        "bytes": 44060,
+        "sha256": "45d01843fd7e229952232d51c59a3d7aabadafedb194da1fcdb54a51084d513a"
+      },
+      {
+        "pet": "corn",
+        "stage": 2,
+        "pose": "base",
+        "file": "pet-corn-nuannuan-stage-02.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/暖暖第一二階段_表情動作_V3/pet-corn-nuannuan-stage-02.png",
+        "bytes": 47392,
+        "sha256": "68d97660c9ba5125d220c6e439540e352cebb33f40d05e41cbf84124062587dd"
+      },
+      {
+        "pet": "corn",
+        "stage": 1,
+        "pose": "action-play",
+        "file": "pet-corn-nuannuan-stage-01-action-play.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/暖暖第一二階段_表情動作_V3/pet-corn-nuannuan-stage-01-action-play.png",
+        "bytes": 32836,
+        "sha256": "ddec3648b64f667d4e8b05ddad2d8f9b71c4adccf7df94a3817db8916eaafae1"
+      },
+      {
+        "pet": "corn",
+        "stage": 1,
+        "pose": "action-water",
+        "file": "pet-corn-nuannuan-stage-01-action-water.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/暖暖第一二階段_表情動作_V3/pet-corn-nuannuan-stage-01-action-water.png",
+        "bytes": 39632,
+        "sha256": "93eebc5ef13110d1cfbdb4a1df425b2618438bbe27890b1aacd276e9f2d5cf5d"
+      },
+      {
+        "pet": "corn",
+        "stage": 1,
+        "pose": "curious",
+        "file": "pet-corn-nuannuan-stage-01-curious.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/暖暖第一二階段_表情動作_V3/pet-corn-nuannuan-stage-01-curious.png",
+        "bytes": 30970,
+        "sha256": "f465da94cfba81551558deeb9c2244b73900692acb4114857caddf2a5069507e"
+      },
+      {
+        "pet": "corn",
+        "stage": 1,
+        "pose": "happy",
+        "file": "pet-corn-nuannuan-stage-01-happy.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/暖暖第一二階段_表情動作_V3/pet-corn-nuannuan-stage-01-happy.png",
+        "bytes": 30938,
+        "sha256": "f36fbd8a38f555b7086621d3e6e2f8a576c8fd1ff412eaccebecea43ae26902f"
+      },
+      {
+        "pet": "corn",
+        "stage": 1,
+        "pose": "sad",
+        "file": "pet-corn-nuannuan-stage-01-sad.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/暖暖第一二階段_表情動作_V3/pet-corn-nuannuan-stage-01-sad.png",
+        "bytes": 31370,
+        "sha256": "073ef1d008035f6e7664e267d00dc1ee77e78f2ad06da0f36dea25c96891a638"
+      },
+      {
+        "pet": "corn",
+        "stage": 1,
+        "pose": "surprised",
+        "file": "pet-corn-nuannuan-stage-01-surprised.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/暖暖第一二階段_表情動作_V3/pet-corn-nuannuan-stage-01-surprised.png",
+        "bytes": 32450,
+        "sha256": "c57beac292a2c7ef56a1541725fba1c3aa4d6f05eb503119efa8a7b51a101019"
+      },
+      {
+        "pet": "corn",
+        "stage": 2,
+        "pose": "action-play",
+        "file": "pet-corn-nuannuan-stage-02-action-play.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/暖暖第一二階段_表情動作_V3/pet-corn-nuannuan-stage-02-action-play.png",
+        "bytes": 40114,
+        "sha256": "c7e43bf1e03bd9cb51242d2ece2f85a294b8e4c67f58eada2b2931c8e0453c35"
+      },
+      {
+        "pet": "corn",
+        "stage": 2,
+        "pose": "action-water",
+        "file": "pet-corn-nuannuan-stage-02-action-water.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/暖暖第一二階段_表情動作_V3/pet-corn-nuannuan-stage-02-action-water.png",
+        "bytes": 43720,
+        "sha256": "72ab3a1b4eeb86378f44d2274d99a5b049dbe03f36f01481268438a57c2d7b8a"
+      },
+      {
+        "pet": "corn",
+        "stage": 2,
+        "pose": "curious",
+        "file": "pet-corn-nuannuan-stage-02-curious.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/暖暖第一二階段_表情動作_V3/pet-corn-nuannuan-stage-02-curious.png",
+        "bytes": 35870,
+        "sha256": "cb5e66e68d361452766e8d15b19b49b453fa4134595ea93b82106a981a269b57"
+      },
+      {
+        "pet": "corn",
+        "stage": 2,
+        "pose": "happy",
+        "file": "pet-corn-nuannuan-stage-02-happy.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/暖暖第一二階段_表情動作_V3/pet-corn-nuannuan-stage-02-happy.png",
+        "bytes": 34970,
+        "sha256": "8aba8ffa57541bf56960f557168c700bafc4699052f8ebc03931b67f5c9fa0af"
+      },
+      {
+        "pet": "corn",
+        "stage": 2,
+        "pose": "sad",
+        "file": "pet-corn-nuannuan-stage-02-sad.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/暖暖第一二階段_表情動作_V3/pet-corn-nuannuan-stage-02-sad.png",
+        "bytes": 35134,
+        "sha256": "fcc4aea5749239c6a5f4308b90070add17e59da97cbdd9d1edee03daa084b340"
+      },
+      {
+        "pet": "corn",
+        "stage": 2,
+        "pose": "surprised",
+        "file": "pet-corn-nuannuan-stage-02-surprised.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/暖暖第一二階段_表情動作_V3/pet-corn-nuannuan-stage-02-surprised.png",
+        "bytes": 35026,
+        "sha256": "77ef023313d362cae5b306445d8d27202504d2ef71941ab996181b922625a56c"
+      },
+      {
+        "pet": "eggplant",
+        "stage": 1,
+        "pose": "base",
+        "file": "pet-eggplant-bobo-stage-01.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/波波第一二階段_表情動作_V3/pet-eggplant-bobo-stage-01.png",
+        "bytes": 40622,
+        "sha256": "764586ff4e6537e63d7bcbe3f584dce5eea823d148847675b6d1cb2836dc298d"
+      },
+      {
+        "pet": "eggplant",
+        "stage": 2,
+        "pose": "base",
+        "file": "pet-eggplant-bobo-stage-02.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/波波第一二階段_表情動作_V3/pet-eggplant-bobo-stage-02.png",
+        "bytes": 46804,
+        "sha256": "bfc9a1f5aefbbca9cffdbe17079461294eb5712a03ab4dcb1636af49ec9c64c8"
+      },
+      {
+        "pet": "eggplant",
+        "stage": 1,
+        "pose": "action-play",
+        "file": "pet-eggplant-bobo-stage-01-action-play.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/波波第一二階段_表情動作_V3/pet-eggplant-bobo-stage-01-action-play.png",
+        "bytes": 36498,
+        "sha256": "ab55d16f717fb12db39cdd63d93b632a3cededdc9e58546ea9e77b025b81b3c0"
+      },
+      {
+        "pet": "eggplant",
+        "stage": 1,
+        "pose": "action-water",
+        "file": "pet-eggplant-bobo-stage-01-action-water.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/波波第一二階段_表情動作_V3/pet-eggplant-bobo-stage-01-action-water.png",
+        "bytes": 40480,
+        "sha256": "7fdd4da35c030fd553263332d1259c7e27a5aefbaa5a98a3be7dcb501e237efc"
+      },
+      {
+        "pet": "eggplant",
+        "stage": 1,
+        "pose": "curious",
+        "file": "pet-eggplant-bobo-stage-01-curious.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/波波第一二階段_表情動作_V3/pet-eggplant-bobo-stage-01-curious.png",
+        "bytes": 35212,
+        "sha256": "821a57b5873b8f496da386008b2412889829a2438372198e40e5c4fd069265c1"
+      },
+      {
+        "pet": "eggplant",
+        "stage": 1,
+        "pose": "happy",
+        "file": "pet-eggplant-bobo-stage-01-happy.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/波波第一二階段_表情動作_V3/pet-eggplant-bobo-stage-01-happy.png",
+        "bytes": 36416,
+        "sha256": "ed1f6cd8ee6ff6253bf8b665e4c08966d24f09e5a7c4a9e7d0e6c8cc2d18755f"
+      },
+      {
+        "pet": "eggplant",
+        "stage": 1,
+        "pose": "sad",
+        "file": "pet-eggplant-bobo-stage-01-sad.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/波波第一二階段_表情動作_V3/pet-eggplant-bobo-stage-01-sad.png",
+        "bytes": 35916,
+        "sha256": "5912177bc9d4d63250e2f8306c9d2a58dc310a687177e312e032b8b0a1e5d0b1"
+      },
+      {
+        "pet": "eggplant",
+        "stage": 1,
+        "pose": "surprised",
+        "file": "pet-eggplant-bobo-stage-01-surprised.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/波波第一二階段_表情動作_V3/pet-eggplant-bobo-stage-01-surprised.png",
+        "bytes": 35324,
+        "sha256": "b518e7787163690818f646d95dffb4e8028ae7fbea68aac1ba13bed9f79fc943"
+      },
+      {
+        "pet": "eggplant",
+        "stage": 2,
+        "pose": "action-play",
+        "file": "pet-eggplant-bobo-stage-02-action-play.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/波波第一二階段_表情動作_V3/pet-eggplant-bobo-stage-02-action-play.png",
+        "bytes": 40524,
+        "sha256": "f2a7291ef1a2fec3f52f2088d8afd48a41c423fb011efe4282ba57bb8e72c611"
+      },
+      {
+        "pet": "eggplant",
+        "stage": 2,
+        "pose": "action-water",
+        "file": "pet-eggplant-bobo-stage-02-action-water.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/波波第一二階段_表情動作_V3/pet-eggplant-bobo-stage-02-action-water.png",
+        "bytes": 42342,
+        "sha256": "8b693b4f173b872bda7f9e8bbe984ec0e2ead0214ae60507c7eac3555a45692f"
+      },
+      {
+        "pet": "eggplant",
+        "stage": 2,
+        "pose": "curious",
+        "file": "pet-eggplant-bobo-stage-02-curious.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/波波第一二階段_表情動作_V3/pet-eggplant-bobo-stage-02-curious.png",
+        "bytes": 40330,
+        "sha256": "c375d49fbb7a1e2bf1fa81d5a7a1a6a74c67ef2d772dee3490ab76df04d60fbd"
+      },
+      {
+        "pet": "eggplant",
+        "stage": 2,
+        "pose": "happy",
+        "file": "pet-eggplant-bobo-stage-02-happy.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/波波第一二階段_表情動作_V3/pet-eggplant-bobo-stage-02-happy.png",
+        "bytes": 37302,
+        "sha256": "c8c1a61b7f50f28027d31dcd4283e51850c0756e8f7cede37053e034f92a9363"
+      },
+      {
+        "pet": "eggplant",
+        "stage": 2,
+        "pose": "sad",
+        "file": "pet-eggplant-bobo-stage-02-sad.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/波波第一二階段_表情動作_V3/pet-eggplant-bobo-stage-02-sad.png",
+        "bytes": 37548,
+        "sha256": "c9c713d8caf5ab227e50e1886190801d6f5b18db4ce65da1bf66eededab450c2"
+      },
+      {
+        "pet": "eggplant",
+        "stage": 2,
+        "pose": "surprised",
+        "file": "pet-eggplant-bobo-stage-02-surprised.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/波波第一二階段_表情動作_V3/pet-eggplant-bobo-stage-02-surprised.png",
+        "bytes": 38016,
+        "sha256": "6457efb79eca745ca60e9abc33c2c7327a87b91ad2ba4d2e6e8a7eab8a21c13a"
+      },
+      {
+        "pet": "pumpkin",
+        "stage": 1,
+        "pose": "base",
+        "file": "pet-pumpkin-manman-stage-01.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/慢慢第一二階段_表情動作_V3/pet-pumpkin-manman-stage-01.png",
+        "bytes": 40758,
+        "sha256": "001cbd8de640014295dcaaee44cfca6207a128ba078ed18a54ee94c139d5c9ce"
+      },
+      {
+        "pet": "pumpkin",
+        "stage": 2,
+        "pose": "base",
+        "file": "pet-pumpkin-manman-stage-02.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/慢慢第一二階段_表情動作_V3/pet-pumpkin-manman-stage-02.png",
+        "bytes": 44516,
+        "sha256": "3a1424ef973372e9bfc95a971e6855dd22ee57dba85a534850cf00b9b48c90ab"
+      },
+      {
+        "pet": "pumpkin",
+        "stage": 1,
+        "pose": "action-play",
+        "file": "pet-pumpkin-manman-stage-01-action-play.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/慢慢第一二階段_表情動作_V3/pet-pumpkin-manman-stage-01-action-play.png",
+        "bytes": 35898,
+        "sha256": "71073cf70eafd6fa05fdfb4bbd0a982034b9c8346776faceac9f7e761ff0b6b2"
+      },
+      {
+        "pet": "pumpkin",
+        "stage": 1,
+        "pose": "action-water",
+        "file": "pet-pumpkin-manman-stage-01-action-water.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/慢慢第一二階段_表情動作_V3/pet-pumpkin-manman-stage-01-action-water.png",
+        "bytes": 41012,
+        "sha256": "dfcc05f67c07aeb7485ebe17ff33e7d96cfa91585ec40cf4d3895e1112754b56"
+      },
+      {
+        "pet": "pumpkin",
+        "stage": 1,
+        "pose": "curious",
+        "file": "pet-pumpkin-manman-stage-01-curious.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/慢慢第一二階段_表情動作_V3/pet-pumpkin-manman-stage-01-curious.png",
+        "bytes": 36590,
+        "sha256": "74bc70b4ac57adf77e0e7a9f0f19c049847504e6931ea95188bcc0da41c40f66"
+      },
+      {
+        "pet": "pumpkin",
+        "stage": 1,
+        "pose": "happy",
+        "file": "pet-pumpkin-manman-stage-01-happy.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/慢慢第一二階段_表情動作_V3/pet-pumpkin-manman-stage-01-happy.png",
+        "bytes": 36656,
+        "sha256": "260df03cfc3195c58b8a6ba7cf61fc560b84403aa2866c691c416763c175dc7b"
+      },
+      {
+        "pet": "pumpkin",
+        "stage": 1,
+        "pose": "sad",
+        "file": "pet-pumpkin-manman-stage-01-sad.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/慢慢第一二階段_表情動作_V3/pet-pumpkin-manman-stage-01-sad.png",
+        "bytes": 35284,
+        "sha256": "ae7c691b39db5df6effa97cfcf3ba97f641777ff9b87cd2bbb7c2c0795cda003"
+      },
+      {
+        "pet": "pumpkin",
+        "stage": 1,
+        "pose": "surprised",
+        "file": "pet-pumpkin-manman-stage-01-surprised.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/慢慢第一二階段_表情動作_V3/pet-pumpkin-manman-stage-01-surprised.png",
+        "bytes": 35752,
+        "sha256": "a534af89c27a6e5f1398f5f20b7caa6f51e6ff49bf3a7298e88565c360072372"
+      },
+      {
+        "pet": "pumpkin",
+        "stage": 2,
+        "pose": "action-play",
+        "file": "pet-pumpkin-manman-stage-02-action-play.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/慢慢第一二階段_表情動作_V3/pet-pumpkin-manman-stage-02-action-play.png",
+        "bytes": 37520,
+        "sha256": "ffe04e7c08d3be207b3beafc53d51078733a84f2a2abbd8f18f8c16b0ea5059d"
+      },
+      {
+        "pet": "pumpkin",
+        "stage": 2,
+        "pose": "action-water",
+        "file": "pet-pumpkin-manman-stage-02-action-water.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/慢慢第一二階段_表情動作_V3/pet-pumpkin-manman-stage-02-action-water.png",
+        "bytes": 43912,
+        "sha256": "7a934af6c43874a54e34b5674b29cd8d0c90b360e44c98db2329947e7bed9594"
+      },
+      {
+        "pet": "pumpkin",
+        "stage": 2,
+        "pose": "curious",
+        "file": "pet-pumpkin-manman-stage-02-curious.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/慢慢第一二階段_表情動作_V3/pet-pumpkin-manman-stage-02-curious.png",
+        "bytes": 38966,
+        "sha256": "0bc2cbdd9b40eca448ab7ecd487a305c599f6a5a1c12d597446b1dc88330bc8a"
+      },
+      {
+        "pet": "pumpkin",
+        "stage": 2,
+        "pose": "happy",
+        "file": "pet-pumpkin-manman-stage-02-happy.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/慢慢第一二階段_表情動作_V3/pet-pumpkin-manman-stage-02-happy.png",
+        "bytes": 38036,
+        "sha256": "c110e4bdc36c199d2cdd495743a5087f045ec7191b307167f1fd3a386d062034"
+      },
+      {
+        "pet": "pumpkin",
+        "stage": 2,
+        "pose": "sad",
+        "file": "pet-pumpkin-manman-stage-02-sad.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/慢慢第一二階段_表情動作_V3/pet-pumpkin-manman-stage-02-sad.png",
+        "bytes": 39036,
+        "sha256": "9d8f5e50ae5d88bd7a5131d9735dcb9334e64b1b5b18503df05756a175b3c6ff"
+      },
+      {
+        "pet": "pumpkin",
+        "stage": 2,
+        "pose": "surprised",
+        "file": "pet-pumpkin-manman-stage-02-surprised.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/慢慢第一二階段_表情動作_V3/pet-pumpkin-manman-stage-02-surprised.png",
+        "bytes": 38260,
+        "sha256": "7cdaa60179f4a70e24d4e204f865c490758478a5b9b2d27581bb7770d7b7428b"
+      },
+      {
+        "pet": "radish",
+        "stage": 1,
+        "pose": "base",
+        "file": "pet-radish-bengbeng-stage-01.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/蹦蹦第一二階段_表情動作_V3/pet-radish-bengbeng-stage-01.png",
+        "bytes": 43702,
+        "sha256": "d4c7d1974b2ed545a9024f499a34116c3782d0843c57e5e1f4d707a3dca4f1d8"
+      },
+      {
+        "pet": "radish",
+        "stage": 2,
+        "pose": "base",
+        "file": "pet-radish-bengbeng-stage-02.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/蹦蹦第一二階段_表情動作_V3/pet-radish-bengbeng-stage-02.png",
+        "bytes": 48988,
+        "sha256": "164a20c1ad5afe4140791a07d9dbcdbf57f09fae7e56eb76461c9ff0b8f1ec84"
+      },
+      {
+        "pet": "radish",
+        "stage": 1,
+        "pose": "action-play",
+        "file": "pet-radish-bengbeng-stage-01-action-play.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/蹦蹦第一二階段_表情動作_V3/pet-radish-bengbeng-stage-01-action-play.png",
+        "bytes": 40750,
+        "sha256": "33530283b2b4eb8296d30cf2dd593541146336af97e2e20406c556a8f6abf7eb"
+      },
+      {
+        "pet": "radish",
+        "stage": 1,
+        "pose": "action-water",
+        "file": "pet-radish-bengbeng-stage-01-action-water.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/蹦蹦第一二階段_表情動作_V3/pet-radish-bengbeng-stage-01-action-water.png",
+        "bytes": 40628,
+        "sha256": "65da983683ec0e73e738bf42fd1ade806b1ff7e660f221aed1208e34d542ff19"
+      },
+      {
+        "pet": "radish",
+        "stage": 1,
+        "pose": "curious",
+        "file": "pet-radish-bengbeng-stage-01-curious.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/蹦蹦第一二階段_表情動作_V3/pet-radish-bengbeng-stage-01-curious.png",
+        "bytes": 37970,
+        "sha256": "1b4164f3c4b132b5400d9712e5a6e3da55aa76e18f9ee64268362d7e30d99afa"
+      },
+      {
+        "pet": "radish",
+        "stage": 1,
+        "pose": "happy",
+        "file": "pet-radish-bengbeng-stage-01-happy.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/蹦蹦第一二階段_表情動作_V3/pet-radish-bengbeng-stage-01-happy.png",
+        "bytes": 39502,
+        "sha256": "c8ec9fb2f82e322a7a809c640851b7212511ff2bb66b9fe5b0ed491faeb702ef"
+      },
+      {
+        "pet": "radish",
+        "stage": 1,
+        "pose": "sad",
+        "file": "pet-radish-bengbeng-stage-01-sad.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/蹦蹦第一二階段_表情動作_V3/pet-radish-bengbeng-stage-01-sad.png",
+        "bytes": 39250,
+        "sha256": "60d630cbebf99b039e428654254d02c3890864f85efdc1df0d48e2c955644914"
+      },
+      {
+        "pet": "radish",
+        "stage": 1,
+        "pose": "surprised",
+        "file": "pet-radish-bengbeng-stage-01-surprised.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/蹦蹦第一二階段_表情動作_V3/pet-radish-bengbeng-stage-01-surprised.png",
+        "bytes": 38442,
+        "sha256": "fa079ce0938be39416e6689e3117b5de1bf959f35dd09e7b9939b874c6486d8e"
+      },
+      {
+        "pet": "radish",
+        "stage": 2,
+        "pose": "action-play",
+        "file": "pet-radish-bengbeng-stage-02-action-play.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/蹦蹦第一二階段_表情動作_V3/pet-radish-bengbeng-stage-02-action-play.png",
+        "bytes": 44030,
+        "sha256": "e598aa1bd8c2c2d1ed38b645158b6b22d5dabbd2d310caf169d64ae39a28d26c"
+      },
+      {
+        "pet": "radish",
+        "stage": 2,
+        "pose": "action-water",
+        "file": "pet-radish-bengbeng-stage-02-action-water.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/蹦蹦第一二階段_表情動作_V3/pet-radish-bengbeng-stage-02-action-water.png",
+        "bytes": 53478,
+        "sha256": "c244d6b573e5a33244d4a9ea469f879112a58678e6cd1aea96163ed89e578c89"
+      },
+      {
+        "pet": "radish",
+        "stage": 2,
+        "pose": "curious",
+        "file": "pet-radish-bengbeng-stage-02-curious.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/蹦蹦第一二階段_表情動作_V3/pet-radish-bengbeng-stage-02-curious.png",
+        "bytes": 47252,
+        "sha256": "1361e8198960b06d327b8619b34a66c4d99682e0f4267311510ae9fb315a8a67"
+      },
+      {
+        "pet": "radish",
+        "stage": 2,
+        "pose": "happy",
+        "file": "pet-radish-bengbeng-stage-02-happy.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/蹦蹦第一二階段_表情動作_V3/pet-radish-bengbeng-stage-02-happy.png",
+        "bytes": 43578,
+        "sha256": "f87ff93679425515d3154ac15dd0694817047ce646bbea7345f76030c6766700"
+      },
+      {
+        "pet": "radish",
+        "stage": 2,
+        "pose": "sad",
+        "file": "pet-radish-bengbeng-stage-02-sad.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/蹦蹦第一二階段_表情動作_V3/pet-radish-bengbeng-stage-02-sad.png",
+        "bytes": 45392,
+        "sha256": "1c46d16ee2019c2a49d711b21ce459f57de6e9a8ab27c92393cd9d5c25d1bd6e"
+      },
+      {
+        "pet": "radish",
+        "stage": 2,
+        "pose": "surprised",
+        "file": "pet-radish-bengbeng-stage-02-surprised.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/蹦蹦第一二階段_表情動作_V3/pet-radish-bengbeng-stage-02-surprised.png",
+        "bytes": 45756,
+        "sha256": "5644d650e27ba8afe5d10bc123d9eb2501e16b6b556f8a08336b689bf2b26d6e"
+      },
+      {
+        "pet": "strawberry",
+        "stage": 1,
+        "pose": "base",
+        "file": "pet-strawberry-jiujiu-stage-01.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/啾啾第一二階段_表情動作_V3/pet-strawberry-jiujiu-stage-01.png",
+        "bytes": 43692,
+        "sha256": "9265fbac94595885dcbde03fbb1ddf5d4eeb35243f08609187ce73ad52853282"
+      },
+      {
+        "pet": "strawberry",
+        "stage": 2,
+        "pose": "base",
+        "file": "pet-strawberry-jiujiu-stage-02.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/啾啾第一二階段_表情動作_V3/pet-strawberry-jiujiu-stage-02.png",
+        "bytes": 46254,
+        "sha256": "95807e9c680d1ba639054cb0e934a56781cb8d79a65e7e50d3819c9d38b20b7a"
+      },
+      {
+        "pet": "strawberry",
+        "stage": 1,
+        "pose": "action-play",
+        "file": "pet-strawberry-jiujiu-stage-01-action-play.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/啾啾第一二階段_表情動作_V3/pet-strawberry-jiujiu-stage-01-action-play.png",
+        "bytes": 40944,
+        "sha256": "d21a1c8856302f0571bcd6433f5dffc883fb1842bca60dc3c8f285dbc4ebf06f"
+      },
+      {
+        "pet": "strawberry",
+        "stage": 1,
+        "pose": "action-water",
+        "file": "pet-strawberry-jiujiu-stage-01-action-water.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/啾啾第一二階段_表情動作_V3/pet-strawberry-jiujiu-stage-01-action-water.png",
+        "bytes": 44194,
+        "sha256": "0c4bba1ccdacf0346b6dbbb08ae7f839ba01c55e7188b4189003c982f9d50488"
+      },
+      {
+        "pet": "strawberry",
+        "stage": 1,
+        "pose": "curious",
+        "file": "pet-strawberry-jiujiu-stage-01-curious.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/啾啾第一二階段_表情動作_V3/pet-strawberry-jiujiu-stage-01-curious.png",
+        "bytes": 44500,
+        "sha256": "307f1b27d596a204e9a81535ea30358c135339c6db5942def5bd5195d84227ab"
+      },
+      {
+        "pet": "strawberry",
+        "stage": 1,
+        "pose": "happy",
+        "file": "pet-strawberry-jiujiu-stage-01-happy.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/啾啾第一二階段_表情動作_V3/pet-strawberry-jiujiu-stage-01-happy.png",
+        "bytes": 40210,
+        "sha256": "8e6fe08d9368ab216e0236e677da143686cb6589e2d6332f7a14e4830f63e3ae"
+      },
+      {
+        "pet": "strawberry",
+        "stage": 1,
+        "pose": "sad",
+        "file": "pet-strawberry-jiujiu-stage-01-sad.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/啾啾第一二階段_表情動作_V3/pet-strawberry-jiujiu-stage-01-sad.png",
+        "bytes": 38248,
+        "sha256": "b32d6176962b13c87fb9da1d4cedd78ff1778620d931df7e1a179ec16555d99d"
+      },
+      {
+        "pet": "strawberry",
+        "stage": 1,
+        "pose": "surprised",
+        "file": "pet-strawberry-jiujiu-stage-01-surprised.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/啾啾第一二階段_表情動作_V3/pet-strawberry-jiujiu-stage-01-surprised.png",
+        "bytes": 38966,
+        "sha256": "96d68cb850e712b855a51967558b81ea37e6470e68062dda9598d86850e411a8"
+      },
+      {
+        "pet": "strawberry",
+        "stage": 2,
+        "pose": "action-play",
+        "file": "pet-strawberry-jiujiu-stage-02-action-play.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/啾啾第一二階段_表情動作_V3/pet-strawberry-jiujiu-stage-02-action-play.png",
+        "bytes": 41634,
+        "sha256": "4b603c1a5752940401e19b7ef9213399ea6212c6d76f3a09215b969069edb316"
+      },
+      {
+        "pet": "strawberry",
+        "stage": 2,
+        "pose": "action-water",
+        "file": "pet-strawberry-jiujiu-stage-02-action-water.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/啾啾第一二階段_表情動作_V3/pet-strawberry-jiujiu-stage-02-action-water.png",
+        "bytes": 45392,
+        "sha256": "f2e93c8df98a05f5b5186a4465dd81d65a492133be9163aa08fe693e2184271d"
+      },
+      {
+        "pet": "strawberry",
+        "stage": 2,
+        "pose": "curious",
+        "file": "pet-strawberry-jiujiu-stage-02-curious.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/啾啾第一二階段_表情動作_V3/pet-strawberry-jiujiu-stage-02-curious.png",
+        "bytes": 40226,
+        "sha256": "d00262349c138718d4c83cfa0436747ef7fc3074952435f952ffd7950b2d62c1"
+      },
+      {
+        "pet": "strawberry",
+        "stage": 2,
+        "pose": "happy",
+        "file": "pet-strawberry-jiujiu-stage-02-happy.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/啾啾第一二階段_表情動作_V3/pet-strawberry-jiujiu-stage-02-happy.png",
+        "bytes": 39486,
+        "sha256": "ac1a6b96f2d9b912cc9a0bad53e41083e85630ce6b01985828908b21d7922d33"
+      },
+      {
+        "pet": "strawberry",
+        "stage": 2,
+        "pose": "sad",
+        "file": "pet-strawberry-jiujiu-stage-02-sad.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/啾啾第一二階段_表情動作_V3/pet-strawberry-jiujiu-stage-02-sad.png",
+        "bytes": 40158,
+        "sha256": "8595e2dee21a863057613f2aef04181f16f9d201b15dcca74085cfa3f6be5c71"
+      },
+      {
+        "pet": "strawberry",
+        "stage": 2,
+        "pose": "surprised",
+        "file": "pet-strawberry-jiujiu-stage-02-surprised.webp",
+        "master": "D:/coding-project/cpx-tools/UIUX示意設計稿/FreshWise_V2_蔬果夥伴/啾啾第一二階段_表情動作_V3/pet-strawberry-jiujiu-stage-02-surprised.png",
+        "bytes": 39592,
+        "sha256": "5250322d41579d7df8c295dce92792474b25e9509c5b9390c965f78cb5d2cbdb"
+      }
+    ]
   }
 }

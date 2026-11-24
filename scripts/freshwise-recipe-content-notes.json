@@ -1,0 +1,395 @@
+{
+  "date": "2026-11-25",
+  "content": "新增90道家常版本，保留原10道；配方與步驟自行整理，並非逐字轉載。未進行實際試煮。",
+  "mapping": "僅將相符的現有原食材代碼連結行情。加工品與未收錄食材code為null；不套用別種食材價格。米飯料理以生米採買量計價，時間是否包含煮飯由各食譜小撇步說明。",
+  "units": "主食材與明確量化備料依人份縮放；公克只供食譜頁本地切換，不寫入帳號的價格單位。",
+  "techniqueReferences": [
+    {
+      "title": "Panasonic Cooking：蒸蛋",
+      "url": "https://pmst.panasonic.com.tw/PanasonicCookingTW/Recipe/Detail/3602",
+      "scope": "蒸蛋過濾、去泡與蒸製技法核對；使用家常蒸鍋版本。"
+    },
+    {
+      "title": "農業部農業知識入口網：魚香茄子",
+      "url": "https://kmweb.moa.gov.tw/subject/subject.php?id=19086",
+      "scope": "魚香茄子的醬香組成與先處理茄子技法核對。"
+    },
+    {
+      "title": "老四川料理教室：宮保雞丁",
+      "url": "https://shop.oldsichuan.com.tw/recipe_info/17",
+      "scope": "乾辣椒小火煸香、醬汁預拌及花生最後放的順序核對；本版本不用品牌湯底。"
+    },
+    {
+      "title": "龜甲萬：薑燒豬肉",
+      "url": "https://kikkoman.com.tw/recipe_detal_%E8%96%91%E7%87%92%E8%B1%AC%E8%82%89%28%E8%B1%9A%E3%81%AE%E3%81%97%E3%82%87%E3%81%86%E3%81%8C%E7%84%BC%E3%81%8D%29_1649",
+      "scope": "家常薑燒豬肉調味方向核對。"
+    },
+    {
+      "title": "FoodSafety.gov：安全中心溫度",
+      "url": "https://www.foodsafety.gov/food-safety-charts/safe-minimum-internal-temperatures",
+      "scope": "雞肉74°C、魚肉63°C與肉類充分煮熟原則核對。"
+    }
+  ],
+  "recipes": [
+    {
+      "dish": "dish-pepper-pork",
+      "name": "青椒炒肉絲"
+    },
+    {
+      "dish": "dish-garlic-cabbage",
+      "name": "清炒高麗菜"
+    },
+    {
+      "dish": "dish-kung-pao-chicken",
+      "name": "宮保雞丁"
+    },
+    {
+      "dish": "dish-braised-pork",
+      "name": "紅燒肉"
+    },
+    {
+      "dish": "dish-sweet-sour-pork",
+      "name": "糖醋里肌"
+    },
+    {
+      "dish": "dish-homestyle-tofu",
+      "name": "家常豆腐"
+    },
+    {
+      "dish": "dish-ginger-steamed-fish",
+      "name": "清蒸鱸魚"
+    },
+    {
+      "dish": "dish-braised-fish",
+      "name": "紅燒魚"
+    },
+    {
+      "dish": "dish-basil-clams",
+      "name": "塔香蛤蜊"
+    },
+    {
+      "dish": "dish-garlic-shrimp",
+      "name": "蒜香蝦仁"
+    },
+    {
+      "dish": "dish-broccoli-mushrooms",
+      "name": "花椰菜炒菇"
+    },
+    {
+      "dish": "dish-scallion-omelet",
+      "name": "蔥花蛋"
+    },
+    {
+      "dish": "dish-shrimp-eggs",
+      "name": "蝦仁炒蛋"
+    },
+    {
+      "dish": "dish-egg-fried-rice",
+      "name": "蛋炒飯"
+    },
+    {
+      "dish": "dish-pork-fried-noodles",
+      "name": "肉絲炒麵"
+    },
+    {
+      "dish": "dish-fried-rice-vermicelli",
+      "name": "炒米粉"
+    },
+    {
+      "dish": "dish-beef-stew",
+      "name": "紅燒牛肉"
+    },
+    {
+      "dish": "dish-wintermelon-pork-soup",
+      "name": "冬瓜排骨湯"
+    },
+    {
+      "dish": "dish-pumpkin-chicken-soup",
+      "name": "南瓜雞湯"
+    },
+    {
+      "dish": "dish-corn-chicken-soup",
+      "name": "玉米雞湯"
+    },
+    {
+      "dish": "dish-mushroom-chicken-soup",
+      "name": "香菇雞湯"
+    },
+    {
+      "dish": "dish-spinach-century-egg",
+      "name": "皮蛋菠菜"
+    },
+    {
+      "dish": "dish-dry-fried-green-beans",
+      "name": "乾煸四季豆"
+    },
+    {
+      "dish": "dish-steamed-egg",
+      "name": "蒸蛋"
+    },
+    {
+      "dish": "dish-curry-chicken",
+      "name": "咖哩雞"
+    },
+    {
+      "dish": "dish-curry-beef",
+      "name": "咖哩牛肉"
+    },
+    {
+      "dish": "dish-curry-pork",
+      "name": "咖哩豬肉"
+    },
+    {
+      "dish": "dish-fried-chicken-cutlet",
+      "name": "炸雞排"
+    },
+    {
+      "dish": "dish-fried-pork-cutlet",
+      "name": "炸豬排"
+    },
+    {
+      "dish": "dish-braised-chicken-drumsticks",
+      "name": "滷雞腿"
+    },
+    {
+      "dish": "dish-soy-chicken-wings",
+      "name": "醬燒雞翅"
+    },
+    {
+      "dish": "dish-cola-chicken-wings",
+      "name": "可樂雞翅"
+    },
+    {
+      "dish": "dish-sesame-oil-chicken",
+      "name": "麻油雞"
+    },
+    {
+      "dish": "dish-sesame-oil-pork-kidney",
+      "name": "麻油腰花"
+    },
+    {
+      "dish": "dish-hainan-chicken-rice",
+      "name": "海南雞飯"
+    },
+    {
+      "dish": "dish-scallion-oil-chicken",
+      "name": "蔥油雞"
+    },
+    {
+      "dish": "dish-salt-pepper-chicken",
+      "name": "鹽酥雞"
+    },
+    {
+      "dish": "dish-black-pepper-beef",
+      "name": "黑胡椒牛柳"
+    },
+    {
+      "dish": "dish-scallion-beef",
+      "name": "蔥爆牛肉"
+    },
+    {
+      "dish": "dish-scallion-pork",
+      "name": "蔥爆豬肉"
+    },
+    {
+      "dish": "dish-ginger-pork",
+      "name": "薑燒豬肉"
+    },
+    {
+      "dish": "dish-garlic-white-pork",
+      "name": "蒜泥白肉"
+    },
+    {
+      "dish": "dish-chive-bud-eggs",
+      "name": "韭黃炒蛋"
+    },
+    {
+      "dish": "dish-twice-cooked-pork",
+      "name": "回鍋肉"
+    },
+    {
+      "dish": "dish-braised-lion-head-meatballs",
+      "name": "紅燒獅子頭"
+    },
+    {
+      "dish": "dish-mushroom-steamed-pork",
+      "name": "香菇蒸肉"
+    },
+    {
+      "dish": "dish-salted-egg-steamed-pork",
+      "name": "鹹蛋蒸肉"
+    },
+    {
+      "dish": "dish-potato-pork-stew",
+      "name": "馬鈴薯燉肉"
+    },
+    {
+      "dish": "dish-tomato-beef",
+      "name": "番茄炒牛肉"
+    },
+    {
+      "dish": "dish-satay-beef",
+      "name": "沙茶牛肉"
+    },
+    {
+      "dish": "dish-pepper-beef",
+      "name": "青椒炒牛肉"
+    },
+    {
+      "dish": "dish-chinese-kale-beef",
+      "name": "芥藍炒牛肉"
+    },
+    {
+      "dish": "dish-cucumber-chicken",
+      "name": "小黃瓜炒雞丁"
+    },
+    {
+      "dish": "dish-lemon-chicken",
+      "name": "檸檬雞"
+    },
+    {
+      "dish": "dish-shrimp-loofah",
+      "name": "蝦仁絲瓜"
+    },
+    {
+      "dish": "dish-pepper-sichuan-chicken",
+      "name": "椒麻雞"
+    },
+    {
+      "dish": "dish-ginger-fish-soup",
+      "name": "薑絲魚湯"
+    },
+    {
+      "dish": "dish-miso-fish-soup",
+      "name": "味噌魚湯"
+    },
+    {
+      "dish": "dish-seafood-soup",
+      "name": "海鮮湯"
+    },
+    {
+      "dish": "dish-clam-soup",
+      "name": "蛤蜊湯"
+    },
+    {
+      "dish": "dish-seaweed-egg-soup",
+      "name": "紫菜蛋花湯"
+    },
+    {
+      "dish": "dish-corn-chowder",
+      "name": "玉米濃湯"
+    },
+    {
+      "dish": "dish-hot-sour-soup",
+      "name": "酸辣湯"
+    },
+    {
+      "dish": "dish-sweet-sour-fish",
+      "name": "糖醋魚"
+    },
+    {
+      "dish": "dish-salt-pepper-shrimp",
+      "name": "椒鹽蝦"
+    },
+    {
+      "dish": "dish-kung-pao-cuttlefish",
+      "name": "宮保花枝"
+    },
+    {
+      "dish": "dish-basil-squid",
+      "name": "塔香透抽"
+    },
+    {
+      "dish": "dish-garlic-mussels",
+      "name": "蒜香淡菜"
+    },
+    {
+      "dish": "dish-three-cup-squid",
+      "name": "三杯中卷"
+    },
+    {
+      "dish": "dish-oyster-vermicelli",
+      "name": "蚵仔麵線"
+    },
+    {
+      "dish": "dish-seafood-fried-noodles",
+      "name": "海鮮炒麵"
+    },
+    {
+      "dish": "dish-salmon-fried-rice",
+      "name": "鮭魚炒飯"
+    },
+    {
+      "dish": "dish-pineapple-fried-rice",
+      "name": "鳳梨炒飯"
+    },
+    {
+      "dish": "dish-shrimp-fried-rice",
+      "name": "蝦仁炒飯"
+    },
+    {
+      "dish": "dish-beef-fried-rice",
+      "name": "牛肉炒飯"
+    },
+    {
+      "dish": "dish-kimchi-fried-rice",
+      "name": "泡菜炒飯"
+    },
+    {
+      "dish": "dish-stir-fried-udon",
+      "name": "炒烏龍麵"
+    },
+    {
+      "dish": "dish-tomato-beef-noodles",
+      "name": "番茄牛肉麵"
+    },
+    {
+      "dish": "dish-mushroom-chicken-congee",
+      "name": "香菇雞肉粥"
+    },
+    {
+      "dish": "dish-chilled-tofu",
+      "name": "涼拌豆腐"
+    },
+    {
+      "dish": "dish-century-egg-tofu",
+      "name": "皮蛋豆腐"
+    },
+    {
+      "dish": "dish-salted-egg-tofu",
+      "name": "鹹蛋豆腐"
+    },
+    {
+      "dish": "dish-pan-fried-tofu",
+      "name": "煎豆腐"
+    },
+    {
+      "dish": "dish-braised-napa-cabbage",
+      "name": "白菜滷"
+    },
+    {
+      "dish": "dish-garlic-lettuce",
+      "name": "蒜炒萵苣"
+    },
+    {
+      "dish": "dish-fish-fragrant-eggplant",
+      "name": "魚香茄子"
+    },
+    {
+      "dish": "dish-salted-egg-bitter-melon",
+      "name": "鹹蛋苦瓜"
+    },
+    {
+      "dish": "dish-dried-shrimp-wintermelon",
+      "name": "蝦米炒冬瓜"
+    },
+    {
+      "dish": "dish-water-bamboo-pork",
+      "name": "茭白筍炒肉絲"
+    },
+    {
+      "dish": "dish-chilled-cucumber",
+      "name": "涼拌小黃瓜"
+    }
+  ]
+}

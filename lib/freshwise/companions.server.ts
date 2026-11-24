@@ -1,53 +1,54 @@
-// 夥伴養成的伺服器端儲存。**狀態跟著帳號走，不是跟著瀏覽器走。**
-//
-// 本來整份進度存在 localStorage，於是換一台裝置、換一個瀏覽器、清一次瀏覽資料，等級跟
-// 露珠就全部不見；而且同一台電腦上換帳號登入會看到別人的夥伴。改成一個使用者一份文件
-// （`freshwise.companions`，`_id` 就是使用者的 ObjectId 字串）。
-//
-// 變更一律在伺服器端套用 companions.ts 的那幾個純函式，前端送的是「發生了什麼事」而不是
-// 「新的狀態長這樣」——不然在瀏覽器把 dew 改成 9999 再送上來就直接寫進資料庫了。
-// 同一組純函式前端也會跑一次做樂觀更新，兩邊算出來的結果一樣，回應到了再以伺服器為準。
-
+// 夥伴進度跟著帳號走；版本比對避免同時澆水、領獎或兌換時互相覆蓋。
 import type { Collection } from "mongodb";
 import { getDb } from "../mongodb";
 import {
-  careForCompanion,
-  claimCompanionQuest,
-  companionDay,
-  dailyState,
-  initialCompanionState,
-  parseCompanionState,
-  recordCompanionEvent,
-  selectCompanion,
-  type CompanionEvent,
-  type CompanionId,
-  type CompanionState,
-  type QuestId,
+  careForCompanion, claimCompanionQuest, companionDay, dailyState, initialCompanionState,
+  parseCompanionState, recordCompanionEvent, selectCompanion,
+  type CompanionEvent, type CompanionId, type CompanionState, type QuestId,
 } from "./companions";
 
 interface CompanionDoc {
   _id: string;
   state: CompanionState;
   updatedAt: Date;
+  revision?: number;
 }
 
 async function companions(): Promise<Collection<CompanionDoc>> {
   return (await getDb()).collection<CompanionDoc>("freshwise.companions");
 }
 
-/** 讀出這個使用者的進度，順便做跨日重置（每天的任務要重來，但等級與露珠不會歸零）。
- *  沒有文件代表第一次用，給一份初始狀態但先不寫進資料庫——只是開個頁面看看行情的人
- *  不需要在資料庫留一筆。 */
 export async function loadCompanion(userId: string, day = companionDay()): Promise<CompanionState> {
   const doc = await (await companions()).findOne({ _id: userId });
-  if (!doc) return initialCompanionState(day);
-  // 走跟 localStorage 同一個解析器：欄位缺漏、版本不對、被手動改壞都會退回安全值。
-  return parseCompanionState(JSON.stringify(doc.state), day);
+  return doc ? parseCompanionState(JSON.stringify(doc.state), day) : initialCompanionState(day);
 }
 
-async function save(userId: string, state: CompanionState): Promise<CompanionState> {
-  await (await companions()).updateOne({ _id: userId }, { $set: { state, updatedAt: new Date() } }, { upsert: true });
-  return state;
+type CompanionChange = { state: CompanionState };
+
+/** 既有文件可能沒有 revision；第一次寫入時一併補上。衝突時重新讀取並重算。 */
+async function mutateCompanion(userId: string, day: string, change: (state: CompanionState, doc: CompanionDoc | null) => CompanionChange): Promise<CompanionState> {
+  const collection = await companions();
+  for (let attempt = 0; attempt < 32; attempt++) {
+    const doc = await collection.findOne({ _id: userId });
+    const current = doc ? parseCompanionState(JSON.stringify(doc.state), day) : initialCompanionState(day);
+    const next = change(current, doc);
+    if (next.state === current) return current;
+    if (!doc) {
+      try {
+        await collection.insertOne({ _id: userId, state: next.state, revision: 1, updatedAt: new Date() });
+        return next.state;
+      } catch (error) {
+        if ((error as { code?: number }).code === 11000) continue;
+        throw error;
+      }
+    }
+    const result = await collection.updateOne(
+      { _id: userId, revision: doc.revision ?? { $exists: false } },
+      { $set: { state: next.state, updatedAt: new Date() }, $inc: { revision: 1 } },
+    );
+    if (result.matchedCount === 1) return next.state;
+  }
+  throw new Error("夥伴資料正在更新，請稍後再試。");
 }
 
 export type CompanionAction =
@@ -57,48 +58,44 @@ export type CompanionAction =
   | { kind: "select"; id: CompanionId }
   | { kind: "reset" };
 
-/**
- * 套用一個動作並寫回。回傳套用後的狀態給前端對帳。
- *
- * 讀了再寫中間沒有鎖——這是單一使用者自己的進度，兩個分頁同時操作最壞的情況是後寫的
- * 蓋掉前一個，不會算錯別人的帳，為此上鎖不划算。
- */
 export async function applyCompanionAction(userId: string, action: CompanionAction, day = companionDay()): Promise<CompanionState> {
-  const current = await loadCompanion(userId, day);
-  switch (action.kind) {
-    case "events": {
-      // 一次收一批（前端把短時間內的瀏覽事件攢起來再送），逐一套用。
-      let next = current;
-      for (const event of action.events.slice(0, 50)) next = recordCompanionEvent(next, event, day);
-      return next === current ? current : save(userId, next);
+  return mutateCompanion(userId, day, (current) => {
+    switch (action.kind) {
+      case "events": {
+        let next = current;
+        for (const event of action.events.slice(0, 50)) next = recordCompanionEvent(next, event, day);
+        return { state: next };
+      }
+      case "claim": return { state: claimCompanionQuest(current, action.quest, day) };
+      case "care": return { state: careForCompanion(current, action.action, day) };
+      case "select": return { state: selectCompanion(current, action.id) };
+      case "reset": return { state: initialCompanionState(day) };
     }
-    case "claim": {
-      const next = claimCompanionQuest(current, action.quest, day);
-      return next === current ? current : save(userId, next);
-    }
-    case "care": {
-      const next = careForCompanion(current, action.action, day);
-      return next === current ? current : save(userId, next);
-    }
-    case "select": {
-      const next = selectCompanion(current, action.id);
-      return next === current ? current : save(userId, next);
-    }
-    case "reset":
-      return save(userId, initialCompanionState(day));
+  });
+}
+
+export class CompanionCodeError extends Error {
+  constructor() {
+    super("找不到這組活動序號，請再確認看看。");
+    this.name = "CompanionCodeError";
   }
 }
 
-/** 設定頁的「清除全部資料」用。 */
-export async function deleteCompanion(userId: string): Promise<void> {
-  await (await companions()).deleteOne({ _id: userId });
+/** 每次有效兌換都增加獎勵；序號與露珠數量由伺服器核對。 */
+export async function redeemCompanionCode(userId: string, value: unknown, day = companionDay()): Promise<{ state: CompanionState; reward: number }> {
+  const code = typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (code !== "cpx1104") throw new CompanionCodeError();
+  const reward = 1000;
+  const state = await mutateCompanion(userId, day, (current) => ({ state: { ...current, dew: current.dew + reward } }));
+  return { state, reward };
 }
 
-/** 從這台裝置的 localStorage 搬上來（只在雲端還沒有任何進度時才接受，不然換裝置登入
- *  會被那台裝置的舊進度蓋掉）。回傳最後採用的狀態。 */
+/** 重設養成進度。 */
+export async function deleteCompanion(userId: string): Promise<void> {
+  await applyCompanionAction(userId, { kind: "reset" });
+}
+
+/** 只在帳號完全沒有進度時接受裝置搬家；與領獎、重設共用版本檢查。 */
 export async function migrateCompanionFromDevice(userId: string, raw: string, day = companionDay()): Promise<CompanionState> {
-  const existing = await (await companions()).findOne({ _id: userId });
-  if (existing) return parseCompanionState(JSON.stringify(existing.state), day);
-  const incoming = dailyState(parseCompanionState(raw, day), day);
-  return save(userId, incoming);
+  return mutateCompanion(userId, day, (current, doc) => ({ state: doc ? current : dailyState(parseCompanionState(raw, day), day) }));
 }

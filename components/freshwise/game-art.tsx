@@ -2,6 +2,7 @@ import Image from "next/image";
 import { PetInteraction, type PetReactionHandle } from "./pet-interaction";
 import type { CSSProperties, Ref } from "react";
 import { COMPANIONS, type CompanionId } from "@/lib/freshwise/companions";
+import { petBaseFile, petStage } from "@/lib/freshwise/pet-expressions";
 
 // 插畫素材的進入點。插畫只負責圖案，文字與可點選狀態一律由 HTML 提供，所以這裡畫出來
 // 的都是 `aria-hidden` 的裝飾層或帶 `aria-label` 的 img role，不會有只存在於圖片裡的資訊。
@@ -29,19 +30,6 @@ export function GameIcon({ name, size = 32, className = "" }: { name: GameIconNa
   return <IllustratedArt src={`/freshwise/ui-${name}.png${name === "leaf" || name === "calendar" ? "?v=8" : ""}`} size={size} className={`${name === "leaf" ? "fw-leaf-art " : ""}${className}`} />;
 }
 
-const PET_FILES: Record<CompanionId, string> = {
-  cabbage: "pet-cabbage-tuantuan.png",
-  radish: "pet-radish-bengbeng.png",
-  strawberry: "pet-strawberry-jiujiu.png",
-  pumpkin: "pet-pumpkin-manman.png",
-  eggplant: "pet-eggplant-bobo-neutral.webp",
-  corn: "pet-corn-nuannuan.png",
-};
-
-function petFile(id: CompanionId): string {
-  return `/freshwise/${PET_FILES[id] ?? PET_FILES.cabbage}`;
-}
-
 function petName(id: CompanionId): string {
   return (COMPANIONS.find((p) => p.id === id) ?? COMPANIONS[0]).name;
 }
@@ -53,10 +41,10 @@ function petName(id: CompanionId): string {
  * 直接畫下去的話，選了別隻的人每次進頁面都會先看到糰糰、再「啪」地換成自己的夥伴。
  * 傳 `ready={false}` 就只佔位不畫圖——同樣的尺寸，所以換上來的時候版面不會跳。
  */
-export function PetArtwork({ id = "cabbage", size = 160, className = "", priority = false, interactive = false, ready = true, reactionRef }: { id?: CompanionId; size?: number; className?: string; priority?: boolean; interactive?: boolean; ready?: boolean; reactionRef?: Ref<PetReactionHandle> }) {
+export function PetArtwork({ id = "cabbage", size = 160, className = "", priority = false, interactive = false, ready = true, reactionRef, level = 1 }: { id?: CompanionId; size?: number; className?: string; priority?: boolean; interactive?: boolean; ready?: boolean; reactionRef?: Ref<PetReactionHandle>; level?: number }) {
   return (
-    <span className={`fw-pet-art ${className}`} style={{ width: size, height: size }} aria-busy={ready ? undefined : true}>
-      {!ready ? null : interactive ? <PetInteraction key={id} id={id} name={petName(id)} baseSrc={petFile(id)} size={size} priority={priority} reactionRef={reactionRef}/> : <Image src={petFile(id)} alt={petName(id)} fill sizes={`${size}px`} priority={priority} />}
+    <span className={`fw-pet-art ${className}`} style={{ width: size, height: size }} aria-busy={ready ? undefined : true} data-pet-stage={petStage(id, level)}>
+      {!ready ? null : interactive ? <PetInteraction key={id} id={id} name={petName(id)} level={level} size={size} priority={priority} reactionRef={reactionRef}/> : <Image src={petBaseFile(id, level)} alt={petName(id)} fill sizes={`${size}px`} priority={priority} />}
     </span>
   );
 }

@@ -5,6 +5,7 @@ import {
   careForCompanion,
   claimCompanionQuest,
   companionDay,
+  companionLevel,
   COMPANION_STORAGE_KEY,
   dailyState,
   initialCompanionState,
@@ -36,6 +37,9 @@ import { GameIcon, PetArtwork } from "./game-art";
 // 瀏覽事件（看了哪個品項）會在短時間內攢成一批再送，不然在清單上點來點去會變成一個
 // 動作一個請求。
 
+interface CompanionMutationResult { ok: boolean; error?: string; reward?: number }
+interface ActivityCodeResult { ok: boolean; message: string }
+
 interface CompanionContextValue {
   state: CompanionState;
   ready: boolean;
@@ -45,7 +49,8 @@ interface CompanionContextValue {
   claim: (id: QuestId) => void;
   care: (action: "water" | "play") => void;
   select: (id: CompanionId) => void;
-  reset: () => void;
+  reset: () => Promise<boolean>;
+  redeem: (code: string) => Promise<ActivityCodeResult>;
 }
 
 const Context = createContext<CompanionContextValue | null>(null);
@@ -61,6 +66,7 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   const [message, setMessage] = useState("");
 
   const current = useRef(state);
+  const mutations = useRef<Promise<unknown>>(Promise.resolve());
   const readyRef = useRef(false);
   /** 還沒載入完就發生的事件先排隊，載入完一起補算。 */
   const pending = useRef<CompanionEvent[]>([]);
@@ -73,25 +79,28 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
     setState(next);
   }, []);
 
-  /** 送一個動作上去，並以伺服器回的狀態為準。送不出去就標記成「這次不會被保存」。 */
-  const send = useCallback(
-    async (body: Record<string, unknown>) => {
+  /** 同一個分頁依序送出寫入，避免舊回應蓋掉兌換或清除後的狀態。 */
+  const send = useCallback((body: Record<string, unknown>): Promise<CompanionMutationResult> => {
+    const run = async (): Promise<CompanionMutationResult> => {
       try {
-        const res = await fetch(API, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...body, today: companionDay() }),
-        });
-        if (!res.ok) throw new Error(String(res.status));
-        const data = (await res.json()) as { state?: CompanionState };
+        const res = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, today: companionDay() }) });
+        const data = (await res.json()) as { state?: CompanionState; error?: string; reward?: number };
+        if (!res.ok) {
+          setStorageAvailable(res.status < 500);
+          return { ok: false, error: data.error ?? "這次沒有儲存成功，請稍後再試。" };
+        }
         if (data.state) apply(data.state);
         setStorageAvailable(true);
+        return { ok: true, reward: data.reward };
       } catch {
         setStorageAvailable(false);
+        return { ok: false, error: "目前連不上伺服器，請稍後再試。" };
       }
-    },
-    [apply],
-  );
+    };
+    const next = mutations.current.then(run, run);
+    mutations.current = next;
+    return next;
+  }, [apply]);
 
   /** 把攢著的瀏覽事件送出去。回傳 Promise，因為「領獎」必須等它送完才能送——不然
    *  伺服器會先收到領獎、發現任務還沒達標而拒絕。 */
@@ -256,12 +265,20 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
     [apply, send],
   );
 
-  const reset = useCallback(() => {
-    apply(initialCompanionState(companionDay()));
-    setReward(null);
-    unsent.current = [];
-    void send({ action: "reset" });
-  }, [apply, send]);
+  const reset = useCallback(async () => {
+    if (!readyRef.current) return false;
+    await flush();
+    const result = await send({ action: "reset" });
+    if (result.ok) setReward(null);
+    return result.ok;
+  }, [flush, send]);
+
+  const redeem = useCallback(async (code: string): Promise<ActivityCodeResult> => {
+    if (!readyRef.current) return { ok: false, message: "夥伴還在準備，請稍後再試。" };
+    await flush();
+    const result = await send({ action: "redeem", code });
+    return result.ok ? { ok: true, message: `兌換成功！露珠 +${result.reward ?? 1000}。` } : { ok: false, message: result.error ?? "兌換沒有成功，請再試一次。" };
+  }, [flush, send]);
 
   const quest = QUESTS.find((q) => q.id === reward);
   // 小紙條的三種樣子都從同一份狀態算，清單那一格與彈窗不會各說各話。
@@ -269,14 +286,14 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   const questDone = !!quest && questProgress(state, quest.id) >= quest.target;
 
   return (
-    <Context.Provider value={{ state, ready, storageAvailable, record, claim, care, select, reset }}>
+    <Context.Provider value={{ state, ready, storageAvailable, record, claim, care, select, reset, redeem }}>
       {children}
       {/* 跟「已加入菜籃」用同一顆 CenterToast：做完一件事的確認在整個工具裡應該長一樣，
           不然使用者會以為澆水的提示是另一種東西（以前這裡是螢幕下緣的淺色長條）。
           淡出時間由 CenterToast 自己管，這裡不要再放一個計時器去搶著清空。 */}
       {message && <CenterToast key={message} message={message} onDone={() => setMessage("")} />}
       <BottomSheetModal open={!!reward} title="夥伴寄來的小紙條" onClose={() => setReward(null)} bodyClassName="fw-reward-letter">
-        <PetArtwork id={state.active} size={200} ready={ready} />
+        <PetArtwork id={state.active} level={companionLevel(state).level} size={200} ready={ready} />
         <h2>{questDone ? "又多一點買菜的把握！" : "還差一點點！"}</h2>
         <p>
           {questDone ? `「${quest?.title}」完成了。` : `「${quest?.title}」${quest?.description}`}
