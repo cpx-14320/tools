@@ -1,5 +1,9 @@
 # FreshWise 圖片素材
 
+<!-- freshwise-current-assets-start -->
+目前狀態（2026-11-24）：介紹版型為12張PNG（1600×900／900×1600，無文案／有文案，網頁區透明挖空）；水產87張全部完成，CSV具名385列皆已對應圖片，17列未具名資料維持略過。各版生成過程保留於下方歷史紀錄。
+<!-- freshwise-current-assets-end -->
+
 畫風依據：`UIUX示意設計稿/FreshWise_V2_蔬果夥伴`。本批使用內建 image_gen 生成，插畫不含價格或介面文字。
 
 | 區域 | 檔案／用途 |
@@ -120,17 +124,33 @@
 
 依目前程式、CSS與動態素材對照表，將246張未使用圖片移至unused，保留348張網頁素材。料理與照護圖片保留網頁使用的WebP，PNG原稿歸檔；尚未接上目錄的120張預備食材圖也歸檔，未刪除圖片。完整舊、新路徑與SHA-256見unused/asset-archive-index.json，CSV素材對照表已更新為實際路徑。歷史生成紀錄保留，查找舊檔請對照兩份JSON的assetCleanupV23。
 
-csv-ingredient-art-pending.csv仍有87項水產待生成，依先前要求維持暫停，保留供後續補圖追蹤。
+整理當時保留了87項水產待生成清單；現已依後續要求全部補齊，pending CSV已移除，詳見V25完成紀錄。
 
 
-## APP 介紹圖 V24（2026-11-24）
+## APP 介紹圖 V24（歷史版本）
 
-三個系列：功能總覽、逛逛行情、菜籃與夥伴。每組各有3200×1800橫式與1800×3200直式，六種設計各輸出PNG原稿與輕量WebP，共12個圖檔，平放本資料夾。外圍插圖由內建image_gen重新生成；介面使用實際網頁高像素密度截圖，保留文字與價格，包含捲動後的份量彈窗、任務與價格走勢。依原比例裁切與編排，未重畫或拉伸成電腦版。完整提示詞、截圖區域與文案位置見app-intro-series-prompts.json。這些是公開介紹用素材，即使未被應用程式引用也有獨立用途，不列入未使用UI素材清理。
-
+先前六款2倍尺寸、含實際網頁截圖的PNG／WebP均已移至unused。歷史提示詞見unused/app-intro-series-prompts-before-v26.json；目前交付以V26的原尺寸透明PNG版型為準。
 
 <!-- freshwise-aquatic-v25-start -->
 ## 水產食材補圖 V25（2026-11-24）
 
-依使用者要求恢復水產圖示製作，目前完成44／87張，剩餘43張。皆為獨立256×256透明PNG，平放本資料夾，依漁產品來源代碼命名。現有圖片先比對，未更動食材目錄、行情來源或API映射。原生生成尺寸與完整提示詞見兩份JSON的csvAquaticArtV25，完成對照表見csv-ingredient-art-aquatic.csv/json。尚待生成項目保留在csv-ingredient-art-pending.csv。
+依使用者要求恢復水產圖示製作，目前完成87／87張，剩餘0張。皆為獨立256×256透明PNG，平放本資料夾，依漁產品來源代碼命名。現有圖片先比對，未更動食材目錄、行情來源或API映射。原生生成尺寸與完整提示詞見兩份JSON的csvAquaticArtV25，完成對照表見csv-ingredient-art-aquatic.csv/json。水產待生成清單已清空，csv-ingredient-art-pending.csv已移除，完成紀錄保存在水產對照表與完整素材對照表。
 
 <!-- freshwise-aquatic-v25-end -->
+
+
+<!-- freshwise-intro-v26-start -->
+## APP 介紹圖透明版型 V26（2026-11-24）
+
+目前交付：功能總覽、逛逛行情、菜籃與夥伴三個系列，各有1600×900橫式與900×1600直式；每種版型分blank（無文案）與copy（有文案），共12張PNG。取消2倍輸出與WebP。
+
+網頁畫面區為真正透明挖空，請把實際網頁截圖放在PNG下層；同一版型兩個版本的透明遮罩完全相同。字形以可見輪廓計算水平與垂直置中，依色塊調整大小，未將新的示意介面畫進圖片。六張插畫底稿由內建image_gen生成，尺寸、提示詞、文案區與透明框位置見app-intro-template-prompts.json。
+
+舊版3200×1800、1800×3200的PNG及WebP共12張已移至unused，對照表見unused/app-intro-archive-v26.json。V24為歷史紀錄，以本節與appIntroTemplatesV26為準。
+
+| 主題 | 橫式無文案 | 橫式有文案 | 直式無文案 | 直式有文案 |
+| --- | --- | --- | --- | --- |
+| 功能總覽 | [PNG](app-intro-01-overview-landscape-blank-1600x900.png) | [PNG](app-intro-01-overview-landscape-copy-1600x900.png) | [PNG](app-intro-01-overview-portrait-blank-900x1600.png) | [PNG](app-intro-01-overview-portrait-copy-900x1600.png) |
+| 逛逛行情 | [PNG](app-intro-02-market-landscape-blank-1600x900.png) | [PNG](app-intro-02-market-landscape-copy-1600x900.png) | [PNG](app-intro-02-market-portrait-blank-900x1600.png) | [PNG](app-intro-02-market-portrait-copy-900x1600.png) |
+| 菜籃與夥伴 | [PNG](app-intro-03-basket-companions-landscape-blank-1600x900.png) | [PNG](app-intro-03-basket-companions-landscape-copy-1600x900.png) | [PNG](app-intro-03-basket-companions-portrait-blank-900x1600.png) | [PNG](app-intro-03-basket-companions-portrait-copy-900x1600.png) |
+<!-- freshwise-intro-v26-end -->

@@ -1,11 +1,11 @@
 {
   "date": "2026-11-23",
-  "status": "aquatic-in-progress",
+  "status": "complete",
   "source": "FreshWise_未顯示食材清單.csv",
   "sourceRowCount": 402,
   "expectedNewImageCount": 221,
-  "generatedCount": 178,
-  "pendingCount": 43,
+  "generatedCount": 221,
+  "pendingCount": 0,
   "mappedRowCount": 385,
   "skippedRowCount": 17,
   "naming": "item-farm-<sourceCode>.png / item-aquatic-<sourceCode>.png; retail rows without source codes use item-retail-<sequence>.png. These source codes are separate from application catalog IDs.",
@@ -3816,7 +3816,8 @@
       "assetName": "烏鰡",
       "file": "item-aquatic-1027.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 332,
@@ -3827,7 +3828,8 @@
       "assetName": "鱒魚",
       "file": "item-aquatic-1121.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 333,
@@ -3838,7 +3840,8 @@
       "assetName": "香魚",
       "file": "item-aquatic-1191.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 334,
@@ -3849,7 +3852,8 @@
       "assetName": "金龍／石鱸",
       "file": "item-aquatic-1511.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 335,
@@ -3860,7 +3864,8 @@
       "assetName": "鮸魚",
       "file": "item-aquatic-2067.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 336,
@@ -3882,7 +3887,8 @@
       "assetName": "巴闌魚",
       "file": "item-aquatic-2074.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 338,
@@ -3893,7 +3899,8 @@
       "assetName": "甘瓜仔",
       "file": "item-aquatic-2077.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 339,
@@ -3904,7 +3911,8 @@
       "assetName": "紅魽",
       "file": "item-aquatic-2079.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 340,
@@ -3915,7 +3923,8 @@
       "assetName": "馬頭魚",
       "file": "item-aquatic-2181.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 341,
@@ -3926,7 +3935,8 @@
       "assetName": "小紅鱠",
       "file": "item-aquatic-2202.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 342,
@@ -3937,7 +3947,8 @@
       "assetName": "鸚哥魚",
       "file": "item-aquatic-2481.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 343,
@@ -3948,7 +3959,8 @@
       "assetName": "烏殼",
       "file": "item-aquatic-2603.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 344,
@@ -3959,7 +3971,8 @@
       "assetName": "紅條石斑",
       "file": "item-aquatic-3203.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 345,
@@ -3970,7 +3983,8 @@
       "assetName": "魚丸",
       "file": "item-aquatic-6031.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 346,
@@ -3981,7 +3995,8 @@
       "assetName": "烏殼",
       "file": "item-aquatic-2603.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 347,
@@ -3992,7 +4007,8 @@
       "assetName": "花身魚",
       "file": "item-aquatic-2017.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 348,
@@ -4003,7 +4019,8 @@
       "assetName": "紅魚",
       "file": "item-aquatic-2042.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 350,
@@ -4014,7 +4031,8 @@
       "assetName": "煙仔虎",
       "file": "item-aquatic-2124.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 351,
@@ -4025,7 +4043,8 @@
       "assetName": "黑皮旗魚",
       "file": "item-aquatic-2133.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 352,
@@ -4036,7 +4055,8 @@
       "assetName": "馬加",
       "file": "item-aquatic-2142.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 353,
@@ -4047,7 +4067,8 @@
       "assetName": "鯊魚條",
       "file": "item-aquatic-2152.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 354,
@@ -4070,7 +4091,8 @@
       "assetName": "魚卵",
       "file": "item-aquatic-6112.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 356,
@@ -4081,7 +4103,8 @@
       "assetName": "鱔魚",
       "file": "item-aquatic-1091.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 357,
@@ -4092,7 +4115,8 @@
       "assetName": "赤翅鯛",
       "file": "item-aquatic-1162.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 358,
@@ -4103,7 +4127,8 @@
       "assetName": "盤仔魚",
       "file": "item-aquatic-2013.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 359,
@@ -4114,7 +4139,8 @@
       "assetName": "硬尾魚",
       "file": "item-aquatic-2073.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 360,
@@ -4125,7 +4151,8 @@
       "assetName": "丁香魚",
       "file": "item-aquatic-2105.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 361,
@@ -4136,7 +4163,8 @@
       "assetName": "鯊魚煙",
       "file": "item-aquatic-2153.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 362,
@@ -4147,7 +4175,8 @@
       "assetName": "皮刀魚",
       "file": "item-aquatic-2251.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 363,
@@ -4158,7 +4187,8 @@
       "assetName": "青衣魚",
       "file": "item-aquatic-2483.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 364,
@@ -4169,7 +4199,8 @@
       "assetName": "赤筆魚",
       "file": "item-aquatic-2501.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 365,
@@ -4180,7 +4211,8 @@
       "assetName": "金龍／石鱸",
       "file": "item-aquatic-1511.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 366,
@@ -4191,7 +4223,8 @@
       "assetName": "大正蝦",
       "file": "item-aquatic-4061.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 367,
@@ -4202,7 +4235,8 @@
       "assetName": "海瓜子",
       "file": "item-aquatic-5888.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 368,
@@ -4213,7 +4247,8 @@
       "assetName": "魚內臟",
       "file": "item-aquatic-6111.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 369,
@@ -4224,7 +4259,8 @@
       "assetName": "鯽魚",
       "file": "item-aquatic-1022.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 370,
@@ -4235,7 +4271,8 @@
       "assetName": "七星鱸",
       "file": "item-aquatic-1073.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 371,
@@ -4246,7 +4283,8 @@
       "assetName": "鯰魚",
       "file": "item-aquatic-1111.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 372,
@@ -4257,7 +4295,8 @@
       "assetName": "黃錫鯛",
       "file": "item-aquatic-1165.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 373,
@@ -4268,7 +4307,8 @@
       "assetName": "龍膽石斑",
       "file": "item-aquatic-1173.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 375,
@@ -4279,7 +4319,8 @@
       "assetName": "油魽",
       "file": "item-aquatic-2081.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 376,
@@ -4313,7 +4354,8 @@
       "assetName": "蝦仁",
       "file": "item-aquatic-4016.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 379,
@@ -4324,7 +4366,8 @@
       "assetName": "虱目魚頭",
       "file": "item-aquatic-1043.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 380,
@@ -4335,7 +4378,8 @@
       "assetName": "鮭魚頭與尾",
       "file": "item-aquatic-2782.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 381,
@@ -4346,7 +4390,8 @@
       "assetName": "熟鯖魚",
       "file": "item-aquatic-6081.png",
       "existing": false,
-      "status": "pending"
+      "status": "generated",
+      "generatedDate": "2026-11-24"
     },
     {
       "index": 382,

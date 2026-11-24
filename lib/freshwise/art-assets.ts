@@ -192,7 +192,10 @@ const ART_FILE_ALIAS: Record<string, string> = {
   HD7: "item-aquatic-2106.png", // 吻仔魚
   HD8: "item-aquatic-2161.png", // 魷魚
   HE1: "item-aquatic-3641.png", // 扁鱈
-  // 還沒出圖：HC8 七星鱸、HD3 香魚、HD6 馬加、HD9 蝦仁——留白，不要拿別的魚頂替。
+  HC8: "item-aquatic-1073.png", // 七星鱸
+  HD3: "item-aquatic-1191.png", // 香魚
+  HD6: "item-aquatic-2142.png", // 馬加
+  HD9: "item-aquatic-4016.png", // 蝦仁
 };
 
 const ART_SET = new Set(ITEM_ART_CODES);

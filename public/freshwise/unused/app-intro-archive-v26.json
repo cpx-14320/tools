@@ -1,0 +1,92 @@
+{
+  "date": "2026-11-24",
+  "root": "D:\\coding-project\\cpx-tools\\public\\freshwise",
+  "reason": "Replaced by 1600x900 / 900x1600 PNG templates with transparent screenshot cutouts.",
+  "moves": [
+    {
+      "from": "app-intro-01-overview-landscape-3200x1800.png",
+      "to": "unused/app-intro-01-overview-landscape-3200x1800.png",
+      "bytes": 11944803,
+      "sha256": "c995c20f8be7373131aec52ba124a62dcea20afd5a370c1a86c4bda54c8033a6",
+      "kind": "superseded intro image; requested PNG templates at 1x size"
+    },
+    {
+      "from": "app-intro-01-overview-landscape-3200x1800.webp",
+      "to": "unused/app-intro-01-overview-landscape-3200x1800.webp",
+      "bytes": 1205656,
+      "sha256": "c87e8bf9daabf8247418682a0dee90936a671ffa3cfea72bc1b23c20eac41caa",
+      "kind": "superseded intro image; requested PNG templates at 1x size"
+    },
+    {
+      "from": "app-intro-02-market-landscape-3200x1800.png",
+      "to": "unused/app-intro-02-market-landscape-3200x1800.png",
+      "bytes": 10722621,
+      "sha256": "4cb39073bd9e151bf859648581cd649d8608758d253edbeaed8b30f3dee606e1",
+      "kind": "superseded intro image; requested PNG templates at 1x size"
+    },
+    {
+      "from": "app-intro-02-market-landscape-3200x1800.webp",
+      "to": "unused/app-intro-02-market-landscape-3200x1800.webp",
+      "bytes": 1168598,
+      "sha256": "88c39faa10f72029dea1f63b2db982152f5deca68f240b402d2248e8be146894",
+      "kind": "superseded intro image; requested PNG templates at 1x size"
+    },
+    {
+      "from": "app-intro-03-basket-companions-landscape-3200x1800.png",
+      "to": "unused/app-intro-03-basket-companions-landscape-3200x1800.png",
+      "bytes": 11141126,
+      "sha256": "2b6d8046781f4f24b9a877e95ba73de60ebcb8e0dd2b42f41cf834532232824d",
+      "kind": "superseded intro image; requested PNG templates at 1x size"
+    },
+    {
+      "from": "app-intro-03-basket-companions-landscape-3200x1800.webp",
+      "to": "unused/app-intro-03-basket-companions-landscape-3200x1800.webp",
+      "bytes": 1136390,
+      "sha256": "a914ab4db88b87958babe8ed5d60b705fd7475ca3ddf63753e51e17385fe171f",
+      "kind": "superseded intro image; requested PNG templates at 1x size"
+    },
+    {
+      "from": "app-intro-01-overview-portrait-1800x3200.png",
+      "to": "unused/app-intro-01-overview-portrait-1800x3200.png",
+      "bytes": 11494431,
+      "sha256": "71006afe4631ee6acdfb1c241699f20912c12bb51625ea0470d2d3a9fee5ee9f",
+      "kind": "superseded intro image; requested PNG templates at 1x size"
+    },
+    {
+      "from": "app-intro-01-overview-portrait-1800x3200.webp",
+      "to": "unused/app-intro-01-overview-portrait-1800x3200.webp",
+      "bytes": 1192084,
+      "sha256": "a54a49b73eeda753958342524f4b2f11bae446e2a41fecb897ba171c1d71cc86",
+      "kind": "superseded intro image; requested PNG templates at 1x size"
+    },
+    {
+      "from": "app-intro-02-market-portrait-1800x3200.png",
+      "to": "unused/app-intro-02-market-portrait-1800x3200.png",
+      "bytes": 9707392,
+      "sha256": "a978092e09b3ac5c631d6fefbb51c60cf421f0c08078e9ff3cb55a292d861e2e",
+      "kind": "superseded intro image; requested PNG templates at 1x size"
+    },
+    {
+      "from": "app-intro-02-market-portrait-1800x3200.webp",
+      "to": "unused/app-intro-02-market-portrait-1800x3200.webp",
+      "bytes": 1040954,
+      "sha256": "423205545f3d56c8dabf3d5eaf65151323d5ef4e1c1a81866b021f661719b64d",
+      "kind": "superseded intro image; requested PNG templates at 1x size"
+    },
+    {
+      "from": "app-intro-03-basket-companions-portrait-1800x3200.png",
+      "to": "unused/app-intro-03-basket-companions-portrait-1800x3200.png",
+      "bytes": 11720949,
+      "sha256": "ab6ef16997a96fbf8743472718e7e14053466dbd1778f62d3d800cfd0abebc66",
+      "kind": "superseded intro image; requested PNG templates at 1x size"
+    },
+    {
+      "from": "app-intro-03-basket-companions-portrait-1800x3200.webp",
+      "to": "unused/app-intro-03-basket-companions-portrait-1800x3200.webp",
+      "bytes": 1249220,
+      "sha256": "863d3db7447f21f4af3493625731cdf581cb84a1d05ad96d9f1c4f407dcdf0df",
+      "kind": "superseded intro image; requested PNG templates at 1x size"
+    }
+  ],
+  "priorPromptRecord": "app-intro-series-prompts-before-v26.json"
+}

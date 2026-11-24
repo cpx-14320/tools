@@ -1,0 +1,2775 @@
+{
+  "date": "2026-11-24",
+  "mode": "built-in image_gen illustrations with deterministic PNG cutout and text composition",
+  "brand": "菜鳥買菜記 · FreshWise",
+  "series": [
+    "功能總覽",
+    "逛逛行情",
+    "菜籃與夥伴"
+  ],
+  "pixelSizes": {
+    "landscape": [
+      1600,
+      900
+    ],
+    "portrait": [
+      900,
+      1600
+    ]
+  },
+  "formats": [
+    "png"
+  ],
+  "designCount": 6,
+  "variantCount": 2,
+  "outputCount": 12,
+  "variants": {
+    "blank": "No copy or numbers; screenshot slots use actual alpha transparency.",
+    "copy": "Traditional Chinese copy with visible glyph bounds centered inside each designated color band; screenshot slots remain transparent."
+  },
+  "insertion": "Place actual webpage screenshots on a layer BELOW the template PNG; paired blank/copy versions share identical alpha masks. Preserve screenshots aspect ratios and crop them to the slot as needed.",
+  "generationPrompts": [
+    {
+      "theme": "01-overview",
+      "orientation": "landscape",
+      "prompt": "Use case: ads-marketing / compositing background. Create a lively, fully art-directed illustrated APP feature poster BACKGROUND for FreshWise / 菜鳥買菜記, LANDSCAPE 16:9. Final canvas is 3200 by 1800.\nINPUT IMAGE ROLES: Image 1 is the REQUIRED layout template, preserve the exact positions, sizes, orientation and solid saturated fill colors of ALL cyan, magenta and blue rectangles; these are technical color-key inserts for REAL WEBPAGE SCREENSHOTS placed later. Image 2 is the user's desired rich, playful style reference: match its cheerful garden scene, warm thick cocoa outlines, warm cream paper, honey wood, lime/sage foliage, peach accents, bold cute props and large smiling cabbage pet. Freshly draw everything in one consistent hand, smooth medium-thick contours, soft watercolor pencil paper grain, no mixed line weights.\nDESIGN: Large cabbage pet on the lower right, around x2500–3150 y1000–1770. A hanging wooden series sign upper-right. Three large illustrated feature icons at x100–370 centered y840,1150,1460: produce cluster / produce basket / watering can. Leafy green/yellow brush bands behind feature headlines, peach ribbon behind subtitle. Garden, greenhouse, picket fence, white daisies and gingham corners fill outer edges.\nAll coordinates below refer to the final 3200x1800 canvas. Every light cream strip in the layout is an area for crisply typeset text added later. KEEP THOSE COPY AREAS LIGHT, EMPTY AND LEGIBLE; add leaf brush swashes / illustrated ribbons BEHIND these areas, but NO lettering. Reserve headlines near (160,150), font height about 52; (145,440), font height about 180; (240,620), font height about 57; (440,855), font height about 64; (440,941), font height about 44.8. Large feature illustrations live BESIDE text areas, not on top of text. Fill remaining edge and corner gaps with garden scenery, pets, produce, decorative wood, cloth, leaves and flowers much like the style reference. Do not make a minimalist blank stationery background. The final result should feel full, animated and fun while copy stays readable.\nCRITICAL INSERT INVARIANTS: CYAN solid color rectangle at x=1570, y=120, width=820, height=1660. Leave the insides of these colored areas completely FLAT, SOLID, SATURATED and EMPTY in exactly their existing color. Frame their OUTSIDES in illustrated paper/wood. No color wash or shading inside color-key areas. Keep ALL frames axis-aligned, no perspective or tilt, do not reduce slot sizes or move them. Pet/flowers may overlap ONLY a small outer frame edge. Never copy or redraw app UI from image 2. NO fake UI, NO charts, NO fields or buttons, NO Chinese/English text, NO numbers, NO symbols resembling letters. Text and real screenshot pixels will be composed after generation. No logos or watermarks. Maintain the template canvas aspect ratio exactly.",
+      "styleReference": "codex-clipboard-ef14f7fa-cdad-4103-92c7-1ea6989d3c22.png",
+      "nativeGeneration": "exec-c45f54d0-bca5-4c63-a7d8-ca82b36de6ff.png"
+    },
+    {
+      "theme": "02-market",
+      "orientation": "landscape",
+      "prompt": "Use case: ads-marketing / compositing background. Create a lively, fully art-directed illustrated APP feature poster BACKGROUND for FreshWise / 菜鳥買菜記, LANDSCAPE 16:9. Final canvas is 3200 by 1800.\nINPUT IMAGE ROLES: Image 1 is the REQUIRED layout template, preserve the exact positions, sizes, orientation and solid saturated fill colors of ALL cyan, magenta and blue rectangles; these are technical color-key inserts for REAL WEBPAGE SCREENSHOTS placed later. Image 2 is the user's desired rich, playful style reference: match its cheerful garden scene, warm thick cocoa outlines, warm cream paper, honey wood, lime/sage foliage, peach accents, bold cute props and large smiling cabbage pet. Freshly draw everything in one consistent hand, smooth medium-thick contours, soft watercolor pencil paper grain, no mixed line weights.\nDESIGN: Main tall market frame on left. Smaller ring-bound notebook frame around magenta chart area. Cabbage pet peeking above a low honey wood counter below chart, x1000–1700 y1320–1780. Fresh produce and gingham fill bottom left. Feature illustrations at x1760–1990 centered y920/1205/1490: magnifier / simple sliders / basket. Sage brush stripes behind headings. Green garden border and daisies at edges, no floating empty void.\nAll coordinates below refer to the final 3200x1800 canvas. Every light cream strip in the layout is an area for crisply typeset text added later. KEEP THOSE COPY AREAS LIGHT, EMPTY AND LEGIBLE; add leaf brush swashes / illustrated ribbons BEHIND these areas, but NO lettering. Reserve headlines near (100,120), font height about 54; (2490,150), font height about 54; (1910,365), font height about 144; (1910,540), font height about 144; (1940,700), font height about 45. Large feature illustrations live BESIDE text areas, not on top of text. Fill remaining edge and corner gaps with garden scenery, pets, produce, decorative wood, cloth, leaves and flowers much like the style reference. Do not make a minimalist blank stationery background. The final result should feel full, animated and fun while copy stays readable.\nCRITICAL INSERT INVARIANTS: CYAN solid color rectangle at x=70, y=220, width=790, height=1550; MAGENTA solid color rectangle at x=910, y=440, width=820, height=880. Leave the insides of these colored areas completely FLAT, SOLID, SATURATED and EMPTY in exactly their existing color. Frame their OUTSIDES in illustrated paper/wood. No color wash or shading inside color-key areas. Keep ALL frames axis-aligned, no perspective or tilt, do not reduce slot sizes or move them. Pet/flowers may overlap ONLY a small outer frame edge. Never copy or redraw app UI from image 2. NO fake UI, NO charts, NO fields or buttons, NO Chinese/English text, NO numbers, NO symbols resembling letters. Text and real screenshot pixels will be composed after generation. No logos or watermarks. Maintain the template canvas aspect ratio exactly.",
+      "styleReference": "codex-clipboard-2334e038-3c79-449a-8b39-f193cebaef06.png",
+      "nativeGeneration": "exec-f5c985eb-4bad-4bd3-8d2d-ab0be114a141.png"
+    },
+    {
+      "theme": "03-basket-companions",
+      "orientation": "landscape",
+      "prompt": "Use case: ads-marketing / compositing background. Create a lively, fully art-directed illustrated APP feature poster BACKGROUND for FreshWise / 菜鳥買菜記, LANDSCAPE 16:9. Final canvas is 3200 by 1800.\nINPUT IMAGE ROLES: Image 1 is the REQUIRED layout template, preserve the exact positions, sizes, orientation and solid saturated fill colors of ALL cyan, magenta and blue rectangles; these are technical color-key inserts for REAL WEBPAGE SCREENSHOTS placed later. Image 2 is the user's desired rich, playful style reference: match its cheerful garden scene, warm thick cocoa outlines, warm cream paper, honey wood, lime/sage foliage, peach accents, bold cute props and large smiling cabbage pet. Freshly draw everything in one consistent hand, smooth medium-thick contours, soft watercolor pencil paper grain, no mixed line weights.\nDESIGN: Like a lively three-column garden journal: left story and three large drawn numbered wooden tokens with icons at x90–280 centered y900/1200/1500: pineapple shrimp dish / seed bag / dew. Middle real basket screen in a wood frame with sage cream awning just above its top, gingham-lined vegetable crate below. Right garden-framed companion crop and parchment quest crop. Border garden leaves, flowers, small water drops and ball; fill corners naturally. Do not add extra fake buttons or charts.\nAll coordinates below refer to the final 3200x1800 canvas. Every light cream strip in the layout is an area for crisply typeset text added later. KEEP THOSE COPY AREAS LIGHT, EMPTY AND LEGIBLE; add leaf brush swashes / illustrated ribbons BEHIND these areas, but NO lettering. Reserve headlines near (90,120), font height about 50; (100,335), font height about 132; (100,500), font height about 132; (130,665), font height about 44; (335,930), font height about 58. Large feature illustrations live BESIDE text areas, not on top of text. Fill remaining edge and corner gaps with garden scenery, pets, produce, decorative wood, cloth, leaves and flowers much like the style reference. Do not make a minimalist blank stationery background. The final result should feel full, animated and fun while copy stays readable.\nCRITICAL INSERT INVARIANTS: CYAN solid color rectangle at x=1160, y=150, width=800, height=1610; MAGENTA solid color rectangle at x=2130, y=200, width=980, height=1020; BLUE solid color rectangle at x=2110, y=1320, width=1010, height=430. Leave the insides of these colored areas completely FLAT, SOLID, SATURATED and EMPTY in exactly their existing color. Frame their OUTSIDES in illustrated paper/wood. No color wash or shading inside color-key areas. Keep ALL frames axis-aligned, no perspective or tilt, do not reduce slot sizes or move them. Pet/flowers may overlap ONLY a small outer frame edge. Never copy or redraw app UI from image 2. NO fake UI, NO charts, NO fields or buttons, NO Chinese/English text, NO numbers, NO symbols resembling letters. Text and real screenshot pixels will be composed after generation. No logos or watermarks. Maintain the template canvas aspect ratio exactly.",
+      "styleReference": "codex-clipboard-ced84688-921f-499c-abab-86738fc7f7bb.png",
+      "nativeGeneration": "exec-772c21dd-26b7-408b-95b1-0ae5ce14be20.png"
+    },
+    {
+      "theme": "01-overview",
+      "orientation": "portrait",
+      "prompt": "Use case: ads-marketing / compositing background. Create a lively, fully art-directed illustrated APP feature poster BACKGROUND for FreshWise / 菜鳥買菜記, PORTRAIT 9:16. Final canvas is 1800 by 3200.\nINPUT IMAGE ROLES: Image 1 is the REQUIRED layout template, preserve the exact positions, sizes, orientation and solid saturated fill colors of ALL cyan, magenta and blue rectangles; these are technical color-key inserts for REAL WEBPAGE SCREENSHOTS placed later. Image 2 is the user's desired rich, playful style reference: match its cheerful garden scene, warm thick cocoa outlines, warm cream paper, honey wood, lime/sage foliage, peach accents, bold cute props and large smiling cabbage pet. Freshly draw everything in one consistent hand, smooth medium-thick contours, soft watercolor pencil paper grain, no mixed line weights.\nDESIGN: A full lively vertical APP poster, not a miniature horizontal poster. Three bold feature icons above left copy zones: produce at x90–450 y800–1020, basket y1420–1640, watering can y2040–2260. Green brush underline behind left headings. Huge main real portrait screen right, with small cabbage pet foreground lower-right x1400–1770 y2660–3120, partially overlapping only outer screen edge. Gingham top corners, sage/cream ribbon behind subtitle, garden, greenhouse, fence and daisies fill gutters and footer. Respect all reserved copy zones and cyan screen.\nAll coordinates below refer to the final 1800x3200 canvas. Every light cream strip in the layout is an area for crisply typeset text added later. KEEP THOSE COPY AREAS LIGHT, EMPTY AND LEGIBLE; add leaf brush swashes / illustrated ribbons BEHIND these areas, but NO lettering. Reserve headlines near (100,135), font height about 44; (1700,135), font height about 34; (90,330), font height about 138; (90,500), font height about 138; (150,625), font height about 49. Large feature illustrations live BESIDE text areas, not on top of text. Fill remaining edge and corner gaps with garden scenery, pets, produce, decorative wood, cloth, leaves and flowers much like the style reference. Do not make a minimalist blank stationery background. The final result should feel full, animated and fun while copy stays readable.\nCRITICAL INSERT INVARIANTS: CYAN solid color rectangle at x=620, y=710, width=1050, height=2130. Leave the insides of these colored areas completely FLAT, SOLID, SATURATED and EMPTY in exactly their existing color. Frame their OUTSIDES in illustrated paper/wood. No color wash or shading inside color-key areas. Keep ALL frames axis-aligned, no perspective or tilt, do not reduce slot sizes or move them. Pet/flowers may overlap ONLY a small outer frame edge. Never copy or redraw app UI from image 2. NO fake UI, NO charts, NO fields or buttons, NO Chinese/English text, NO numbers, NO symbols resembling letters. Text and real screenshot pixels will be composed after generation. No logos or watermarks. Maintain the template canvas aspect ratio exactly.",
+      "styleReference": "codex-clipboard-ef14f7fa-cdad-4103-92c7-1ea6989d3c22.png",
+      "nativeGeneration": "exec-2504473f-48a0-42e4-97b8-8490291afa89.png"
+    },
+    {
+      "theme": "02-market",
+      "orientation": "portrait",
+      "prompt": "Use case: ads-marketing / compositing background. Create a lively, fully art-directed illustrated APP feature poster BACKGROUND for FreshWise / 菜鳥買菜記, PORTRAIT 9:16. Final canvas is 1800 by 3200.\nINPUT IMAGE ROLES: Image 1 is the REQUIRED layout template, preserve the exact positions, sizes, orientation and solid saturated fill colors of ALL cyan, magenta and blue rectangles; these are technical color-key inserts for REAL WEBPAGE SCREENSHOTS placed later. Image 2 is the user's desired rich, playful style reference: match its cheerful garden scene, warm thick cocoa outlines, warm cream paper, honey wood, lime/sage foliage, peach accents, bold cute props and large smiling cabbage pet. Freshly draw everything in one consistent hand, smooth medium-thick contours, soft watercolor pencil paper grain, no mixed line weights.\nDESIGN: Tall lively veggie market poster. Main real market screen on right, left magnifier icon x100–450 y800–1030 and filter/sliders icon y1410–1640. Green leaf-shaped brush highlight bands behind copy. A ring-bound notebook around magenta chart inset at bottom-left. Small smiling cabbage pet and honey wooden vegetable counter along bottom-right x1100–1770 y2800–3150. Gingham, leaf sprigs, wooden stall canopy and flowers fill edge gaps. Do not draw UI in reserved slots.\nAll coordinates below refer to the final 1800x3200 canvas. Every light cream strip in the layout is an area for crisply typeset text added later. KEEP THOSE COPY AREAS LIGHT, EMPTY AND LEGIBLE; add leaf brush swashes / illustrated ribbons BEHIND these areas, but NO lettering. Reserve headlines near (100,135), font height about 44; (1700,135), font height about 34; (90,330), font height about 138; (90,500), font height about 138; (150,625), font height about 48. Large feature illustrations live BESIDE text areas, not on top of text. Fill remaining edge and corner gaps with garden scenery, pets, produce, decorative wood, cloth, leaves and flowers much like the style reference. Do not make a minimalist blank stationery background. The final result should feel full, animated and fun while copy stays readable.\nCRITICAL INSERT INVARIANTS: CYAN solid color rectangle at x=620, y=710, width=1050, height=2130; MAGENTA solid color rectangle at x=55, y=2330, width=1030, height=680. Leave the insides of these colored areas completely FLAT, SOLID, SATURATED and EMPTY in exactly their existing color. Frame their OUTSIDES in illustrated paper/wood. No color wash or shading inside color-key areas. Keep ALL frames axis-aligned, no perspective or tilt, do not reduce slot sizes or move them. Pet/flowers may overlap ONLY a small outer frame edge. Never copy or redraw app UI from image 2. NO fake UI, NO charts, NO fields or buttons, NO Chinese/English text, NO numbers, NO symbols resembling letters. Text and real screenshot pixels will be composed after generation. No logos or watermarks. Maintain the template canvas aspect ratio exactly.",
+      "styleReference": "codex-clipboard-2334e038-3c79-449a-8b39-f193cebaef06.png",
+      "nativeGeneration": "exec-d1a159f8-3fe2-471e-93e7-722c93ddcc65.png"
+    },
+    {
+      "theme": "03-basket-companions",
+      "orientation": "portrait",
+      "prompt": "Use case: ads-marketing / compositing background. Create a lively, fully art-directed illustrated APP feature poster BACKGROUND for FreshWise / 菜鳥買菜記, PORTRAIT 9:16. Final canvas is 1800 by 3200.\nINPUT IMAGE ROLES: Image 1 is the REQUIRED layout template, preserve the exact positions, sizes, orientation and solid saturated fill colors of ALL cyan, magenta and blue rectangles; these are technical color-key inserts for REAL WEBPAGE SCREENSHOTS placed later. Image 2 is the user's desired rich, playful style reference: match its cheerful garden scene, warm thick cocoa outlines, warm cream paper, honey wood, lime/sage foliage, peach accents, bold cute props and large smiling cabbage pet. Freshly draw everything in one consistent hand, smooth medium-thick contours, soft watercolor pencil paper grain, no mixed line weights.\nDESIGN: Rich vertical scrapbook layout, two actual app screens in staggered honey wood/paper frames. A small foreground parchment frame around the blue quantity form inset overlaps lower-left screen. Three small illustrated numbered wooden feature tokens and icons at x80–290 centered y2670,2865,3060: recipe plate / seed bag / dew. Soft green brush strokes behind headings. A cute cabbage pet peeks between screen edges in garden, never covering the copy; vegetable crate, tiny ball and watering can along outer edges, leaves, daisies and sage/cream gingham corners. No fake UI.\nAll coordinates below refer to the final 1800x3200 canvas. Every light cream strip in the layout is an area for crisply typeset text added later. KEEP THOSE COPY AREAS LIGHT, EMPTY AND LEGIBLE; add leaf brush swashes / illustrated ribbons BEHIND these areas, but NO lettering. Reserve headlines near (100,135), font height about 44; (1700,135), font height about 34; (90,330), font height about 138; (90,500), font height about 138; (150,625), font height about 48. Large feature illustrations live BESIDE text areas, not on top of text. Fill remaining edge and corner gaps with garden scenery, pets, produce, decorative wood, cloth, leaves and flowers much like the style reference. Do not make a minimalist blank stationery background. The final result should feel full, animated and fun while copy stays readable.\nCRITICAL INSERT INVARIANTS: CYAN solid color rectangle at x=60, y=750, width=780, height=1580; MAGENTA solid color rectangle at x=945, y=850, width=780, height=1580; BLUE solid color rectangle at x=45, y=1770, width=840, height=740. Leave the insides of these colored areas completely FLAT, SOLID, SATURATED and EMPTY in exactly their existing color. Frame their OUTSIDES in illustrated paper/wood. No color wash or shading inside color-key areas. Keep ALL frames axis-aligned, no perspective or tilt, do not reduce slot sizes or move them. Pet/flowers may overlap ONLY a small outer frame edge. Never copy or redraw app UI from image 2. NO fake UI, NO charts, NO fields or buttons, NO Chinese/English text, NO numbers, NO symbols resembling letters. Text and real screenshot pixels will be composed after generation. No logos or watermarks. Maintain the template canvas aspect ratio exactly.",
+      "styleReference": "codex-clipboard-ced84688-921f-499c-abab-86738fc7f7bb.png",
+      "nativeGeneration": "exec-75c5fa01-2434-4d7c-8f5e-b8418539221c.png"
+    }
+  ],
+  "finalLayouts": [
+    {
+      "id": "01-overview-landscape",
+      "width": 1600,
+      "height": 900,
+      "referenceWidth": 1672,
+      "referenceHeight": 941,
+      "boxes": [
+        {
+          "x": 185,
+          "y": 63,
+          "w": 475,
+          "h": 45,
+          "text": "FreshWise · 買菜日常小幫手",
+          "size": 27,
+          "weight": 800
+        },
+        {
+          "x": 80,
+          "y": 135,
+          "w": 650,
+          "h": 140,
+          "text": "菜鳥買菜記",
+          "size": 110,
+          "weight": 900
+        },
+        {
+          "x": 108,
+          "y": 305,
+          "w": 600,
+          "h": 66,
+          "text": "查菜價、記菜籃，還有夥伴陪你逛",
+          "size": 28,
+          "weight": 800
+        },
+        {
+          "x": 305,
+          "y": 419,
+          "w": 395,
+          "h": 48,
+          "text": "今天買什麼？",
+          "size": 35,
+          "weight": 800
+        },
+        {
+          "x": 305,
+          "y": 477,
+          "w": 465,
+          "h": 40,
+          "text": "看看當季食材與價格漲跌",
+          "size": 24,
+          "weight": 600
+        },
+        {
+          "x": 305,
+          "y": 569,
+          "w": 410,
+          "h": 49,
+          "text": "想買的，放進菜籃",
+          "size": 33,
+          "weight": 800
+        },
+        {
+          "x": 305,
+          "y": 630,
+          "w": 465,
+          "h": 40,
+          "text": "分好料理清單，填份量估花費",
+          "size": 23,
+          "weight": 600
+        },
+        {
+          "x": 305,
+          "y": 720,
+          "w": 410,
+          "h": 50,
+          "text": "讓買菜多一點期待",
+          "size": 33,
+          "weight": 800
+        },
+        {
+          "x": 305,
+          "y": 784,
+          "w": 465,
+          "h": 39,
+          "text": "完成小任務，陪蔬果夥伴一起長大",
+          "size": 22,
+          "weight": 600
+        },
+        {
+          "x": 1355,
+          "y": 72,
+          "w": 270,
+          "h": 50,
+          "text": "01 /",
+          "size": 37,
+          "weight": 800
+        },
+        {
+          "x": 1355,
+          "y": 132,
+          "w": 270,
+          "h": 58,
+          "text": "功能總覽",
+          "size": 39,
+          "weight": 800
+        }
+      ]
+    },
+    {
+      "id": "02-market-landscape",
+      "width": 1600,
+      "height": 900,
+      "referenceWidth": 1672,
+      "referenceHeight": 941,
+      "boxes": [
+        {
+          "x": 62,
+          "y": 29,
+          "w": 585,
+          "h": 49,
+          "text": "FreshWise · 菜鳥買菜記",
+          "size": 31,
+          "weight": 800
+        },
+        {
+          "x": 1170,
+          "y": 29,
+          "w": 325,
+          "h": 60,
+          "text": "02 / 逛逛行情",
+          "size": 32,
+          "weight": 800
+        },
+        {
+          "x": 985,
+          "y": 129,
+          "w": 620,
+          "h": 88,
+          "text": "先看行情，",
+          "size": 87,
+          "weight": 900
+        },
+        {
+          "x": 985,
+          "y": 243,
+          "w": 620,
+          "h": 90,
+          "text": "買菜更有方向",
+          "size": 84,
+          "weight": 900
+        },
+        {
+          "x": 998,
+          "y": 357,
+          "w": 560,
+          "h": 45,
+          "text": "從食材到價格走勢，慢慢挑也沒關係",
+          "size": 27,
+          "weight": 800
+        },
+        {
+          "x": 1130,
+          "y": 449,
+          "w": 410,
+          "h": 49,
+          "text": "找食材，很直覺",
+          "size": 34,
+          "weight": 800
+        },
+        {
+          "x": 1130,
+          "y": 510,
+          "w": 410,
+          "h": 39,
+          "text": "搜尋名稱，依分類快速挑選",
+          "size": 23,
+          "weight": 600
+        },
+        {
+          "x": 1130,
+          "y": 577,
+          "w": 410,
+          "h": 50,
+          "text": "漲跌當季，一起看",
+          "size": 33,
+          "weight": 800
+        },
+        {
+          "x": 1130,
+          "y": 649,
+          "w": 410,
+          "h": 40,
+          "text": "排序篩選，找到今天想買的菜",
+          "size": 22,
+          "weight": 600
+        },
+        {
+          "x": 1130,
+          "y": 751,
+          "w": 410,
+          "h": 50,
+          "text": "看過價格，再放進菜籃",
+          "size": 32,
+          "weight": 800
+        },
+        {
+          "x": 1130,
+          "y": 809,
+          "w": 410,
+          "h": 39,
+          "text": "查看價格走勢，留下採買清單",
+          "size": 22,
+          "weight": 600
+        }
+      ]
+    },
+    {
+      "id": "03-basket-companions-landscape",
+      "width": 1600,
+      "height": 900,
+      "referenceWidth": 1672,
+      "referenceHeight": 941,
+      "boxes": [
+        {
+          "x": 160,
+          "y": 53,
+          "w": 320,
+          "h": 45,
+          "text": "FreshWise · 菜鳥買菜記",
+          "size": 26,
+          "weight": 800
+        },
+        {
+          "x": 66,
+          "y": 127,
+          "w": 455,
+          "h": 126,
+          "text": "把想煮的菜，",
+          "size": 72,
+          "weight": 900
+        },
+        {
+          "x": 65,
+          "y": 284,
+          "w": 465,
+          "h": 74,
+          "text": "變成一籃期待",
+          "size": 68,
+          "weight": 900
+        },
+        {
+          "x": 68,
+          "y": 391,
+          "w": 455,
+          "h": 48,
+          "text": "整理採買，也順便陪夥伴長大",
+          "size": 26,
+          "weight": 800
+        },
+        {
+          "x": 247,
+          "y": 503,
+          "w": 273,
+          "h": 42,
+          "text": "按料理，分好菜籃",
+          "size": 31,
+          "weight": 800
+        },
+        {
+          "x": 248,
+          "y": 549,
+          "w": 272,
+          "h": 31,
+          "text": "選料理圖示，整理常買食材",
+          "size": 19,
+          "weight": 600
+        },
+        {
+          "x": 247,
+          "y": 628,
+          "w": 273,
+          "h": 43,
+          "text": "填份量，估算花費",
+          "size": 31,
+          "weight": 800
+        },
+        {
+          "x": 248,
+          "y": 676,
+          "w": 272,
+          "h": 31,
+          "text": "採買前先抓一個大概",
+          "size": 21,
+          "weight": 600
+        },
+        {
+          "x": 247,
+          "y": 768,
+          "w": 273,
+          "h": 42,
+          "text": "做小任務，陪夥伴長大",
+          "size": 28,
+          "weight": 800
+        },
+        {
+          "x": 248,
+          "y": 814,
+          "w": 272,
+          "h": 31,
+          "text": "領露珠澆水，點看看牠的表情",
+          "size": 18,
+          "weight": 600
+        },
+        {
+          "x": 40,
+          "y": 477,
+          "w": 39,
+          "h": 43,
+          "text": "1",
+          "size": 35,
+          "weight": 800
+        },
+        {
+          "x": 40,
+          "y": 607,
+          "w": 39,
+          "h": 43,
+          "text": "2",
+          "size": 35,
+          "weight": 800
+        },
+        {
+          "x": 40,
+          "y": 734,
+          "w": 39,
+          "h": 43,
+          "text": "3",
+          "size": 35,
+          "weight": 800
+        }
+      ]
+    },
+    {
+      "id": "01-overview-portrait",
+      "width": 900,
+      "height": 1600,
+      "referenceWidth": 941,
+      "referenceHeight": 1672,
+      "boxes": [
+        {
+          "x": 122,
+          "y": 61,
+          "w": 450,
+          "h": 37,
+          "text": "FreshWise · 買菜日常小幫手",
+          "size": 26,
+          "weight": 800
+        },
+        {
+          "x": 759,
+          "y": 57,
+          "w": 150,
+          "h": 30,
+          "text": "01 /",
+          "size": 28,
+          "weight": 800
+        },
+        {
+          "x": 758,
+          "y": 93,
+          "w": 150,
+          "h": 34,
+          "text": "功能總覽",
+          "size": 29,
+          "weight": 800
+        },
+        {
+          "x": 98,
+          "y": 134,
+          "w": 595,
+          "h": 77,
+          "text": "菜鳥買菜記",
+          "size": 84,
+          "weight": 900
+        },
+        {
+          "x": 155,
+          "y": 251,
+          "w": 480,
+          "h": 48,
+          "text": "夥伴陪你逛市場",
+          "size": 50,
+          "weight": 900
+        },
+        {
+          "x": 172,
+          "y": 329,
+          "w": 447,
+          "h": 35,
+          "text": "查菜價、記菜籃，讓買菜多一點期待",
+          "size": 24,
+          "weight": 800
+        },
+        {
+          "x": 31,
+          "y": 624,
+          "w": 235,
+          "h": 47,
+          "text": "今天買什麼？",
+          "size": 31,
+          "weight": 800
+        },
+        {
+          "x": 31,
+          "y": 690,
+          "w": 235,
+          "h": 31,
+          "text": "看看當季食材",
+          "size": 26,
+          "weight": 600
+        },
+        {
+          "x": 31,
+          "y": 735,
+          "w": 235,
+          "h": 31,
+          "text": "與價格漲跌",
+          "size": 26,
+          "weight": 600
+        },
+        {
+          "x": 31,
+          "y": 978,
+          "w": 235,
+          "h": 45,
+          "text": "想買的放進菜籃",
+          "size": 30,
+          "weight": 800
+        },
+        {
+          "x": 31,
+          "y": 1031,
+          "w": 235,
+          "h": 33,
+          "text": "分好料理清單",
+          "size": 26,
+          "weight": 600
+        },
+        {
+          "x": 31,
+          "y": 1078,
+          "w": 235,
+          "h": 33,
+          "text": "填份量估花費",
+          "size": 26,
+          "weight": 600
+        },
+        {
+          "x": 31,
+          "y": 1313,
+          "w": 235,
+          "h": 44,
+          "text": "讓買菜多一點期待",
+          "size": 29,
+          "weight": 800
+        },
+        {
+          "x": 31,
+          "y": 1370,
+          "w": 235,
+          "h": 31,
+          "text": "完成小任務",
+          "size": 26,
+          "weight": 600
+        },
+        {
+          "x": 31,
+          "y": 1414,
+          "w": 235,
+          "h": 31,
+          "text": "陪夥伴一起長大",
+          "size": 25,
+          "weight": 600
+        }
+      ]
+    },
+    {
+      "id": "02-market-portrait",
+      "width": 900,
+      "height": 1600,
+      "referenceWidth": 941,
+      "referenceHeight": 1672,
+      "boxes": [
+        {
+          "x": 120,
+          "y": 42,
+          "w": 412,
+          "h": 43,
+          "text": "FreshWise · 菜鳥買菜記",
+          "size": 27,
+          "weight": 800
+        },
+        {
+          "x": 656,
+          "y": 39,
+          "w": 222,
+          "h": 45,
+          "text": "02 / 逛逛行情",
+          "size": 27,
+          "weight": 800
+        },
+        {
+          "x": 91,
+          "y": 123,
+          "w": 545,
+          "h": 71,
+          "text": "先看行情，",
+          "size": 79,
+          "weight": 900
+        },
+        {
+          "x": 91,
+          "y": 241,
+          "w": 520,
+          "h": 64,
+          "text": "買菜更有方向",
+          "size": 72,
+          "weight": 900
+        },
+        {
+          "x": 124,
+          "y": 329,
+          "w": 410,
+          "h": 36,
+          "text": "從食材到價格走勢，慢慢挑也沒關係",
+          "size": 23,
+          "weight": 800
+        },
+        {
+          "x": 31,
+          "y": 621,
+          "w": 245,
+          "h": 49,
+          "text": "找食材，很直覺",
+          "size": 31,
+          "weight": 800
+        },
+        {
+          "x": 31,
+          "y": 686,
+          "w": 245,
+          "h": 35,
+          "text": "搜尋名稱・依分類挑選",
+          "size": 23,
+          "weight": 600
+        },
+        {
+          "x": 31,
+          "y": 924,
+          "w": 245,
+          "h": 48,
+          "text": "漲跌當季，一起看",
+          "size": 29,
+          "weight": 800
+        },
+        {
+          "x": 31,
+          "y": 993,
+          "w": 245,
+          "h": 35,
+          "text": "排序篩選・找到想買的菜",
+          "size": 22,
+          "weight": 600
+        }
+      ]
+    },
+    {
+      "id": "03-basket-companions-portrait",
+      "width": 900,
+      "height": 1600,
+      "referenceWidth": 941,
+      "referenceHeight": 1672,
+      "boxes": [
+        {
+          "x": 103,
+          "y": 39,
+          "w": 379,
+          "h": 38,
+          "text": "FreshWise · 菜鳥買菜記",
+          "size": 27,
+          "weight": 800
+        },
+        {
+          "x": 651,
+          "y": 49,
+          "w": 239,
+          "h": 34,
+          "text": "03 / 菜籃與夥伴",
+          "size": 26,
+          "weight": 800
+        },
+        {
+          "x": 58,
+          "y": 110,
+          "w": 488,
+          "h": 63,
+          "text": "把想煮的菜，",
+          "size": 67,
+          "weight": 900
+        },
+        {
+          "x": 58,
+          "y": 206,
+          "w": 488,
+          "h": 63,
+          "text": "變成一籃期待",
+          "size": 67,
+          "weight": 900
+        },
+        {
+          "x": 89,
+          "y": 309,
+          "w": 414,
+          "h": 37,
+          "text": "整理採買，也順便陪夥伴長大",
+          "size": 26,
+          "weight": 800
+        },
+        {
+          "x": 253,
+          "y": 1327,
+          "w": 394,
+          "h": 35,
+          "text": "按料理，分好菜籃",
+          "size": 29,
+          "weight": 800
+        },
+        {
+          "x": 253,
+          "y": 1369,
+          "w": 394,
+          "h": 27,
+          "text": "選料理圖示，整理常買食材",
+          "size": 22,
+          "weight": 600
+        },
+        {
+          "x": 253,
+          "y": 1414,
+          "w": 394,
+          "h": 35,
+          "text": "填份量，估算花費",
+          "size": 29,
+          "weight": 800
+        },
+        {
+          "x": 253,
+          "y": 1457,
+          "w": 394,
+          "h": 27,
+          "text": "採買前先抓一個大概",
+          "size": 23,
+          "weight": 600
+        },
+        {
+          "x": 253,
+          "y": 1502,
+          "w": 394,
+          "h": 35,
+          "text": "做小任務，陪夥伴長大",
+          "size": 28,
+          "weight": 800
+        },
+        {
+          "x": 253,
+          "y": 1544,
+          "w": 394,
+          "h": 27,
+          "text": "領露珠澆水，點看看牠的表情",
+          "size": 22,
+          "weight": 600
+        },
+        {
+          "x": 82,
+          "y": 1337,
+          "w": 35,
+          "h": 38,
+          "text": "1",
+          "size": 29,
+          "weight": 800
+        },
+        {
+          "x": 82,
+          "y": 1426,
+          "w": 35,
+          "h": 38,
+          "text": "2",
+          "size": 29,
+          "weight": 800
+        },
+        {
+          "x": 82,
+          "y": 1513,
+          "w": 35,
+          "h": 38,
+          "text": "3",
+          "size": 29,
+          "weight": 800
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "file": "app-intro-01-overview-landscape-blank-1600x900.png",
+      "theme": "01-overview",
+      "orientation": "landscape",
+      "variant": "blank",
+      "width": 1600,
+      "height": 900,
+      "bytes": 2772556,
+      "sha256": "b0307ad646bc87b8c5d93e92479fe78856240b8ebd4008dff5693c831f0ba5f7",
+      "source": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-c45f54d0-bca5-4c63-a7d8-ca82b36de6ff.png",
+      "slots": [
+        {
+          "key": "cyan",
+          "x": 788,
+          "y": 61,
+          "width": 440,
+          "height": 764,
+          "pixels": 328091
+        }
+      ],
+      "text": []
+    },
+    {
+      "file": "app-intro-01-overview-landscape-copy-1600x900.png",
+      "theme": "01-overview",
+      "orientation": "landscape",
+      "variant": "copy",
+      "width": 1600,
+      "height": 900,
+      "bytes": 2776364,
+      "sha256": "2483494017126715e49f252924c3f5dad6e81067cadfc5d579a59566f273884c",
+      "source": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-c45f54d0-bca5-4c63-a7d8-ca82b36de6ff.png",
+      "slots": [
+        {
+          "key": "cyan",
+          "x": 788,
+          "y": 61,
+          "width": 440,
+          "height": 764,
+          "pixels": 328091
+        }
+      ],
+      "text": [
+        {
+          "x": 185,
+          "y": 63,
+          "w": 475,
+          "h": 45,
+          "text": "FreshWise · 買菜日常小幫手",
+          "size": 27,
+          "weight": 800,
+          "outputBox": {
+            "x": 177.0334928229665,
+            "y": 60.28708133971292,
+            "w": 454.54545454545456,
+            "h": 43.0622009569378
+          },
+          "ink": {
+            "width": 345,
+            "height": 25
+          },
+          "left": 232,
+          "top": 69
+        },
+        {
+          "x": 80,
+          "y": 135,
+          "w": 650,
+          "h": 140,
+          "text": "菜鳥買菜記",
+          "size": 110,
+          "weight": 900,
+          "outputBox": {
+            "x": 76.55502392344498,
+            "y": 129.1866028708134,
+            "w": 622.0095693779904,
+            "h": 133.9712918660287
+          },
+          "ink": {
+            "width": 522,
+            "height": 102
+          },
+          "left": 127,
+          "top": 145
+        },
+        {
+          "x": 108,
+          "y": 305,
+          "w": 600,
+          "h": 66,
+          "text": "查菜價、記菜籃，還有夥伴陪你逛",
+          "size": 28,
+          "weight": 800,
+          "outputBox": {
+            "x": 103.34928229665071,
+            "y": 291.86602870813397,
+            "w": 574.1626794258373,
+            "h": 63.1578947368421
+          },
+          "ink": {
+            "width": 401,
+            "height": 26
+          },
+          "left": 190,
+          "top": 310
+        },
+        {
+          "x": 305,
+          "y": 419,
+          "w": 395,
+          "h": 48,
+          "text": "今天買什麼？",
+          "size": 35,
+          "weight": 800,
+          "outputBox": {
+            "x": 291.86602870813397,
+            "y": 400.9569377990431,
+            "w": 377.99043062200957,
+            "h": 45.933014354066984
+          },
+          "ink": {
+            "width": 193,
+            "height": 33
+          },
+          "left": 384,
+          "top": 407
+        },
+        {
+          "x": 305,
+          "y": 477,
+          "w": 465,
+          "h": 40,
+          "text": "看看當季食材與價格漲跌",
+          "size": 24,
+          "weight": 600,
+          "outputBox": {
+            "x": 291.86602870813397,
+            "y": 456.4593301435407,
+            "w": 444.9760765550239,
+            "h": 38.27751196172249
+          },
+          "ink": {
+            "width": 252,
+            "height": 22
+          },
+          "left": 388,
+          "top": 465
+        },
+        {
+          "x": 305,
+          "y": 569,
+          "w": 410,
+          "h": 49,
+          "text": "想買的，放進菜籃",
+          "size": 33,
+          "weight": 800,
+          "outputBox": {
+            "x": 291.86602870813397,
+            "y": 544.4976076555024,
+            "w": 392.3444976076555,
+            "h": 46.889952153110045
+          },
+          "ink": {
+            "width": 251,
+            "height": 31
+          },
+          "left": 363,
+          "top": 552
+        },
+        {
+          "x": 305,
+          "y": 630,
+          "w": 465,
+          "h": 40,
+          "text": "分好料理清單，填份量估花費",
+          "size": 23,
+          "weight": 600,
+          "outputBox": {
+            "x": 291.86602870813397,
+            "y": 602.8708133971292,
+            "w": 444.9760765550239,
+            "h": 38.27751196172249
+          },
+          "ink": {
+            "width": 285,
+            "height": 21
+          },
+          "left": 372,
+          "top": 612
+        },
+        {
+          "x": 305,
+          "y": 720,
+          "w": 410,
+          "h": 50,
+          "text": "讓買菜多一點期待",
+          "size": 33,
+          "weight": 800,
+          "outputBox": {
+            "x": 291.86602870813397,
+            "y": 688.9952153110048,
+            "w": 392.3444976076555,
+            "h": 47.84688995215311
+          },
+          "ink": {
+            "width": 251,
+            "height": 31
+          },
+          "left": 363,
+          "top": 697
+        },
+        {
+          "x": 305,
+          "y": 784,
+          "w": 465,
+          "h": 39,
+          "text": "完成小任務，陪蔬果夥伴一起長大",
+          "size": 22,
+          "weight": 600,
+          "outputBox": {
+            "x": 291.86602870813397,
+            "y": 750.2392344497607,
+            "w": 444.9760765550239,
+            "h": 37.32057416267943
+          },
+          "ink": {
+            "width": 314,
+            "height": 21
+          },
+          "left": 357,
+          "top": 758
+        },
+        {
+          "x": 1355,
+          "y": 72,
+          "w": 270,
+          "h": 50,
+          "text": "01 /",
+          "size": 37,
+          "weight": 800,
+          "outputBox": {
+            "x": 1296.6507177033493,
+            "y": 68.89952153110048,
+            "w": 258.3732057416268,
+            "h": 47.84688995215311
+          },
+          "ink": {
+            "width": 62,
+            "height": 36
+          },
+          "left": 1395,
+          "top": 75
+        },
+        {
+          "x": 1355,
+          "y": 132,
+          "w": 270,
+          "h": 58,
+          "text": "功能總覽",
+          "size": 39,
+          "weight": 800,
+          "outputBox": {
+            "x": 1296.6507177033493,
+            "y": 126.3157894736842,
+            "w": 258.3732057416268,
+            "h": 55.50239234449761
+          },
+          "ink": {
+            "width": 147,
+            "height": 36
+          },
+          "left": 1352,
+          "top": 136
+        }
+      ]
+    },
+    {
+      "file": "app-intro-02-market-landscape-blank-1600x900.png",
+      "theme": "02-market",
+      "orientation": "landscape",
+      "variant": "blank",
+      "width": 1600,
+      "height": 900,
+      "bytes": 2732611,
+      "sha256": "82eba6d62c0394bc89f41b821576a71ff84ecdf965db84da09f8b44f5e6c84f5",
+      "source": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-f5c985eb-4bad-4bd3-8d2d-ab0be114a141.png",
+      "slots": [
+        {
+          "key": "cyan",
+          "x": 53,
+          "y": 155,
+          "width": 375,
+          "height": 642,
+          "pixels": 239766
+        },
+        {
+          "key": "magenta",
+          "x": 462,
+          "y": 232,
+          "width": 388,
+          "height": 377,
+          "pixels": 145912
+        }
+      ],
+      "text": []
+    },
+    {
+      "file": "app-intro-02-market-landscape-copy-1600x900.png",
+      "theme": "02-market",
+      "orientation": "landscape",
+      "variant": "copy",
+      "width": 1600,
+      "height": 900,
+      "bytes": 2725488,
+      "sha256": "1ab25be05ea802a7379cb7a07a1b66fd86a7989ae8f6048819eaa1d0dec6e20f",
+      "source": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-f5c985eb-4bad-4bd3-8d2d-ab0be114a141.png",
+      "slots": [
+        {
+          "key": "cyan",
+          "x": 53,
+          "y": 155,
+          "width": 375,
+          "height": 642,
+          "pixels": 239766
+        },
+        {
+          "key": "magenta",
+          "x": 462,
+          "y": 232,
+          "width": 388,
+          "height": 377,
+          "pixels": 145912
+        }
+      ],
+      "text": [
+        {
+          "x": 62,
+          "y": 29,
+          "w": 585,
+          "h": 49,
+          "text": "FreshWise · 菜鳥買菜記",
+          "size": 31,
+          "weight": 800,
+          "outputBox": {
+            "x": 59.33014354066986,
+            "y": 27.751196172248804,
+            "w": 559.8086124401914,
+            "h": 46.889952153110045
+          },
+          "ink": {
+            "width": 340,
+            "height": 29
+          },
+          "left": 169,
+          "top": 37
+        },
+        {
+          "x": 1170,
+          "y": 29,
+          "w": 325,
+          "h": 60,
+          "text": "02 / 逛逛行情",
+          "size": 32,
+          "weight": 800,
+          "outputBox": {
+            "x": 1119.6172248803828,
+            "y": 27.751196172248804,
+            "w": 311.0047846889952,
+            "h": 57.41626794258373
+          },
+          "ink": {
+            "width": 182,
+            "height": 32
+          },
+          "left": 1184,
+          "top": 40
+        },
+        {
+          "x": 985,
+          "y": 129,
+          "w": 620,
+          "h": 88,
+          "text": "先看行情，",
+          "size": 87,
+          "weight": 900,
+          "outputBox": {
+            "x": 942.5837320574162,
+            "y": 123.44497607655502,
+            "w": 593.3014354066986,
+            "h": 84.21052631578948
+          },
+          "ink": {
+            "width": 373,
+            "height": 78
+          },
+          "left": 1053,
+          "top": 127
+        },
+        {
+          "x": 985,
+          "y": 243,
+          "w": 620,
+          "h": 90,
+          "text": "買菜更有方向",
+          "size": 84,
+          "weight": 900,
+          "outputBox": {
+            "x": 942.5837320574162,
+            "y": 232.5358851674641,
+            "w": 593.3014354066986,
+            "h": 86.1244019138756
+          },
+          "ink": {
+            "width": 475,
+            "height": 79
+          },
+          "left": 1002,
+          "top": 236
+        },
+        {
+          "x": 998,
+          "y": 357,
+          "w": 560,
+          "h": 45,
+          "text": "從食材到價格走勢，慢慢挑也沒關係",
+          "size": 27,
+          "weight": 800,
+          "outputBox": {
+            "x": 955.023923444976,
+            "y": 341.6267942583732,
+            "w": 535.8851674641148,
+            "h": 43.0622009569378
+          },
+          "ink": {
+            "width": 411,
+            "height": 25
+          },
+          "left": 1017,
+          "top": 351
+        },
+        {
+          "x": 1130,
+          "y": 449,
+          "w": 410,
+          "h": 49,
+          "text": "找食材，很直覺",
+          "size": 34,
+          "weight": 800,
+          "outputBox": {
+            "x": 1081.3397129186603,
+            "y": 429.6650717703349,
+            "w": 392.3444976076555,
+            "h": 46.889952153110045
+          },
+          "ink": {
+            "width": 226,
+            "height": 32
+          },
+          "left": 1165,
+          "top": 437
+        },
+        {
+          "x": 1130,
+          "y": 510,
+          "w": 410,
+          "h": 39,
+          "text": "搜尋名稱，依分類快速挑選",
+          "size": 23,
+          "weight": 600,
+          "outputBox": {
+            "x": 1081.3397129186603,
+            "y": 488.0382775119617,
+            "w": 392.3444976076555,
+            "h": 37.32057416267943
+          },
+          "ink": {
+            "width": 263,
+            "height": 21
+          },
+          "left": 1146,
+          "top": 496
+        },
+        {
+          "x": 1130,
+          "y": 577,
+          "w": 410,
+          "h": 50,
+          "text": "漲跌當季，一起看",
+          "size": 33,
+          "weight": 800,
+          "outputBox": {
+            "x": 1081.3397129186603,
+            "y": 552.1531100478469,
+            "w": 392.3444976076555,
+            "h": 47.84688995215311
+          },
+          "ink": {
+            "width": 250,
+            "height": 31
+          },
+          "left": 1153,
+          "top": 561
+        },
+        {
+          "x": 1130,
+          "y": 649,
+          "w": 410,
+          "h": 40,
+          "text": "排序篩選，找到今天想買的菜",
+          "size": 22,
+          "weight": 600,
+          "outputBox": {
+            "x": 1081.3397129186603,
+            "y": 621.0526315789474,
+            "w": 392.3444976076555,
+            "h": 38.27751196172249
+          },
+          "ink": {
+            "width": 272,
+            "height": 20
+          },
+          "left": 1142,
+          "top": 630
+        },
+        {
+          "x": 1130,
+          "y": 751,
+          "w": 410,
+          "h": 50,
+          "text": "看過價格，再放進菜籃",
+          "size": 32,
+          "weight": 800,
+          "outputBox": {
+            "x": 1081.3397129186603,
+            "y": 718.6602870813397,
+            "w": 392.3444976076555,
+            "h": 47.84688995215311
+          },
+          "ink": {
+            "width": 304,
+            "height": 30
+          },
+          "left": 1126,
+          "top": 728
+        },
+        {
+          "x": 1130,
+          "y": 809,
+          "w": 410,
+          "h": 39,
+          "text": "查看價格走勢，留下採買清單",
+          "size": 22,
+          "weight": 600,
+          "outputBox": {
+            "x": 1081.3397129186603,
+            "y": 774.1626794258373,
+            "w": 392.3444976076555,
+            "h": 37.32057416267943
+          },
+          "ink": {
+            "width": 272,
+            "height": 20
+          },
+          "left": 1142,
+          "top": 783
+        }
+      ]
+    },
+    {
+      "file": "app-intro-03-basket-companions-landscape-blank-1600x900.png",
+      "theme": "03-basket-companions",
+      "orientation": "landscape",
+      "variant": "blank",
+      "width": 1600,
+      "height": 900,
+      "bytes": 2316814,
+      "sha256": "0a8989bad60787e2ac7f2f64e00a4ab97381a7b3a95a12936e9e0437d50f831d",
+      "source": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-772c21dd-26b7-408b-95b1-0ae5ce14be20.png",
+      "slots": [
+        {
+          "key": "cyan",
+          "x": 573,
+          "y": 89,
+          "width": 399,
+          "height": 708,
+          "pixels": 272756
+        },
+        {
+          "key": "magenta",
+          "x": 1049,
+          "y": 130,
+          "width": 486,
+          "height": 417,
+          "pixels": 201257
+        },
+        {
+          "key": "blue",
+          "x": 1038,
+          "y": 599,
+          "width": 509,
+          "height": 196,
+          "pixels": 98465
+        }
+      ],
+      "text": []
+    },
+    {
+      "file": "app-intro-03-basket-companions-landscape-copy-1600x900.png",
+      "theme": "03-basket-companions",
+      "orientation": "landscape",
+      "variant": "copy",
+      "width": 1600,
+      "height": 900,
+      "bytes": 2329448,
+      "sha256": "d45d6b873901a341771a20d0634555ac018c4e2e34c806f1c406b8dbf9e5e9bd",
+      "source": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-772c21dd-26b7-408b-95b1-0ae5ce14be20.png",
+      "slots": [
+        {
+          "key": "cyan",
+          "x": 573,
+          "y": 89,
+          "width": 399,
+          "height": 708,
+          "pixels": 272756
+        },
+        {
+          "key": "magenta",
+          "x": 1049,
+          "y": 130,
+          "width": 486,
+          "height": 417,
+          "pixels": 201257
+        },
+        {
+          "key": "blue",
+          "x": 1038,
+          "y": 599,
+          "width": 509,
+          "height": 196,
+          "pixels": 98465
+        }
+      ],
+      "text": [
+        {
+          "x": 160,
+          "y": 53,
+          "w": 320,
+          "h": 45,
+          "text": "FreshWise · 菜鳥買菜記",
+          "size": 26,
+          "weight": 800,
+          "outputBox": {
+            "x": 153.11004784688996,
+            "y": 50.717703349282296,
+            "w": 306.2200956937799,
+            "h": 43.0622009569378
+          },
+          "ink": {
+            "width": 286,
+            "height": 24
+          },
+          "left": 163,
+          "top": 60
+        },
+        {
+          "x": 66,
+          "y": 127,
+          "w": 455,
+          "h": 126,
+          "text": "把想煮的菜，",
+          "size": 72,
+          "weight": 900,
+          "outputBox": {
+            "x": 63.1578947368421,
+            "y": 121.5311004784689,
+            "w": 435.4066985645933,
+            "h": 120.57416267942584
+          },
+          "ink": {
+            "width": 387,
+            "height": 66
+          },
+          "left": 87,
+          "top": 149
+        },
+        {
+          "x": 65,
+          "y": 284,
+          "w": 465,
+          "h": 74,
+          "text": "變成一籃期待",
+          "size": 68,
+          "weight": 900,
+          "outputBox": {
+            "x": 62.20095693779904,
+            "y": 271.77033492822966,
+            "w": 444.9760765550239,
+            "h": 70.8133971291866
+          },
+          "ink": {
+            "width": 387,
+            "height": 64
+          },
+          "left": 91,
+          "top": 275
+        },
+        {
+          "x": 68,
+          "y": 391,
+          "w": 455,
+          "h": 48,
+          "text": "整理採買，也順便陪夥伴長大",
+          "size": 26,
+          "weight": 800,
+          "outputBox": {
+            "x": 65.07177033492823,
+            "y": 374.1626794258373,
+            "w": 435.4066985645933,
+            "h": 45.933014354066984
+          },
+          "ink": {
+            "width": 324,
+            "height": 24
+          },
+          "left": 121,
+          "top": 385
+        },
+        {
+          "x": 247,
+          "y": 503,
+          "w": 273,
+          "h": 42,
+          "text": "按料理，分好菜籃",
+          "size": 31,
+          "weight": 800,
+          "outputBox": {
+            "x": 236.36363636363637,
+            "y": 481.33971291866027,
+            "w": 261.24401913875596,
+            "h": 40.19138755980861
+          },
+          "ink": {
+            "width": 237,
+            "height": 29
+          },
+          "left": 248,
+          "top": 487
+        },
+        {
+          "x": 248,
+          "y": 549,
+          "w": 272,
+          "h": 31,
+          "text": "選料理圖示，整理常買食材",
+          "size": 19,
+          "weight": 600,
+          "outputBox": {
+            "x": 237.32057416267943,
+            "y": 525.3588516746412,
+            "w": 260.2870813397129,
+            "h": 29.66507177033493
+          },
+          "ink": {
+            "width": 218,
+            "height": 18
+          },
+          "left": 258,
+          "top": 531
+        },
+        {
+          "x": 247,
+          "y": 628,
+          "w": 273,
+          "h": 43,
+          "text": "填份量，估算花費",
+          "size": 31,
+          "weight": 800,
+          "outputBox": {
+            "x": 236.36363636363637,
+            "y": 600.9569377990431,
+            "w": 261.24401913875596,
+            "h": 41.14832535885167
+          },
+          "ink": {
+            "width": 236,
+            "height": 29
+          },
+          "left": 249,
+          "top": 607
+        },
+        {
+          "x": 248,
+          "y": 676,
+          "w": 272,
+          "h": 31,
+          "text": "採買前先抓一個大概",
+          "size": 21,
+          "weight": 600,
+          "outputBox": {
+            "x": 237.32057416267943,
+            "y": 646.88995215311,
+            "w": 260.2870813397129,
+            "h": 29.66507177033493
+          },
+          "ink": {
+            "width": 179,
+            "height": 19
+          },
+          "left": 278,
+          "top": 652
+        },
+        {
+          "x": 247,
+          "y": 768,
+          "w": 273,
+          "h": 42,
+          "text": "做小任務，陪夥伴長大",
+          "size": 28,
+          "weight": 800,
+          "outputBox": {
+            "x": 236.36363636363637,
+            "y": 734.9282296650717,
+            "w": 261.24401913875596,
+            "h": 40.19138755980861
+          },
+          "ink": {
+            "width": 253,
+            "height": 24
+          },
+          "left": 240,
+          "top": 743
+        },
+        {
+          "x": 248,
+          "y": 814,
+          "w": 272,
+          "h": 31,
+          "text": "領露珠澆水，點看看牠的表情",
+          "size": 18,
+          "weight": 600,
+          "outputBox": {
+            "x": 237.32057416267943,
+            "y": 778.9473684210526,
+            "w": 260.2870813397129,
+            "h": 29.66507177033493
+          },
+          "ink": {
+            "width": 224,
+            "height": 17
+          },
+          "left": 255,
+          "top": 785
+        },
+        {
+          "x": 40,
+          "y": 477,
+          "w": 39,
+          "h": 43,
+          "text": "1",
+          "size": 35,
+          "weight": 800,
+          "outputBox": {
+            "x": 38.27751196172249,
+            "y": 456.4593301435407,
+            "w": 37.32057416267943,
+            "h": 41.14832535885167
+          },
+          "ink": {
+            "width": 16,
+            "height": 25
+          },
+          "left": 49,
+          "top": 465
+        },
+        {
+          "x": 40,
+          "y": 607,
+          "w": 39,
+          "h": 43,
+          "text": "2",
+          "size": 35,
+          "weight": 800,
+          "outputBox": {
+            "x": 38.27751196172249,
+            "y": 580.8612440191388,
+            "w": 37.32057416267943,
+            "h": 41.14832535885167
+          },
+          "ink": {
+            "width": 18,
+            "height": 26
+          },
+          "left": 48,
+          "top": 588
+        },
+        {
+          "x": 40,
+          "y": 734,
+          "w": 39,
+          "h": 43,
+          "text": "3",
+          "size": 35,
+          "weight": 800,
+          "outputBox": {
+            "x": 38.27751196172249,
+            "y": 702.3923444976076,
+            "w": 37.32057416267943,
+            "h": 41.14832535885167
+          },
+          "ink": {
+            "width": 18,
+            "height": 26
+          },
+          "left": 48,
+          "top": 710
+        }
+      ]
+    },
+    {
+      "file": "app-intro-01-overview-portrait-blank-900x1600.png",
+      "theme": "01-overview",
+      "orientation": "portrait",
+      "variant": "blank",
+      "width": 900,
+      "height": 1600,
+      "bytes": 2280265,
+      "sha256": "75f0d4f076446df4a0d9ba58ba413f6ebc27322583b6b403a3a12ce14d985b66",
+      "source": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-2504473f-48a0-42e4-97b8-8490291afa89.png",
+      "slots": [
+        {
+          "key": "cyan",
+          "x": 306,
+          "y": 391,
+          "width": 527,
+          "height": 1007,
+          "pixels": 507606
+        }
+      ],
+      "text": []
+    },
+    {
+      "file": "app-intro-01-overview-portrait-copy-900x1600.png",
+      "theme": "01-overview",
+      "orientation": "portrait",
+      "variant": "copy",
+      "width": 900,
+      "height": 1600,
+      "bytes": 2329244,
+      "sha256": "2b9dd7ad486ee092d904e54867732e9afbe4539c87a94fa5845853dfbb0495a0",
+      "source": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-2504473f-48a0-42e4-97b8-8490291afa89.png",
+      "slots": [
+        {
+          "key": "cyan",
+          "x": 306,
+          "y": 391,
+          "width": 527,
+          "height": 1007,
+          "pixels": 507606
+        }
+      ],
+      "text": [
+        {
+          "x": 122,
+          "y": 61,
+          "w": 450,
+          "h": 37,
+          "text": "FreshWise · 買菜日常小幫手",
+          "size": 26,
+          "weight": 800,
+          "outputBox": {
+            "x": 116.68437832093518,
+            "y": 58.34218916046759,
+            "w": 430.3931987247609,
+            "h": 35.38788522848034
+          },
+          "ink": {
+            "width": 332,
+            "height": 24
+          },
+          "left": 166,
+          "top": 64
+        },
+        {
+          "x": 759,
+          "y": 57,
+          "w": 150,
+          "h": 30,
+          "text": "01 /",
+          "size": 28,
+          "weight": 800,
+          "outputBox": {
+            "x": 725.9298618490967,
+            "y": 54.51647183846971,
+            "w": 143.4643995749203,
+            "h": 28.69287991498406
+          },
+          "ink": {
+            "width": 40,
+            "height": 23
+          },
+          "left": 778,
+          "top": 57
+        },
+        {
+          "x": 758,
+          "y": 93,
+          "w": 150,
+          "h": 34,
+          "text": "功能總覽",
+          "size": 29,
+          "weight": 800,
+          "outputBox": {
+            "x": 724.9734325185973,
+            "y": 88.94792773645058,
+            "w": 143.4643995749203,
+            "h": 32.51859723698193
+          },
+          "ink": {
+            "width": 109,
+            "height": 27
+          },
+          "left": 742,
+          "top": 92
+        },
+        {
+          "x": 98,
+          "y": 134,
+          "w": 595,
+          "h": 77,
+          "text": "菜鳥買菜記",
+          "size": 84,
+          "weight": 900,
+          "outputBox": {
+            "x": 93.73007438894793,
+            "y": 128.1615302869288,
+            "w": 569.0754516471839,
+            "h": 73.64505844845908
+          },
+          "ink": {
+            "width": 348,
+            "height": 68
+          },
+          "left": 204,
+          "top": 131
+        },
+        {
+          "x": 155,
+          "y": 251,
+          "w": 480,
+          "h": 48,
+          "text": "夥伴陪你逛市場",
+          "size": 50,
+          "weight": 900,
+          "outputBox": {
+            "x": 148.24654622741764,
+            "y": 240.06376195536663,
+            "w": 459.086078639745,
+            "h": 45.908607863974495
+          },
+          "ink": {
+            "width": 286,
+            "height": 40
+          },
+          "left": 235,
+          "top": 243
+        },
+        {
+          "x": 172,
+          "y": 329,
+          "w": 447,
+          "h": 35,
+          "text": "查菜價、記菜籃，讓買菜多一點期待",
+          "size": 24,
+          "weight": 800,
+          "outputBox": {
+            "x": 164.5058448459086,
+            "y": 314.6652497343252,
+            "w": 427.5239107332625,
+            "h": 33.4750265674814
+          },
+          "ink": {
+            "width": 367,
+            "height": 23
+          },
+          "left": 195,
+          "top": 320
+        },
+        {
+          "x": 31,
+          "y": 624,
+          "w": 235,
+          "h": 47,
+          "text": "今天買什麼？",
+          "size": 31,
+          "weight": 800,
+          "outputBox": {
+            "x": 29.64930924548353,
+            "y": 596.8119022316685,
+            "w": 224.76089266737515,
+            "h": 44.95217853347503
+          },
+          "ink": {
+            "width": 171,
+            "height": 29
+          },
+          "left": 57,
+          "top": 605
+        },
+        {
+          "x": 31,
+          "y": 690,
+          "w": 235,
+          "h": 31,
+          "text": "看看當季食材",
+          "size": 26,
+          "weight": 600,
+          "outputBox": {
+            "x": 29.64930924548353,
+            "y": 659.9362380446333,
+            "w": 224.76089266737515,
+            "h": 29.64930924548353
+          },
+          "ink": {
+            "width": 147,
+            "height": 24
+          },
+          "left": 69,
+          "top": 663
+        },
+        {
+          "x": 31,
+          "y": 735,
+          "w": 235,
+          "h": 31,
+          "text": "與價格漲跌",
+          "size": 26,
+          "weight": 600,
+          "outputBox": {
+            "x": 29.64930924548353,
+            "y": 702.9755579171094,
+            "w": 224.76089266737515,
+            "h": 29.64930924548353
+          },
+          "ink": {
+            "width": 123,
+            "height": 24
+          },
+          "left": 81,
+          "top": 706
+        },
+        {
+          "x": 31,
+          "y": 978,
+          "w": 235,
+          "h": 45,
+          "text": "想買的放進菜籃",
+          "size": 30,
+          "weight": 800,
+          "outputBox": {
+            "x": 29.64930924548353,
+            "y": 935.3878852284804,
+            "w": 224.76089266737515,
+            "h": 43.03931987247609
+          },
+          "ink": {
+            "width": 200,
+            "height": 28
+          },
+          "left": 42,
+          "top": 943
+        },
+        {
+          "x": 31,
+          "y": 1031,
+          "w": 235,
+          "h": 33,
+          "text": "分好料理清單",
+          "size": 26,
+          "weight": 600,
+          "outputBox": {
+            "x": 29.64930924548353,
+            "y": 986.0786397449522,
+            "w": 224.76089266737515,
+            "h": 31.562167906482465
+          },
+          "ink": {
+            "width": 147,
+            "height": 24
+          },
+          "left": 69,
+          "top": 990
+        },
+        {
+          "x": 31,
+          "y": 1078,
+          "w": 235,
+          "h": 33,
+          "text": "填份量估花費",
+          "size": 26,
+          "weight": 600,
+          "outputBox": {
+            "x": 29.64930924548353,
+            "y": 1031.0308182784272,
+            "w": 224.76089266737515,
+            "h": 31.562167906482465
+          },
+          "ink": {
+            "width": 147,
+            "height": 24
+          },
+          "left": 69,
+          "top": 1035
+        },
+        {
+          "x": 31,
+          "y": 1313,
+          "w": 235,
+          "h": 44,
+          "text": "讓買菜多一點期待",
+          "size": 29,
+          "weight": 800,
+          "outputBox": {
+            "x": 29.64930924548353,
+            "y": 1255.7917109458024,
+            "w": 224.76089266737515,
+            "h": 42.082890541976624
+          },
+          "ink": {
+            "width": 217,
+            "height": 27
+          },
+          "left": 34,
+          "top": 1263
+        },
+        {
+          "x": 31,
+          "y": 1370,
+          "w": 235,
+          "h": 31,
+          "text": "完成小任務",
+          "size": 26,
+          "weight": 600,
+          "outputBox": {
+            "x": 29.64930924548353,
+            "y": 1310.308182784272,
+            "w": 224.76089266737515,
+            "h": 29.64930924548353
+          },
+          "ink": {
+            "width": 122,
+            "height": 24
+          },
+          "left": 81,
+          "top": 1313
+        },
+        {
+          "x": 31,
+          "y": 1414,
+          "w": 235,
+          "h": 31,
+          "text": "陪夥伴一起長大",
+          "size": 25,
+          "weight": 600,
+          "outputBox": {
+            "x": 29.64930924548353,
+            "y": 1352.3910733262487,
+            "w": 224.76089266737515,
+            "h": 29.64930924548353
+          },
+          "ink": {
+            "width": 166,
+            "height": 23
+          },
+          "left": 59,
+          "top": 1356
+        }
+      ]
+    },
+    {
+      "file": "app-intro-02-market-portrait-blank-900x1600.png",
+      "theme": "02-market",
+      "orientation": "portrait",
+      "variant": "blank",
+      "width": 900,
+      "height": 1600,
+      "bytes": 2208443,
+      "sha256": "06f15652b8634efef3b4d1fec12dda7f2abbf8defda5608efa3ac8ebd3469f05",
+      "source": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-d1a159f8-3fe2-471e-93e7-722c93ddcc65.png",
+      "slots": [
+        {
+          "key": "cyan",
+          "x": 305,
+          "y": 358,
+          "width": 525,
+          "height": 1029,
+          "pixels": 451821
+        },
+        {
+          "key": "magenta",
+          "x": 31,
+          "y": 1144,
+          "width": 503,
+          "height": 326,
+          "pixels": 160664
+        }
+      ],
+      "text": []
+    },
+    {
+      "file": "app-intro-02-market-portrait-copy-900x1600.png",
+      "theme": "02-market",
+      "orientation": "portrait",
+      "variant": "copy",
+      "width": 900,
+      "height": 1600,
+      "bytes": 2220089,
+      "sha256": "fb0193152619ca55592df2871e27e91233d92bd7428be69a410f5f8f8e20e755",
+      "source": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-d1a159f8-3fe2-471e-93e7-722c93ddcc65.png",
+      "slots": [
+        {
+          "key": "cyan",
+          "x": 305,
+          "y": 358,
+          "width": 525,
+          "height": 1029,
+          "pixels": 451821
+        },
+        {
+          "key": "magenta",
+          "x": 31,
+          "y": 1144,
+          "width": 503,
+          "height": 326,
+          "pixels": 160664
+        }
+      ],
+      "text": [
+        {
+          "x": 120,
+          "y": 42,
+          "w": 412,
+          "h": 43,
+          "text": "FreshWise · 菜鳥買菜記",
+          "size": 27,
+          "weight": 800,
+          "outputBox": {
+            "x": 114.77151965993625,
+            "y": 40.17003188097768,
+            "w": 394.0488841657811,
+            "h": 41.12646121147715
+          },
+          "ink": {
+            "width": 294,
+            "height": 25
+          },
+          "left": 165,
+          "top": 48
+        },
+        {
+          "x": 656,
+          "y": 39,
+          "w": 222,
+          "h": 45,
+          "text": "02 / 逛逛行情",
+          "size": 27,
+          "weight": 800,
+          "outputBox": {
+            "x": 627.4176408076514,
+            "y": 37.30074388947928,
+            "w": 212.32731137088203,
+            "h": 43.03931987247609
+          },
+          "ink": {
+            "width": 154,
+            "height": 27
+          },
+          "left": 657,
+          "top": 45
+        },
+        {
+          "x": 91,
+          "y": 123,
+          "w": 545,
+          "h": 71,
+          "text": "先看行情，",
+          "size": 79,
+          "weight": 900,
+          "outputBox": {
+            "x": 87.03506907545164,
+            "y": 117.64080765143464,
+            "w": 521.2539851222105,
+            "h": 67.90648246546228
+          },
+          "ink": {
+            "width": 295,
+            "height": 62
+          },
+          "left": 200,
+          "top": 121
+        },
+        {
+          "x": 91,
+          "y": 241,
+          "w": 520,
+          "h": 64,
+          "text": "買菜更有方向",
+          "size": 72,
+          "weight": 900,
+          "outputBox": {
+            "x": 87.03506907545164,
+            "y": 230.49946865037194,
+            "w": 497.3432518597237,
+            "h": 61.211477151965994
+          },
+          "ink": {
+            "width": 332,
+            "height": 55
+          },
+          "left": 170,
+          "top": 234
+        },
+        {
+          "x": 124,
+          "y": 329,
+          "w": 410,
+          "h": 36,
+          "text": "從食材到價格走勢，慢慢挑也沒關係",
+          "size": 23,
+          "weight": 800,
+          "outputBox": {
+            "x": 118.59723698193412,
+            "y": 314.6652497343252,
+            "w": 392.13602550478214,
+            "h": 34.43145589798087
+          },
+          "ink": {
+            "width": 351,
+            "height": 21
+          },
+          "left": 139,
+          "top": 321
+        },
+        {
+          "x": 31,
+          "y": 621,
+          "w": 245,
+          "h": 49,
+          "text": "找食材，很直覺",
+          "size": 31,
+          "weight": 800,
+          "outputBox": {
+            "x": 29.64930924548353,
+            "y": 593.9426142401701,
+            "w": 234.3251859723698,
+            "h": 46.86503719447396
+          },
+          "ink": {
+            "width": 207,
+            "height": 29
+          },
+          "left": 43,
+          "top": 603
+        },
+        {
+          "x": 31,
+          "y": 686,
+          "w": 245,
+          "h": 35,
+          "text": "搜尋名稱・依分類挑選",
+          "size": 23,
+          "weight": 600,
+          "outputBox": {
+            "x": 29.64930924548353,
+            "y": 656.1105207226354,
+            "w": 234.3251859723698,
+            "h": 33.4750265674814
+          },
+          "ink": {
+            "width": 219,
+            "height": 21
+          },
+          "left": 37,
+          "top": 662
+        },
+        {
+          "x": 31,
+          "y": 924,
+          "w": 245,
+          "h": 48,
+          "text": "漲跌當季，一起看",
+          "size": 29,
+          "weight": 800,
+          "outputBox": {
+            "x": 29.64930924548353,
+            "y": 883.740701381509,
+            "w": 234.3251859723698,
+            "h": 45.908607863974495
+          },
+          "ink": {
+            "width": 220,
+            "height": 27
+          },
+          "left": 37,
+          "top": 893
+        },
+        {
+          "x": 31,
+          "y": 993,
+          "w": 245,
+          "h": 35,
+          "text": "排序篩選・找到想買的菜",
+          "size": 22,
+          "weight": 600,
+          "outputBox": {
+            "x": 29.64930924548353,
+            "y": 949.7343251859724,
+            "w": 234.3251859723698,
+            "h": 33.4750265674814
+          },
+          "ink": {
+            "width": 226,
+            "height": 20
+          },
+          "left": 34,
+          "top": 956
+        }
+      ]
+    },
+    {
+      "file": "app-intro-03-basket-companions-portrait-blank-900x1600.png",
+      "theme": "03-basket-companions",
+      "orientation": "portrait",
+      "variant": "blank",
+      "width": 900,
+      "height": 1600,
+      "bytes": 2308263,
+      "sha256": "0298f44cae3165b49955180db7c2e323ff42acea589a83f4258d6bb46ef38588",
+      "source": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-75c5fa01-2434-4d7c-8f5e-b8418539221c.png",
+      "slots": [
+        {
+          "key": "cyan",
+          "x": 38,
+          "y": 388,
+          "width": 379,
+          "height": 486,
+          "pixels": 182618
+        },
+        {
+          "key": "magenta",
+          "x": 471,
+          "y": 439,
+          "width": 388,
+          "height": 748,
+          "pixels": 288604
+        },
+        {
+          "key": "blue",
+          "x": 31,
+          "y": 918,
+          "width": 398,
+          "height": 301,
+          "pixels": 115723
+        }
+      ],
+      "text": []
+    },
+    {
+      "file": "app-intro-03-basket-companions-portrait-copy-900x1600.png",
+      "theme": "03-basket-companions",
+      "orientation": "portrait",
+      "variant": "copy",
+      "width": 900,
+      "height": 1600,
+      "bytes": 2327919,
+      "sha256": "ebaeedc18730c4cf2f70951a2bced4dc44f9385319bab37bf24131d4036c8eb4",
+      "source": "C:\\Users\\cpx14\\.codex\\generated_images\\01a1fbd6-6513-74d3-80a6-78f98f0707e6\\exec-75c5fa01-2434-4d7c-8f5e-b8418539221c.png",
+      "slots": [
+        {
+          "key": "cyan",
+          "x": 38,
+          "y": 388,
+          "width": 379,
+          "height": 486,
+          "pixels": 182618
+        },
+        {
+          "key": "magenta",
+          "x": 471,
+          "y": 439,
+          "width": 388,
+          "height": 748,
+          "pixels": 288604
+        },
+        {
+          "key": "blue",
+          "x": 31,
+          "y": 918,
+          "width": 398,
+          "height": 301,
+          "pixels": 115723
+        }
+      ],
+      "text": [
+        {
+          "x": 103,
+          "y": 39,
+          "w": 379,
+          "h": 38,
+          "text": "FreshWise · 菜鳥買菜記",
+          "size": 27,
+          "weight": 800,
+          "outputBox": {
+            "x": 98.51222104144527,
+            "y": 37.30074388947928,
+            "w": 362.48671625929865,
+            "h": 36.34431455897981
+          },
+          "ink": {
+            "width": 294,
+            "height": 25
+          },
+          "left": 133,
+          "top": 43
+        },
+        {
+          "x": 651,
+          "y": 49,
+          "w": 239,
+          "h": 34,
+          "text": "03 / 菜籃與夥伴",
+          "size": 26,
+          "weight": 800,
+          "outputBox": {
+            "x": 622.6354941551541,
+            "y": 46.86503719447396,
+            "w": 228.58660998937302,
+            "h": 32.51859723698193
+          },
+          "ink": {
+            "width": 173,
+            "height": 26
+          },
+          "left": 650,
+          "top": 50
+        },
+        {
+          "x": 58,
+          "y": 110,
+          "w": 488,
+          "h": 63,
+          "text": "把想煮的菜，",
+          "size": 67,
+          "weight": 900,
+          "outputBox": {
+            "x": 55.47290116896918,
+            "y": 105.20722635494155,
+            "w": 466.7375132837407,
+            "h": 60.255047821466526
+          },
+          "ink": {
+            "width": 320,
+            "height": 54
+          },
+          "left": 129,
+          "top": 108
+        },
+        {
+          "x": 58,
+          "y": 206,
+          "w": 488,
+          "h": 63,
+          "text": "變成一籃期待",
+          "size": 67,
+          "weight": 900,
+          "outputBox": {
+            "x": 55.47290116896918,
+            "y": 197.02444208289054,
+            "w": 466.7375132837407,
+            "h": 60.255047821466526
+          },
+          "ink": {
+            "width": 328,
+            "height": 54
+          },
+          "left": 125,
+          "top": 200
+        },
+        {
+          "x": 89,
+          "y": 309,
+          "w": 414,
+          "h": 37,
+          "text": "整理採買，也順便陪夥伴長大",
+          "size": 26,
+          "weight": 800,
+          "outputBox": {
+            "x": 85.12221041445271,
+            "y": 295.5366631243358,
+            "w": 395.96174282678004,
+            "h": 35.38788522848034
+          },
+          "ink": {
+            "width": 321,
+            "height": 24
+          },
+          "left": 123,
+          "top": 301
+        },
+        {
+          "x": 253,
+          "y": 1327,
+          "w": 394,
+          "h": 35,
+          "text": "按料理，分好菜籃",
+          "size": 29,
+          "weight": 800,
+          "outputBox": {
+            "x": 241.97662061636558,
+            "y": 1269.181721572795,
+            "w": 376.83315621679066,
+            "h": 33.4750265674814
+          },
+          "ink": {
+            "width": 221,
+            "height": 27
+          },
+          "left": 320,
+          "top": 1272
+        },
+        {
+          "x": 253,
+          "y": 1369,
+          "w": 394,
+          "h": 27,
+          "text": "選料理圖示，整理常買食材",
+          "size": 22,
+          "weight": 600,
+          "outputBox": {
+            "x": 241.97662061636558,
+            "y": 1309.3517534537725,
+            "w": 376.83315621679066,
+            "h": 25.823591923485655
+          },
+          "ink": {
+            "width": 246,
+            "height": 20
+          },
+          "left": 307,
+          "top": 1312
+        },
+        {
+          "x": 253,
+          "y": 1414,
+          "w": 394,
+          "h": 35,
+          "text": "填份量，估算花費",
+          "size": 29,
+          "weight": 800,
+          "outputBox": {
+            "x": 241.97662061636558,
+            "y": 1352.3910733262487,
+            "w": 376.83315621679066,
+            "h": 33.4750265674814
+          },
+          "ink": {
+            "width": 220,
+            "height": 27
+          },
+          "left": 320,
+          "top": 1356
+        },
+        {
+          "x": 253,
+          "y": 1457,
+          "w": 394,
+          "h": 27,
+          "text": "採買前先抓一個大概",
+          "size": 23,
+          "weight": 600,
+          "outputBox": {
+            "x": 241.97662061636558,
+            "y": 1393.5175345377259,
+            "w": 376.83315621679066,
+            "h": 25.823591923485655
+          },
+          "ink": {
+            "width": 186,
+            "height": 20
+          },
+          "left": 337,
+          "top": 1396
+        },
+        {
+          "x": 253,
+          "y": 1502,
+          "w": 394,
+          "h": 35,
+          "text": "做小任務，陪夥伴長大",
+          "size": 28,
+          "weight": 800,
+          "outputBox": {
+            "x": 241.97662061636558,
+            "y": 1436.5568544102018,
+            "w": 376.83315621679066,
+            "h": 33.4750265674814
+          },
+          "ink": {
+            "width": 267,
+            "height": 26
+          },
+          "left": 297,
+          "top": 1440
+        },
+        {
+          "x": 253,
+          "y": 1544,
+          "w": 394,
+          "h": 27,
+          "text": "領露珠澆水，點看看牠的表情",
+          "size": 22,
+          "weight": 600,
+          "outputBox": {
+            "x": 241.97662061636558,
+            "y": 1476.7268862911797,
+            "w": 376.83315621679066,
+            "h": 25.823591923485655
+          },
+          "ink": {
+            "width": 270,
+            "height": 20
+          },
+          "left": 295,
+          "top": 1480
+        },
+        {
+          "x": 82,
+          "y": 1337,
+          "w": 35,
+          "h": 38,
+          "text": "1",
+          "size": 29,
+          "weight": 800,
+          "outputBox": {
+            "x": 78.42720510095643,
+            "y": 1278.7460148777895,
+            "w": 33.4750265674814,
+            "h": 36.34431455897981
+          },
+          "ink": {
+            "width": 13,
+            "height": 21
+          },
+          "left": 89,
+          "top": 1286
+        },
+        {
+          "x": 82,
+          "y": 1426,
+          "w": 35,
+          "h": 38,
+          "text": "2",
+          "size": 29,
+          "weight": 800,
+          "outputBox": {
+            "x": 78.42720510095643,
+            "y": 1363.8682252922424,
+            "w": 33.4750265674814,
+            "h": 36.34431455897981
+          },
+          "ink": {
+            "width": 15,
+            "height": 21
+          },
+          "left": 88,
+          "top": 1372
+        },
+        {
+          "x": 82,
+          "y": 1513,
+          "w": 35,
+          "h": 38,
+          "text": "3",
+          "size": 29,
+          "weight": 800,
+          "outputBox": {
+            "x": 78.42720510095643,
+            "y": 1447.077577045696,
+            "w": 33.4750265674814,
+            "h": 36.34431455897981
+          },
+          "ink": {
+            "width": 15,
+            "height": 22
+          },
+          "left": 88,
+          "top": 1454
+        }
+      ]
+    }
+  ],
+  "validation": [
+    {
+      "file": "app-intro-01-overview-landscape-blank-1600x900.png",
+      "w": 1600,
+      "h": 900,
+      "transparent": 330623,
+      "alphaSha": "3f1fe1e12c8151493d2ddcad3ce027ca7e6cf812a8e2ef757c1e368a78fcb310"
+    },
+    {
+      "file": "app-intro-01-overview-landscape-copy-1600x900.png",
+      "w": 1600,
+      "h": 900,
+      "transparent": 330623,
+      "alphaSha": "3f1fe1e12c8151493d2ddcad3ce027ca7e6cf812a8e2ef757c1e368a78fcb310"
+    },
+    {
+      "file": "app-intro-02-market-landscape-blank-1600x900.png",
+      "w": 1600,
+      "h": 900,
+      "transparent": 389312,
+      "alphaSha": "9b979f8e6d796930b8d2191ecdef9f25e0a4feeb7a0098978c4ca33800c580ef"
+    },
+    {
+      "file": "app-intro-02-market-landscape-copy-1600x900.png",
+      "w": 1600,
+      "h": 900,
+      "transparent": 389312,
+      "alphaSha": "9b979f8e6d796930b8d2191ecdef9f25e0a4feeb7a0098978c4ca33800c580ef"
+    },
+    {
+      "file": "app-intro-03-basket-companions-landscape-blank-1600x900.png",
+      "w": 1600,
+      "h": 900,
+      "transparent": 578136,
+      "alphaSha": "fb6abb7f4115b56681099471e63c5d3b1e749709859ac41f6bf128f49c3518a8"
+    },
+    {
+      "file": "app-intro-03-basket-companions-landscape-copy-1600x900.png",
+      "w": 1600,
+      "h": 900,
+      "transparent": 578136,
+      "alphaSha": "fb6abb7f4115b56681099471e63c5d3b1e749709859ac41f6bf128f49c3518a8"
+    },
+    {
+      "file": "app-intro-01-overview-portrait-blank-900x1600.png",
+      "w": 900,
+      "h": 1600,
+      "transparent": 510944,
+      "alphaSha": "b16dea552f177132946f306223c121ca9c5a852acf03503d7bc52188545e2e59"
+    },
+    {
+      "file": "app-intro-01-overview-portrait-copy-900x1600.png",
+      "w": 900,
+      "h": 1600,
+      "transparent": 510944,
+      "alphaSha": "b16dea552f177132946f306223c121ca9c5a852acf03503d7bc52188545e2e59"
+    },
+    {
+      "file": "app-intro-02-market-portrait-blank-900x1600.png",
+      "w": 900,
+      "h": 1600,
+      "transparent": 618066,
+      "alphaSha": "aabc16dfb1cae0e4bef502b343db6af4e64698e5d04bb776935f3ba192304083"
+    },
+    {
+      "file": "app-intro-02-market-portrait-copy-900x1600.png",
+      "w": 900,
+      "h": 1600,
+      "transparent": 618066,
+      "alphaSha": "aabc16dfb1cae0e4bef502b343db6af4e64698e5d04bb776935f3ba192304083"
+    },
+    {
+      "file": "app-intro-03-basket-companions-portrait-blank-900x1600.png",
+      "w": 900,
+      "h": 1600,
+      "transparent": 592503,
+      "alphaSha": "d24221b3267d3ba63327c9e8a13b347e4dd2dfba2e1ca666cbf7aec50aa2fb7d"
+    },
+    {
+      "file": "app-intro-03-basket-companions-portrait-copy-900x1600.png",
+      "w": 900,
+      "h": 1600,
+      "transparent": 592503,
+      "alphaSha": "d24221b3267d3ba63327c9e8a13b347e4dd2dfba2e1ca666cbf7aec50aa2fb7d"
+    }
+  ]
+}
