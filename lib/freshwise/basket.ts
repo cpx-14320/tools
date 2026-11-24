@@ -10,7 +10,7 @@
 // 第一層是「分類」（使用者自訂，例如每週常買／火鍋／便當菜），第二層是「項目」。用詞
 // 固定叫分類與項目，不要在畫面上出現群組、清單、收藏這些同義詞（見 theme.ts 的 copy）。
 
-import type { BasketEntry, BasketGroup } from "./types";
+import type { BasketEntry, BasketGroup, Recipe } from "./types";
 
 export interface BasketState {
   groups: BasketGroup[];
@@ -76,14 +76,38 @@ function newId(prefix: string): string {
  *
  * 伺服器端（寫進資料庫前）與舊 localStorage 的搬家都走這一支，驗證規則只有一份。
  */
+/** 食譜欄位的形狀檢查。只擋「會讓畫面壞掉」的程度，不做語意驗證。 */
+function isRecipe(raw: unknown): raw is Recipe {
+  if (!raw || typeof raw !== "object") return false;
+  const r = raw as Partial<Recipe>;
+  return (
+    typeof r.servings === "number" &&
+    typeof r.minutes === "number" &&
+    Array.isArray(r.steps) &&
+    r.steps.every((s) => typeof s === "string") &&
+    (r.kcalPerServing === null || typeof r.kcalPerServing === "number") &&
+    (r.source === "manual" || r.source === "ai") &&
+    typeof r.updatedAt === "string"
+  );
+}
+
+function stripRecipe(group: BasketGroup): BasketGroup {
+  if (!group.recipe) return group;
+  const next = { ...group };
+  delete next.recipe;
+  return next;
+}
+
 export function normalizeBasket(raw: unknown): BasketState {
   if (!raw || typeof raw !== "object") return emptyBasket();
   const parsed = raw as Partial<BasketState>;
   if (!Array.isArray(parsed.groups) || !Array.isArray(parsed.entries)) return emptyBasket();
 
-  const groups = parsed.groups.filter(
-    (g): g is BasketGroup => !!g && typeof g.id === "string" && typeof g.name === "string" && typeof g.order === "number",
-  );
+  const groups = parsed.groups
+    .filter((g): g is BasketGroup => !!g && typeof g.id === "string" && typeof g.name === "string" && typeof g.order === "number")
+    // 食譜是後來才加的欄位，舊資料沒有；格式不對就整個丟掉而不是讓它半壞地留著——
+    // 一個壞掉的 steps 會讓食譜頁整頁炸開，而「還沒有食譜」是這個欄位本來就有的狀態。
+    .map((g) => (g.recipe && isRecipe(g.recipe) ? g : stripRecipe(g)));
   const groupIds = new Set(groups.map((g) => g.id));
   const entries = parsed.entries.filter(
     (e): e is BasketEntry =>

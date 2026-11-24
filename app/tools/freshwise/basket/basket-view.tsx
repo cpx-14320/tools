@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useCompanion } from "@/components/freshwise/companion-store";
 import { PetArtwork } from "@/components/freshwise/game-art";
 import { QuestSlip } from "@/components/freshwise/companion-widgets";
@@ -148,9 +149,18 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
               <SectionTitle
                 action={
                   <span className="flex items-center gap-1">
+                    {/* 食譜放在鉛筆左邊。**還沒有食譜就是反灰且點不下去**——給一顆點了
+                        會開出空白頁的按鈕，比不給還糟。有食譜才變成可點的連結。 */}
+                    {group.recipe ? (
+                      <Link href={`/tools/freshwise/recipe/${group.id}`} className="fw-icon-button" aria-label={`${group.name}的食譜`}>
+                        <FaIcon icon="book" size={32} />
+                      </Link>
+                    ) : (
+                      <span className="fw-icon-button fw-icon-button-off" aria-label={`${group.name}還沒有食譜`} title="還沒有食譜">
+                        <FaIcon icon="book" size={32} />
+                      </span>
+                    )}
                     <IconButton icon="pen" iconSize={32} aria-label={`編輯${group.name}`} onClick={() => setGroupEditing(group)} />
-                    {/* 只有兩個以上的分類才給握把——只有一個的時候拖曳沒有意義。 */}
-
                   </span>
                 }
               >

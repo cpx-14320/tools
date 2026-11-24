@@ -169,6 +169,33 @@ export interface BasketGroup {
   name: string;
   icon: string;
   order: number;
+  /** 這道菜的食譜。沒有就是還沒寫／還沒生成，菜籃上的食譜圖示會是反灰的。 */
+  recipe?: Recipe;
+}
+
+/**
+ * 一道菜的食譜。
+ *
+ * **食材不存在這裡**——那是菜籃分類底下的 `BasketEntry`，已經有品項、份量與今天的價格。
+ * 食譜只補「菜籃說不出來的部分」：怎麼做、幾人份、多久、大概多少熱量。兩邊各自是
+ * 單一事實來源，改了食材不用同步改食譜。
+ */
+export interface Recipe {
+  /** 幾人份。熱量與份量都是按這個數字算的。 */
+  servings: number;
+  /** 大約要做多久（分鐘）。 */
+  minutes: number;
+  /** 作法，一步一行。 */
+  steps: string[];
+  /** 每份的熱量（大卡）。算不出來就是 null——寧可空著，不要給一個編出來的數字。 */
+  kcalPerServing: number | null;
+  /** 小撇步／備註。 */
+  tip?: string;
+  /** 這份食譜是誰寫的：`manual` 使用者自己打的、`ai` 用自己的金鑰生成的。
+   *  畫面上要標示，使用者才知道那些步驟與熱量的可信度不一樣。 */
+  source: "manual" | "ai";
+  /** 最後更新時間（ISO 字串）。 */
+  updatedAt: string;
 }
 
 /** 我的菜籃裡的一筆（第二層）。 */
