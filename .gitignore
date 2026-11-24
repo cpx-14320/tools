@@ -51,3 +51,11 @@ scripts/.inventory.txt
 # 這些東西不該進版本控制，也不該被部署出去。
 public/**/*.zip
 public/**/ChatGPT*
+
+# 已經不用的素材。留在磁碟上當備份（之後可能回頭撿），但不進版本控制——它有 150MB，
+# 而且照定義是「沒有任何程式引用」的東西，clone 下來只是拖慢速度。
+# 要確認某張圖是不是真的沒在用：npx tsx scripts/freshwise-missing-art.mts
+public/freshwise/unused/
+
+# 設計稿。22MB 的 PNG，不是程式碼，也不會被程式讀。
+UIUX示意設計稿/
