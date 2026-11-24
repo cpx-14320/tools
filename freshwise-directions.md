@@ -2389,3 +2389,87 @@ interface Recipe {
 - **熱量**：需要「每 100 公克多少大卡」的對照表，不在農業部開放資料裡。可用的是
   衛福部食藥署的食品營養成分資料庫，要另外建對照表。
 - **AI 生成**：目前不需要——100 道固定食譜已經覆蓋，而且固定內容比生成的可信。
+
+---
+
+## 三十四、全專案巡檢（2026-11-25）
+
+把整個 FreshWise 掃過一遍：共用元件有沒有漏、codex 新增的程式碼有沒有照原本的邏輯、
+命名與死碼。**前台樣式一處都沒動**（改完逐頁比對過）。
+
+### A. 修掉的真 bug
+
+**補完食材之後，沒有任何按鈕能幫你填份量。**
+
+`addMissing()` 原本用 `addEntry(next, group.id, ing.code)` 加進去，份量是空的。但
+「把份量改成食譜的量」那顆按鈕只看 `differs`，而 `differs` 的條件是
+`entry.qtyCatty !== null`——**剛加進來的份量是 null，不符合**。所以使用者按完「補齊」
+之後，那幾項永遠停在沒有份量的狀態。
+
+改成加進去時直接帶入食譜的份量。這不算覆蓋任何人填的東西——那一項原本就不存在。
+
+### B. 該用共用元件卻手刻的
+
+| 位置 | 原本 | 改成 |
+| --- | --- | --- |
+| 食譜頁「不在菜籃」徽章 | `<span className="fw-badge fw-badge-sm …">` | `<Badge size="sm">` |
+| 食譜頁的金額 | `<span className="fw-price-amount" style={{fontSize: v.fsSection}}>` | `.fw-recipe-money`（拿掉 inline style） |
+| 行情詳情頁／食譜頁的返回列 | 各刻一份一模一樣的 markup | 共用 `BackRow`（`href` / `label` / `children`） |
+| 設定頁的核取方塊 | `<input type="checkbox" className="accent-[#6E8C41]">` ×2 | 新元件 `CheckRow` |
+
+**`CheckRow` 是新的基礎元件。** 整個工具目前只有「清除資料要清哪些」用得到，但還是抽
+出來——色碼寫死在 Tailwind 的任意值裡是這個專案刻意避開的東西，下一個要用核取方塊的
+地方不該再複製一次那串字。
+
+### C. 寫死的色碼（codex 新增的那幾處）
+
+| 位置 | 原本 | 改成 |
+| --- | --- | --- |
+| 核取方塊 | `accent-[#6E8C41]` | `.fw-checkbox{accent-color:var(--fw-green)}` |
+| 活動序號的「兌換」鈕 | `text-[#6E8C41] disabled:opacity-50` | `.fw-field-action` |
+| 兌換結果訊息 | `style={{color: ok ? colors.down : colors.up}}` | 成功 `.fw-redeem-ok`、失敗 `text.error` |
+
+最後一項不只是色碼問題：**`colors.down`／`colors.up` 在這個工具裡是「跌／漲」的語意**，
+拿來講兌換成功失敗，使用者會以為跟價格有關。
+
+驗證改完的顏色還是 `rgb(110,140,65)`（＝`#6E8C41`），只是現在走變數。
+
+### D. 不該覆蓋共用 class
+
+`.fw-recipe-extra .fw-stack-row` 重新定義了 `.fw-stack-row`——那是 `DividedRow` 的
+class。在食譜頁改掉它，等於改了一個共用元件的樣式，之後有人在這一區放 `DividedRow`
+就會長得不一樣。改成食譜自己的 `.fw-recipe-extra-row`。
+
+### E. 死碼
+
+掃過 game.css 的 167 個 class 對全部 `.ts/.tsx/.css`：
+
+| class | 為什麼死了 |
+| --- | --- |
+| `.fw-recipe-stats` / `.fw-recipe-stat` / `.fw-recipe-stat strong` | 食譜頁改版拿掉了三格數據那一區 |
+| `.fw-detail-hero .fw-price-actions` | 詳情頁改版時拿掉的（同一條規則的 `.border-t` 還在用，只刪一半） |
+
+刪完**死 class 0 個**。
+
+### F. 檢查過但沒問題的
+
+| 項目 | 結果 |
+| --- | --- |
+| 彈窗 | 全部走 `BottomSheetModal` / `EditorSheet`，沒有自己刻 `role="dialog"` 的 |
+| 清單列 | 全部走 `PriceListRow`（`ItemRow` 包在它上面），沒有第二套 |
+| 圖片檔名 | 127 `item-*`、126 `pet-*`、104 `item-farm-*`、100 `dish-*`、87 `item-aquatic-*`、30 `ui-*`…**沒有不符合前綴規則的** |
+| 100 道食譜資料 | 無重名、名稱與圖示全對、代碼全在目錄、`grams`／`qtyCatty` 一致、無空步驟 |
+| `addEntry` | 有去重保護（同分類同品項不會加兩次），`newId` 用計數器不會撞 |
+| `store` 的 `useMemo` deps | 完整 |
+
+### G. 檢查到的設計取捨（不是 bug，記下來）
+
+1. **食譜寫「小黃瓜」但目錄叫「花胡瓜」**（同樣的還有 甘藍／高麗菜、蕹菜／空心菜、
+   結球白菜／大白菜、蓬萊米／白米）。食譜用的是一般人會講的名字，目錄用的是批發行情
+   的名字。**這樣是對的**——但點進詳情頁會看到另一個名字，使用者可能愣一下。
+   要改的話是把目錄的主名稱換成俗名、行情名放 alias，那是另一件事。
+2. **`main` 區有 15 樣沒有代碼**（板豆腐、油麵、米粉、麵線、烏龍麵、生麵條、豬腰、
+   淡菜）。它們確實是那道菜的主角，放 `extra` 語意不對；但也算不出錢，畫面上顯示
+   「—」。目前這樣是合理的。
+3. **`recipeForGroup` 每次呼叫都 `ALL_RECIPES.find()` 掃 100 道**。菜籃有 10 個分類就
+   掃 1,000 次——實際上那是微秒等級，不值得為它建 Map 換來一份要同步的快取。

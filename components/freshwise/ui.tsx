@@ -4,7 +4,8 @@ import { useState } from "react";
 import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
 import { colors, gradient, shadow, text, v } from "./theme";
 import { FaIcon } from "./fa-icon";
-import { SlicedArtwork } from "./game-art";
+import Link from "next/link";
+import { IllustratedArt, SlicedArtwork } from "./game-art";
 import type { UnitKey } from "@/lib/freshwise/types";
 
 // FreshWise 的通用元件庫（「長相」的部分），搭配 theme.ts 的 token 一起用。價格、漲跌
@@ -56,6 +57,57 @@ export function SectionTitle({
         </button>
       )}
       {action && <span className="fw-section-action ml-auto shrink-0">{action}</span>}
+    </div>
+  );
+}
+
+/**
+ * 核取方塊 ＋ 標題 ＋ 說明的一列。
+ *
+ * 整個工具只有「清除資料要清哪些」用得到，但還是抽成元件：原本是在頁面裡手刻
+ * `<input type="checkbox" className="accent-[#6E8C41]">`，色碼寫死在 Tailwind 的
+ * 任意值裡——那是這個專案刻意避開的東西（色票統一在 theme.ts 與 game.css 的變數）。
+ * 下一個要用核取方塊的地方不該再複製一次那串字。
+ */
+export function CheckRow({
+  checked,
+  onChange,
+  label,
+  description,
+  disabled = false,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  label: ReactNode;
+  description?: ReactNode;
+  disabled?: boolean;
+}) {
+  return (
+    <label className="fw-check-row">
+      <input type="checkbox" className="fw-checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
+      <span>
+        <span className={text.bodyStrong}>{label}</span>
+        {description && <span className={`block ${text.meta}`}>{description}</span>}
+      </span>
+    </label>
+  );
+}
+
+/**
+ * 次級頁面頂端的返回列：左邊一顆插畫返回鈕，右邊放呼叫端自己的東西（單位切換）。
+ *
+ * 行情詳情頁與食譜頁本來各刻一份一模一樣的 markup。兩份的差別只有連去哪裡、
+ * aria-label 寫什麼，以及右邊掛什麼——那三個做成 prop 就好。
+ */
+export function BackRow({ href, label, children }: { href: string; label: string; children?: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      {/* 返回用插畫按鈕。圖檔在 public/freshwise/ui-back.png（跟其他介面圖示同一層、
+          同一個 ui- 前綴）。 */}
+      <Link href={href} className="fw-back-link" aria-label={label}>
+        <IllustratedArt src="/freshwise/ui-back.png" size={40} />
+      </Link>
+      {children}
     </div>
   );
 }

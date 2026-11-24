@@ -6,9 +6,9 @@ import { IllustratedArt } from "@/components/freshwise/game-art";
 import { DISH_ICONS } from "@/components/freshwise/group-icons";
 import { ItemIcon } from "@/components/freshwise/item-icon";
 import { PriceListRow } from "@/components/freshwise/price-list-row";
-import { Callout, EmptyState, Hint, ListCard, Note, Paper, PrimaryButton, SectionTitle, SegmentedTabs, UNIT_TABS } from "@/components/freshwise/ui";
+import { Badge, BackRow as SharedBackRow, Callout, EmptyState, Hint, ListCard, Note, Paper, PrimaryButton, SectionTitle, SegmentedTabs, UNIT_TABS } from "@/components/freshwise/ui";
 import { useFreshwise } from "@/components/freshwise/store";
-import { copy, text, v } from "@/components/freshwise/theme";
+import { copy, text } from "@/components/freshwise/theme";
 import { addEntry, entriesOfGroup, groupsSorted, updateEntry, updateGroup } from "@/lib/freshwise/basket";
 import { itemImage, itemOrPlaceholder } from "@/lib/freshwise/catalog";
 import { formatMoney, KG_PER_CATTY } from "@/lib/freshwise/price";
@@ -75,14 +75,20 @@ export function RecipeView({ book, groupId }: { book: PriceBook; groupId: string
     setBasket(updateGroup(basket, group.id, { servings: n }));
   }
 
-  /** 把食譜裡菜籃還沒有的主食材加進這個分類，**不動已經有的那幾項**。 */
+  /**
+   * 把食譜裡菜籃還沒有的主食材加進這個分類，**不動已經有的那幾項**。
+   *
+   * 新加的直接帶入食譜的份量——這一項原本不存在，所以不算覆蓋任何人填的東西。
+   * 本來是加成空份量，結果新加的那幾項既不在「缺的」也不在「份量不一樣」裡
+   * （後者只看已經填過數字的），使用者按完補齊之後沒有任何按鈕能幫他填份量。
+   */
   function addMissing() {
     if (!group || busy) return;
     setBusy(true);
     let next = basket;
     for (const ing of missing) {
       if (!ing.code) continue;
-      next = addEntry(next, group.id, ing.code);
+      next = addEntry(next, group.id, ing.code, ingredientQty(ing, recipe!, servings) ?? null);
     }
     setBasket(next);
     toast(`已加入 ${missing.length} 樣食材`);
@@ -166,7 +172,7 @@ export function RecipeView({ book, groupId }: { book: PriceBook; groupId: string
         <SectionTitle leaf>另外準備</SectionTitle>
         <Paper variant="flush" className="fw-recipe-extra">
           {recipe.extra.map((ing, i) => (
-            <div key={i} className="fw-stack-row">
+            <div key={i} className="fw-recipe-extra-row">
               <span className={`min-w-0 flex-1 ${text.body}`}>{ing.name}</span>
               <span className={text.meta}>{ingredientQuantityText(ing, recipe, servings, recipeUnit)}</span>
             </div>
@@ -205,12 +211,9 @@ export function RecipeView({ book, groupId }: { book: PriceBook; groupId: string
 
 function BackRow({ unit, onUnitChange }: { unit: RecipeUnit; onUnitChange: (unit: RecipeUnit) => void }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <Link href="/tools/freshwise/basket" className="fw-back-link" aria-label={`回到${copy.basket}`}>
-        <IllustratedArt src="/freshwise/ui-back.png" size={40} />
-      </Link>
+    <SharedBackRow href="/tools/freshwise/basket" label={`回到${copy.basket}`}>
       <SegmentedTabs items={RECIPE_UNIT_TABS} value={unit} onChange={onUnitChange} />
-    </div>
+    </SharedBackRow>
   );
 }
 
@@ -235,12 +238,11 @@ function IngredientRow({
   return <PriceListRow
     art={ing.code && <ItemIcon src={itemImage(ing.code)} alt={name} size={40} />}
     title={name}
-    badges={!inBasket && <span className="fw-badge fw-badge-sm fw-recipe-missing">不在{copy.basket}</span>}
+    badges={!inBasket && <Badge size="sm" className="fw-recipe-missing">不在{copy.basket}</Badge>}
     meta={quantityLabel}
-    price={money === null ? <span className={text.meta}>—</span> : <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
-      <span className="fw-price-amount" style={{ fontSize: v.fsSection }}>{formatMoney(money)}</span>
-      <span className={text.meta}>元</span>
-    </span>}
+    // 價格欄顯示的是「這道菜要用掉多少錢」，所以是算好的金額不是單價——PriceText 是
+    // 「每單位多少錢」的元件，這裡用不上，但字級與對齊要跟它一致（.fw-recipe-money）。
+    price={money === null ? <span className={text.meta}>—</span> : <span className="fw-recipe-money">{formatMoney(money)} 元</span>}
     href={ing.code ? `/tools/freshwise/browse/${ing.code}` : undefined}
   />;
 }

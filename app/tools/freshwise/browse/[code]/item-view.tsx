@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useCompanion } from "@/components/freshwise/companion-store";
-import { IllustratedArt } from "@/components/freshwise/game-art";
 import { QuestSlip } from "@/components/freshwise/companion-widgets";
 import Link from "next/link";
 import {
@@ -17,6 +16,7 @@ import {
   PrimaryButton,
   SectionTitle,
   SegmentedTabs,
+  BackRow as SharedBackRow,
   UNIT_TABS,
 } from "@/components/freshwise/ui";
 import { FaIcon } from "@/components/freshwise/fa-icon";
@@ -430,18 +430,9 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
  *  向伺服器要資料。 */
 function BackRow({ unit, onUnitChange }: { unit: UnitKey; onUnitChange: (unit: UnitKey) => void }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      {/* 返回改用插畫按鈕。圖檔放 public/freshwise/ui-back.png（跟其他介面圖示同一層、
-          同一個 ui- 前綴）。 */}
-      <Link href="/tools/freshwise/browse" className="fw-back-link" aria-label="回到行情">
-        <IllustratedArt src="/freshwise/ui-back.png" size={40} />
-      </Link>
-      <SegmentedTabs
-        items={UNIT_TABS}
-        value={unit}
-        onChange={(key) => onUnitChange(key as UnitKey)}
-      />
-    </div>
+    <SharedBackRow href="/tools/freshwise/browse" label="回到行情">
+      <SegmentedTabs items={UNIT_TABS} value={unit} onChange={(key) => onUnitChange(key as UnitKey)} />
+    </SharedBackRow>
   );
 }
 

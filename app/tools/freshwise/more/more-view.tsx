@@ -9,6 +9,7 @@ import { useCompanion } from "@/components/freshwise/companion-store";
 import Link from "next/link";
 import {
   Callout,
+  CheckRow,
   DangerButton,
   Paper,
   DividedRow,
@@ -182,9 +183,11 @@ export function MoreView({
           </div>
           <form className="flex flex-col gap-2" onSubmit={(event) => { event.preventDefault(); void handleRedeem(); }}>
             <Field label="活動序號" as="div">
-              <TextInput aria-label="活動序號" placeholder="輸入活動序號" value={activityCode} maxLength={64} autoComplete="off" autoCapitalize="none" spellCheck={false} disabled={redeeming || resetting} onChange={(event) => { setActivityCode(event.target.value); setActivityResult(null); }} endAction={<button type="submit" className="min-h-7 px-2 text-sm font-medium text-[#6E8C41] disabled:opacity-50" disabled={!companionReady || !activityCode.trim() || redeeming || resetting}>{redeeming ? "兌換中…" : "兌換"}</button>} />
+              <TextInput aria-label="活動序號" placeholder="輸入活動序號" value={activityCode} maxLength={64} autoComplete="off" autoCapitalize="none" spellCheck={false} disabled={redeeming || resetting} onChange={(event) => { setActivityCode(event.target.value); setActivityResult(null); }} endAction={<button type="submit" className="fw-field-action" disabled={!companionReady || !activityCode.trim() || redeeming || resetting}>{redeeming ? "兌換中…" : "兌換"}</button>} />
             </Field>
-            {activityResult && <p className={text.bodySm} role="status" aria-live="polite" style={{ color: activityResult.ok ? colors.down : colors.up }}>{activityResult.message}</p>}
+            {/* 成功／失敗不借用漲跌的紅綠——那兩個色在這個工具裡有固定語意（漲／跌），
+                 拿來講兌換結果會讓人以為跟價格有關。成功用品牌綠、失敗用既有的錯誤色。 */}
+            {activityResult && <p className={activityResult.ok ? "fw-redeem-ok" : text.error} role="status" aria-live="polite">{activityResult.message}</p>}
           </form>
         </Paper>
       </section>
@@ -236,14 +239,20 @@ export function MoreView({
         }
       >
         <div className="flex flex-col gap-3 py-3">
-          <label className="flex items-start gap-3">
-            <input type="checkbox" className="mt-1 size-4 shrink-0 accent-[#6E8C41]" checked={clearTargets.companion} disabled={resetting} onChange={(event) => setClearTargets((current) => ({ ...current, companion: event.target.checked }))} />
-            <span><span className={text.bodyStrong}>夥伴資料</span><span className={`block ${text.meta}`}>重設夥伴成長、露珠、印章與任務進度</span></span>
-          </label>
-          <label className="flex items-start gap-3">
-            <input type="checkbox" className="mt-1 size-4 shrink-0 accent-[#6E8C41]" checked={clearTargets.basket} disabled={resetting} onChange={(event) => setClearTargets((current) => ({ ...current, basket: event.target.checked }))} />
-            <span><span className={text.bodyStrong}>菜籃資料</span><span className={`block ${text.meta}`}>清空分類與食材，之後不會自動補回預設菜籃</span></span>
-          </label>
+          <CheckRow
+            checked={clearTargets.companion}
+            disabled={resetting}
+            onChange={(companion) => setClearTargets((current) => ({ ...current, companion }))}
+            label="夥伴資料"
+            description="重設夥伴成長、露珠、印章與任務進度"
+          />
+          <CheckRow
+            checked={clearTargets.basket}
+            disabled={resetting}
+            onChange={(basket) => setClearTargets((current) => ({ ...current, basket }))}
+            label="菜籃資料"
+            description="清空分類與食材，之後不會自動補回預設菜籃"
+          />
         </div>
       </EditorSheet>
     </div>
