@@ -228,6 +228,52 @@ const ART_FILE_ALIAS: Record<string, string> = {
   GE9: "item-farm-87.png", // 紅毛丹
   GF1: "item-farm-849.png", // 石榴
   GF2: "item-farm-G8.png", // 栗子
+  // 第四批蔬果。
+  FM3: "item-farm-LK3.png", // 芥藍芽
+  FM4: "item-farm-SF3.png", // 韭菜花
+  FM5: "item-farm-FW2.png", // 洛神花
+  FM6: "item-farm-LL2.png", // 山茼蒿
+  FM7: "item-farm-OA1.png", // 鹹菜
+  FM8: "item-farm-LN2.png", // 小松菜
+  FM9: "item-farm-OB1.png", // 雪裡紅
+  FN1: "item-farm-FL5.png", // 豌豆苗
+  FN2: "item-farm-OD1.png", // 蘿蔔乾
+  FN3: "item-farm-FZ2.png", // 熟花生
+  FN4: "item-farm-LT2.png", // 海帶
+  FN5: "item-farm-OE2.png", // 醃瓜
+  FN6: "item-farm-LA6.png", // 甘藍芽
+  FN7: "item-farm-SA7.png", // 甜菜根
+  FN8: "item-farm-OI3.png", // 筍片
+  FN9: "item-farm-OI1.png", // 筍乾
+  FP1: "item-farm-OI2.png", // 筍絲
+  FP2: "item-farm-SU3.png", // 樹薯
+  FP3: "item-farm-SX4.png", // 苜蓿芽
+  FP4: "item-farm-SA4.png", // 櫻桃蘿蔔
+  FP5: "item-farm-SP5.png", // 薑黃
+  FP6: "item-farm-OL1.png", // 朴菜
+  FP7: "item-farm-SZ7.png", // 晚香玉筍
+  FP8: "item-farm-SZ3.png", // 金針筍
+  FP9: "item-farm-SZ1.png", // 半天筍
+  FQ1: "item-farm-OC1.png", // 榨菜
+  FQ2: "item-farm-LN3.png", // 油菜花
+  FQ3: "item-farm-FS1.png", // 越瓜
+  FQ4: "item-farm-SN2.png", // 蓮子
+  FQ5: "item-farm-SL2.png", // 菊芋
+  FQ6: "item-farm-FU3.png", // 石蓮花
+  FQ7: "item-farm-LY2.png", // 龍葵
+  FQ8: "item-farm-FX2.png", // 虎豆
+  FQ9: "item-farm-LU1.png", // 菾菜
+  FR1: "item-farm-FX1.png", // 花豆
+  FR2: "item-farm-LY4.png", // 人參葉
+  FR3: "item-farm-FW1.png", // 金針花
+  GF3: "item-farm-C6.png", // 佛利蒙柑
+  GF4: "item-farm-Z3.png", // 柿餅
+  GF5: "item-farm-C8.png", // 珍珠柑
+  GF6: "item-farm-K4.png", // 龍眼乾
+  GF7: "item-farm-R8.png", // 芒果青
+  GF8: "item-farm-G9.png", // 波羅蜜
+  GF9: "item-farm-C7.png", // 豔陽柑
+  GG1: "item-farm-B4.png", // 鳳梨花
 };
 
 const ART_SET = new Set(ITEM_ART_CODES);

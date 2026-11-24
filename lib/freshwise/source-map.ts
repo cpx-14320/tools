@@ -109,8 +109,10 @@ export const SOURCE_MAP: Record<string, SourceRef> = {
   /* 第二批：市場常見、原本查不到的。**用基底名稱收整個品種群**——菜攤上只說「南瓜」，
      不會說「南瓜-木瓜型 阿成」。進口的一律排掉（跟既有品項同一個規則）。 */
   FF1: { farm: { match: ["南瓜-"], exclude: ["進口"] } },
-  FF2: { farm: { match: ["茼蒿"], exclude: ["進口"] } },
-  FF3: { farm: { match: ["芋-"], exclude: ["進口", "芋頭蕃薯"] } },
+  // 山茼蒿（FM6）是另一種菜，拆出去之後這裡要排掉，不然同一筆成交會餵兩個品項。
+  FF2: { farm: { match: ["茼蒿"], exclude: ["進口", "山茼蒿"] } },
+  // 「菊芋-雪蓮薯」含「芋-」會被誤抓，但菊芋（FQ5）跟芋頭是完全不同的東西。
+  FF3: { farm: { match: ["芋-"], exclude: ["進口", "芋頭蕃薯", "菊芋"] } },
   FF4: { farm: { match: ["萵苣菜-"], exclude: ["進口", "結球萵"] } },
   FF5: { farm: { match: ["辣椒-"], exclude: ["進口", "乾"] } },
   FF6: { farm: { match: ["冬瓜-"], exclude: ["進口"] } },
@@ -175,6 +177,45 @@ export const SOURCE_MAP: Record<string, SourceRef> = {
   FM1: { farm: { match: ["草菇"] } },
   FM2: { farm: { match: ["荸薺"], exclude: ["加工"] } },
 
+  /* ── 第四批蔬菜（2026-11 加入）───────────────────────── */
+  FM3: { farm: { match: ["芥藍菜-芥藍芽"] } },
+  FM4: { farm: { match: ["韭菜-韭菜花"] } },
+  FM5: { farm: { match: ["洛神花"] } },
+  FM6: { farm: { match: ["茼蒿-山茼蒿"] } },
+  FM7: { farm: { match: ["鹹菜"] } },
+  FM8: { farm: { match: ["油菜-小松菜"] } },
+  FM9: { farm: { match: ["雪里紅"] } },
+  FN1: { farm: { match: ["豌豆-豌豆苗", "芽菜類-豌豆芽"] } },
+  FN2: { farm: { match: ["蘿蔔乾"] } },
+  FN3: { farm: { match: ["落花生-熟"] } },
+  FN4: { farm: { match: ["海菜-海帶"] } },
+  FN5: { farm: { match: ["醃瓜"] } },
+  FN6: { farm: { match: ["甘藍-甘藍芽"] } },
+  FN7: { farm: { match: ["蘿蔔-甜菜根"] } },
+  FN8: { farm: { match: ["筍片"] } },
+  FN9: { farm: { match: ["筍乾"] } },
+  FP1: { farm: { match: ["筍絲"] } },
+  FP2: { farm: { match: ["薯蕷-樹薯"] } },
+  FP3: { farm: { match: ["芽菜類-苜蓿芽"] } },
+  FP4: { farm: { match: ["蘿蔔-櫻桃"] } },
+  FP5: { farm: { match: ["薑-薑黃"] } },
+  FP6: { farm: { match: ["朴菜"] } },
+  FP7: { farm: { match: ["晚香玉筍"] } },
+  FP8: { farm: { match: ["金針筍"] } },
+  FP9: { farm: { match: ["半天筍"] } },
+  FQ1: { farm: { match: ["榨菜"] } },
+  FQ2: { farm: { match: ["油菜-油菜花"] } },
+  FQ3: { farm: { match: ["越瓜"] } },
+  FQ4: { farm: { match: ["蓮藕-蓮子"] } },
+  FQ5: { farm: { match: ["菊芋"] } },
+  FQ6: { farm: { match: ["石蓮花"] } },
+  FQ7: { farm: { match: ["黑甜仔菜"] } },
+  FQ8: { farm: { match: ["虎豆"] } },
+  FQ9: { farm: { match: ["菾菜"] } },
+  FR1: { farm: { match: ["花豆"] } },
+  FR2: { farm: { match: ["人參葉"] } },
+  FR3: { farm: { match: ["金針花"] } },
+
   /* ── 水果 ───────────────────────────────────────────── */
   GA1: { farm: { match: ["香蕉"], exclude: ["芭蕉", "旦蕉", "越旦"] }, taichung: ["香蕉(內銷)"] },
   GA2: { farm: { match: ["鳳梨-金鑽鳳梨"] }, taichung: ["鳳梨(金鑽17號)", "鳳梨(開英)", "鳳梨(四號)"] },
@@ -236,6 +277,16 @@ export const SOURCE_MAP: Record<string, SourceRef> = {
   GF1: { farm: { match: ["石榴"], exclude: ["番石榴"] } },
   // 同理：「南瓜-栗子」是栗子南瓜，量比真正的栗子多 14 倍。
   GF2: { farm: { match: ["栗子"], exclude: ["南瓜"] } },
+
+  /* ── 第四批水果（2026-11 加入）───────────────────────── */
+  GF3: { farm: { match: ["佛利蒙"] } },
+  GF4: { farm: { match: ["柿子-柿餅"] } },
+  GF5: { farm: { match: ["珍珠柑"] } },
+  GF6: { farm: { match: ["龍眼-龍眼乾", "龍眼-龍眼肉"] } },
+  GF7: { farm: { match: ["芒果-芒果青"] } },
+  GF8: { farm: { match: ["波蘿蜜"] } },
+  GF9: { farm: { match: ["豔陽柑"] } },
+  GG1: { farm: { match: ["鳳梨-鳳梨花"] } },
 
   /* ── 漁產 ───────────────────────────────────────────── */
   HA1: { aquatic: { match: ["吳郭魚", "其他吳郭"] }, taichung: ["吳郭魚"] },
