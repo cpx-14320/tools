@@ -7,6 +7,7 @@ import { CollectionArtwork, GameIcon, PetArtwork, SlicedArtwork } from "@/compon
 import { DewBalance, QuestSlip } from "@/components/freshwise/companion-widgets";
 import { BottomSheetModal } from "@/components/freshwise/bottom-sheet-modal";
 import { MeterBar, PageTitle } from "@/components/freshwise/ui";
+import { cx } from "@/components/freshwise/theme";
 import type { PetReactionHandle } from "@/components/freshwise/pet-interaction";
 import type { PetCareAction } from "@/lib/freshwise/pet-expressions";
 
@@ -116,7 +117,7 @@ export function CompanionView() {
               <button
                 type="button"
                 key={p.id}
-                className={`fw-collection-pet ${unlocked ? "" : "fw-pet-locked"}`}
+                className={cx("fw-collection-pet", !unlocked && "fw-pet-locked")}
                 disabled={!unlocked}
                 aria-pressed={state.active === p.id}
                 onClick={() => {

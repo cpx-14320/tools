@@ -339,6 +339,13 @@ const ALL_RECIPES = [...LIST, ...ADDITIONAL_RECIPES];
 /** 以 `DISH_ICONS` 的 icon 當 key。 */
 export const RECIPES: Record<string, Recipe> = Object.fromEntries(ALL_RECIPES.map((r) => [r.dish, r]));
 
+/** 以料理名稱當 key，給 `recipeForGroup` 的第一層判斷用。
+ *
+ *  跟 `RECIPES` 一樣是在同一個模組裡從 `ALL_RECIPES` 長出來的，所以沒有「要記得同步」
+ *  的問題——食譜是靜態資料，這兩張表在模組載入時各建一次就定案了。原本是
+ *  `ALL_RECIPES.find()`，菜籃有幾個分類就掃幾遍 100 道（微秒等級，但這張表是白拿的）。 */
+const RECIPES_BY_NAME = new Map(ALL_RECIPES.map((r) => [r.name, r]));
+
 export const RECIPE_COUNT = ALL_RECIPES.length;
 
 /* ─────────────────────── 查找與換算 ─────────────────────── */
@@ -355,9 +362,7 @@ export const RECIPE_COUNT = ALL_RECIPES.length;
  * icon 也是通用的，會落在這裡——那正是我們要擋掉的。
  */
 export function recipeForGroup(group: { name: string; icon: string }): Recipe | undefined {
-  const byName = ALL_RECIPES.find((r) => r.name === group.name.trim());
-  if (byName) return byName;
-  return RECIPES[group.icon];
+  return RECIPES_BY_NAME.get(group.name.trim()) ?? RECIPES[group.icon];
 }
 
 /**

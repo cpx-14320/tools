@@ -29,7 +29,7 @@ import { GoTopButton } from "@/components/freshwise/go-top-button";
 import { ItemPickerModal } from "@/components/freshwise/item-picker-modal";
 import { EntryEditorSheet, GroupEditorSheet } from "@/components/freshwise/basket-sheets";
 import { useFreshwise } from "@/components/freshwise/store";
-import { colors, copy, text } from "@/components/freshwise/theme";
+import { colors, copy, cx, text } from "@/components/freshwise/theme";
 import { moveItem, useDragReorder } from "@/components/freshwise/use-drag-reorder";
 import {
   addEntry,
@@ -145,7 +145,7 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
             <section
               key={group.id}
               ref={groupDrag.rowRef(groupIndex)}
-              className={`flex flex-col gap-2.5 ${groupDrag.rowClass(groupIndex)}`}
+              className={cx("flex flex-col gap-2.5", groupDrag.rowClass(groupIndex))}
             >
               <SectionTitle
                 action={
@@ -185,7 +185,7 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
 
       <QuestSlip variant="paper" />
 
-      <div aria-hidden="true" className={`fw-basket-floating-spacer ${basket.entries.length >= 8 ? "fw-basket-floating-spacer-double" : ""}`}/>
+      <div aria-hidden="true" className={cx("fw-basket-floating-spacer", basket.entries.length >= 8 && "fw-basket-floating-spacer-double")}/>
       <div className="fw-basket-floating-actions">
         <IconButton icon="plus" aria-label={`新增${copy.group}`} title={`新增${copy.group}`} aria-haspopup="dialog" disabled={!basketReady} onClick={() => setGroupEditing("new")}/>
         <GoTopButton visible={basket.entries.length >= 8} inline/>

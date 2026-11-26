@@ -8,7 +8,11 @@
 - 新增看三種行情、切換走勢、補齊份量三種任務、露珠、印章、角色解鎖與各角色獨立成長。領獎有去重，臺灣日期跨日只重置任務。
 - 養成與介面偏好目前保存在這台裝置，尚未雲端同步；沒有連續登入或實際購買要求。
 - 支援減少動態、簡潔模式與收起夥伴。清除全部資料會連同夥伴進度重設，並經既有確認彈窗。
-- 圖片命名、格位、原生尺寸與倍率見 `public/freshwise/assets-manifest.json`；生成提示詞見 `asset-prompts.json`。角色、功能與品項圖示達 6 倍以上；場景背景約 3.37 倍，已如實標示。
+- **素材的檔案都不在專案裡了**（2026-11-27 整理完）：`public/freshwise` 只放網頁要載入的
+  圖（全部 WebP）＋一份說明這個資料夾規則的 README。母圖在
+  `小工具素材/圖片未壓縮/freshwise/`、生成紀錄在 `小工具素材/菜鳥買菜記/素材生成批次紀錄.md`、
+  食材來源對照在 `食材圖/ingredient-art-inventory.csv`。
+  `assets-manifest.json` 與 `asset-prompts.json` 已經刪除，舊章節寫「見兩份 JSON」時當歷史看。角色、功能與品項圖示達 6 倍以上；場景背景約 3.37 倍，已如實標示。
 - V2 介面規範與 HTML／插畫分工見 `components/freshwise/DESIGN-SYSTEM.md`，以下原功能與資料規格繼續適用。
 
 ---
@@ -2468,8 +2472,384 @@ class。在食譜頁改掉它，等於改了一個共用元件的樣式，之後
    結球白菜／大白菜、蓬萊米／白米）。食譜用的是一般人會講的名字，目錄用的是批發行情
    的名字。**這樣是對的**——但點進詳情頁會看到另一個名字，使用者可能愣一下。
    要改的話是把目錄的主名稱換成俗名、行情名放 alias，那是另一件事。
+   → **已改，見第三十五節 A。**
 2. **`main` 區有 15 樣沒有代碼**（板豆腐、油麵、米粉、麵線、烏龍麵、生麵條、豬腰、
    淡菜）。它們確實是那道菜的主角，放 `extra` 語意不對；但也算不出錢，畫面上顯示
    「—」。目前這樣是合理的。
+   → **分區維持原樣，但「—」改成「無行情」、搜尋補了解釋，見第三十五節 B。**
 3. **`recipeForGroup` 每次呼叫都 `ALL_RECIPES.find()` 掃 100 道**。菜籃有 10 個分類就
    掃 1,000 次——實際上那是微秒等級，不值得為它建 Map 換來一份要同步的快取。
+   → **改了，但理由不是效能：那份快取不需要同步，見第三十五節 C。**
+
+---
+
+## 三十五、三個設計取捨的收尾（2026-11-25）
+
+第三十四節 G 記的三件事，這一輪逐條處理。
+
+### A. 目錄主名稱改成俗名，行情正式名降為別名
+
+改的 11 項（`lib/freshwise/catalog.ts`）：
+
+| 原主名稱（行情名） | 改成（俗名） | 別名變成 |
+| --- | --- | --- |
+| 甘藍 | **高麗菜** | 甘藍、捲心菜 |
+| 結球白菜 | **大白菜** | 結球白菜、包心白菜、山東白 |
+| 蕹菜 | **空心菜** | 蕹菜 |
+| 甘藷 | **地瓜** | 甘藷、番薯 |
+| 胡瓜 | **大黃瓜** | 胡瓜 |
+| 花胡瓜 | **小黃瓜** | 花胡瓜、刺瓜 |
+| 結球萵苣 | **美生菜** | 結球萵苣、西生菜 |
+| 紫甘藍 | **紫高麗菜** | 紫甘藍 |
+| 甘藍芽 | **高麗菜芽** | 甘藍芽 |
+| 番石榴 | **芭樂** | 番石榴、珍珠芭樂 |
+| 蓬萊米 | **白米** | 蓬萊米、梗米、稉米 |
+
+兩種名稱**本來就都搜得到**（`matchesKeyword` 一直都比對 `name` ＋ `aliases`），所以這次
+改的不是搜尋，是**使用者看到的那個名字**：食譜寫「小黃瓜」、點進詳情頁的標題也是
+「小黃瓜」，底下一行「又叫 花胡瓜、刺瓜」把行情名補上。
+
+**取價完全沒動。** 價格是用 `source-map.ts` 的 `match` 關鍵字去比對開放資料的作物名稱，
+跟目錄的 `name` 無關——那邊的關鍵字仍然要寫行情的正式名稱（「甘藍」「花胡瓜」）。這條
+規則寫在 `catalog.ts` 的 `CATALOG` 上方，避免以後有人「順手統一」把 SOURCE_MAP 也改成
+俗名，那會讓整類菜的價格查不到。
+
+沒改的 7 項不是同一回事——食譜寫的是**處理狀態**不是別的名字（「鮮香菇」「去骨雞腿肉」
+「熟鹹鴨蛋（去殼）」「中卷／透抽（未處理採買重量）」），那是食譜該講清楚的事。
+`金目鱸` 也留著：目錄裡還有 `七星鱸`，兩個都改叫「鱸魚」只會變成兩筆長得一樣的搜尋結果。
+
+### B. 「搜不到」要說清楚是哪一種搜不到
+
+原本搜「米粉」「豆腐」「油麵」，拿到的是空狀態那句**「試試其他名稱」**——那句話在這裡
+是錯的提示：農業部的交易行情只收原型農產品，加工品換再多說法都搜不出來，使用者會一直試。
+
+所以加了 `catalog.ts` 的 `PANTRY`（20 樣，型別見 `types.ts` 的 `PantryItem`）：
+
+- `processed`（18 樣）＝加工品／乾貨，**這條資料管線永遠不會收**：豆腐、豆乾、油豆腐、
+  豆皮、豆漿、米粉、油麵、烏龍麵、麵線、麵條、冬粉、粿仔條、年糕、紫菜、蝦米、泡菜、
+  咖哩塊、火鍋料
+- `unlisted`（2 樣）＝生鮮，但**目前**沒有任何公開訪價：豬內臟（豬腰／豬肝／豬心／
+  豬大腸）、淡菜
+
+兩種原因要分開講，因為對使用者的意義不一樣（一個是「不會有」，一個是「還沒有」）。
+
+命中後畫面上的變化：
+
+| 地方 | 原本 | 現在 |
+| --- | --- | --- |
+| 行情頁搜尋 | 空清單 ＋「試試其他名稱」 | 清單上方一句：「米粉是加工品。農業部的交易行情只收原型農產品，所以這裡查不到價格——食譜裡會算份量，但不算錢。」 |
+| 品項選擇器（加入菜籃） | 「找不到「米粉」，換個說法試試」 | 「米粉沒有公開的價格資料，所以菜籃收不了」 |
+| 食譜 `main` 區的金額欄 | `—` | **無行情** |
+| 食譜 `main` 區的徽章 | 連板豆腐也掛「不在菜籃」 | 沒有代碼的不掛（它永遠進不了菜籃） |
+
+**`PANTRY` 不是品項目錄**，刻意不併進 `CATALOG`：併進去會連帶跑進行情清單（一排永遠
+查無價格的列）、品項選擇器（勾進菜籃後，因為菜籃只畫有行情的項目，會憑空消失）、
+詳情頁（空走勢圖）。它們不是「暫時沒資料的品項」，是**沒有價格這個欄位的東西**。
+
+比對用**開頭比對**不是 `includes`：搜「菜」如果用 `includes` 會命中「紫菜」，於是一個
+有五十筆結果的搜尋上面會冒出一句「紫菜沒有行情」——那是雜訊。搜「麵」命中「麵線」
+「麵條」則是對的，所以也不能收得更緊。檢查腳本有這兩條的回歸測試。
+
+食譜的 `main` / `extra` 分區**沒有動**：板豆腐在家常豆腐裡就是主角，份量要跟著人份換算，
+放 `extra` 是錯的。它只是算不出錢，那是資料的限制，不是分類錯。
+
+### C. `recipeForGroup` 改用 Map——但理由不是效能
+
+第三十四節的判斷是「微秒等級，不值得為它建一份要同步的快取」。前半對、後半錯：
+
+```ts
+const RECIPES_BY_NAME = new Map(ALL_RECIPES.map((r) => [r.name, r]));
+```
+
+**這份表不需要同步。** 食譜是靜態資料，而且這張表跟旁邊那張 `RECIPES`（以 icon 當 key）
+是在同一個模組裡、從同一個 `ALL_RECIPES` 長出來的，模組載入時各建一次就定案，沒有
+「改了食譜忘了更新快取」這種情況可以發生。既然成本是 0、也沒有同步負擔，那就不該留一個
+線性掃描在那裡，即使它現在不痛。
+
+### D. 驗證
+
+- `npm run check:freshwise`：**281 項全過**（270 → 281，新增 11 項：加工品清單的完整性
+  與不跟目錄撞名 5 項、俗名／行情名／加工品別名搜得到 3 項、開頭比對與空關鍵字的邊界
+  3 項）
+- `npx tsc --noEmit`、`npx eslint`：乾淨
+- 「加工品的名稱與別名都沒有跟目錄撞名」這一條是刻意加的：同一個名字一邊有行情、一邊
+  又說「沒有公開價格」，使用者看到的是自相矛盾的兩句話
+
+---
+
+## 三十六、徽章、class 字串與兩頁的回到頂部（2026-11-26）
+
+### A. `cx()`：class 串接不要再留空格尾巴
+
+複製一段 DOM 出來看會長這樣：
+
+```html
+<span class="fw-badge  " style="background-color:rgb(255,240,199);color:rgb(146,97,29)">當季</span>
+<p class="text-[13px] text-[#8C7864]  ">共 228 項 · 元/公斤</p>
+```
+
+來源是到處都在用的模板字串接法——`` `fw-badge ${sm ? "fw-badge-sm" : ""} ${className}` ``，
+條件沒中、呼叫端沒傳 className 的時候就各留一個空格。功能上沒差，但看 DOM 的時候每個
+元件都掛著多餘的空格，要數清楚它有哪幾個 class 得瞇著眼睛看。
+
+`theme.ts` 加了 `cx()`（空段落直接丟掉），改掉 31 處：`ui.tsx` 25 處（`Badge`、`Hint`、
+`Note`、`ErrorText`、`SectionTitle`、`PageTitle`、`Callout`、四種按鈕、`SegmentedTabs`、
+`Paper`、`ScrollList`…）、`game-art.tsx` 5 處、`fa-icon.tsx` 2 處、`item-icon.tsx`、
+`companion-widgets.tsx`、`go-top-button.tsx`、`basket-view.tsx` 2 處、`companion-view.tsx`。
+
+放在 `theme.ts` 不是 `ui.tsx`：`fa-icon` 與 `game-art` 也要用，而 `ui.tsx` 本來就 import
+它們兩個，從 ui 匯出會變成循環 import。`theme.ts` 沒有任何 import，誰都能拿。
+
+### B. 「不在我的菜籃」改走徽章元件
+
+原本是在食譜頁寫 `className="fw-recipe-missing"`，配 game.css 一條只有它在用的規則。
+改成 `badges.tsx` 的 `NotInBasketBadge`，結構跟 `SeasonBadge` 一致（`<Badge style={{…}}>`）：
+
+```tsx
+export function NotInBasketBadge({ size = "md" }: { size?: "md" | "sm" }) {
+  return <Badge size={size} style={{ backgroundColor: v.paperDeep, color: v.warning }}>不在{copy.basket}</Badge>;
+}
+```
+
+「什麼情況該亮什麼顏色」是徽章的語意，那件事 `badges.tsx` 在管；散成一條頁面專屬的 CSS
+就會變成下一個人改配色時改不到的地方。**顏色沒變**——沿用原本那條規則的兩個變數
+（`--fw-paper-deep` ＋ `--fw-warning`），所以色值沒有多出一份定義；`v` 補了 `warning`
+這個 token（值就是 `--fw-warning`，跟 `colors.warning` 是同一個色，差別只在一個是 CSS
+變數、一個是給 SVG 用的真色碼）。`.fw-recipe-missing` 已刪。
+
+### C. 食譜頁「主食材」標題右邊的金額降級
+
+從 `.fw-recipe-money`（16px、粗體、ink）改成 `text.hint`（13px、#8C7864）——跟行情頁
+「共 228 項 · 元/公斤」同一個樣式。那個數字是這一區的附註，**每一列自己的金額才是要被
+讀的東西**；兩邊都用 16px 粗體的話，整區最大的字反而是個約略值。`.fw-recipe-money`
+留著，食材列的金額還在用。
+
+### D. 覆蓋份量的按鈕文案縮短
+
+`把 2 樣的份量改成食譜的量 →` → **`2 樣份量改用食譜的量 →`**
+
+「改用」是不能丟的那兩個字：這顆按鈕會覆蓋使用者自己在菜籃填的常買份量（跟它上面那顆
+「把缺的 N 樣加進菜籃」風險不同，所以才刻意分成兩顆）。縮到「填上食譜份量」那種說法就
+看不出有東西會被蓋掉。
+
+### E. 食譜頁與行情詳情頁補上回到頂部
+
+兩頁都是**不管內容多少都比一螢幕長**（食材兩區＋作法＋小撇步；價格卡＋走勢圖＋場所比價
+＋市場明細），所以不像清單頁要先數長度，直接 `<GoTopButton visible />`。按鈕自己會補一塊
+等高的佔位（`!inline` 那一段），所以底部的「去看我的菜籃 →」不會被蓋住。
+
+### F. 夥伴第三階的檔名跟第一、二階對齊
+
+第一、二階是 `pet-cabbage-tuantuan-stage-01`／`-stage-02`，第三階卻是 `pet-cabbage-tuantuan.png`
+（基底）＋ `pet-cabbage-tuantuan-happy.webp`（表情），波波的平常表情還另外叫
+`pet-eggplant-bobo-neutral.webp`。結果是 `pet-expressions.ts` 的四個路徑函式每一個都要寫
+「`stage < 3` 走這邊、第三階走那邊」，而且第三階還要再 `id === "eggplant" ? …` 一次。
+
+改成三階同一套命名（37 個檔案純改名）：
+
+```
+pet-<食材>-<角色>-stage-0<階段>[-<表情>|-action-<動作>]
+```
+
+`PET_IMAGE_FILES`（值帶 `.png`）改成 `PET_IMAGE_PREFIX`（只有前綴），四個函式縮成一條路：
+
+```ts
+function petStageFile(id: CompanionId, stage: PetStage, suffix = ""): string {
+  const ext = stage === 3 && !suffix ? "png" : "webp";
+  return `/freshwise/${PET_IMAGE_PREFIX[id]}-stage-0${stage}${suffix}.${ext}`;
+}
+```
+
+### G. 副檔名的分界不是階段，是「會不會被最佳化」
+
+中途一度把第三階的六張基底 PNG（1.2～1.5MB）轉成 WebP，想讓副檔名也統一；後來改回 PNG，
+再往前一步**把第一、二階的平常樣子也換成 PNG 母圖**。分界線不是階段，是載入方式
+（`components/freshwise/pet-interaction.tsx` 只有 `mood !== "neutral"` 才 `unoptimized`）：
+
+| | 怎麼載入 | 所以格式要 |
+| --- | --- | --- |
+| 平常樣子（`neutral`） | `<Image>` 走 next/image 最佳化 | 原檔大小不影響實際傳輸，用 1254px PNG 母圖畫質最好 |
+| 表情與照護動作 | `unoptimized`，瀏覽器直接拿原檔 | 必須是輕量 WebP（PNG 母圖 1～2MB，點一次抓一次） |
+
+所以規則收斂成一行，連階段都不用看：
+
+```ts
+return `/freshwise/${PET_IMAGE_PREFIX[id]}-stage-0${stage}${suffix}.${suffix ? "webp" : "png"}`;
+```
+
+換掉的是第一、二階的 12 張平常樣子（640×640 WebP 約 40KB → 1254×1254 PNG 1.1～1.4MB）。
+除了格式偏好之外還有一個實際理由：首頁的夥伴最大 212px，3 倍螢幕要 636px，**640px 剛好
+踩在邊緣**，換成母圖之後才有餘裕。第三階的平常樣子本來就是 PNG，而且與素材包的母圖
+位元組相同（已核對）。現況：`pet-*` 共 126 張 ＝ 18 張 PNG ＋ 108 張 WebP。
+
+表情與照護動作**沒有換**，雖然素材包裡 126 張 PNG 母圖全都在。它們是 `unoptimized`，
+換成 PNG 等於每點一次夥伴就抓 1～2MB。
+
+### H. 夥伴圖的母圖搬出專案了
+
+母圖與完整素材包在：
+
+```
+D:/coding-project/小工具素材/菜鳥買菜記/freshwise-other-pet-growth-v1/
+  完整寵物素材包/<角色中文名>/<第N階段>/{PNG素材, 網頁現用, 其他版本}/
+  完整寵物素材包/各階段檔案對照.csv   ← 每張圖的格式、尺寸、透明通道、原始來源、SHA256
+```
+
+`缺少檔案清單.json` 是 `[]`，6 角色 × 3 階段 × 7 姿態共 126 張 PNG 母圖都在，而且檔名已經
+照專案的 `stage-0N` 命名。`網頁現用` 是從 `public/freshwise` 複製的副本，所以這一輪被換掉
+的 12 張 WebP 仍有留存。
+
+已刪除的 manifest 舊章節裡的 `masters`／`source` 指向 `UIUX示意設計稿/FreshWise_V2_蔬果夥伴/…`
+——**那個資料夾已經不在了**，當歷史紀錄看。新位置記在 `petMastersLocation20261126`，
+這一輪的替換記在 `petNeutralPng20261126`。
+
+### I. 檢查
+
+`freshwise-companion-check.mts` 原本有一條 `assert.equal(url.includes(`-stage-0${stage}`), stage < 3)`
+——它是把「第三階沒有後綴」寫成規則在守。現在守的是三條：每一階都必須帶 `-stage-0N`、
+平常樣子必須是 `.png`、表情與動作必須是 `.webp`。24 組通過；`tsc`、`eslint`、
+`check:freshwise`（281 項）也都乾淨。
+
+---
+
+## 三十七、網頁用圖全部轉 WebP ＋ 依顯示尺寸縮圖（2026-11-26）
+
+### A. 先把「母圖」與「網頁用圖」分開
+
+這一輪之前兩件事混在同一個資料夾：`public/freshwise` 既是網頁要載入的圖、又是唯一一份
+原圖。結果每次為了網頁去調整（改名、轉格式、縮放）都在動原圖——上一輪為了統一命名把六張
+夥伴基底 PNG 轉成 WebP、又被要求還原，就是這個夾縫。
+
+現在是兩個地方、兩種規則：
+
+| | 位置 | 規則 |
+| --- | --- | --- |
+| 母圖 | `小工具素材/圖片未壓縮/freshwise/`（595 張） | **不因網頁需求縮放、轉格式、改名**。檔名照網頁檔名命名，副檔名是原圖真正的格式 |
+| 網頁用圖 | `cpx-tools/public/freshwise/` | 可以縮放、壓縮、改副檔名。壞了重跑腳本 |
+
+`scripts/freshwise-build-web-images.mts` 做「母圖 → 網頁用圖」這一段。**一律從母圖出發**，
+不是拿網頁現有的圖再壓一次——後者每跑一次就多疊一層壓縮損失，而且不可逆。所以這支腳本
+可以重複執行，同一份母圖永遠產出同一份網頁用圖。
+
+### B. 尺寸怎麼決定：顯示尺寸 × 3，不是「看起來夠大」
+
+畫面是 430px 寬的手機框（`.fw-phone` 的 `max-width`），所以**沒有任何素材需要超過
+430 × 3 ＝ 1290px**。每一組的目標就是「這個素材最大顯示幾 px × 3」：
+
+| 素材 | 原圖 | 網頁用 | 依據 |
+| --- | --- | --- | --- |
+| `item-*` 320 張 | 256 PNG | 256 webp q82 | 最大顯示 80px（首頁攤位），只轉檔不縮放 |
+| `dish-*` 100 張 | 256 PNG | 256 webp q82 | 食譜頁 80px、分類圖示 48px |
+| `ui-*` 29 張 | 256 PNG | 192 webp q82 | 介面圖示最大顯示 48px |
+| `ui-paper-texture` | 1254 PNG | 512 webp q80 | 平鋪紙紋，實際以 128～160px 重複 |
+| `pet-*` 126 張 | 1254 PNG | **640** webp q86 | 夥伴最大顯示 212px（`.fw-home .fw-pet-art` 的 max-width），212×3＝636，640 剛好 |
+| `garden-day-background` | 1448 PNG | 1290 webp q80 | cover 鋪滿手機框寬 |
+| `collection-companion-atlas` | 1536 PNG | 900 webp q84 | 3×2 圖集、每格顯示 76px；百分比定位，縮放不影響取格 |
+| `home-price-tag-board-clean` | 1254 PNG | 540 webp q84 | 價牌 `max-width:174px` |
+| `page-market-awning-background`／`market-wood-counter-low` | 2172 PNG | 1290 webp q82 | 寬度跟著手機框 |
+| `market-small-price-card` | 528 PNG | 270 webp q84 | 小價卡 88px 寬 |
+| `companion-growth-frame-*`／`companion-level-ribbon-*` | 312／400 高 | 高 120 webp q84 | 切片是 `background-size:auto 100%`，**只看高度**；顯示高約 33～35px |
+| `home-market-wood-counter-board-web{,@2x,@3x}` | 384／768／1152 | 尺寸保留、轉 webp | 這是 `image-set` 的 1x/2x/3x 階梯，動它就毀了階梯 |
+
+兩個刻意**不重新編碼**的：
+
+- `home-quest-paper.webp`：CSS 的 `border-image … 240 180 228 300` 切片數值是**原始像素**，
+  縮圖就得同步改那四個數字，框線會跑掉。
+- `page-hanging-title-*.webp`：已經是 30KB 的輕量 WebP，重壓只是多一次失真。
+
+### C. 改副檔名牽動的程式比想像中多
+
+`.png → .webp` 不只是改字串，路徑是散在七個地方組出來的：
+
+| 檔案 | 什麼 |
+| --- | --- |
+| `lib/freshwise/catalog.ts` | `itemImage()`、`categoryImage()` |
+| `lib/freshwise/art-assets.ts` | `ITEM_ARTWORK` 的 128 個檔名值、`itemArtwork()` |
+| `lib/freshwise/pet-expressions.ts` | `petStageFile()`——三階七姿態一律 webp，PNG/WebP 的特例整條消失 |
+| `components/freshwise/group-icons.ts` | `DISH_ICONS` 的 100 個 `file` |
+| `components/freshwise/game-art.tsx` | `GameIcon` 的樣板、圖集、`SlicedArtwork`（`format` 參數拿掉了，全部 webp） |
+| `components/freshwise/item-icon.tsx` | **`ITEM_CODE`／`CATEGORY_KEY` 兩條正規表示式** |
+| `components/freshwise/game.css` | 21 個 `url('/freshwise/*.png')` |
+| `ui.tsx`／`go-top-button.tsx`／`more-view.tsx`／`recipe-view.tsx` | `ui-back`、`ui-go-top`、其他工具圖示、料理圖的 fallback |
+
+`item-icon.tsx` 那兩條最容易漏：它們**從路徑反推品項代碼**
+（`/\/item-([A-Z0-9]+)\.png$/`），漏改不會報錯，只會讓整排品項圖變留白——因為取不到
+code 就查不到插畫，而「沒有插畫就留白」正是刻意的設計。
+
+### D. 所以 feature-check 多了一段「素材路徑真的存在」
+
+上面那張表就是這一段的理由：**少一張圖不會有任何錯誤訊息**，CSS 少一塊背景、品項少一排
+圖，都只是「看起來怪」。新增的檢查直接對磁碟驗：
+
+- 有插畫的品項、100 道料理、`GAME_ICONS`、`ui-back`／`ui-go-top`／圖集都存在
+- 三片切片框（吊牌、成長框、等級徽帶）左中右都在——少一片會露出背景色
+- `game.css` 裡每一個 `url('/freshwise/…')` 都存在
+- `game.css` 沒有殘留的 `.png` 引用、`public/freshwise` 底下沒有 PNG 了
+
+`GAME_ICONS` 是從 `game-art.tsx` 的原始碼用正規表示式讀出來的，不是 import——那是個帶
+JSX 與 `next/image` 的 client component，為了一個字串陣列把它拉進檢查腳本不划算。
+
+### E. 踩到的坑：母圖挑錯版本
+
+介面圖有四張在素材庫有兩個版本，而且「待人工確認的未使用資料」底下那個解析度比較大，
+第一次整理母圖時按「取最大」挑錯了：
+
+| 素材 | 挑錯的 | 網頁實際要的 |
+| --- | --- | --- |
+| `market-wood-counter-low` | 2172×724（未裁切） | 2172×314（裁切過） |
+| `page-market-awning-background` | 1881×836 webp | 2172×565 png |
+| `market-small-price-card` | 1122×1402 | 528×648 |
+| `home-price-tag-board-clean` | 1254×1254（另一版） | 1254×1254（介面圖正式版） |
+
+前兩張**比例不一樣**，而 CSS 是 `background-size:100% 100%`（拉滿整個框），所以壓出來的
+圖會被擠變形——木檯跟遮雨棚都會走樣。四張都改用「介面圖」正式資料夾的版本重壓之後，
+比例回到跟原本一致（1290×186 對 6.92、1290×336 對 3.84）。
+
+母圖的挑選規則因此補了一條，寫在 `小工具素材/圖片未壓縮/freshwise/說明.txt`：
+**先排除「待人工確認的未使用資料」，再取解析度最大的。**
+
+### F. 結果
+
+| | |
+| --- | --- |
+| 網頁用圖 | 595 檔，全部 WebP，**61.5MB → 10.8MB（省 83%）** |
+| 母圖 | 596 檔留在素材庫，196MB（網頁用圖只有母圖的 5%） |
+| 最大的幾組 | 夥伴 126 張 5.1MB（640px）、品項 320 張 3.5MB（256px）、料理 100 張 1.3MB（256px）、介面圖示 29 張 0.3MB（192px） |
+| 單張最大 | `home-quest-paper.webp` 198KB（維持原檔）、`garden-day-background.webp` 152KB |
+
+檢查：`tsc`、`eslint`、`check:freshwise` 289 項（含新的素材路徑那一段）、
+`freshwise-companion-check` 24 組、`freshwise-missing-art` 0 缺口，全過。
+
+### G. 素材維護的檔案全部移出專案（2026-11-27）
+
+`public/freshwise` 現在只有 **595 張 WebP ＋ 一份 README**。搬走的：
+
+| 原本在專案 | 搬到 | 為什麼 |
+| --- | --- | --- |
+| `public/freshwise/ingredient-art-inventory.csv`（382 列） | `小工具素材/菜鳥買菜記/食材圖/` | 記的是「哪個農業部品項對應哪張圖、有沒有進目錄」，網頁不讀它。那個資料夾底下本來就有 `素材完整對照.csv`，兩份放一起才看得出差異 |
+| `public/freshwise/README.md` 的 V3～V26 批次紀錄（182 行） | `小工具素材/菜鳥買菜記/素材生成批次紀錄.md` | 那是**素材怎麼生成出來的**（提示詞、原生尺寸、每批做了什麼），不是網頁的事 |
+
+專案那份 README 重寫成「這個資料夾只放網頁用圖」＋檔名規則＋建置管線＋一張「要找什麼去哪裡」
+的表。`assets-manifest.json` 與 `asset-prompts.json` 已經刪掉了，相關指引都改寫成指向素材庫
+各夾的對照表（`素材完整對照.csv`／`介面素材對照.json`／`各階段檔案對照.csv`）。
+
+`lib/freshwise/catalog.ts` 有一句註解提到 `ingredient-art-inventory.csv`——那是在說明
+「圖畫好了但沒有品項」的判斷依據，留著是對的，只是檔案現在在素材庫。
+
+### H. 兩張素材換成素材庫的新版
+
+素材庫重新整理之後（`待人工確認的未使用資料` 已經不在，正式夾裡放的是最新版），
+重新比對 595 張母圖的雜湊，有兩張不一致：
+
+| 素材 | 原本的母圖 | 換成 | 網頁用圖 |
+| --- | --- | --- | --- |
+| `market-small-price-card` | 528×648 | **1115×1411**（新畫的版本） | 270×342，15KB |
+| `market-wood-counter-low` | 2172×314 | **2188×324**（重新裁切過） | 1290×191，32KB |
+
+這兩張的 CSS 都是 `background-size:100% 100%`（拉滿整個框），所以來源比例不決定畫面形狀，
+換版本只是換畫法。矮木檯那張要注意的是**裁切版才是對的**：原始生成是 2172×724、木檯只佔
+下半部 47%，下面是透明區；CSS 的框只有 52px 高，用未裁切版會把透明區一起壓進去，檯面只剩
+一半高。
+
+其餘 593 張與素材庫一致（28 張食材圖在素材庫用的是語意英文名——`item-pumpkin.png` 對
+網頁的 `item-FF1.webp`——用 SHA-256 比對過，位元完全相同）。

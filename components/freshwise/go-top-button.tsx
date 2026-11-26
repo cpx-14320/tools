@@ -1,6 +1,7 @@
 "use client";
 
 import { IllustratedArt } from "./game-art";
+import { cx } from "./theme";
 import { scrollContainerToTop } from "@/lib/scroll-within";
 
 /**
@@ -31,11 +32,11 @@ export function GoTopButton({ visible, inline = false }: { visible: boolean; inl
         type="button"
         onClick={scrollToTop}
         aria-label="回到頂部"
-        className={`fw-go-top ${inline ? "fw-go-top-inline" : "fixed"} z-20 grid place-items-center transition-opacity hover:opacity-90`}
+        className={cx("fw-go-top", inline ? "fw-go-top-inline" : "fixed", "z-20 grid place-items-center transition-opacity hover:opacity-90")}
       >
-        {/* 插畫版的回到頂端。圖檔放 public/freshwise/ui-go-top.png（跟其他介面圖示
+        {/* 插畫版的回到頂端。圖檔放 public/freshwise/ui-go-top.webp（跟其他介面圖示
             同一層、同一個 ui- 前綴）。 */}
-        <IllustratedArt src="/freshwise/ui-go-top.png" size={40} />
+        <IllustratedArt src="/freshwise/ui-go-top.webp" size={40} />
       </button>
     </>
   );

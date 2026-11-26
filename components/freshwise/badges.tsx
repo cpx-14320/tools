@@ -1,11 +1,11 @@
 "use client";
 
 import { Badge } from "./ui";
-import { colors } from "./theme";
+import { colors, copy, v } from "./theme";
 import { trendLabel, VALUE_LABEL, type Trend, type ValueJudgement } from "@/lib/freshwise/price";
 import type { ValueLevel } from "@/lib/freshwise/types";
 
-// 這個工具特有的四種徽章。放在獨立檔案（不是 ui.tsx）是因為它們帶著商業含意——「什麼
+// 這個工具特有的五種徽章。放在獨立檔案（不是 ui.tsx）是因為它們帶著商業含意——「什麼
 // 叫漲、什麼叫划算」是 lib/freshwise/price.ts 決定的，這裡只負責把那個判定畫成對應的
 // 顏色。ui.tsx 裡的 Badge 只管形狀。
 //
@@ -13,6 +13,7 @@ import type { ValueLevel } from "@/lib/freshwise/types";
 //   - 漲＝紅、跌＝綠（台灣看盤的習慣；對買菜的人來說綠色剛好也是好消息）。
 //   - 划算＝綠底綠字、偏貴＝紅底紅字、正常價＝淡灰綠（正常價不該搶注意力）。
 //   - 當季＝土黃（跟漲跌的紅綠分開，避免被誤讀成價格訊號）。
+//   - 不在菜籃＝紙張深一階的底＋同一個提醒色的字（比當季淡：它是提醒，不是重點）。
 //   - 估算＝無彩度的淡底，看起來就是「這不是實測值」。
 
 /** 漲跌徽章。持平時預設不顯示——一整頁都是「持平」的灰色徽章只是視覺雜訊，真正該被
@@ -60,6 +61,22 @@ export function ValueBadge({ value, showFair = false }: { value: ValueJudgement;
 /** 當季徽章。 */
 export function SeasonBadge() {
   return <Badge style={{ backgroundColor: colors.warningBg, color: colors.warning }}>當季</Badge>;
+}
+
+/**
+ * 「不在菜籃」徽章。食譜的主食材列上，標出這一樣使用者還沒加進菜籃。
+ *
+ * 配色沿用原本 `.fw-recipe-missing` 的那兩個變數（紙張深一階的底＋提醒色的字），所以
+ * 色值沒有重複定義一份。本來那顆徽章是在食譜頁直接寫 `className="fw-recipe-missing"`
+ * 配一條 CSS——但「什麼情況該亮什麼顏色」是徽章的語意，那件事這個檔案在管，散出去就會
+ * 變成下一個人改配色時改不到的地方。
+ */
+export function NotInBasketBadge({ size = "md" }: { size?: "md" | "sm" }) {
+  return (
+    <Badge size={size} style={{ backgroundColor: v.paperDeep, color: v.warning }}>
+      不在{copy.basket}
+    </Badge>
+  );
 }
 
 /** 估算值徽章。超市量販那一欄一定要帶這個——那個數字是推估的，不是實際訪價，不標清楚

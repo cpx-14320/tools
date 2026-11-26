@@ -66,7 +66,8 @@ export interface CatalogItem {
   code: string;
   name: string;
   category: CategoryKey;
-  /** 搜尋用的別名（例如「甘藍」要能用「高麗菜」搜到）。 */
+  /** 搜尋用的別名。主名稱用一般人會講的俗名、行情的正式名稱放這裡（例如「小黃瓜」的
+   *  別名是「花胡瓜」），兩種名稱都要搜得到。見 catalog.ts 的說明。 */
   aliases: string[];
   icon: string;
   /** 批發基準價（元/公斤）。假資料以這個數字為中心生成，真資料接上後這個欄位只剩
@@ -76,6 +77,27 @@ export interface CatalogItem {
   season: number[];
   /** 買菜時實際會遇到的計量提示，例如「一顆約 1 公斤」。 */
   note?: string;
+}
+
+/**
+ * 「食譜會用到、但行情查不到」的食材。
+ *
+ * 這一份**不是品項目錄**，沒有代碼、沒有價格、不會出現在行情清單或菜籃裡。它只做一件
+ * 事：使用者在行情頁搜「米粉」「豆腐」的時候，告訴他「這樣東西我們為什麼沒有價格」，
+ * 而不是丟一個空白的「找不到符合條件的食材」讓他以為是自己打錯字。
+ *
+ * 兩種原因要分開講，因為對使用者的意義不一樣：加工品是**這條資料管線永遠不會收**，
+ * 未收錄生鮮是**目前沒有訪價來源、以後可能會有**。
+ */
+export interface PantryItem {
+  /** 穩定識別（給腳本與測試用，畫面上不顯示）。 */
+  key: string;
+  name: string;
+  /** 搜尋用的別名，寫法同 CatalogItem。 */
+  aliases: string[];
+  /** `processed`＝加工品／乾貨，農業部的交易行情只收原型農產品。
+   *  `unlisted`＝生鮮，但目前沒有任何公開訪價（例如豬內臟、淡菜）。 */
+  kind: "processed" | "unlisted";
 }
 
 /**

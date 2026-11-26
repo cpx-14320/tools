@@ -1,5 +1,6 @@
 import { itemArtwork } from "@/lib/freshwise/art-assets";
 import { IllustratedArt, GameIcon, type GameIconName } from "./game-art";
+import { cx } from "./theme";
 
 // 品項圖示。**有畫好的插畫才畫，沒有的留白。**
 //
@@ -7,13 +8,15 @@ import { IllustratedArt, GameIcon, type GameIconName } from "./game-art";
 // 使用者看到五顆相同的葉子，分不出哪個是茼蒿哪個是芥菜，比留白更糟。留白至少誠實地
 // 說「這一項還沒有圖」，而且一眼就看得出哪些還要補。
 //
-// 分類本身的圖示（`/freshwise/category-*.png`）不受影響，那是真的在畫「分類」。
+// 分類本身的圖示（`/freshwise/category-*.webp`）不受影響，那是真的在畫「分類」。
 //
 // 待補的清單用 `npx tsx scripts/freshwise-missing-art.mts` 產出。
 
 /** 從 `itemImage()` / `categoryImage()` 產生的路徑把 key 取回來。 */
-const ITEM_CODE = /\/item-([A-Z0-9]+)\.png$/;
-const CATEGORY_KEY = /\/category-([a-z]+)\.png$/;
+// 副檔名跟著 catalog.ts 的 itemImage()／categoryImage() 走。網頁用圖全部是 webp
+// （PNG 母圖留在素材庫），這兩條如果漏改，取不到 code 就會整排品項變留白。
+const ITEM_CODE = /\/item-([A-Z0-9]+)\.webp$/;
+const CATEGORY_KEY = /\/category-([a-z]+)\.webp$/;
 
 export function ItemIcon({
   src,
@@ -35,7 +38,7 @@ export function ItemIcon({
   const categoryOfPath = CATEGORY_KEY.exec(src)?.[1] as GameIconName | undefined;
   const artSize = boxSize ?? size;
   return (
-    <span className={`fw-item-art ${className}`} style={{ width: boxSize ?? artSize, height: boxSize ?? artSize }} role="img" aria-label={alt}>
+    <span className={cx("fw-item-art", className)} style={{ width: boxSize ?? artSize, height: boxSize ?? artSize }} role="img" aria-label={alt}>
       {art ? (
         <IllustratedArt src={art.file} size={artSize} />
       ) : categoryOfPath ? (

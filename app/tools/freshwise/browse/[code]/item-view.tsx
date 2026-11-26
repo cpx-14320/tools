@@ -29,6 +29,7 @@ import { useFreshwise } from "@/components/freshwise/store";
 import { colors, copy, shadow, text } from "@/components/freshwise/theme";
 import { isInBasket } from "@/lib/freshwise/basket";
 import { GroupPickerModal } from "@/components/freshwise/group-picker-modal";
+import { GoTopButton } from "@/components/freshwise/go-top-button";
 import { categoryName, itemImage, itemOrPlaceholder } from "@/lib/freshwise/catalog";
 import { formatShortDate, monthOf } from "@/lib/freshwise/dates";
 import {
@@ -421,6 +422,10 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
           setPickingGroup(false);
         }}
       />
+
+      {/* 詳情頁不管哪個品項都比一螢幕長（價格卡＋走勢圖＋場所比價＋市場明細），所以不用
+          像清單頁那樣先數長度——固定顯示。 */}
+      <GoTopButton visible />
     </div>
   );
 }

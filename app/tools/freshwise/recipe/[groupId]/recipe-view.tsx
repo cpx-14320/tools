@@ -6,7 +6,9 @@ import { IllustratedArt } from "@/components/freshwise/game-art";
 import { DISH_ICONS } from "@/components/freshwise/group-icons";
 import { ItemIcon } from "@/components/freshwise/item-icon";
 import { PriceListRow } from "@/components/freshwise/price-list-row";
-import { Badge, BackRow as SharedBackRow, Callout, EmptyState, Hint, ListCard, Note, Paper, PrimaryButton, SectionTitle, SegmentedTabs, UNIT_TABS } from "@/components/freshwise/ui";
+import { BackRow as SharedBackRow, Callout, EmptyState, Hint, ListCard, Note, Paper, PrimaryButton, SectionTitle, SegmentedTabs, UNIT_TABS } from "@/components/freshwise/ui";
+import { NotInBasketBadge } from "@/components/freshwise/badges";
+import { GoTopButton } from "@/components/freshwise/go-top-button";
 import { useFreshwise } from "@/components/freshwise/store";
 import { copy, text } from "@/components/freshwise/theme";
 import { addEntry, entriesOfGroup, groupsSorted, updateEntry, updateGroup } from "@/lib/freshwise/basket";
@@ -58,7 +60,7 @@ export function RecipeView({ book, groupId }: { book: PriceBook; groupId: string
   const entries = entriesOfGroup(basket, group.id);
   const priceOf = (code: string) => book.quotes[code]?.avgKg;
   const cost = recipeCost(recipe, servings, priceOf);
-  const dishFile = DISH_ICONS.find((dish) => dish.icon === recipe.dish)?.file ?? "ui-basket.png";
+  const dishFile = DISH_ICONS.find((dish) => dish.icon === recipe.dish)?.file ?? "ui-basket.webp";
 
   /** 食譜要的這一樣，菜籃裡有沒有？ */
   const inBasket = (code: string | null) => (code ? entries.find((e) => e.code === code) : undefined);
@@ -136,7 +138,9 @@ export function RecipeView({ book, groupId }: { book: PriceBook; groupId: string
 
       {/* ── 主食材 ──────────────────────────────────────── */}
       <section className="flex flex-col gap-2.5">
-        <SectionTitle leaf action={<span className="fw-recipe-money" aria-live="polite">{cost.counted > 0 ? `約 ${formatMoney(cost.total)} 元` : "暫無行情"}</span>}>主食材</SectionTitle>
+        {/* 標題右邊的金額跟行情頁的「共 N 項 · 元/公斤」用同一個字級與顏色（text.hint）：
+            它是這一區的附註，不是這一頁的主角——每一列自己的金額才是要被讀的數字。 */}
+        <SectionTitle leaf action={<span className={text.hint} aria-live="polite">{cost.counted > 0 ? `約 ${formatMoney(cost.total)} 元` : "暫無行情"}</span>}>主食材</SectionTitle>
         <Paper variant="list">
           {recipe.main.map((ing, i) => (
             <IngredientRow
@@ -158,9 +162,11 @@ export function RecipeView({ book, groupId }: { book: PriceBook; groupId: string
                 把缺的 {missing.length} 樣加進{copy.basket}
               </PrimaryButton>
             )}
+            {/* 「改用」是關鍵字：這顆會覆蓋使用者自己在菜籃填的常買份量，文案短但不能
+                短到看起來只是「填上去」。 */}
             {differs.length > 0 && (
               <button type="button" className="fw-leaf-link" disabled={busy} onClick={applyQuantities}>
-                把 {differs.length} 樣的份量改成食譜的量 →
+                {differs.length} 樣份量改用食譜的量 →
               </button>
             )}
           </div>
@@ -205,6 +211,9 @@ export function RecipeView({ book, groupId }: { book: PriceBook; groupId: string
       <Callout icon="circle-info" size="sm">
         金額是用今天的行情 × 食譜份量估的，跟你在{copy.basket}填的常買份量是分開的兩件事。
       </Callout>
+
+      {/* 食譜頁一定比一螢幕長（食材兩區＋作法＋小撇步），所以不用像清單頁那樣先數長度。 */}
+      <GoTopButton visible />
     </div>
   );
 }
@@ -235,14 +244,19 @@ function IngredientRow({
   const item = ing.code ? itemOrPlaceholder(ing.code) : null;
   const name = ing.name ?? item?.name ?? "";
   const money = qtyCatty !== null && priceKg !== undefined ? Math.round(qtyCatty * KG_PER_CATTY * priceKg) : null;
+  // 沒有代碼的主食材（板豆腐、油麵、米粉、豬腰…）不是「今天剛好沒報價」，是**這樣東西
+  // 根本沒有公開行情**（見 catalog.ts 的 PANTRY）。所以：
+  //   - 不掛「不在菜籃」徽章——它永遠進不了菜籃，那個徽章只會讓人去找一顆按不了的按鈕
+  //   - 金額那一欄寫「無行情」，不是「—」。「—」看起來像資料還沒載好
+  const priceless = !ing.code;
   return <PriceListRow
     art={ing.code && <ItemIcon src={itemImage(ing.code)} alt={name} size={40} />}
     title={name}
-    badges={!inBasket && <Badge size="sm" className="fw-recipe-missing">不在{copy.basket}</Badge>}
+    badges={ing.code && !inBasket && <NotInBasketBadge size="sm" />}
     meta={quantityLabel}
     // 價格欄顯示的是「這道菜要用掉多少錢」，所以是算好的金額不是單價——PriceText 是
     // 「每單位多少錢」的元件，這裡用不上，但字級與對齊要跟它一致（.fw-recipe-money）。
-    price={money === null ? <span className={text.meta}>—</span> : <span className="fw-recipe-money">{formatMoney(money)} 元</span>}
+    price={money === null ? <span className={text.meta}>{priceless ? "無行情" : "—"}</span> : <span className="fw-recipe-money">{formatMoney(money)} 元</span>}
     href={ing.code ? `/tools/freshwise/browse/${ing.code}` : undefined}
   />;
 }

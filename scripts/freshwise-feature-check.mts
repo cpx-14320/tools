@@ -22,7 +22,8 @@
  *  結束碼：全部通過是 0，有任何一項失敗是 1（可以接 CI 或 pre-push hook）。
  *  詳細報告另外寫一份到 scripts/.freshwise-check-report.txt（已在 .gitignore 裡）。
  */
-import { writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 const catalog = await import("../lib/freshwise/catalog");
 const dates = await import("../lib/freshwise/dates");
@@ -34,6 +35,8 @@ const advice = await import("../lib/freshwise/advice");
 const prefsModule = await import("../lib/freshwise/prefs");
 const sourceMap = await import("../lib/freshwise/source-map");
 const moaClient = await import("../lib/freshwise/moa-client");
+const artAssets = await import("../lib/freshwise/art-assets");
+const groupIcons = await import("../components/freshwise/group-icons");
 
 // ── 小小的測試工具 ──────────────────────────────────────────────────────────
 const lines: string[] = [];
@@ -131,9 +134,23 @@ run("品項目錄", () => {
 
   // 找不到的代碼要給佔位品項，不是 undefined——使用者的菜籃裡可能留著已下架的代碼，
   // 那時候畫面要還能畫出一列，不是整頁炸掉。
-  check("findItem 找得到既有品項", catalog.findItem("FA1")?.name === "甘藍");
+  check("findItem 找得到既有品項", catalog.findItem("FA1")?.name === "高麗菜");
   check("findItem 找不到時回 undefined", catalog.findItem("NOPE") === undefined);
   check("itemOrPlaceholder 找不到時回佔位品項", catalog.itemOrPlaceholder("NOPE").name === "已下架品項");
+
+  // ── 行情查不到的食材（PANTRY）──────────────────────────────────────────
+  // 這一份不是品項目錄，只負責「搜了卻搜不到」時解釋原因，所以要驗的是「別跟目錄撞名」：
+  // 同一個名字一邊有行情、一邊又說沒有公開價格，使用者看到的是自相矛盾的兩句話。
+  const { PANTRY } = catalog;
+  const pantryNames = PANTRY.map((i) => i.name);
+  check("加工品清單不是空的", PANTRY.length > 0, `${PANTRY.length} 樣`);
+  check("加工品名稱沒有重複", new Set(pantryNames).size === pantryNames.length);
+  check("加工品都有 key、而且沒有重複", PANTRY.every((i) => i.key.length > 0) && new Set(PANTRY.map((i) => i.key)).size === PANTRY.length);
+  check("加工品的別名不會跟自己的名稱重複", PANTRY.every((i) => !i.aliases.includes(i.name)));
+
+  const catalogWords = new Set(CATALOG.flatMap((i) => [i.name, ...i.aliases]));
+  const collisions = PANTRY.flatMap((i) => [i.name, ...i.aliases]).filter((w) => catalogWords.has(w));
+  check("加工品的名稱與別名都沒有跟目錄撞名", collisions.length === 0, collisions.join("、"));
 });
 
 run("市場與場所", () => {
@@ -386,11 +403,20 @@ run("搜尋與篩選", () => {
   );
 
   const cabbage = catalog.findItem("FA1");
-  check("用正式名稱搜得到", !!cabbage && search.matchesKeyword(cabbage, "甘藍"));
-  check("用別名搜得到（高麗菜 → 甘藍）", !!cabbage && search.matchesKeyword(cabbage, "高麗菜"));
+  check("用俗名（主名稱）搜得到", !!cabbage && search.matchesKeyword(cabbage, "高麗菜"));
+  check("用行情正式名稱搜得到（甘藍 → 高麗菜）", !!cabbage && search.matchesKeyword(cabbage, "甘藍"));
   check("部分字串搜得到", !!cabbage && search.matchesKeyword(cabbage, "高麗"));
   check("空關鍵字一律命中", !!cabbage && search.matchesKeyword(cabbage, "  "));
   check("搜不到的關鍵字不命中", !!cabbage && !search.matchesKeyword(cabbage, "鮭魚"));
+
+  // 搜「米粉」在行情裡一定是空的（加工品沒有公開價格），畫面要改口說原因而不是「試試
+  // 其他名稱」——那句話會讓使用者一直換說法重搜。
+  check("加工品搜得到（米粉 → 有解釋）", catalog.pantryMatches("米粉").some((i) => i.key === "rice-vermicelli"));
+  check("加工品的別名搜得到（板豆腐 → 豆腐）", catalog.pantryMatches("板豆腐").some((i) => i.key === "tofu"));
+  check("未收錄生鮮搜得到（腰子 → 豬內臟）", catalog.pantryMatches("腰子").some((i) => i.kind === "unlisted"));
+  check("加工品的提示不會亂出現（搜「菜」不命中紫菜）", catalog.pantryMatches("菜").length === 0);
+  check("空關鍵字不出現加工品提示", catalog.pantryMatches("  ").length === 0);
+  check("目錄裡有的東西不會被當成加工品", catalog.pantryMatches("高麗菜").length === 0);
 
   const veg = search.filterRows(rows, { category: "veg" });
   check("分類篩選只留該分類", veg.length > 0 && veg.every((r) => r.item.category === "veg"));
@@ -841,6 +867,57 @@ run("開放資料的欄位清理", () => {
   check("空字串回 null", moaClient.toPositiveNumber("") === null);
   check("非數字回 null", moaClient.toPositiveNumber("\u2014") === null);
   check("帶逗號的數字", moaClient.toPositiveNumber("1,492") === 1492);
+});
+
+run("素材路徑真的存在", () => {
+  // 網頁用圖全部是 webp（母圖留在素材庫，見 public/freshwise/README.md）。把副檔名從
+  // png 換成 webp 那一輪，路徑是散在六七個檔案裡的——`itemImage()`、`ITEM_ARTWORK`、
+  // `DISH_ICONS.file`、`GameIcon` 的樣板、`SlicedArtwork` 的三片切片、game.css 的
+  // url()、還有 item-icon.tsx 裡**用正規表示式從路徑反推代碼**的那兩條。漏掉任何一個
+  // 都不會報錯，只會變成一張破圖或一整排留白。所以這一段直接對磁碟驗。
+  const pub = (url: string) => join(process.cwd(), "public", url.replace(/\?.*$/, ""));
+  const missing: string[] = [];
+  const expect = (url: string) => { if (!existsSync(pub(url))) missing.push(url); };
+
+  const withArt = catalog.CATALOG.filter((i) => artAssets.itemArtwork(i.code));
+  for (const item of withArt) expect(artAssets.itemArtwork(item.code)!.file);
+  check("有插畫的品項圖都在", missing.length === 0, missing.slice(0, 5).join("、"));
+  log(`  · 品項圖 ${withArt.length} 張`);
+
+  missing.length = 0;
+  for (const dish of groupIcons.DISH_ICONS) expect(`/freshwise/${dish.file}`);
+  check("一百道料理的圖都在", missing.length === 0, missing.slice(0, 5).join("、"));
+
+  // game-art.tsx 是 client component（帶 JSX 與 next/image），在這支腳本裡 import 不划算，
+  // 所以 GAME_ICONS 直接從原始碼讀出來——這一段要驗的本來就是「檔案在不在」。
+  missing.length = 0;
+  const gameArtSrc = readFileSync("components/freshwise/game-art.tsx", "utf8");
+  const iconList = gameArtSrc.match(/export const GAME_ICONS = \[([^\]]+)\]/)?.[1] ?? "";
+  const icons = [...iconList.matchAll(/"([a-z-]+)"/g)].map((m) => m[1]);
+  check("讀得到 GAME_ICONS 清單", icons.length > 0, `${icons.length} 個`);
+  for (const name of icons) expect(`/freshwise/ui-${name}.webp`);
+  for (const url of ["/freshwise/ui-back.webp", "/freshwise/ui-go-top.webp", "/freshwise/collection-companion-atlas.webp"]) expect(url);
+  check("介面圖示都在", missing.length === 0, missing.slice(0, 5).join("、"));
+
+  // 切片框是三片一組，少一片會露出背景色。
+  missing.length = 0;
+  for (const name of ["page-hanging-title", "companion-growth-frame", "companion-level-ribbon"]) {
+    for (const part of ["left", "middle", "right"]) expect(`/freshwise/${name}-${part}.webp`);
+  }
+  check("三片切片框都在", missing.length === 0, missing.slice(0, 5).join("、"));
+
+  // game.css 裡的 url()。CSS 壞掉不會有任何錯誤訊息，只會少一塊背景。
+  missing.length = 0;
+  const css = readFileSync("components/freshwise/game.css", "utf8");
+  const urls = [...css.matchAll(/url\('(\/freshwise\/[^']+)'\)/g)].map((m) => m[1]);
+  for (const url of urls) expect(url);
+  check("game.css 的背景圖都在", missing.length === 0, missing.slice(0, 5).join("、"));
+  log(`  · game.css 引用 ${new Set(urls).size} 個不同檔案`);
+
+  // 還有沒有人在寫 .png？網頁用圖已經沒有 PNG 了，出現就是改到一半。
+  const pngRefs = [...css.matchAll(/url\('(\/freshwise\/[^']+\.png[^']*)'\)/g)].map((m) => m[1]);
+  check("game.css 沒有殘留的 .png 引用", pngRefs.length === 0, pngRefs.join("、"));
+  check("public/freshwise 底下沒有 PNG 了", readdirSync("public/freshwise").every((f) => !/\.png$/i.test(f)));
 });
 
 // ── 結果 ────────────────────────────────────────────────────────────────

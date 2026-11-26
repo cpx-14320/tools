@@ -7,7 +7,7 @@ import { FaIcon } from "./fa-icon";
 import { ItemIcon } from "./item-icon";
 import { SeasonBadge } from "./badges";
 import { colors, copy, text } from "./theme";
-import { CATEGORIES, categoryName, isInSeason, itemImage, TRACKED_CATALOG } from "@/lib/freshwise/catalog";
+import { CATEGORIES, categoryName, isInSeason, itemImage, pantryMatches, TRACKED_CATALOG } from "@/lib/freshwise/catalog";
 import { matchesKeyword } from "@/lib/freshwise/search";
 import type { CategoryKey } from "@/lib/freshwise/types";
 
@@ -63,6 +63,10 @@ export function ItemPickerModal({
 
   const excluded = useMemo(() => new Set(excludeCodes), [excludeCodes]);
 
+  // 搜「米粉」「豆腐」在這裡一定是空的（菜籃只收得追蹤價格的品項），「換個說法試試」
+  // 會讓使用者一直重搜。理由跟行情頁的提示是同一個，見 catalog.ts 的 PANTRY。
+  const pantry = useMemo(() => pantryMatches(keyword), [keyword]);
+
   const results = useMemo(
     () =>
       TRACKED_CATALOG.filter((item) => (tab === "all" || item.category === tab) && matchesKeyword(item, keyword)).sort((a, b) => {
@@ -93,7 +97,13 @@ export function ItemPickerModal({
       <SegmentedTabs items={TABS} value={tab} onChange={setTab} scroll />
 
       <ScrollList className="max-h-[48vh]" divided>
-        {results.length === 0 && <ListMessage>找不到「{keyword}」，換個說法試試</ListMessage>}
+        {results.length === 0 && (
+          <ListMessage>
+            {pantry.length > 0
+              ? `${pantry.slice(0, 3).map((p) => p.name).join("、")}沒有公開的價格資料，所以${copy.basket}收不了`
+              : `找不到「${keyword}」，換個說法試試`}
+          </ListMessage>
+        )}
         {results.map((item) => {
           const already = excluded.has(item.code);
           const chosen = picked.includes(item.code);
@@ -110,8 +120,8 @@ export function ItemPickerModal({
                     <span className={`truncate ${text.bodyStrong}`}>{item.name}</span>
                     {isInSeason(item, month) && <SeasonBadge />}
                   </span>
-                  {/* 別名寫在第二行：使用者搜「高麗菜」命中的是「甘藍」，不告訴他這兩個
-                      是同一樣東西，他會以為搜錯了。 */}
+                  {/* 別名寫在第二行：使用者搜「花胡瓜」命中的是「小黃瓜」，不告訴他這兩
+                      個是同一樣東西，他會以為搜錯了。 */}
                   <span className={`block truncate ${text.meta}`}>
                     {categoryName(item.category)}
                     {item.aliases.length > 0 && `・又叫 ${item.aliases.join("、")}`}

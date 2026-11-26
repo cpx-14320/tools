@@ -13,7 +13,7 @@ const { itemArtwork } = (await import("../lib/freshwise/art-assets")) as unknown
 import { existsSync } from "node:fs";
 
 
-// 走 itemArtwork 再看磁碟——有些品項的圖不是叫 item-<code>.png（2026-11 那批是照農業部
+// 走 itemArtwork 再看磁碟——有些品項的圖不是叫 item-<code>.webp（2026-11 那批是照農業部
 // 的作物代號出圖的，對照表在 art-assets.ts）。只比對檔名會把那些誤報成缺圖。
 const haveArt = new Set(
   CATALOG.filter((i) => {
@@ -28,11 +28,11 @@ console.log(`目錄 ${CATALOG.length} 項，已有插畫 ${haveArt.size} 項，�
 console.log("");
 console.log("有行情資料的（會出現在畫面上，優先補）：");
 for (const i of missing.filter((x) => tracked.has(x.code))) {
-  console.log(`  public/freshwise/item-${i.code}.png   ${i.name}（${i.category}）`);
+  console.log(`  public/freshwise/item-${i.code}.webp   ${i.name}（${i.category}）`);
 }
 const rest = missing.filter((x) => !tracked.has(x.code));
 if (rest.length > 0) {
   console.log("");
   console.log("目前沒有行情來源的（畫面上不會出現，可以晚點再補）：");
-  for (const i of rest) console.log(`  public/freshwise/item-${i.code}.png   ${i.name}（${i.category}）`);
+  for (const i of rest) console.log(`  public/freshwise/item-${i.code}.webp   ${i.name}（${i.category}）`);
 }

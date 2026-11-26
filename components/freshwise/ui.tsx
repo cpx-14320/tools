@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
-import { colors, gradient, shadow, text, v } from "./theme";
+import { colors, cx, gradient, shadow, text, v } from "./theme";
 import { FaIcon } from "./fa-icon";
 import Link from "next/link";
 import { IllustratedArt, SlicedArtwork } from "./game-art";
@@ -20,8 +20,8 @@ import type { UnitKey } from "@/lib/freshwise/types";
 /** 每一頁最上方的標題列（h1 ＋ 右側可選的操作區）。 */
 export function PageTitle({ children, actions, hanging = false, subtitle }: { children: ReactNode; actions?: ReactNode; hanging?: boolean; subtitle?: ReactNode }) {
   return (
-    <div className={`fw-page-title ${hanging ? "fw-page-title-hanging" : ""} flex items-start justify-between gap-3`}>
-      <h1 className={text.pageTitle}>{hanging && <SlicedArtwork name="page-hanging-title" format="webp" className="fw-hanging-title-art"/>}{children}</h1>
+    <div className={cx("fw-page-title", hanging && "fw-page-title-hanging", "flex items-start justify-between gap-3")}>
+      <h1 className={text.pageTitle}>{hanging && <SlicedArtwork name="page-hanging-title" className="fw-hanging-title-art"/>}{children}</h1>
       {subtitle && <p className="fw-page-subtitle">{subtitle}</p>}
       {actions}
     </div>
@@ -47,7 +47,7 @@ export function SectionTitle({
   className?: string;
 }) {
   return (
-    <div className={`fw-section-title flex items-center gap-1 ${text.sectionTitle} ${className}`}>
+    <div className={cx("fw-section-title flex items-center gap-1", text.sectionTitle, className)}>
       {leaf && <FaIcon icon="leaf" size={30} className="text-[#ADC774]" />}
       {children}
       {/* 「這一區是怎麼選出來的」——挑選規則不寫出來，使用者只能猜。 */}
@@ -102,10 +102,10 @@ export function CheckRow({
 export function BackRow({ href, label, children }: { href: string; label: string; children?: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      {/* 返回用插畫按鈕。圖檔在 public/freshwise/ui-back.png（跟其他介面圖示同一層、
+      {/* 返回用插畫按鈕。圖檔在 public/freshwise/ui-back.webp（跟其他介面圖示同一層、
           同一個 ui- 前綴）。 */}
       <Link href={href} className="fw-back-link" aria-label={label}>
-        <IllustratedArt src="/freshwise/ui-back.png" size={40} />
+        <IllustratedArt src="/freshwise/ui-back.webp" size={40} />
       </Link>
       {children}
     </div>
@@ -119,16 +119,16 @@ export function FieldLabel({ children }: { children: ReactNode }) {
 
 /** 備註說明——真的在解釋一件事的句子，字級固定比內文小。 */
 export function Note({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <p className={`${text.note} ${className}`}>{children}</p>;
+  return <p className={cx(text.note, className)}>{children}</p>;
 }
 
 /** 空狀態／載入中／查無資料。 */
 export function Hint({ children, className = "", center = false }: { children: ReactNode; className?: string; center?: boolean }) {
-  return <p className={`${text.hint} ${center ? "text-center" : ""} ${className}`}>{children}</p>;
+  return <p className={cx(text.hint, center && "text-center", className)}>{children}</p>;
 }
 
 export function ErrorText({ children, className = "", center = false }: { children: ReactNode; className?: string; center?: boolean }) {
-  return <p className={`${text.error} ${center ? "text-center" : ""} ${className}`}>{children}</p>;
+  return <p className={cx(text.error, center && "text-center", className)}>{children}</p>;
 }
 
 /**
@@ -153,7 +153,7 @@ export function ErrorText({ children, className = "", center = false }: { childr
  *  那一條就是，它說明的是上面那份清單，不是畫面上的主要資訊。 */
 export function Callout({ children, icon = "circle-info", size = "md" }: { children: ReactNode; icon?: string; size?: "md" | "sm" }) {
   return (
-    <div className={`fw-callout ${size === "sm" ? "fw-callout-sm" : ""}`}>
+    <div className={cx("fw-callout", size === "sm" && "fw-callout-sm")}>
       <FaIcon icon={icon} size={12} className="mt-0.5 shrink-0" color={colors.warning} />
       <p>{children}</p>
     </div>
@@ -189,7 +189,7 @@ export function PrimaryButton({
       type="button"
       // 顏色、邊框、漸層、立體陰影都在 .fw-primary 裡（插畫皮膚的按鈕長相）。這裡不要
       // 再寫一套白字＋光暈陰影，不然兩邊會打架，CSS 就得用 !important 才蓋得過。
-      className={`fw-primary shrink-0 transition-opacity hover:opacity-90 disabled:opacity-60 ${sizeCls} ${className}`}
+      className={cx("fw-primary shrink-0 transition-opacity hover:opacity-90 disabled:opacity-60", sizeCls, className)}
       {...rest}
     >
       {icon && <FaIcon icon={icon} size={14} />}
@@ -202,7 +202,7 @@ export function PrimaryButton({
 /** 次要行動（取消）——純文字按鈕。 */
 export function GhostButton({ children, className = "", ...rest }: { children: ReactNode; className?: string } & ButtonBaseProps) {
   return (
-    <button type="button" className={`px-4 py-2 text-sm text-[#836A54] transition-colors hover:text-[#6E8C41] ${className}`} {...rest}>
+    <button type="button" className={cx("px-4 py-2 text-sm text-[#836A54] transition-colors hover:text-[#6E8C41]", className)} {...rest}>
       {children}
     </button>
   );
@@ -221,7 +221,7 @@ export function DangerButton({
   className?: string;
 } & ButtonBaseProps) {
   return (
-    <button type="button" className={`font-medium text-[#AE4F4A] ${size === "sm" ? "text-xs" : "text-sm"} ${className}`} {...rest}>
+    <button type="button" className={cx("font-medium text-[#AE4F4A]", size === "sm" ? "text-xs" : "text-sm", className)} {...rest}>
       {children}
     </button>
   );
@@ -232,7 +232,7 @@ export function PillButton({ children, className = "", ...rest }: { children: Re
   return (
     <button
       type="button"
-      className={`shrink-0 rounded-full bg-[#F6EEDB] px-3 py-1.5 text-xs font-medium text-[#6E8C41] ${className}`}
+      className={cx("shrink-0 rounded-full bg-[#F6EEDB] px-3 py-1.5 text-xs font-medium text-[#6E8C41]", className)}
       {...rest}
     >
       {children}
@@ -243,7 +243,7 @@ export function PillButton({ children, className = "", ...rest }: { children: Re
 /** 文字連結樣式的小按鈕。 */
 export function LinkButton({ children, className = "", ...rest }: { children: ReactNode; className?: string } & ButtonBaseProps) {
   return (
-    <button type="button" className={`shrink-0 text-xs font-medium text-[#6E8C41] ${className}`} {...rest}>
+    <button type="button" className={cx("shrink-0 text-xs font-medium text-[#6E8C41]", className)} {...rest}>
       {children}
     </button>
   );
@@ -254,7 +254,7 @@ export function AddButton({ children, className = "", ...rest }: { children: Rea
   return (
     <button
       type="button"
-      className={`fw-add-button w-full border-dashed py-2.5 text-sm font-medium ${className}`}
+      className={cx("fw-add-button w-full border-dashed py-2.5 text-sm font-medium", className)}
       {...rest}
     >
       ＋ {children}
@@ -276,7 +276,7 @@ export function IconButton({
   className?: string;
 } & ButtonBaseProps) {
   return (
-    <button type="button" className={`fw-icon-button ${className}`} {...rest}>
+    <button type="button" className={cx("fw-icon-button", className)} {...rest}>
       <FaIcon icon={icon} size={iconSize} className="text-current" />
     </button>
   );
@@ -317,7 +317,7 @@ export function SegmentedTabs<T extends string>({
   // tone 都蓋成同一個長相，等於存在兩份只差顏色的設定卻畫出同一個東西。已經移除。
   return (
     <div
-      className={`fw-segmented-tabs ${scroll ? "fw-tabs-scroll" : "inline-flex"} ${className}`}
+      className={cx("fw-segmented-tabs", scroll ? "fw-tabs-scroll" : "inline-flex", className)}
     >
       {items.map((item) => {
         const active = ready && value === item.key;
@@ -432,7 +432,7 @@ export function Badge({
   style?: CSSProperties;
 }) {
   return (
-    <span className={`fw-badge ${size === "sm" ? "fw-badge-sm" : ""} ${className}`} style={style}>
+    <span className={cx("fw-badge", size === "sm" && "fw-badge-sm", className)} style={style}>
       {children}
     </span>
   );
@@ -457,7 +457,7 @@ export function Field({
 }) {
   const Tag = as;
   return (
-    <Tag className={`flex flex-col gap-1.5 ${className}`}>
+    <Tag className={cx("flex flex-col gap-1.5", className)}>
       {(label || action) && (
         <span className="flex items-center justify-between gap-2">
           {label ? <FieldLabel>{label}</FieldLabel> : <span />}
@@ -486,13 +486,13 @@ const FIELD_STYLE: CSSProperties = {
 export function TextInput({ className = "", endAction, ...rest }: InputHTMLAttributes<HTMLInputElement> & { endAction?: ReactNode }) {
   if (endAction) return (
     <div className={FIELD_SHELL} style={FIELD_STYLE}>
-      <input className={`min-w-0 w-full flex-1 bg-transparent font-medium outline-none placeholder:text-[#927D64] ${className}`} style={{ color: "inherit", fontSize: "inherit" }} {...rest} />
+      <input className={cx("min-w-0 w-full flex-1 bg-transparent font-medium outline-none placeholder:text-[#927D64]", className)} style={{ color: "inherit", fontSize: "inherit" }} {...rest} />
       <span className="flex shrink-0 items-center">{endAction}</span>
     </div>
   );
   return (
     <input
-      className={`fw-input font-medium outline-none transition-colors placeholder:text-[#927D64] ${className}`}
+      className={cx("fw-input font-medium outline-none transition-colors placeholder:text-[#927D64]", className)}
       style={FIELD_STYLE}
       {...rest}
     />
@@ -562,7 +562,7 @@ export function SelectButton({
   children?: ReactNode;
 }) {
   return (
-    <button type="button" onClick={onClick} className={`${FIELD_SHELL} ${className}`} style={FIELD_STYLE}>
+    <button type="button" onClick={onClick} className={cx(FIELD_SHELL, className)} style={FIELD_STYLE}>
       {icon && <FaIcon icon={icon} size={13} className="text-[#836A54]" />}
       {children ?? <span className={`flex-1 truncate ${value ? text.bodyStrong : text.placeholder}`}>{value || placeholder}</span>}
       {chevron && <FaIcon icon="chevron-down" size={12} className="text-[#B3A081]" />}
@@ -572,7 +572,7 @@ export function SelectButton({
 
 /** 兩欄並排的欄位共用的格線。 */
 export function FieldRow({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`grid grid-cols-2 gap-2 ${className}`}>{children}</div>;
+  return <div className={cx("grid grid-cols-2 gap-2", className)}>{children}</div>;
 }
 
 /* ───────────────────────── 容器 ───────────────────────── */
@@ -616,7 +616,7 @@ export function Paper({
   style?: CSSProperties;
 } & Omit<HTMLAttributes<HTMLDivElement>, "className" | "children" | "style">) {
   return (
-    <div className={`${PAPER_CLASS[variant]} ${className}`} style={style} {...rest}>
+    <div className={cx(PAPER_CLASS[variant], className)} style={style} {...rest}>
       {children}
     </div>
   );
@@ -672,7 +672,7 @@ export function MeterBar({
 }) {
   const pct = max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0;
   return (
-    <div className={`fw-meter ${className}`} role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={max} aria-label={ariaLabel}>
+    <div className={cx("fw-meter", className)} role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={max} aria-label={ariaLabel}>
       <span className="fw-meter-fill" style={{ width: `${pct}%` }} />
       {label && <span className="fw-meter-label">{label}</span>}
     </div>
@@ -738,7 +738,7 @@ export function DividedRow({
 
 export function ScrollList({ children, className = "", divided = false }: { children: ReactNode; className?: string; divided?: boolean }) {
   return (
-    <div className={`flex flex-col overflow-y-auto rounded-2xl border border-[#E9DFC8] ${divided ? "divide-y divide-[#E9DFC8]" : ""} ${className}`}>
+    <div className={cx("flex flex-col overflow-y-auto rounded-2xl border border-[#E9DFC8]", divided && "divide-y divide-[#E9DFC8]", className)}>
       {children}
     </div>
   );
@@ -750,7 +750,7 @@ export function ScrollListRow({ children, onClick, className = "" }: { children:
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center justify-between gap-2 px-4 py-2.5 text-left transition-colors hover:bg-[#FCF7EB] ${className}`}
+      className={cx("flex items-center justify-between gap-2 px-4 py-2.5 text-left transition-colors hover:bg-[#FCF7EB]", className)}
     >
       {children}
     </button>
@@ -777,7 +777,7 @@ export function EmptyState({ icon, title, description, action }: { icon: string;
 
 /** 彈窗裡「一則／一組」的外框。 */
 export function EditorItemCard({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`flex flex-col gap-2.5 rounded-2xl border border-[#E9DFC8] p-3 ${className}`}>{children}</div>;
+  return <div className={cx("flex flex-col gap-2.5 rounded-2xl border border-[#E9DFC8] p-3", className)}>{children}</div>;
 }
 
 /** 彈窗裡每一則的標題列：左邊「第 N 項」、右邊刪除，中間可放拖曳握把。 */

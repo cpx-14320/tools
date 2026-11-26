@@ -4,9 +4,16 @@ export const PET_EMOTIONS = ["surprised", "happy", "sad", "curious"] as const;
 export type PetEmotion = typeof PET_EMOTIONS[number];
 export type PetMood = PetEmotion | "neutral";
 export const PET_EMOTION_LABELS: Record<PetMood, string> = { neutral: "平常", surprised: "驚訝", happy: "開心", sad: "難過", curious: "疑問" };
-export const PET_IMAGE_FILES: Record<CompanionId, string> = {
-  cabbage: "pet-cabbage-tuantuan.png", corn: "pet-corn-nuannuan.png", eggplant: "pet-eggplant-bobo.png",
-  pumpkin: "pet-pumpkin-manman.png", radish: "pet-radish-bengbeng.png", strawberry: "pet-strawberry-jiujiu.png",
+/**
+ * 每位夥伴的檔名前綴（不含階段、表情與副檔名）。
+ *
+ * 檔名一律是 `pet-<食材>-<角色>-stage-0<階段>[-<表情>|-action-<照護>]`，三個階段都一樣
+ * ——第三階本來沒有 `-stage-03`（基底叫 `pet-cabbage-tuantuan.png`、波波的平常表情又另外
+ * 叫 `-neutral.webp`），於是只有它需要在程式裡開特例。
+ */
+export const PET_IMAGE_PREFIX: Record<CompanionId, string> = {
+  cabbage: "pet-cabbage-tuantuan", corn: "pet-corn-nuannuan", eggplant: "pet-eggplant-bobo",
+  pumpkin: "pet-pumpkin-manman", radish: "pet-radish-bengbeng", strawberry: "pet-strawberry-jiujiu",
 };
 
 /** 六位夥伴共用成長門檻：1–3級嫩芽期、4–7級成長期、8級以上成熟期。 */
@@ -15,20 +22,19 @@ export function petStage(_id: CompanionId, level: number): PetStage {
   return level >= 8 ? 3 : level >= 4 ? 2 : 1;
 }
 
+/** 階段圖的路徑。`suffix` 是表情（`-happy`）或照護動作（`-action-water`），不給就是這一階
+ *  的平常樣子。三個階段、七種姿態都是 640×640 的 webp——**網頁用圖一律 webp**，PNG 母圖
+ *  留在素材庫（見 public/freshwise/README.md）。 */
 function petStageFile(id: CompanionId, stage: PetStage, suffix = ""): string {
-  return `/freshwise/${PET_IMAGE_FILES[id].replace(/\.png$/, `-stage-0${stage}${suffix}.webp`)}`;
+  return `/freshwise/${PET_IMAGE_PREFIX[id]}-stage-0${stage}${suffix}.webp`;
 }
 
 export function petBaseFile(id: CompanionId, level = 1): string {
-  const stage = petStage(id, level);
-  if (stage < 3) return petStageFile(id, stage);
-  return `/freshwise/${id === "eggplant" ? "pet-eggplant-bobo-neutral.webp" : PET_IMAGE_FILES[id]}`;
+  return petStageFile(id, petStage(id, level));
 }
 
 export function petEmotionFile(id: CompanionId, mood: PetEmotion, level = 1): string {
-  const stage = petStage(id, level);
-  if (stage < 3) return petStageFile(id, stage, `-${mood}`);
-  return `/freshwise/${PET_IMAGE_FILES[id].replace(/\.png$/, `-${mood}.webp`)}`;
+  return petStageFile(id, petStage(id, level), `-${mood}`);
 }
 /** 排除目前表情，避免連續點擊像是沒有變化。sample 可注入以驗證邊界。 */
 export function nextPetEmotion(current: PetMood, sample = Math.random()): PetEmotion {
@@ -51,9 +57,7 @@ export function nextPetPose(current: PetPose, sample = Math.random()): PetEmotio
 }
 
 export function petCareFile(id: CompanionId, action: PetCareAction, level = 1): string {
-  const stage = petStage(id, level);
-  if (stage < 3) return petStageFile(id, stage, `-action-${action}`);
-  return `/freshwise/${PET_IMAGE_FILES[id].replace(/\.png$/, `-action-${action}.webp`)}`;
+  return petStageFile(id, petStage(id, level), `-action-${action}`);
 }
 
 /** 畫面狀態只保存動作，檔案依目前等級即時決定，升階不會留住前一階的圖片。 */

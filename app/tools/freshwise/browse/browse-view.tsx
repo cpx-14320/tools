@@ -10,7 +10,7 @@ import {GoTopButton} from "@/components/freshwise/go-top-button";
 import {useFreshwise} from "@/components/freshwise/store";
 import {text} from "@/components/freshwise/theme";
 import {isInBasket} from "@/lib/freshwise/basket";
-import {CATEGORIES} from "@/lib/freshwise/catalog";
+import {CATEGORIES,pantryMatches} from "@/lib/freshwise/catalog";
 import {filterRows,rowsFromBook,sortRows,type SortKey} from "@/lib/freshwise/search";
 import {unitLabel} from "@/lib/freshwise/price";
 import type {CategoryKey,PriceBook} from "@/lib/freshwise/types";
@@ -30,6 +30,9 @@ export function BrowseView({today,book,initialKeyword,initialCategory}:{today:st
  // 分類超過一個時，加入菜籃要先問「加到哪一籃」——不然分了類也沒用，全部掉進第一個。
  const [adding,setAdding]=useState<{code:string;name:string}|null>(null);
  const activeFilters=Number(inSeasonOnly)+Number(cheapOnly)+Number(measuredOnly);
+ // 搜「米粉」「豆腐」「豬腰」這種行情永遠查不到的東西，要說清楚是為什麼查不到——
+ // 空狀態那句「試試其他名稱」在這裡是錯的提示，換再多說法也搜不出來。
+ const pantry=useMemo(()=>pantryMatches(keyword),[keyword]);
  return <div className="fw-page fw-browse-page">
  <PageTitle hanging>逛逛行情</PageTitle>
  {/* 資料日期放在最上面：使用者看價格之前要先知道這是哪一天的數字。 */}
@@ -40,6 +43,10 @@ export function BrowseView({today,book,initialKeyword,initialCategory}:{today:st
  <div className="flex items-center justify-between gap-2"><h2 className={text.sectionTitle}>{category?CATEGORIES.find(c=>c.key===category)?.name:"食材"}行情</h2><Hint>共 {rows.length} 項 · {unitLabel(prefs.unit)}</Hint></div>
  <SortBar options={SORT_COLUMNS} value={sort} onChange={setSort} filterCount={activeFilters} onFilter={()=>setFiltersOpen(!filtersOpen)} filterOpen={filtersOpen}/>
  {filtersOpen&&<div className="fw-filter-panel"><div className="fw-filter-pills"><FilterPill label="只看當季" active={inSeasonOnly} onClick={()=>setInSeasonOnly(!inSeasonOnly)}/><FilterPill label="只看划算" active={cheapOnly} onClick={()=>setCheapOnly(!cheapOnly)}/><FilterPill label="只看實際訪價" active={measuredOnly} onClick={()=>setMeasuredOnly(!measuredOnly)}/></div></div>}
+ {pantry.length>0&&<Callout icon="circle-question">{pantry.slice(0,3).map(p=>p.name).join("、")}{pantry.length>3&&`等 ${pantry.length} 樣`}
+  {pantry.every(p=>p.kind==="processed")
+   ?"是加工品。農業部的交易行情只收原型農產品，所以這裡查不到價格——食譜裡會算份量，但不算錢。"
+   :"目前沒有任何公開的訪價資料，所以這裡查不到價格。"}</Callout>}
  <Paper variant="list">{rows.length?rows.map(row=><ItemRow key={row.item.code} row={row} unit={prefs.unit} href={`/tools/freshwise/browse/${row.item.code}`} starred={isInBasket(basket,row.item.code)} onToggleStar={()=>{const inBasket=isInBasket(basket,row.item.code);if(!inBasket&&basket.groups.length>1){setAdding({code:row.item.code,name:row.item.name});return}toggleBasket(row.item.code,row.item.name)}}/>):<EmptyState icon="magnifying-glass" title={allRows.length?"沒有符合條件的食材":"這個場所目前還沒有行情"} description={allRows.length?"試試其他名稱，或放寬分類和篩選條件。":"資料來源可能尚未更新，換個場所或市場看看。"}/>}</Paper>
  <GroupPickerModal open={adding!==null} basket={basket} itemName={adding?.name??""} onClose={()=>setAdding(null)} onPick={id=>{if(adding)toggleBasket(adding.code,adding.name,id);setAdding(null)}}/>
  <GoTopButton visible={rows.length>=8}/>

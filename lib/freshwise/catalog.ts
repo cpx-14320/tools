@@ -9,7 +9,7 @@
 // 常見行情的量級，不是精確報價——這個工具現階段要驗證的是版面與操作，不是數字正確性。
 
 import { SOURCE_MAP } from "./source-map";
-import type { CategoryKey, CategoryMeta, CatalogItem, MarketMeta, UnitKey, VenueKey, VenueMeta } from "./types";
+import type { CategoryKey, CategoryMeta, CatalogItem, MarketMeta, PantryItem, UnitKey, VenueKey, VenueMeta } from "./types";
 
 /* ─────────────────────────── 分類 ─────────────────────────── */
 
@@ -63,7 +63,7 @@ export const VENUES: VenueMeta[] = [
     estimated: true,
   },
   // 批發市場**不列為可選場所**：那是菜販的進貨成本，一般人不能去批發市場買一顆高麗菜。
-  // 甘藍批發 18 元/公斤、傳統市場 50 元/台斤，差 2.8 倍——讓「不懂買菜價格的人」看到
+  // 高麗菜批發 18 元/公斤、傳統市場 50 元/台斤，差 2.8 倍——讓「不懂買菜價格的人」看到
   // 18 這個數字，等於給了他一個去市場會被打臉的期待。
   //
   // 批發的**資料**沒有拿掉，它在底層有兩個用途：臺中沒有訪價的品項用批發價推估零售價
@@ -210,16 +210,30 @@ export function marketName(code: string): string {
 
 /* ─────────────────────────── 品項 ─────────────────────────── */
 
+/**
+ * ## `name` 一律用「一般人在市場會講的名字」，行情的正式名稱放 `aliases`
+ *
+ * 農業部行情用的是作物的正式名稱：甘藍、蕹菜、花胡瓜、結球白菜、番石榴、蓬萊米。
+ * 這份目錄原本直接照抄，結果食譜寫「小黃瓜」、點進詳情頁卻看到「花胡瓜」，使用者會
+ * 以為自己點錯了。所以主名稱改成俗名，正式名稱降為別名——別名一樣會被搜尋命中
+ * （見 search.ts 的 `matchesKeyword`），詳情頁也會列出來（「又叫 花胡瓜、刺瓜」），
+ * 所以兩個名字都找得到、也都看得到，只是主名稱是使用者講的那一個。
+ *
+ * **這跟 source-map.ts 無關**：取價是用 SOURCE_MAP 裡的 `match` 關鍵字去比對開放資料
+ * 的作物名稱，不是比對這裡的 `name`。改名不會動到價格，但 SOURCE_MAP 的關鍵字仍然要
+ * 寫行情的正式名稱。
+ */
+
 /** `season: ALL_YEAR` 代表全年都有，不特別標當季。 */
 const ALL_YEAR: number[] = [];
 
 export const CATALOG: CatalogItem[] = [
   // ── 蔬菜 ──────────────────────────────────────────────────
-  { code: "FA1", name: "甘藍", category: "veg", aliases: ["高麗菜", "捲心菜"], icon: "leaf", baseKg: 18, season: [11, 12, 1, 2, 3, 4], note: "一顆約 1～1.5 公斤" },
-  { code: "FA2", name: "結球白菜", category: "veg", aliases: ["大白菜", "山東白"], icon: "leaf", baseKg: 20, season: [11, 12, 1, 2, 3] },
+  { code: "FA1", name: "高麗菜", category: "veg", aliases: ["甘藍", "捲心菜"], icon: "leaf", baseKg: 18, season: [11, 12, 1, 2, 3, 4], note: "一顆約 1～1.5 公斤" },
+  { code: "FA2", name: "大白菜", category: "veg", aliases: ["結球白菜", "包心白菜", "山東白"], icon: "leaf", baseKg: 20, season: [11, 12, 1, 2, 3] },
   { code: "FA3", name: "小白菜", category: "veg", aliases: ["青菜"], icon: "leaf", baseKg: 28, season: ALL_YEAR },
   { code: "FA4", name: "青江菜", category: "veg", aliases: ["青江白菜", "湯匙菜"], icon: "leaf", baseKg: 25, season: ALL_YEAR },
-  { code: "FA5", name: "蕹菜", category: "veg", aliases: ["空心菜"], icon: "leaf", baseKg: 30, season: [5, 6, 7, 8, 9, 10] },
+  { code: "FA5", name: "空心菜", category: "veg", aliases: ["蕹菜"], icon: "leaf", baseKg: 30, season: [5, 6, 7, 8, 9, 10] },
   { code: "FA6", name: "菠菜", category: "veg", aliases: ["波菜"], icon: "leaf", baseKg: 45, season: [11, 12, 1, 2, 3] },
   { code: "FA7", name: "地瓜葉", category: "veg", aliases: ["甘薯葉"], icon: "leaf", baseKg: 25, season: ALL_YEAR },
   { code: "FA8", name: "莧菜", category: "veg", aliases: ["杏菜"], icon: "leaf", baseKg: 30, season: [4, 5, 6, 7, 8, 9] },
@@ -232,14 +246,14 @@ export const CATALOG: CatalogItem[] = [
   { code: "FB6", name: "蒜頭", category: "veg", aliases: ["大蒜", "蒜球"], icon: "circle", baseKg: 95, season: [3, 4, 5] },
   { code: "FB7", name: "薑", category: "veg", aliases: ["老薑", "嫩薑"], icon: "circle", baseKg: 70, season: ALL_YEAR },
   { code: "FB8", name: "馬鈴薯", category: "veg", aliases: ["洋芋"], icon: "circle", baseKg: 28, season: [1, 2, 3, 4] },
-  { code: "FB9", name: "甘藷", category: "veg", aliases: ["地瓜", "番薯"], icon: "circle", baseKg: 25, season: ALL_YEAR },
+  { code: "FB9", name: "地瓜", category: "veg", aliases: ["甘藷", "番薯"], icon: "circle", baseKg: 25, season: ALL_YEAR },
   { code: "FC1", name: "山藥", category: "veg", aliases: [], icon: "circle", baseKg: 90, season: [10, 11, 12, 1] },
   { code: "FC2", name: "竹筍", category: "veg", aliases: ["綠竹筍", "麻竹筍"], icon: "seedling", baseKg: 60, season: [4, 5, 6, 7, 8, 9] },
   { code: "FC3", name: "番茄", category: "veg", aliases: ["牛番茄", "黑柿番茄"], icon: "apple-whole", baseKg: 35, season: [11, 12, 1, 2, 3, 4] },
   { code: "FC4", name: "小番茄", category: "veg", aliases: ["玉女", "聖女", "聖女番茄"], icon: "apple-whole", baseKg: 95, season: [12, 1, 2, 3, 4] },
   { code: "FC5", name: "絲瓜", category: "veg", aliases: ["菜瓜"], icon: "lemon", baseKg: 35, season: [5, 6, 7, 8, 9, 10] },
-  { code: "FC6", name: "胡瓜", category: "veg", aliases: ["大黃瓜"], icon: "lemon", baseKg: 28, season: [4, 5, 6, 7, 8, 9, 10] },
-  { code: "FC7", name: "花胡瓜", category: "veg", aliases: ["小黃瓜", "刺瓜"], icon: "lemon", baseKg: 42, season: ALL_YEAR },
+  { code: "FC6", name: "大黃瓜", category: "veg", aliases: ["胡瓜"], icon: "lemon", baseKg: 28, season: [4, 5, 6, 7, 8, 9, 10] },
+  { code: "FC7", name: "小黃瓜", category: "veg", aliases: ["花胡瓜", "刺瓜"], icon: "lemon", baseKg: 42, season: ALL_YEAR },
   { code: "FC8", name: "苦瓜", category: "veg", aliases: ["白玉苦瓜"], icon: "lemon", baseKg: 38, season: [5, 6, 7, 8, 9, 10] },
   { code: "FC9", name: "茄子", category: "veg", aliases: ["麻芝茄"], icon: "lemon", baseKg: 40, season: [4, 5, 6, 7, 8, 9, 10] },
   { code: "FD1", name: "青椒", category: "veg", aliases: ["大同仔"], icon: "pepper-hot", baseKg: 55, season: [11, 12, 1, 2, 3, 4] },
@@ -306,7 +320,7 @@ export const CATALOG: CatalogItem[] = [
   // 這次改成把素材盤點表（ingredient-art-inventory.csv）裡「圖畫好了但沒有品項」的
   // 119 項全部實測一輪，門檻訂在「日均量 ≥ 50 公斤 且 覆蓋率 ≥ 80%」。
   { code: "FK3", name: "青蒜", category: "veg", aliases: ["蒜苗"], icon: "leaf", baseKg: 74, season: [11, 12, 1, 2, 3] },
-  { code: "FK4", name: "結球萵苣", category: "veg", aliases: ["美生菜", "西生菜"], icon: "leaf", baseKg: 31, season: ALL_YEAR },
+  { code: "FK4", name: "美生菜", category: "veg", aliases: ["結球萵苣", "西生菜"], icon: "leaf", baseKg: 31, season: ALL_YEAR },
   { code: "FK5", name: "紅鳳菜", category: "veg", aliases: ["紅菜"], icon: "leaf", baseKg: 64, season: ALL_YEAR },
   { code: "FK6", name: "茴香", category: "veg", aliases: [], icon: "leaf", baseKg: 66, season: [11, 12, 1, 2, 3] },
   { code: "FK7", name: "韭黃", category: "veg", aliases: [], icon: "leaf", baseKg: 124, season: ALL_YEAR },
@@ -316,7 +330,7 @@ export const CATALOG: CatalogItem[] = [
   { code: "FL2", name: "皇帝豆", category: "veg", aliases: ["萊豆", "白扁豆"], icon: "seedling", baseKg: 89, season: [11, 12, 1, 2, 3] },
   { code: "FL3", name: "鮑魚菇", category: "veg", aliases: ["蠔菇"], icon: "seedling", baseKg: 44, season: ALL_YEAR },
   { code: "FL4", name: "巴西利", category: "veg", aliases: ["洋香菜", "荷蘭芹"], icon: "leaf", baseKg: 75, season: ALL_YEAR },
-  { code: "FL5", name: "紫甘藍", category: "veg", aliases: ["紫高麗菜"], icon: "leaf", baseKg: 33, season: ALL_YEAR },
+  { code: "FL5", name: "紫高麗菜", category: "veg", aliases: ["紫甘藍"], icon: "leaf", baseKg: 33, season: ALL_YEAR },
   { code: "FL6", name: "川七", category: "veg", aliases: ["藤川七", "洋落葵"], icon: "leaf", baseKg: 52, season: [5, 6, 7, 8, 9, 10] },
   { code: "FL7", name: "山蘇", category: "veg", aliases: ["鳥巢蕨"], icon: "leaf", baseKg: 247, season: [3, 4, 5, 6, 7, 8] },
   { code: "FL8", name: "柳松菇", category: "veg", aliases: ["茶樹菇"], icon: "seedling", baseKg: 152, season: ALL_YEAR },
@@ -340,7 +354,7 @@ export const CATALOG: CatalogItem[] = [
   { code: "FN3", name: "熟花生", category: "veg", aliases: ["炒花生", "水煮花生"], icon: "seedling", baseKg: 61, season: ALL_YEAR },
   { code: "FN4", name: "海帶", category: "veg", aliases: ["昆布"], icon: "leaf", baseKg: 44, season: ALL_YEAR },
   { code: "FN5", name: "醃瓜", category: "veg", aliases: ["花瓜", "醬瓜"], icon: "seedling", baseKg: 35, season: ALL_YEAR },
-  { code: "FN6", name: "甘藍芽", category: "veg", aliases: ["高麗菜芽"], icon: "seedling", baseKg: 39, season: [11, 12, 1, 2, 3] },
+  { code: "FN6", name: "高麗菜芽", category: "veg", aliases: ["甘藍芽"], icon: "seedling", baseKg: 39, season: [11, 12, 1, 2, 3] },
   { code: "FN7", name: "甜菜根", category: "veg", aliases: ["紅菜頭"], icon: "circle", baseKg: 28, season: [11, 12, 1, 2, 3] },
   { code: "FN8", name: "筍片", category: "veg", aliases: [], icon: "seedling", baseKg: 68, season: ALL_YEAR },
   { code: "FN9", name: "筍乾", category: "veg", aliases: [], icon: "seedling", baseKg: 65, season: ALL_YEAR },
@@ -371,7 +385,7 @@ export const CATALOG: CatalogItem[] = [
   { code: "GA2", name: "鳳梨", category: "fruit", aliases: ["金鑽鳳梨", "旺來"], icon: "apple-whole", baseKg: 28, season: [3, 4, 5, 6, 7] },
   { code: "GA3", name: "西瓜", category: "fruit", aliases: ["大西瓜"], icon: "apple-whole", baseKg: 18, season: [5, 6, 7, 8] },
   { code: "GA4", name: "木瓜", category: "fruit", aliases: ["網室木瓜"], icon: "apple-whole", baseKg: 35, season: ALL_YEAR },
-  { code: "GA5", name: "番石榴", category: "fruit", aliases: ["芭樂", "珍珠芭樂"], icon: "apple-whole", baseKg: 40, season: [11, 12, 1, 2, 3] },
+  { code: "GA5", name: "芭樂", category: "fruit", aliases: ["番石榴", "珍珠芭樂"], icon: "apple-whole", baseKg: 40, season: [11, 12, 1, 2, 3] },
   { code: "GA6", name: "蘋果", category: "fruit", aliases: ["進口蘋果"], icon: "apple-whole", baseKg: 85, season: ALL_YEAR },
   { code: "GA7", name: "柳橙", category: "fruit", aliases: ["柳丁"], icon: "apple-whole", baseKg: 30, season: [11, 12, 1] },
   { code: "GA8", name: "椪柑", category: "fruit", aliases: ["橘子"], icon: "apple-whole", baseKg: 35, season: [11, 12, 1] },
@@ -510,12 +524,82 @@ export const CATALOG: CatalogItem[] = [
   // ── 糧食 ──────────────────────────────────────────────────
   // 米是唯一「全國各縣市都有每日零售價」的品項（糧價那支 API），其他品項的零售訪價
   // 只有臺中市。baseKg 填的是批發價的量級，跟其他品項一致。
-  { code: "RA1", name: "蓬萊米", category: "grain", aliases: ["白米", "梗米", "稉米"], icon: "wheat-awn", baseKg: 38, season: ALL_YEAR, note: "一包 2 公斤約 100 元上下" },
+  { code: "RA1", name: "白米", category: "grain", aliases: ["蓬萊米", "梗米", "稉米"], icon: "wheat-awn", baseKg: 38, season: ALL_YEAR, note: "一包 2 公斤約 100 元上下" },
   { code: "RA2", name: "在來米", category: "grain", aliases: ["秈米", "在來硬"], icon: "wheat-awn", baseKg: 40, season: ALL_YEAR, note: "蘿蔔糕、碗粿用的米" },
   { code: "RA3", name: "在來米（軟）", category: "grain", aliases: ["在來軟"], icon: "wheat-awn", baseKg: 42, season: ALL_YEAR },
   { code: "RA4", name: "圓糯米", category: "grain", aliases: ["糯米", "圓糯"], icon: "wheat-awn", baseKg: 48, season: ALL_YEAR, note: "湯圓、油飯用的米" },
   { code: "RA5", name: "長糯米", category: "grain", aliases: ["長糯"], icon: "wheat-awn", baseKg: 48, season: ALL_YEAR, note: "粽子、米糕用的米" },
 ];
+
+/* ──────────────────── 行情查不到的食材 ──────────────────── */
+
+/**
+ * 食譜會用到、但**在行情裡查不到**的食材。型別說明見 types.ts 的 `PantryItem`
+ * （`processed` 是永遠不會有，`unlisted` 是目前沒有來源）。
+ *
+ * ## 為什麼要有這一份
+ *
+ * 使用者在行情頁搜「米粉」「豆腐」「油麵」，拿到的是一個空白的「找不到符合條件的食材」。
+ * 那句話在這裡是錯的提示——它暗示「換個說法再搜一次」，但再怎麼換都搜不到：農業部的
+ * 交易行情只收原型農產品，加工品不在裡面。使用者會一直試。
+ *
+ * 所以搜不到的時候要說清楚是哪一種搜不到：
+ *   - 打錯字／不在目錄 → 「試試其他名稱」（本來的空狀態）
+ *   - 這份清單裡的 → 「這樣東西沒有公開行情」＋原因（見 browse-view 的提示）
+ *
+ * ## 為什麼不是把它們加進 CATALOG
+ *
+ * 加進去會連帶跑進三個地方：行情清單（一排永遠查無價格的列）、品項選擇器（可以勾進
+ * 菜籃，但菜籃只畫「有行情」的項目，勾了會憑空消失）、詳情頁（空的走勢圖）。
+ * 它們不是「暫時沒資料的品項」，是**沒有價格這個欄位的東西**，混在一起只會讓每個用到
+ * 目錄的地方都要多一個 if。
+ *
+ * 加工品的量在食譜裡仍然會算、會顯示（`main` 區的「400 公克板豆腐」），只是金額那一欄
+ * 寫「無行情」——見 recipe-view 的 `IngredientRow`。
+ */
+export const PANTRY: PantryItem[] = [
+  // ── 加工品與乾貨：行情只收原型農產品，這些永遠不會有 ──
+  { key: "tofu", name: "豆腐", aliases: ["板豆腐", "嫩豆腐", "傳統豆腐", "老豆腐", "凍豆腐"], kind: "processed" },
+  { key: "dried-tofu", name: "豆乾", aliases: ["豆干", "豆腐乾", "滷味豆乾"], kind: "processed" },
+  { key: "fried-tofu", name: "油豆腐", aliases: ["豆泡", "三角油豆腐", "油炸豆腐"], kind: "processed" },
+  { key: "tofu-skin", name: "豆皮", aliases: ["豆包", "腐皮", "生豆包"], kind: "processed" },
+  { key: "soy-milk", name: "豆漿", aliases: ["無糖豆漿"], kind: "processed" },
+  { key: "rice-vermicelli", name: "米粉", aliases: ["炊粉", "新竹米粉", "乾米粉", "粗米粉"], kind: "processed" },
+  { key: "oil-noodles", name: "油麵", aliases: ["黃麵", "熟油麵", "熟麵"], kind: "processed" },
+  { key: "udon", name: "烏龍麵", aliases: ["烏龍", "熟烏龍麵"], kind: "processed" },
+  { key: "misua", name: "麵線", aliases: ["紅麵線", "白麵線", "麵線糊用麵線"], kind: "processed" },
+  { key: "noodles", name: "麵條", aliases: ["生麵條", "陽春麵", "意麵", "拉麵", "刀削麵", "麵"], kind: "processed" },
+  { key: "glass-noodles", name: "冬粉", aliases: ["粉絲", "綠豆冬粉"], kind: "processed" },
+  { key: "flat-rice-noodles", name: "粿仔條", aliases: ["板條", "河粉", "粄條"], kind: "processed" },
+  { key: "rice-cake", name: "年糕", aliases: ["寧波年糕", "炒年糕"], kind: "processed" },
+  { key: "seaweed", name: "紫菜", aliases: ["海苔", "海苔片"], kind: "processed" },
+  { key: "dried-shrimp", name: "蝦米", aliases: ["金鉤蝦", "小蝦米", "蝦皮"], kind: "processed" },
+  { key: "kimchi", name: "泡菜", aliases: ["韓式泡菜", "台式泡菜"], kind: "processed" },
+  { key: "curry-roux", name: "咖哩塊", aliases: ["咖哩醬", "咖哩粉"], kind: "processed" },
+  { key: "hotpot-balls", name: "火鍋料", aliases: ["魚丸", "貢丸", "花枝丸", "蛋餃", "火鍋餃"], kind: "processed" },
+
+  // ── 生鮮，但目前沒有任何公開訪價 ──
+  // 跟上面那一組不一樣：這些是原型食材，哪天有了訪價來源（例如使用者回報）就該進 CATALOG，
+  // 所以寫的時候不要講成「永遠不會有」。
+  { key: "pork-offal", name: "豬內臟", aliases: ["豬腰", "腰子", "豬肝", "豬心", "豬大腸", "粉腸", "豬血"], kind: "unlisted" },
+  { key: "mussel", name: "淡菜", aliases: ["孔雀蛤", "藍殼貝"], kind: "unlisted" },
+];
+
+/**
+ * 關鍵字有沒有打到「行情查不到的食材」。
+ *
+ * 這裡用**開頭比對**，不是 `matchesKeyword` 那種任意位置的 `includes`：這個提示是插在
+ * 清單上方的一句解釋，寧可少出現也不要亂出現。搜「菜」如果用 `includes` 會命中「紫菜」，
+ * 於是一個有五十筆結果的搜尋上面會冒出一句「紫菜沒有行情」——那是雜訊。搜「麵」命中
+ * 「麵線」「麵條」則是對的，所以也不能收得比開頭比對更緊。
+ *
+ * 空關鍵字一律不命中（沒搜東西就不需要這句解釋）。
+ */
+export function pantryMatches(keyword: string): PantryItem[] {
+  const kw = keyword.trim().toLowerCase();
+  if (!kw) return [];
+  return PANTRY.filter((item) => [item.name, ...item.aliases].some((n) => n.toLowerCase().startsWith(kw)));
+}
 
 /**
  * 真的有開放資料可以查的品項。畫面上一律用這一份，不要用 CATALOG——
@@ -531,16 +615,16 @@ export const TRACKED_CATALOG: CatalogItem[] = CATALOG.filter((item) => !!SOURCE_
  * 品項圖片的路徑。圖片還沒畫好之前，畫面會自動退回顯示 `item.icon`（Font Awesome 的
  * 向量圖示），所以現在就可以用——圖片檔丟進 `public/freshwise/items/` 之後不用改程式。
  *
- * 檔名用品項代碼（`FA1.png`），不用中文名：中文檔名在不同作業系統、不同編碼下很容易出
+ * 檔名用品項代碼（`FA1.webp`），不用中文名：中文檔名在不同作業系統、不同編碼下很容易出
  * 問題，而代碼本來就是這個品項的穩定識別。
  */
 export function itemImage(code: string): string {
-  return `/freshwise/item-${code}.png`;
+  return `/freshwise/item-${code}.webp`;
 }
 
 /** 分類圖片的路徑。同樣是「有圖就用圖、沒圖退回向量圖示」。 */
 export function categoryImage(key: CategoryKey): string {
-  return `/freshwise/category-${key}.png`;
+  return `/freshwise/category-${key}.webp`;
 }
 
 const BY_CODE = new Map(CATALOG.map((item) => [item.code, item]));

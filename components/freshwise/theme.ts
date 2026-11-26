@@ -11,6 +11,20 @@
 // 規則只有一條：**畫面上不要出現 token 以外的新數字、新顏色、新字級。** 需要一個現在
 // 沒有的樣式時，先問「是不是既有 token 的某一階」，真的沒有才在這裡加一階並寫下理由。
 
+/**
+ * 把 class 串成一個字串，空的段落直接丟掉。
+ *
+ * 原本到處都是 `` className={`fw-badge ${sm ? "fw-badge-sm" : ""} ${className}`} ``，
+ * 條件沒中、或呼叫端沒傳 className 的時候就留下 `class="fw-badge  "` 這種尾巴。功能上
+ * 沒差，但看 DOM 的時候每個元件都掛著多餘的空格，要數清楚它到底有哪幾個 class 得瞇著
+ * 眼睛看；複製一段 DOM 出來問「這個長得怎樣」的時候也會連著那兩個空格一起貼。
+ *
+ * 用法：`cx("fw-badge", size === "sm" && "fw-badge-sm", className)`。
+ */
+export function cx(...parts: (string | false | null | undefined)[]): string {
+  return parts.filter(Boolean).join(" ");
+}
+
 export const colors = {
   /** 主要文字、標題、價格數字 */
   ink: "#624839",
@@ -82,6 +96,9 @@ export const v = {
   sandPale: "var(--fw-sand-pale)",
   butter: "var(--fw-butter)",
   gold: "var(--fw-gold)",
+  /** 提醒色（當季、估算說明、「還沒加進菜籃」）。跟 colors.warning 是同一個色，
+   *  差別只在這裡是 CSS 變數、那裡是真的色碼（給 SVG 用）。 */
+  warning: "var(--fw-warning)",
 
   peachHi: "var(--fw-peach-hi)",
   peach: "var(--fw-peach)",

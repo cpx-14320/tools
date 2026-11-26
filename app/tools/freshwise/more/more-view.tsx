@@ -30,7 +30,7 @@ import { colors, copy, text } from "@/components/freshwise/theme";
 import { formatShortDate } from "@/lib/freshwise/dates";
 import type { MarketOption, UnitKey } from "@/lib/freshwise/types";
 
-const OTHER_TOOL_ICONS: Record<string, string> = { transit: "/freshwise/ui-tool-transit.png", expenses: "/freshwise/ui-tool-expenses.png", compress: "/freshwise/ui-tool-compress.png" };
+const OTHER_TOOL_ICONS: Record<string, string> = { transit: "/freshwise/ui-tool-transit.webp", expenses: "/freshwise/ui-tool-expenses.webp", compress: "/freshwise/ui-tool-compress.webp" };
 
 
 const UNIT_OPTIONS: readonly { key: UnitKey; label: string; note: string }[] = [

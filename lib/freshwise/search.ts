@@ -57,8 +57,10 @@ export function rowsFromBook(quotes: Record<string, PriceQuote>, dateISO: string
 
 /* ───────────────────── 搜尋 ───────────────────── */
 
-/** 比對關鍵字。名稱與別名都算命中——使用者會打「高麗菜」，但農業部的正式名稱是「甘藍」，
- *  只比對正式名稱的話最常買的那顆菜反而搜不到。英文大小寫一起正規化（進口水果會用到）。 */
+/** 比對關鍵字。名稱與別名都算命中——同一樣菜有兩個名字（市場講「小黃瓜」、行情寫
+ *  「花胡瓜」），兩邊都要搜得到。目錄的主名稱用俗名、正式名稱放 `aliases`（見
+ *  catalog.ts 的說明），所以這裡比對 `name` ＋ `aliases` 就等於兩種名稱都能搜。
+ *  英文大小寫一起正規化（進口水果會用到）。 */
 export function matchesKeyword(item: CatalogItem, keyword: string): boolean {
   const kw = keyword.trim().toLowerCase();
   if (!kw) return true;
