@@ -31,10 +31,14 @@ export function CompanionView() {
   const [bookOpen, setBookOpen] = useState(false);
   const petReaction = useRef<PetReactionHandle>(null);
 
+  /** 動畫只在**真的發生**的時候播。
+   *
+   *  以前這裡自己用 `state.dew < WATER_DEW_COST` 判斷再無條件播動畫，但 `state` 是 React
+   *  state——連點時同一批事件裡它可能還是舊的，於是最後一下會「澆水動畫播了，提示卻寫著
+   *  露珠不夠」。真正的把關在 store 的 `care()`（讀同步更新的 ref），這裡只看它的回傳值。
+   *  按鈕的 disabled 仍然用 state，那是給眼睛看的，不是把關。 */
   function handleCare(action: PetCareAction) {
-    if (!ready || (action === "water" ? state.dew < WATER_DEW_COST : state.played)) return;
-    care(action);
-    petReaction.current?.react(action);
+    if (care(action)) petReaction.current?.react(action);
   }
   const owned = COMPANIONS.filter((p) => p.threshold <= state.stamps);
   // 等級與稱呼跟首頁共用同一份計算（lib/freshwise/companions.ts），兩頁不會再長不一樣。

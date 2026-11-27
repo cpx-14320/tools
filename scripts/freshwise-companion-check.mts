@@ -81,6 +81,28 @@ check("六位夥伴依1–3、4–7、8以上等級切換，所有表情照護�
   }
 });
 
+check("連點澆水不會超扣：扣到不夠就停，而且扣款與成長一定成對", () => {
+  const day = companionDay();
+  // 剛好夠澆兩次半。模擬「連點五下」——每一下都拿上一次的結果再算一次，就是 store 裡
+  // care() 的行為（它讀的是同步更新的 ref，不是 React state）。
+  let s = { ...initialCompanionState(day), dew: WATER_DEW_COST * 2 + 5 };
+  const startDew = s.dew;
+  let applied = 0;
+  for (let i = 0; i < 5; i++) {
+    const next = careForCompanion(s, "water", day);
+    if (next === s || next.xp === s.xp) continue;   // 不夠了就是原狀態
+    applied++;
+    s = next;
+  }
+  assert.equal(applied, 2, "只該成功兩次");
+  assert.equal(s.dew, startDew - WATER_DEW_COST * 2);
+  assert.equal(s.xp, WATER_XP_GAIN * 2);
+  // 扣款與成長是同一個物件算出來的，所以兩邊的次數一定一致——這一條就是在守這件事。
+  assert.equal((startDew - s.dew) / WATER_DEW_COST, s.xp / WATER_XP_GAIN);
+  // 餘額不足時完全不動（不是扣一半）。
+  assert.deepEqual(careForCompanion(s, "water", day), s);
+});
+
 check("外觀可以挑回長到過的階段，挑不到還沒長到的", () => {
   const day = companionDay();
   // 第 8 級的夥伴（第三階）可以挑回第一、二階；0 代表跟等級走。

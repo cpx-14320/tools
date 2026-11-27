@@ -49,7 +49,9 @@ interface CompanionContextValue {
   storageAvailable: boolean;
   record: (event: CompanionEvent) => void;
   claim: (id: QuestId) => void;
-  care: (action: "water" | "play") => void;
+  /** 回傳「這一下有沒有真的發生」。呼叫端要靠它決定要不要播動畫——連點時畫面的 state
+   *  可能還沒更新，只有這裡讀得到當下真正的餘額（current.current 是同步更新的 ref）。 */
+  care: (action: "water" | "play") => boolean;
   select: (id: CompanionId) => void;
   /** 替某隻夥伴挑外觀階段（0＝跟等級走）。驗證在純函式裡，見 chooseCompanionLook。 */
   chooseLook: (id: CompanionId, choice: LookChoice) => void;
@@ -237,7 +239,14 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
     if (!readyRef.current) return;
     const next = claimCompanionQuest(current.current, id, companionDay());
     if (next === current.current || current.current.claimed.includes(id)) return;
+    // 領到了多少一律從狀態差算（跟澆水、陪玩同一套），不要寫死任務的 reward——
+    // 而且**要在 apply() 之前算**，apply 會把 current.current 換成 next，之後相減都是 0。
+    const dew = next.dew - current.current.dew;
+    const stamps = next.stamps - current.current.stamps;
     apply(next);
+    // 領獎跟澆水、陪玩一樣要有一句確認：小紙條關掉之後畫面只有數字默默變大，
+    // 使用者不確定剛才那下到底有沒有成功。
+    setMessage(`獲得 +${dew} 露珠、探索印章 +${stamps}！`);
     void (async () => {
       // 先把累積的瀏覽事件送完，伺服器才看得到任務已經達標。
       await flush();
@@ -245,13 +254,23 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
     })();
   }, [apply, flush, send]);
 
+  /**
+   * 澆水／陪玩。**這裡是唯一的把關點。**
+   *
+   * 連點不會重複扣款：判斷讀的是 `current.current`（ref，`apply()` 裡同步更新），不是
+   * React 的 state——state 在同一批事件裡可能還是舊的，拿它判斷就會放行第二下。扣露珠與
+   * 加成長又是 `careForCompanion` 裡同一個物件算出來的，所以不可能「扣了卻沒加」。
+   *
+   * 回傳有沒有真的發生，呼叫端據此決定要不要播動畫——不然連點時會出現「動畫播了，但提示
+   * 寫著露珠不夠」。
+   */
   const care = useCallback(
-    (action: "water" | "play") => {
-      if (!readyRef.current) return;
+    (action: "water" | "play"): boolean => {
+      if (!readyRef.current) return false;
       const next = careForCompanion(current.current, action, companionDay());
       if (next.xp === current.current.xp) {
         setMessage(action === "water" ? "露珠不夠囉，和夥伴一起完成探索吧。" : "今天已經陪玩過了，明天再一起玩吧！");
-        return;
+        return false;
       }
       // 句子裡的數字用**實際增加了多少**，不要寫死——澆水／陪玩的成長值是 companions.ts
       // 的常數，寫死的話改了數字訊息就會說謊。
@@ -260,7 +279,10 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
       const gained = next.xp - current.current.xp;
       apply(next);
       setMessage(action === "water" ? `收到你的澆水，成長 +${gained}！` : `一起玩得好開心，成長 +${gained}！`);
+      // 每一下都送一個請求，但 send 會排隊依序送（見上面的註解），伺服器跑的是同一組純
+      // 函式，所以連點 N 下的結果跟本地算的一樣。
       void send({ action: "care", care: action });
+      return true;
     },
     [apply, send],
   );
