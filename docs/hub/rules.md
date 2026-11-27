@@ -54,8 +54,9 @@
   API route 一律用 `requireTool(toolId)` 把關，不要在頁面層自己判斷。
 - 密碼走 bcrypt（`hashPassword` / `verifyPassword`）。測試腳本建帳號時要走同一套
   （`createUser`），不要自己塞一個明碼進去。
-- **新增工具要改三個地方**：`lib/tools-registry.ts`、`lib/mongodb.ts` 的 `toolsRegistry`
-  seed（兩份手動保持同步）、以及該工具自己的 `app/tools/<id>/layout.tsx` 權限檢查。
+- **新增工具只要改兩個地方**：`lib/tools-registry.ts`（唯一來源，`lib/mongodb.ts` 會自動把它
+  upsert 進 `toolsRegistry` 集合）與該工具自己的 `app/tools/<id>/layout.tsx` 權限檢查。
+  完整清單見 [../README.md](../README.md) 的「新增一個小工具時，要一起做的事」。
 
 ## 5. 刪帳號要連所有工具的資料一起刪
 

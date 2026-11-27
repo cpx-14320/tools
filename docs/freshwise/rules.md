@@ -194,9 +194,9 @@ pet-<食材>-<角色>-stage-0N[-<表情>|-action-<動作>].webp
 ```
 npx tsc --noEmit
 npx eslint app components lib scripts
-npm run check:freshwise                                  # 289 項，純函式，不用資料庫
-npx tsx scripts/freshwise-companion-check.mts            # 26 組，養成與素材
-npx tsx scripts/freshwise-missing-art.mts                # 缺圖清單（目前 0）
+npm run check:freshwise                                  # 純函式與素材路徑，不用資料庫
+npx tsx scripts/freshwise-companion-check.mts            # 養成與素材核心
+npx tsx scripts/freshwise-missing-art.mts                # 缺圖清單
 ```
 
 要資料庫（`.env.local`）的兩支：`freshwise-user-data-check.mts`（菜籃與偏好的讀寫）、

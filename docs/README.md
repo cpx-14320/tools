@@ -12,6 +12,15 @@
 | `status.md` | 待確認 ＋ 未處理 | 要挑下一件事做的時候 | 一頁以內 |
 | `history.md` | 已完成的決策紀錄 | 只有在 `rules.md` 回答不了「為什麼當初這樣決定」時才翻 | 只增不減 |
 
+### 什麼可以重複寫、什麼不行
+
+只有**會變的東西**不能重複：數字（檢查項數、色碼、尺寸）、清單（有哪些工具、有哪些腳本）、
+路徑。那種內容寫在兩個地方，遲早有一邊沒跟上，而且讀的人不知道該信哪一個。所以它們各自只有
+一個家：色碼在 `design.md`、檢查項數在這份的腳本總表、工具清單在 `lib/tools-registry.ts`。
+
+**不會變的原則可以重複一句**（「不測 UI」「只有手機版版面」「金鑰不能進 client bundle」）
+——它在用得到的地方出現一次，省掉一次跳轉，而且它不會過期。
+
 `design.md` 單獨一份而不是塞進 `rules.md`：**色票是依工具分家的**（三個工具三套 `theme.ts`，
 色碼互不相同），而且只有在真的要動樣式時才需要讀。做邏輯改動的人不該為了查一條資料規則，
 順便讀完一百多行的色票表。
@@ -31,8 +40,8 @@
 | 圖片壓縮（compress） | `app/tools/compress`、`lib/compress` | [rules](compress/rules.md) · [design](compress/design.md) · [status](compress/status.md) · [history](compress/history.md) |
 | 入口與帳號（hub） | `app/page.tsx`、`app/login`、`app/register`、`app/admin`、`components/ui.tsx` | [rules](hub/rules.md) · [design](hub/design.md) · [status](hub/status.md) · [history](hub/history.md) |
 
-工具清單本身在 `lib/tools-registry.ts`（新增工具時 `lib/mongodb.ts` 的 `toolsRegistry`
-seed 要一起加）。
+工具清單本身在 `lib/tools-registry.ts`，那是**唯一來源**——`lib/mongodb.ts` 直接把它
+upsert 進 `toolsRegistry` 集合，不是另外維護一份。
 
 ## 跨工具的共通規則
 
@@ -62,6 +71,9 @@ seed 要一起加）。
 
 ## 怎麼驗（六支腳本）
 
+**項數只記在這張表**——各工具的 `rules.md` 只寫「跑什麼指令、涵蓋與不涵蓋什麼」，不寫數字。
+數字會隨著每次補測試變動，寫在兩個地方就一定會有一邊忘了改。
+
 | 指令 | 驗什麼 | 要不要資料庫 |
 | --- | --- | --- |
 | `npm run check:freshwise` | 菜鳥買菜記的純函式：假價格可重現、單位換算、漲跌與划算度、搜尋排序、菜籃增刪改、素材路徑真的存在（289 項） | 不用 |
@@ -86,7 +98,7 @@ seed 要一起加）。
 
 | # | 要做的 | 怎麼做 |
 | --- | --- | --- |
-| 1 | 註冊到工具清單 | `lib/tools-registry.ts` ＋ `lib/mongodb.ts` 的 `toolsRegistry` seed（**兩份要手動同步**） |
+| 1 | 註冊到工具清單 | 只改 `lib/tools-registry.ts`（`lib/mongodb.ts` 會把它 upsert 進資料庫）。**既有帳號不會自動拿到權限**，要去 `/admin` 勾；新註冊的帳號才會自動有 |
 | 2 | 權限閘門 | `app/tools/<id>/layout.tsx` 擋沒權限的人，API route 一律 `requireTool("<id>")` |
 | 3 | 刪帳號要清得到 | `lib/admin.ts` 的 `deleteUserCascade` 加上這個工具的 collection——畫面上寫著「各工具底下的資料也會一併刪除」，就要真的做到 |
 | 4 | 四份文件 | `docs/<tool>/` 的 `rules.md`／`design.md`／`status.md`／`history.md`。沒有歷史就誠實寫「還沒有，以後往下疊」，不要編 |
@@ -111,7 +123,7 @@ seed 要一起加）。
 **先測什麼**，依這個順序：
 
 1. **純函式與靜態資料**——算得對不對、兩份清單對不對得起來。不用資料庫、不用網路，跑兩秒。
-   這一層的投報率最高，搭乘車那 76 項全部屬於這一類。
+   這一層的投報率最高，搭乘車那一支整支都屬於這一類。
 2. **「同一件事寫在兩個檔案裡」的對照**——畫面的中文名 vs 伺服器的代碼、資料表 vs 對照表。
    這種錯**不會有任何錯誤訊息**，只會靜靜地查不到東西，所以最該自動驗。
 3. **伺服器端的業務邏輯**（要資料庫）——建一個真的測試帳號跑一輪，`finally` 裡清乾淨，

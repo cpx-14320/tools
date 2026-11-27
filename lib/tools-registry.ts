@@ -1,6 +1,9 @@
 // 目前所有小工具的靜態清單——純資料，沒有任何伺服器端依賴，client component 也能直接
 // 匯入使用（例如「其他小工具」區塊要依使用者權限清單過濾、連到其他工具）。
-// lib/mongodb.ts 的 toolsRegistry seed 資料跟這裡要手動保持同步，新增工具時兩邊都要加。
+// **這份就是工具清單的唯一來源。** lib/mongodb.ts 的 ensureIndexes 會直接 upsert 這個
+// 陣列到 toolsRegistry 集合，不是另外維護一份——新增工具只要改這裡。
+// （createUser 是從那個集合抓「註冊當下有哪些工具」給新帳號，所以既有帳號不會自動拿到
+//   新工具的權限，要去 /admin 勾。）
 export interface ToolMeta {
   toolId: string;
   name: string;

@@ -70,7 +70,7 @@ TDX 的 token 請求用 `URLSearchParams` 編碼，不要字串拼接——`clie
 ```
 npx tsc --noEmit
 npx eslint app components lib scripts
-npm run check:transit        # 76 項，純函式與靜態資料，不用資料庫、不打 TDX
+npm run check:transit        # 純函式與靜態資料，不用資料庫、不打 TDX
 ```
 
 `scripts/transit-feature-check.mts` 測六段：時間工具（跨午夜、帶秒數的時間字串）、距離計算、
