@@ -1,4 +1,10 @@
-# 記帳本 — 操作體驗與功能邏輯紀錄
+# 記帳本（expenses）— 已完成紀錄
+
+> **這份是「已完成的決策紀錄」，只增不減。** 2026-11-27 從 `expenses-directions.md` 搬過來改名。
+> 要查規則請讀 [rules.md](rules.md)，待辦看 [status.md](status.md)——不要為了一條規則讀完這份。
+> 新的一輪往最後面疊，不要改舊紀錄。
+
+---
 
 > 這份文件分三種內容，找東西前先看是哪一種：
 >
@@ -1401,3 +1407,14 @@ JS 裡做（`useDragScroll` 的 `settle()`）：
 或「待機只留必要的幾格」。
 
 **本節只是分析，尚未執行任何一項。**
+
+---
+
+## 2026-11-28：補上設計系統文件
+
+`docs/expenses/design.md`，內容從 `components/expenses/theme.ts` 的註解與實際用法整理出來
+（色票、字級、間距、`unselectedOption`／`activeSolid` 兩組共用狀態 class、分類色票為什麼在
+`globals.css`）。以前這個工具只有 `theme.ts` 的註解，沒有獨立的樣式文件。
+
+順手記下一個歷史造成的不一致：`activeSolid` 的 `#6F5ED4` 跟 `colors.brand` 的 `#6F5FD6`
+差一階。以前兩邊各寫一次，同一個 App 裡出現兩種幾乎一樣的紫；現在統一走常數，要改改一處。

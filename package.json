@@ -9,6 +9,7 @@
     "lint": "eslint",
     "check:expenses": "tsx scripts/expenses-feature-check.mts",
     "check:freshwise": "tsx scripts/freshwise-feature-check.mts",
+    "check:transit": "tsx scripts/transit-feature-check.mts",
     "sync:freshwise": "tsx scripts/freshwise-sync.mts"
   },
   "dependencies": {

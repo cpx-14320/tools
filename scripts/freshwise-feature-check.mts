@@ -896,7 +896,7 @@ run("素材路徑真的存在", () => {
   const icons = [...iconList.matchAll(/"([a-z-]+)"/g)].map((m) => m[1]);
   check("讀得到 GAME_ICONS 清單", icons.length > 0, `${icons.length} 個`);
   for (const name of icons) expect(`/freshwise/ui-${name}.webp`);
-  for (const url of ["/freshwise/ui-back.webp", "/freshwise/ui-go-top.webp", "/freshwise/collection-companion-atlas.webp"]) expect(url);
+  for (const url of ["/freshwise/ui-back.webp", "/freshwise/ui-go-top.webp"]) expect(url);
   check("介面圖示都在", missing.length === 0, missing.slice(0, 5).join("、"));
 
   // 切片框是三片一組，少一片會露出背景色。

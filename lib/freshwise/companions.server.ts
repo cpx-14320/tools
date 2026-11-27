@@ -2,9 +2,9 @@
 import type { Collection } from "mongodb";
 import { getDb } from "../mongodb";
 import {
-  careForCompanion, claimCompanionQuest, companionDay, dailyState, initialCompanionState,
+  careForCompanion, chooseCompanionLook, claimCompanionQuest, companionDay, dailyState, initialCompanionState,
   parseCompanionState, recordCompanionEvent, selectCompanion,
-  type CompanionEvent, type CompanionId, type CompanionState, type QuestId,
+  type CompanionEvent, type CompanionId, type CompanionState, type LookChoice, type QuestId,
 } from "./companions";
 
 interface CompanionDoc {
@@ -56,6 +56,7 @@ export type CompanionAction =
   | { kind: "claim"; quest: QuestId }
   | { kind: "care"; action: "water" | "play" }
   | { kind: "select"; id: CompanionId }
+  | { kind: "look"; id: CompanionId; look: LookChoice }
   | { kind: "reset" };
 
 export async function applyCompanionAction(userId: string, action: CompanionAction, day = companionDay()): Promise<CompanionState> {
@@ -69,6 +70,7 @@ export async function applyCompanionAction(userId: string, action: CompanionActi
       case "claim": return { state: claimCompanionQuest(current, action.quest, day) };
       case "care": return { state: careForCompanion(current, action.action, day) };
       case "select": return { state: selectCompanion(current, action.id) };
+      case "look": return { state: chooseCompanionLook(current, action.id, action.look) };
       case "reset": return { state: initialCompanionState(day) };
     }
   });

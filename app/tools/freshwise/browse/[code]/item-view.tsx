@@ -22,7 +22,7 @@ import {
 import { FaIcon } from "@/components/freshwise/fa-icon";
 import { ItemIcon } from "@/components/freshwise/item-icon";
 import { PriceListRow } from "@/components/freshwise/price-list-row";
-import { EstimatedBadge, SeasonBadge, TrendBadge, ValueBadge } from "@/components/freshwise/badges";
+import { EstimatedBadge, SeasonBadge, TrendBadge } from "@/components/freshwise/badges";
 import { PriceText } from "@/components/freshwise/price-text";
 import { PriceChart } from "@/components/freshwise/price-chart";
 import { useFreshwise } from "@/components/freshwise/store";
@@ -42,7 +42,6 @@ import {
   unitLabel,
   unitShort,
   valueOf,
-  valueSentence,
 } from "@/lib/freshwise/price";
 import type { ItemDetail, UnitKey } from "@/lib/freshwise/types";
 
@@ -57,7 +56,7 @@ const RANGES: readonly { key: string; label: string; days: number }[] = [
 const MONTH_LABELS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
 
 
-export function ItemView({ code, today, detail }: { code: string; today: string; detail: ItemDetail | null }) {
+export function ItemView({ code, today, detail, back }: { code: string; today: string; detail: ItemDetail | null; /** 返回鍵要回哪裡——從食譜點進來就回食譜，見 page.tsx 的 backTarget。 */ back: { href: string; label: string } }) {
   const { prefs, basket, toggleBasket, setPrefs } = useFreshwise();
   const { record } = useCompanion();
   useEffect(() => { if (detail) record({ type: "view", code }); }, [code, detail, record]);
@@ -86,7 +85,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
   if (!detail) {
     return (
       <div className="flex flex-col gap-5 px-4 pb-6 pt-5">
-        <BackRow unit={prefs.unit} onUnitChange={(unit) => setPrefs({ unit })} />
+        <BackRow back={back} unit={prefs.unit} onUnitChange={(unit) => setPrefs({ unit })} />
         <ListCard strong className="flex items-center gap-3">
           <ItemIcon src={itemImage(item.code)} fallbackIcon={item.icon} alt={item.name} size={20} boxSize={48} />
           <div className="min-w-0">
@@ -117,7 +116,7 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
 
   return (
     <div className="fw-page fw-detail-page">
-      <BackRow unit={prefs.unit} onUnitChange={(unit) => setPrefs({ unit })} />
+      <BackRow back={back} unit={prefs.unit} onUnitChange={(unit) => setPrefs({ unit })} />
 
       {/* ── 今日價 ─────────────────────────────────────────── */}
       {/* 資料日期放在品項卡上面——跟行情頁同一個位置、同一句話。使用者看價格之前要先
@@ -153,10 +152,13 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
             <span className={`ml-1.5 ${text.meta}`}>{unitLabel(prefs.unit)}</span>
           </div>
           <div className="flex flex-col items-end gap-1">
-            {/* 推估的品項不顯示漲跌與划算度：那是把批發的變化乘上一個固定倍數得到的，
-                講的其實是批發的漲跌，標在「傳統市場」上會誤導。 */}
+            {/* 推估的品項不顯示漲跌：那是把批發的變化乘上一個固定倍數得到的，講的其實是
+                批發的漲跌，標在「傳統市場」上會誤導。
+                **這裡不放划算度徽章**（原本有一顆「划算／正常價／偏貴」）：它跟旁邊的漲跌
+                徽章長得一樣，但基準一個是前一個交易日、一個是近一年的平均，兩顆疊在一起
+                會被讀成同一件事。底下的區間指示條已經把「今天落在這段期間的哪裡」畫出來，
+                那是同一件事的事實版本，不需要再下一個結論。 */}
             {!quote.estimated && <TrendBadge trend={trend} showFlat />}
-            {!quote.estimated && reliable && <ValueBadge value={value} showFair />}
           </div>
         </div>
 
@@ -164,13 +166,11 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
           <Note>
             這一項在臺中的零售市場沒有訪價，所以用批發價推估。倍數取自同類別實際觀察到的範圍，所以給的是區間不是單一數字。
           </Note>
-        ) : reliable ? (
-          <Note>{valueSentence(value, quote.historyDays)}</Note>
-        ) : (
+        ) : !reliable ? (
           <Note>
-            這個場所的歷史資料還在累積（已有 {quote.historyDays} 天，滿 {MIN_HISTORY_DAYS} 天才判斷貴或便宜）。
+            這個場所的歷史資料還在累積（已有 {quote.historyDays} 天，滿 {MIN_HISTORY_DAYS} 天才看得出區間）。
           </Note>
-        )}
+        ) : null}
 
         {/* 近一年的價格區間指示條：今天的價格落在這一年的哪個位置，一眼就看得出來。
             歷史不夠長的時候不畫——只有幾天資料的「區間」沒有意義。 */}
@@ -297,8 +297,9 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
 
           {showFullTable ? (
             // 表格一定要能自己橫向捲動：五欄數字在 430px 寬的手機上塞不進去，讓整頁
-            // 左右捲會把底部導覽列也拖走。
-            <div className="overflow-x-auto rounded-2xl bg-white" style={{ boxShadow: shadow.card }}>
+            // 左右捲會把底部導覽列也拖走。外框走 .fw-paper（跟上面那張清單同一組框線與
+            // 圓角），不要自己一套 rounded-2xl＋白底——同一區塊切換兩種顯示方式，框不該變。
+            <div className="fw-paper fw-table-paper">
               <table className="w-full min-w-[420px] border-collapse">
                 <thead>
                   <tr>
@@ -433,9 +434,9 @@ export function ItemView({ code, today, detail }: { code: string; today: string;
 /** 返回列 ＋ 公斤／台斤切換。放在詳情頁的右上角——這一頁的數字最多，也最需要換算成自己
  *  習慣的單位；換了之後是存回偏好的，所以其他頁面也會跟著變。單位只影響顯示，不用重新
  *  向伺服器要資料。 */
-function BackRow({ unit, onUnitChange }: { unit: UnitKey; onUnitChange: (unit: UnitKey) => void }) {
+function BackRow({ back, unit, onUnitChange }: { back: { href: string; label: string }; unit: UnitKey; onUnitChange: (unit: UnitKey) => void }) {
   return (
-    <SharedBackRow href="/tools/freshwise/browse" label="回到行情">
+    <SharedBackRow href={back.href} label={back.label}>
       <SegmentedTabs items={UNIT_TABS} value={unit} onChange={(key) => onUnitChange(key as UnitKey)} />
     </SharedBackRow>
   );

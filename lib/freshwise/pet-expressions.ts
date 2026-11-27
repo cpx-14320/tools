@@ -1,4 +1,4 @@
-import type { CompanionId } from "./companions";
+import { levelOf, unlockedStage, type CompanionId, type CompanionState } from "./companions";
 
 export const PET_EMOTIONS = ["surprised", "happy", "sad", "curious"] as const;
 export type PetEmotion = typeof PET_EMOTIONS[number];
@@ -16,10 +16,25 @@ export const PET_IMAGE_PREFIX: Record<CompanionId, string> = {
   pumpkin: "pet-pumpkin-manman", radish: "pet-radish-bengbeng", strawberry: "pet-strawberry-jiujiu",
 };
 
-/** 六位夥伴共用成長門檻：1–3級嫩芽期、4–7級成長期、8級以上成熟期。 */
+/** 六位夥伴共用成長門檻：1–3級嫩芽期、4–7級成長期、8級以上成熟期。
+ *  門檻只定義在 companions.ts 的 `unlockedStage` 一處——那邊同時用來判斷「能不能挑這一階
+ *  的外觀」，兩邊各寫一次的話調門檻就會有一邊漏改。 */
 export type PetStage = 1 | 2 | 3;
 export function petStage(_id: CompanionId, level: number): PetStage {
-  return level >= 8 ? 3 : level >= 4 ? 2 : 1;
+  return unlockedStage(level);
+}
+
+/**
+ * 這隻夥伴現在**實際要畫**哪一階。
+ *
+ * 預設跟等級走，但使用者可以在圖鑑裡挑回第一、二階的樣子（`state.look`）。挑過頭的值
+ * （還沒長到那一階）一律當沒挑——驗證在 `chooseCompanionLook`，這裡再擋一次是因為狀態
+ * 可能是從舊資料或別台裝置來的。
+ */
+export function petLookStage(state: CompanionState, id: CompanionId): PetStage {
+  const reached = unlockedStage(levelOf(state.growth[id]));
+  const choice = state.look[id];
+  return choice && choice <= reached ? choice : reached;
 }
 
 /** 階段圖的路徑。`suffix` 是表情（`-happy`）或照護動作（`-action-water`），不給就是這一階
@@ -29,12 +44,14 @@ function petStageFile(id: CompanionId, stage: PetStage, suffix = ""): string {
   return `/freshwise/${PET_IMAGE_PREFIX[id]}-stage-0${stage}${suffix}.webp`;
 }
 
-export function petBaseFile(id: CompanionId, level = 1): string {
-  return petStageFile(id, petStage(id, level));
+/** 這一階的平常樣子。**吃的是階段不是等級**——畫哪一張圖只跟階段有關，而階段可能是
+ *  使用者自己挑的（見 petLookStage）。 */
+export function petBaseFile(id: CompanionId, stage: PetStage = 1): string {
+  return petStageFile(id, stage);
 }
 
-export function petEmotionFile(id: CompanionId, mood: PetEmotion, level = 1): string {
-  return petStageFile(id, petStage(id, level), `-${mood}`);
+export function petEmotionFile(id: CompanionId, mood: PetEmotion, stage: PetStage = 1): string {
+  return petStageFile(id, stage, `-${mood}`);
 }
 /** 排除目前表情，避免連續點擊像是沒有變化。sample 可注入以驗證邊界。 */
 export function nextPetEmotion(current: PetMood, sample = Math.random()): PetEmotion {
@@ -56,12 +73,12 @@ export function nextPetPose(current: PetPose, sample = Math.random()): PetEmotio
   return choices[index];
 }
 
-export function petCareFile(id: CompanionId, action: PetCareAction, level = 1): string {
-  return petStageFile(id, petStage(id, level), `-action-${action}`);
+export function petCareFile(id: CompanionId, action: PetCareAction, stage: PetStage = 1): string {
+  return petStageFile(id, stage, `-action-${action}`);
 }
 
-/** 畫面狀態只保存動作，檔案依目前等級即時決定，升階不會留住前一階的圖片。 */
-export function petPoseFile(id: CompanionId, pose: PetPose, level = 1): string {
-  if (pose === "neutral") return petBaseFile(id, level);
-  return pose === "water" || pose === "play" ? petCareFile(id, pose, level) : petEmotionFile(id, pose, level);
+/** 畫面狀態只保存動作，檔案依目前階段即時決定，升階（或在圖鑑換樣子）不會留住前一階的圖。 */
+export function petPoseFile(id: CompanionId, pose: PetPose, stage: PetStage = 1): string {
+  if (pose === "neutral") return petBaseFile(id, stage);
+  return pose === "water" || pose === "play" ? petCareFile(id, pose, stage) : petEmotionFile(id, pose, stage);
 }

@@ -1,5 +1,14 @@
 # FreshWise V2：蔬果夥伴遊戲介面
 
+> **菜鳥買菜記的樣式唯一依據。** 改這個工具的任何顏色、字級、間距之前讀這份。
+> 2026-11-28 從 `components/freshwise/DESIGN-SYSTEM.md` 搬過來，跟
+> [rules](rules.md) · [status](status.md) · [history](history.md) 放在一起。
+> 程式裡的對應實作是 `components/freshwise/theme.ts`（token）與 `ui.tsx`（共用元件）。
+>
+> **這套只給菜鳥買菜記用**（綠）。記帳本與搭乘車各有自己的一份，入口／登入／後台走
+> `components/ui.tsx` ＋ `globals.css` 那套。三者的 `ink`／`muted` 根本不是同一個顏色，
+> 不要互相 import。
+
 參考：`UIUX示意設計稿/FreshWise_V2_蔬果夥伴`。僅影響 FreshWise，其他小工具使用自己的設計系統。
 
 ## 文字與插畫分工
@@ -74,3 +83,18 @@
 
 品牌標題、場所／市場選擇與夥伴舞台位於同一個 `fw-home-garden`，共用完整花園背景，簡潔模式仍能收起背景。價牌改用 `home/home-price-tag-board.png`，最大寬 184px，原生解析度約 6.22 倍；所有動態內容仍為 HTML，數字與「元／台斤」或「元／公斤」在同一基線並排。
 主要呼吸動畫角色顯示為 200×200px。角色下方依該角色實際成長顯示本級進度 X／40 和進度條，不顯示距離升級的文字。導覽選中項保留淡綠葉片底色，移除外框。
+
+## 手機框外的桌面底色
+
+```css
+.fw-viewport {
+  background:
+    radial-gradient(520px circle at 8% -6%, #f6aecb29, transparent 60%),
+    radial-gradient(560px circle at 100% 0%, #8b8dd824, transparent 55%),
+    #fbffd7;
+}
+```
+
+淡黃底 ＋ 左上粉、右上薰衣草兩道很淡的光暈。**只有菜鳥買菜記是這一套**——另外兩個工具與
+入口頁各自有自己的底色。這是手機框「外面」那一片，框裡面仍然是紙紋（`--fw-paper` ＋
+`ui-paper-texture.webp`）。

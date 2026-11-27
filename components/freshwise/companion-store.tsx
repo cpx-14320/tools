@@ -3,9 +3,9 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   careForCompanion,
+  chooseCompanionLook,
   claimCompanionQuest,
   companionDay,
-  companionLevel,
   COMPANION_STORAGE_KEY,
   dailyState,
   initialCompanionState,
@@ -17,12 +17,14 @@ import {
   type CompanionEvent,
   type CompanionId,
   type CompanionState,
+  type LookChoice,
   type QuestId,
 } from "@/lib/freshwise/companions";
 import Link from "next/link";
 import { BottomSheetModal } from "./bottom-sheet-modal";
 import { CenterToast } from "./center-toast";
 import { GameIcon, PetArtwork } from "./game-art";
+import { petLookStage } from "@/lib/freshwise/pet-expressions";
 
 // 夥伴養成的前端狀態。
 //
@@ -49,6 +51,8 @@ interface CompanionContextValue {
   claim: (id: QuestId) => void;
   care: (action: "water" | "play") => void;
   select: (id: CompanionId) => void;
+  /** 替某隻夥伴挑外觀階段（0＝跟等級走）。驗證在純函式裡，見 chooseCompanionLook。 */
+  chooseLook: (id: CompanionId, choice: LookChoice) => void;
   reset: () => Promise<boolean>;
   redeem: (code: string) => Promise<ActivityCodeResult>;
 }
@@ -249,8 +253,13 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
         setMessage(action === "water" ? "露珠不夠囉，和夥伴一起完成探索吧。" : "今天已經陪玩過了，明天再一起玩吧！");
         return;
       }
+      // 句子裡的數字用**實際增加了多少**，不要寫死——澆水／陪玩的成長值是 companions.ts
+      // 的常數，寫死的話改了數字訊息就會說謊。
+      // **要在 apply() 之前算**：apply 會把 current.current 換成 next，之後再相減一定是 0
+      // （訊息就會變成「成長 +0」）。
+      const gained = next.xp - current.current.xp;
       apply(next);
-      setMessage(action === "water" ? "收到你的澆水，成長 +3！" : "一起玩得好開心，成長 +2！");
+      setMessage(action === "water" ? `收到你的澆水，成長 +${gained}！` : `一起玩得好開心，成長 +${gained}！`);
       void send({ action: "care", care: action });
     },
     [apply, send],
@@ -261,6 +270,15 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
       if (!readyRef.current) return;
       apply(selectCompanion(current.current, id));
       void send({ action: "select", id });
+    },
+    [apply, send],
+  );
+
+  const chooseLook = useCallback(
+    (id: CompanionId, choice: LookChoice) => {
+      if (!readyRef.current) return;
+      apply(chooseCompanionLook(current.current, id, choice));
+      void send({ action: "look", id, look: choice });
     },
     [apply, send],
   );
@@ -286,14 +304,14 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   const questDone = !!quest && questProgress(state, quest.id) >= quest.target;
 
   return (
-    <Context.Provider value={{ state, ready, storageAvailable, record, claim, care, select, reset, redeem }}>
+    <Context.Provider value={{ state, ready, storageAvailable, record, claim, care, select, chooseLook, reset, redeem }}>
       {children}
       {/* 跟「已加入菜籃」用同一顆 CenterToast：做完一件事的確認在整個工具裡應該長一樣，
           不然使用者會以為澆水的提示是另一種東西（以前這裡是螢幕下緣的淺色長條）。
           淡出時間由 CenterToast 自己管，這裡不要再放一個計時器去搶著清空。 */}
       {message && <CenterToast key={message} message={message} onDone={() => setMessage("")} />}
       <BottomSheetModal open={!!reward} title="夥伴寄來的小紙條" onClose={() => setReward(null)} bodyClassName="fw-reward-letter">
-        <PetArtwork id={state.active} level={companionLevel(state).level} size={200} ready={ready} />
+        <PetArtwork id={state.active} stage={petLookStage(state, state.active)} size={200} ready={ready} />
         <h2>{questDone ? "又多一點買菜的把握！" : "還差一點點！"}</h2>
         <p>
           {questDone ? `「${quest?.title}」完成了。` : `「${quest?.title}」${quest?.description}`}

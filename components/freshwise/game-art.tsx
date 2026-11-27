@@ -1,9 +1,9 @@
 import Image from "next/image";
 import { cx } from "./theme";
 import { PetInteraction, type PetReactionHandle } from "./pet-interaction";
-import type { CSSProperties, Ref } from "react";
+import type { Ref } from "react";
 import { COMPANIONS, type CompanionId } from "@/lib/freshwise/companions";
-import { petBaseFile, petStage } from "@/lib/freshwise/pet-expressions";
+import { petBaseFile, type PetStage } from "@/lib/freshwise/pet-expressions";
 
 // 插畫素材的進入點。插畫只負責圖案，文字與可點選狀態一律由 HTML 提供，所以這裡畫出來
 // 的都是 `aria-hidden` 的裝飾層或帶 `aria-label` 的 img role，不會有只存在於圖片裡的資訊。
@@ -42,34 +42,24 @@ function petName(id: CompanionId): string {
  * 直接畫下去的話，選了別隻的人每次進頁面都會先看到糰糰、再「啪」地換成自己的夥伴。
  * 傳 `ready={false}` 就只佔位不畫圖——同樣的尺寸，所以換上來的時候版面不會跳。
  */
-export function PetArtwork({ id = "cabbage", size = 160, className = "", priority = false, interactive = false, ready = true, reactionRef, level = 1 }: { id?: CompanionId; size?: number; className?: string; priority?: boolean; interactive?: boolean; ready?: boolean; reactionRef?: Ref<PetReactionHandle>; level?: number }) {
+export function PetArtwork({ id = "cabbage", size = 160, className = "", priority = false, interactive = false, ready = true, reactionRef, stage = 1 }: { id?: CompanionId; size?: number; className?: string; priority?: boolean; interactive?: boolean; ready?: boolean; reactionRef?: Ref<PetReactionHandle>; /** 要畫第幾階。由呼叫端用 petLookStage(state, id) 算好傳進來——等級與「使用者自己挑的樣子」都在那裡解決，這個元件只管畫。 */ stage?: PetStage }) {
   return (
-    <span className={cx("fw-pet-art", className)} style={{ width: size, height: size }} aria-busy={ready ? undefined : true} data-pet-stage={petStage(id, level)}>
-      {!ready ? null : interactive ? <PetInteraction key={id} id={id} name={petName(id)} level={level} size={size} priority={priority} reactionRef={reactionRef}/> : <Image src={petBaseFile(id, level)} alt={petName(id)} fill sizes={`${size}px`} priority={priority} />}
+    <span className={cx("fw-pet-art", className)} style={{ width: size, height: size }} aria-busy={ready ? undefined : true} data-pet-stage={stage}>
+      {!ready ? null : interactive ? <PetInteraction key={`${id}-${stage}`} id={id} name={petName(id)} stage={stage} size={size} priority={priority} reactionRef={reactionRef}/> : <Image src={petBaseFile(id, stage)} alt={petName(id)} fill sizes={`${size}px`} priority={priority} />}
     </span>
   );
 }
 
-/** 圖集的一格。六位夥伴的圖鑑姿勢畫在同一張 3×2 的圖上，用背景位置取格。 */
-const COLLECTION_ATLAS = { src: "/freshwise/collection-companion-atlas.webp", columns: 3, rows: 2 };
-
-function AtlasArt({ src, index, columns, rows, size, label, className = "" }: { src: string; index: number; columns: number; rows: number; size: number; label?: string; className?: string }) {
-  const style: CSSProperties = {
-    width: size,
-    height: size,
-    backgroundImage: `url(${src})`,
-    backgroundSize: `${columns * 100}% ${rows * 100}%`,
-    backgroundPosition: `${((index % columns) / (columns - 1)) * 100}% ${(Math.floor(index / columns) / (rows - 1)) * 100}%`,
-  };
-  return <span className={cx("fw-art", className)} style={style} role="img" aria-label={label} />;
+/**
+ * 某一隻夥伴、某一階的平常樣子。圖鑑用它把三個成長階段並排出來。
+ *
+ * 用 IllustratedArt（CSS 背景）而不是 next/image：圖鑑一次最多畫 3 階 × 已結識的夥伴，
+ * 尺寸只有 60～76px，走最佳化反而多一輪請求。檔案已經是 640px 的輕量 webp。
+ */
+export function PetStageArtwork({ id, stage, size = 72, className = "" }: { id: CompanionId; stage: PetStage; size?: number; className?: string }) {
+  return <IllustratedArt src={petBaseFile(id, stage)} size={size} className={className} />;
 }
 
-/** 蔬果圖鑑格子裡的小夥伴（圖集的格位順序＝COMPANIONS 的順序，不要重排那份陣列）。 */
-export function CollectionArtwork({ id, size = 76, className = "" }: { id: CompanionId; size?: number; className?: string }) {
-  return <AtlasArt {...COLLECTION_ATLAS} index={COMPANIONS.findIndex((p) => p.id === id)} size={size} label={petName(id)} className={className} />;
-}
-
-/** 左右端維持比例，中間材質重複延伸的裝飾圖片層。 */
 /** 三片切片（左／中／右）組成一條可伸縮的框。素材一律是 webp——`format` 參數已經拿掉，
  *  因為 public/freshwise 底下的圖全部是 webp 了。 */
 export function SlicedArtwork({name,className=""}:{name:string;className?:string}) {

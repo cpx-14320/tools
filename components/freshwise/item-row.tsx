@@ -7,7 +7,6 @@ import { PriceListRow } from "./price-list-row";
 import { EstimatedBadge, SeasonBadge, TrendBadge } from "./badges";
 import { GameIcon } from "./game-art";
 import { itemImage } from "@/lib/freshwise/catalog";
-import { historyLabel } from "@/lib/freshwise/price";
 import type { PriceRow } from "@/lib/freshwise/search";
 import type { UnitKey } from "@/lib/freshwise/types";
 
@@ -48,26 +47,25 @@ export function ItemRow({ row, unit, href, onClick, meta, leading, starred, onTo
 }
 
 /**
- * 預設的說明文字。優先順序：特別划算／特別貴 → 當季 → 歷史還在累積 → 跟平常差不多。
+ * 預設的說明文字。
  *
- * 歷史不夠長時刻意講「歷史資料累積中」而不是沉默：使用者看到別的列都有「比平常便宜
- * 12%」、這一列什麼都沒有，會以為是壞了。講清楚原因比留白好。
+ * **划算度不在這裡講。** 原本每一列底下都有一句「比近一年的平均便宜 12%」，但列上已經
+ * 有一顆「▼ 30%」的漲跌徽章——兩個百分比上下疊在一起，基準卻一個是昨天、一個是近一年，
+ * 使用者會把它們讀成同一件事（或是互相矛盾：跌了 30% 卻說「比平常貴」）。划算度留在
+ * 詳情頁講，那裡有空間把基準寫清楚（見 price.ts 的 valueSentence）。
+ *
+ * 剩下的三種情況還是要講，因為它們解釋的是「這個數字能不能信」：
+ *   - 推估價 → 說明那是範圍不是實測
+ *   - 歷史不夠長 → 講清楚原因，不然使用者會以為壞了
+ *   - 當季 → 這是「要不要買」的提示，跟價格基準無關
+ *
+ * 都不適用時回 `undefined`，列上就不畫那一行（見 PriceListRow）。
  */
-function defaultMeta(row: PriceRow): string {
-  // 推估的品項先講「這是推估的範圍」——它沒有實測價，講划算度沒有意義（區間的中點
-  // 跟它自己的歷史比，比出來的是倍數的變化不是行情的變化）。
+function defaultMeta(row: PriceRow): string | undefined {
   if (row.quote.estimated && row.quote.rangeLowKg !== undefined) {
     return `沒有實測價，依批發價推估的範圍`;
   }
-  // 划算度用文字講，不做成徽章——列上那顆紅綠徽章固定是「跟昨天比」的漲跌，划算度
-  // 比的是近一年的平均，兩個做成同一種樣子會被讀成同一個數字。
-  if (row.reliable) {
-    const abs = Math.abs(row.value.percent);
-    const base = historyLabel(row.quote.historyDays);
-    if (row.value.level === "cheap") return `比${base}的平均便宜 ${abs}%`;
-    if (row.value.level === "pricey") return `比${base}的平均貴 ${abs}%`;
-    return `跟${base}的平均差不多`;
-  }
+  if (!row.reliable) return `歷史資料累積中（已有 ${row.quote.historyDays} 天）`;
   if (row.inSeason) return "當季盛產";
-  return `歷史資料累積中（已有 ${row.quote.historyDays} 天）`;
+  return undefined;
 }

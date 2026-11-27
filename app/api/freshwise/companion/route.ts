@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireTool } from "@/lib/auth";
 import { applyCompanionAction, loadCompanion, migrateCompanionFromDevice, redeemCompanionCode, CompanionCodeError, type CompanionAction } from "@/lib/freshwise/companions.server";
-import { COMPANIONS, QUESTS, type CompanionEvent } from "@/lib/freshwise/companions";
+import { COMPANIONS, QUESTS, type CompanionEvent, type LookChoice } from "@/lib/freshwise/companions";
 
 // 夥伴養成的進度。跟著帳號走（見 lib/freshwise/companions.server.ts 的說明）。
 //
@@ -47,6 +47,13 @@ function parseAction(body: Record<string, unknown>): CompanionAction | null {
     case "select": {
       const id = COMPANIONS.find((p) => p.id === body.id)?.id;
       return id ? { kind: "select", id } : null;
+    }
+    case "look": {
+      // 外觀階段：0＝跟等級走、1～3＝固定用那一階。能不能挑（夥伴解鎖了嗎、長到那一階了嗎）
+      // 由 chooseCompanionLook 判斷，這裡只負責把格式擋在門外。
+      const id = COMPANIONS.find((p) => p.id === body.id)?.id;
+      const look = [0, 1, 2, 3].includes(body.look as number) ? (body.look as LookChoice) : null;
+      return id && look !== null ? { kind: "look", id, look } : null;
     }
     case "reset":
       return { kind: "reset" };

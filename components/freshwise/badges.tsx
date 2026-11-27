@@ -2,16 +2,17 @@
 
 import { Badge } from "./ui";
 import { colors, copy, v } from "./theme";
-import { trendLabel, VALUE_LABEL, type Trend, type ValueJudgement } from "@/lib/freshwise/price";
-import type { ValueLevel } from "@/lib/freshwise/types";
+import { trendLabel, type Trend } from "@/lib/freshwise/price";
 
-// 這個工具特有的五種徽章。放在獨立檔案（不是 ui.tsx）是因為它們帶著商業含意——「什麼
-// 叫漲、什麼叫划算」是 lib/freshwise/price.ts 決定的，這裡只負責把那個判定畫成對應的
-// 顏色。ui.tsx 裡的 Badge 只管形狀。
+// 這個工具特有的四種徽章。放在獨立檔案（不是 ui.tsx）是因為它們帶著商業含意——「什麼
+// 叫漲」是 lib/freshwise/price.ts 決定的，這裡只負責把那個判定畫成對應的顏色。
+// ui.tsx 裡的 Badge 只管形狀。
+//
+// 划算度**沒有**徽章（2026-11-27 移除）：它跟漲跌徽章長得一樣，但基準一個是前一個交易日、
+// 一個是近一年的平均，兩顆並排會被讀成同一件事。詳情頁改用區間指示條表達同一件事。
 //
 // 配色規則：
 //   - 漲＝紅、跌＝綠（台灣看盤的習慣；對買菜的人來說綠色剛好也是好消息）。
-//   - 划算＝綠底綠字、偏貴＝紅底紅字、正常價＝淡灰綠（正常價不該搶注意力）。
 //   - 當季＝土黃（跟漲跌的紅綠分開，避免被誤讀成價格訊號）。
 //   - 不在菜籃＝紙張深一階的底＋同一個提醒色的字（比當季淡：它是提醒，不是重點）。
 //   - 估算＝無彩度的淡底，看起來就是「這不是實測值」。
@@ -31,29 +32,6 @@ export function TrendBadge({ trend, showFlat = false, size = "md" }: { trend: Tr
   return (
     <Badge size={size} style={{ backgroundColor: palette.bg, color: palette.fg }}>
       {trendLabel(trend)}
-    </Badge>
-  );
-}
-
-const VALUE_PALETTE: Record<ValueLevel, { bg: string; fg: string }> = {
-  cheap: { bg: colors.downBg, fg: colors.down },
-  fair: { bg: colors.surfaceSoft, fg: colors.muted },
-  pricey: { bg: colors.upBg, fg: colors.up },
-};
-
-/**
- * 划算度徽章（划算／正常價／偏貴）。
- *
- * **清單列上不用這顆**：那裡的紅綠徽章固定是漲跌（跟前一個交易日比），划算度比的是近
- * 一年的平均，兩種都做成紅綠百分比的話，同一列會有兩個看起來一樣、基準卻不同的數字。
- * 清單列的划算度走說明文字（見 item-row.tsx 的 defaultMeta）。
- */
-export function ValueBadge({ value, showFair = false }: { value: ValueJudgement; showFair?: boolean }) {
-  if (value.level === "fair" && !showFair) return null;
-  const palette = VALUE_PALETTE[value.level];
-  return (
-    <Badge style={{ backgroundColor: palette.bg, color: palette.fg }}>
-      {VALUE_LABEL[value.level]}
     </Badge>
   );
 }

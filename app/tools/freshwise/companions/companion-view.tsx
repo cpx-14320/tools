@@ -1,15 +1,23 @@
 "use client";
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { COMPANIONS, companionLevel } from "@/lib/freshwise/companions";
+import { COMPANIONS, companionLevel, levelOf, unlockedStage, WATER_DEW_COST } from "@/lib/freshwise/companions";
 import { useCompanion } from "@/components/freshwise/companion-store";
-import { CollectionArtwork, GameIcon, PetArtwork, SlicedArtwork } from "@/components/freshwise/game-art";
+import { GameIcon, PetArtwork, PetStageArtwork, SlicedArtwork } from "@/components/freshwise/game-art";
 import { DewBalance, QuestSlip } from "@/components/freshwise/companion-widgets";
 import { BottomSheetModal } from "@/components/freshwise/bottom-sheet-modal";
 import { MeterBar, PageTitle } from "@/components/freshwise/ui";
 import { cx } from "@/components/freshwise/theme";
 import type { PetReactionHandle } from "@/components/freshwise/pet-interaction";
 import type { PetCareAction } from "@/lib/freshwise/pet-expressions";
+import { petLookStage } from "@/lib/freshwise/pet-expressions";
+
+/** 三個成長階段的說明。`from` 是解鎖等級，門檻跟 companions.ts 的 unlockedStage 一致。 */
+const STAGES = [
+  { stage: 1 as const, label: "嫩芽期", from: 1 },
+  { stage: 2 as const, label: "成長期", from: 4 },
+  { stage: 3 as const, label: "成熟期", from: 8 },
+];
 
 /**
  * 夥伴頁。
@@ -19,18 +27,18 @@ import type { PetCareAction } from "@/lib/freshwise/pet-expressions";
  * 而且切過去之後整頁的花園都不見了。改成標題列的一顆圖示開彈窗。
  */
 export function CompanionView() {
-  const { state, ready, care, select, storageAvailable } = useCompanion();
+  const { state, ready, care, select, chooseLook, storageAvailable } = useCompanion();
   const [bookOpen, setBookOpen] = useState(false);
   const petReaction = useRef<PetReactionHandle>(null);
 
   function handleCare(action: PetCareAction) {
-    if (!ready || (action === "water" ? state.dew < 3 : state.played)) return;
+    if (!ready || (action === "water" ? state.dew < WATER_DEW_COST : state.played)) return;
     care(action);
     petReaction.current?.react(action);
   }
   const owned = COMPANIONS.filter((p) => p.threshold <= state.stamps);
   // 等級與稱呼跟首頁共用同一份計算（lib/freshwise/companions.ts），兩頁不會再長不一樣。
-  const { pet, level, progress, max, label } = companionLevel(state);
+  const { pet, progress, max, label } = companionLevel(state);
 
   return (
     <div className="fw-page fw-companions-page">
@@ -54,7 +62,7 @@ export function CompanionView() {
           <>
             <section className="fw-companion-garden">
               <p className="fw-pet-speech">一起看看今天的菜價吧！</p>
-              <PetArtwork id={pet.id} level={level} size={200} priority interactive reactionRef={petReaction} className="fw-breathe" />
+              <PetArtwork id={pet.id} stage={petLookStage(state, pet.id)} size={200} priority interactive reactionRef={petReaction} className="fw-breathe" />
               {/* 小尺寸等級牌接在角色下方，與成長進度保持緊湊。 */}
               <span className="fw-level-ribbon"><SlicedArtwork name="companion-level-ribbon" className="fw-sliced-ribbon"/>{label}</span>
             </section>
@@ -67,8 +75,8 @@ export function CompanionView() {
               <p>再陪伴一點，就能升級囉。</p>
             </section>
             <div className="fw-care-actions">
-              <button type="button" className="fw-game-button" disabled={state.dew < 3} onClick={() => handleCare("water")}>
-                <GameIcon name="water" size={40} /><span className="fw-care-label">澆水 · 3 露珠</span>
+              <button type="button" className="fw-game-button" disabled={state.dew < WATER_DEW_COST} onClick={() => handleCare("water")}>
+                <GameIcon name="water" size={40} /><span className="fw-care-label">澆水 · {WATER_DEW_COST} 露珠</span>
               </button>
               <button type="button" className="fw-game-button fw-peach-button" disabled={state.played} onClick={() => handleCare("play")}>
                 <GameIcon name="play" size={40} />
@@ -109,26 +117,59 @@ export function CompanionView() {
         onClose={() => setBookOpen(false)}
         bodyClassName="fw-collection-book"
       >
-        <p>每一次探索，都多認識一位朋友。</p>
-        <div className="fw-collection-grid">
+        <p>每一次探索，都多認識一位朋友。點一下成長階段，就能換成那個時候的樣子。</p>
+        <div className="fw-collection-list">
           {COMPANIONS.map((p) => {
             const unlocked = p.threshold <= state.stamps;
+            const petLevel = levelOf(state.growth[p.id]);
+            const reached = unlockedStage(petLevel);
+            const showing = petLookStage(state, p.id);
+            const active = state.active === p.id;
             return (
-              <button
-                type="button"
-                key={p.id}
-                className={cx("fw-collection-pet", !unlocked && "fw-pet-locked")}
-                disabled={!unlocked}
-                aria-pressed={state.active === p.id}
-                onClick={() => {
-                  select(p.id);
-                  setBookOpen(false);
-                }}
-              >
-                <CollectionArtwork id={p.id} size={92} />
-                <strong>{p.name}</strong>
-                <span>{state.active === p.id ? "陪伴中" : unlocked ? "一起陪伴 →" : `印章 ${Math.min(state.stamps, p.threshold)}／${p.threshold}`}</span>
-              </button>
+              <div key={p.id} className={cx("fw-collection-card", !unlocked && "fw-pet-locked")}>
+                <div className="fw-collection-card-head">
+                  <strong>{p.name}</strong>
+                  {unlocked ? (
+                    <span>{active ? `陪伴中 · Lv.${petLevel}` : `Lv.${petLevel}`}</span>
+                  ) : (
+                    <span>{`印章 ${Math.min(state.stamps, p.threshold)}／${p.threshold}`}</span>
+                  )}
+                </div>
+
+                {/* 三個階段**都畫出來**，還沒拿到的那幾階用「沒取得」的樣子（淡化去色，跟還沒
+                    結識的夥伴同一種處理）。看得到後面長什麼樣才有繼續養的理由；拿到了才變彩色。 */}
+                <div className="fw-collection-stages">
+                  {STAGES.map(({ stage, label, from }) => {
+                    const got = unlocked && stage <= reached;
+                    // 綠框＝「畫面上正在顯示的就是這一張」，所以只有**陪伴中那一隻**的當前
+                    // 階段會亮。其他夥伴各自也有自己的外觀選擇（state.look），但它們沒有被
+                    // 畫在花園裡——每隻都亮一格綠框，使用者會以為同時選了好幾個。
+                    const chosen = got && active && showing === stage;
+                    return (
+                      <button
+                        type="button"
+                        key={stage}
+                        className={cx("fw-collection-stage", !got && "fw-stage-locked", chosen && "fw-stage-chosen")}
+                        disabled={!got}
+                        aria-pressed={chosen}
+                        aria-label={`${p.name} ${label}${!unlocked ? "，還沒結識這位夥伴" : !got ? `，Lv.${from} 解鎖` : chosen ? "，正在使用" : "，換成這個樣子"}`}
+                        onClick={() => {
+                          // **點階段就是全部的操作**：換成這隻夥伴 ＋ 用這一階的樣子。
+                          // 原本底下還有一顆「換牠來陪伴 →」，但那跟點階段做的是同一件事，
+                          // 兩個入口做同一件事只會讓人猶豫該按哪一個。
+                          if (!active) select(p.id);
+                          // 已經在用的那一階再點一次＝回到「跟等級走」，升級就會自動換新樣子。
+                          // （只有陪伴中那一隻會有 chosen，所以切換夥伴時一律是「選這一階」。）
+                          chooseLook(p.id, chosen && stage === reached ? 0 : stage);
+                        }}
+                      >
+                        <PetStageArtwork id={p.id} stage={stage} size={72} />
+                        <small>{got || !unlocked ? label : `Lv.${from}`}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </div>

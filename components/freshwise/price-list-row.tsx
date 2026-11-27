@@ -10,7 +10,8 @@ export function PriceListRow({
   art?: ReactNode;
   title: ReactNode;
   badges?: ReactNode;
-  meta: ReactNode;
+  /** 沒有值就不畫那一行——空的 meta 會留下一道空白，看起來像載入失敗。 */
+  meta?: ReactNode;
   price: ReactNode;
   leading?: ReactNode;
   trailing?: ReactNode;
@@ -24,7 +25,7 @@ export function PriceListRow({
         <span className="fw-item-title">{title}</span>
         {badges}
       </div>
-      <div className="fw-item-meta mt-0.5 text-xs text-[#836A54]">{meta}</div>
+      {meta ? <div className="fw-item-meta mt-0.5 text-xs text-[#836A54]">{meta}</div> : null}
     </div>
     <div className="flex shrink-0 flex-col items-end gap-1">{price}</div>
   </>;

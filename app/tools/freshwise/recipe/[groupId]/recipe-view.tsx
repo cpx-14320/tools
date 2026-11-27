@@ -150,6 +150,9 @@ export function RecipeView({ book, groupId }: { book: PriceBook; groupId: string
               qtyCatty={ingredientQty(ing, recipe, servings)}
               priceKg={ing.code ? priceOf(ing.code) : undefined}
               inBasket={!!inBasket(ing.code)}
+              // 帶著「我是從這道食譜點進去的」，詳情頁的返回鍵才回得來（見詳情頁
+              // page.tsx 的 backTarget）。不帶的話返回會跳到行情頁，使用者得自己找回這道菜。
+              backTo={`recipe-${group.id}`}
             />
           ))}
         </Paper>
@@ -233,13 +236,14 @@ function BackRow({ unit, onUnitChange }: { unit: RecipeUnit; onUnitChange: (unit
  * 使用者要的是「這道菜多少錢」，不是查單價（那在行情頁）。
  */
 function IngredientRow({
-  ing, quantityLabel, qtyCatty, priceKg, inBasket,
+  ing, quantityLabel, qtyCatty, priceKg, inBasket, backTo,
 }: {
   ing: RecipeIngredient;
   quantityLabel: string;
   qtyCatty: number | null;
   priceKg?: number;
   inBasket: boolean;
+  backTo: string;
 }) {
   const item = ing.code ? itemOrPlaceholder(ing.code) : null;
   const name = ing.name ?? item?.name ?? "";
@@ -257,6 +261,6 @@ function IngredientRow({
     // 價格欄顯示的是「這道菜要用掉多少錢」，所以是算好的金額不是單價——PriceText 是
     // 「每單位多少錢」的元件，這裡用不上，但字級與對齊要跟它一致（.fw-recipe-money）。
     price={money === null ? <span className={text.meta}>{priceless ? "無行情" : "—"}</span> : <span className="fw-recipe-money">{formatMoney(money)} 元</span>}
-    href={ing.code ? `/tools/freshwise/browse/${ing.code}` : undefined}
+    href={ing.code ? `/tools/freshwise/browse/${ing.code}?from=${backTo}` : undefined}
   />;
 }

@@ -4,8 +4,9 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useCompanion } from "@/components/freshwise/companion-store";
 import { PetArtwork } from "@/components/freshwise/game-art";
+import { petLookStage } from "@/lib/freshwise/pet-expressions";
 import { QuestSlip } from "@/components/freshwise/companion-widgets";
-import { companionLevel, newlyFilledQuantity } from "@/lib/freshwise/companions";
+import { newlyFilledQuantity } from "@/lib/freshwise/companions";
 import {
   AddButton,
   CollapsibleList,
@@ -104,7 +105,7 @@ export function BasketView({ today, book }: { today: string; book: PriceBook }) 
           加起來的數字才有。 */}
       <ListCard strong className="fw-basket-summary flex flex-col gap-1.5">
         {/* 夥伴要跟著使用者選的那一隻，不要寫死。 */}
-        <PetArtwork id={companion.active} level={companionLevel(companion).level} size={100} className="fw-basket-pet" ready={companionReady} />
+        <PetArtwork id={companion.active} stage={petLookStage(companion, companion.active)} size={100} className="fw-basket-pet" ready={companionReady} />
         {/* 跟旁邊的夥伴立繪差不多高就好——兩行：金額，以及一行條件。場所已經沒有
             選項了不用再講，單位跟著數字走也不用另外說。 */}
         <Hint>今天買整籃大概要</Hint>

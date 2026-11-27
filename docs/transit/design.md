@@ -1,5 +1,8 @@
 # 搭乘車查詢 — 設計系統
 
+> **搭乘車查詢的樣式唯一依據。** 2026-11-28 從 `components/transit/DESIGN-SYSTEM.md`
+> 搬過來，跟 [rules](rules.md) · [status](status.md) · [history](history.md) 放在一起。
+
 這份文件是「搭乘車」工具（`app/tools/transit/**`、`components/transit/**`）的唯一樣式依據。
 程式裡對應的實作是兩個檔案：
 
