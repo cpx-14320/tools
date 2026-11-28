@@ -59,9 +59,11 @@ TDX 的 token 請求用 `URLSearchParams` 編碼，不要字串拼接——`clie
 - 樣式一律照 [design.md](design.md)：色票是紫（`ink #4A3B7C`、
   `brand #6F5FD6`），主要按鈕走 `gradient.primary` ＋ `shadow.cta`。
   **不要出現 token 以外的新數字、新顏色、新字級。**
-- **這個工具還在用骨架（skeleton）**，是五個工具裡唯一的。所以**改版面就要同步改
-  `components/transit/skeleton.tsx` 與 `skeleton-count.ts`**——骨架跟實際版面長得不一樣時，
-  載入完成的瞬間會整頁跳動，比沒有骨架更糟。
+- **這個工具還在用骨架（skeleton）**，是五個工具裡唯一的，而且**確認要繼續用**。
+  所以**改版面就要同步改 `components/transit/skeleton.tsx` 與 `skeleton-count.ts`**——
+  骨架跟實際版面長得不一樣時，載入完成的瞬間會整頁跳動，比沒有骨架更糟。
+  哪些清單該畫骨架、列數怎麼決定、空清單為什麼不畫，完整規則在
+  [design.md](design.md) 的「骨架（載入中）」一節，這裡不重複。
 - 時間色：`positive` 準時／充裕、`warning` 誤點／3 分鐘內到站、`negative` 進站中。
 - 只有手機版版面（寬螢幕是置中的手機框），跟另外兩個工具一致。
 

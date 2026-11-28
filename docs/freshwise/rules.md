@@ -3,6 +3,7 @@
 > 動這個工具之前先讀這份。這裡只寫**現在成立的結論 ＋ 一行為什麼**；
 > 「原本是 X、後來改成 Y」的來龍去脈在 [history.md](history.md)，待辦在 [status.md](status.md)。
 > **色票、字級、間距在 [design.md](design.md)**——改樣式讀那份，這份不重複。
+> 資料庫規格、人工維護、版控範圍在 [operations.md](operations.md)。
 > 跨工具共通的規則（設計系統不互 import、金鑰只能在 server、資料存帳號）在 [../README.md](../README.md)。
 
 ## 0. 這個工具要解決什麼

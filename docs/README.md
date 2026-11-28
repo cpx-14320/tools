@@ -11,6 +11,10 @@
 | `design.md` | 色票、字級、間距、版面 | **改這個工具的任何顏色／字級／間距之前** | 一兩百行 |
 | `status.md` | 待確認 ＋ 未處理 | 要挑下一件事做的時候 | 一頁以內 |
 | `history.md` | 已完成的決策紀錄 | 只有在 `rules.md` 回答不了「為什麼當初這樣決定」時才翻 | 只增不減 |
+| `operations.md` | 資料庫規格、人工維護、版控範圍、壞掉時怎麼查 | **沒有 AI 可用、網站又出問題**的時候 | 一兩百行 |
+
+`operations.md` 目前**只有菜鳥買菜記有**（它完成度最高）。其他工具之後照同一個形狀補：
+跑起來需要什麼 → 資料庫規格 → 資料怎麼來 → 遇到什麼做什麼 → 版控範圍 → 部署 → 判斷順序。
 
 ### 什麼可以重複寫、什麼不行
 
@@ -30,13 +34,14 @@
 欄位，分開看反而容易漏掉「待確認的那件事其實卡住了未處理的那件」。**已完成**一定要單獨一份
 ——它是唯一會無限長大的那一份，也正是以前要查規則卻得翻 2900 行的原因。
 
-## 五個工具
+## 六個工具
 
 | 工具 | 程式 | 文件 |
 | --- | --- | --- |
-| 菜鳥買菜記（freshwise）🟩 | `*/freshwise` | [rules](freshwise/rules.md) · [design](freshwise/design.md) · [status](freshwise/status.md) · [history](freshwise/history.md) |
+| 菜鳥買菜記（freshwise）🟩 | `*/freshwise` | [rules](freshwise/rules.md) · [design](freshwise/design.md) · [status](freshwise/status.md) · [history](freshwise/history.md) · [operations](freshwise/operations.md) |
 | 記帳本（expenses）🟪 | `*/expenses` | [rules](expenses/rules.md) · [design](expenses/design.md) · [status](expenses/status.md) · [history](expenses/history.md) |
 | 搭乘車查詢（transit）🟪 | `*/transit` | [rules](transit/rules.md) · [design](transit/design.md) · [status](transit/status.md) · [history](transit/history.md) |
+| 聚會遊戲室（gamebundle）🟦 | `app/party`、`app/display`、`*/gamebundle` | [rules](gamebundle/rules.md) · [design](gamebundle/design.md) · [status](gamebundle/status.md) · [history](gamebundle/history.md) |
 | 圖片壓縮（compress） | `app/tools/compress`、`lib/compress` | [rules](compress/rules.md) · [design](compress/design.md) · [status](compress/status.md) · [history](compress/history.md) |
 | 入口與帳號（hub） | `app/page.tsx`、`app/login`、`app/register`、`app/admin`、`components/ui.tsx` | [rules](hub/rules.md) · [design](hub/design.md) · [status](hub/status.md) · [history](hub/history.md) |
 
@@ -47,13 +52,14 @@ upsert 進 `toolsRegistry` 集合，不是另外維護一份。
 
 這幾條對五個工具都成立，所以只寫在這裡，各工具的 `rules.md` 不重複：
 
-1. **四套設計系統不互相 import。** 色票是**依工具分家**的，各自一份 `design.md`：
+1. **五套設計系統不互相 import。** 色票是**依工具分家**的，各自一份 `design.md`：
 
    | 工具 | token 在哪 | 設計文件 |
    | --- | --- | --- |
    | 菜鳥買菜記（綠） | `components/freshwise/theme.ts` | [freshwise/design.md](freshwise/design.md) |
    | 記帳本（紫） | `components/expenses/theme.ts` | [expenses/design.md](expenses/design.md) |
    | 搭乘車（紫） | `components/transit/theme.ts` | [transit/design.md](transit/design.md) |
+   | 聚會遊戲室（藍，**唯一深色底**） | `components/gamebundle/theme.ts` | [gamebundle/design.md](gamebundle/design.md) |
    | 入口／登入／後台／圖片壓縮 | `app/globals.css` 的 `:root` ＋ `components/ui.tsx` | [hub/design.md](hub/design.md) |
 
    記帳本與搭乘車的紫看起來很像但不是同一組，三者的 `ink`／`muted` 也不是同一個顏色。
@@ -69,7 +75,7 @@ upsert 進 `toolsRegistry` 集合，不是另外維護一份。
 6. 回覆與文件一律用中文（含標題與小結），不要中英混用的標籤。
 7. **做新小工具時，回歸測試腳本要一起做**，不是「之後有空再補」——見下面的新增工具檢查清單。
 
-## 怎麼驗（六支腳本）
+## 怎麼驗（七支腳本）
 
 **項數只記在這張表**——各工具的 `rules.md` 只寫「跑什麼指令、涵蓋與不涵蓋什麼」，不寫數字。
 數字會隨著每次補測試變動，寫在兩個地方就一定會有一邊忘了改。
@@ -81,6 +87,7 @@ upsert 進 `toolsRegistry` 集合，不是另外維護一份。
 | `npx tsx scripts/freshwise-user-data-check.mts` | 菜籃與偏好的伺服器端讀寫 | **要**（`.env.local`） |
 | `npx tsx scripts/freshwise-activity-code-check.mts` | 活動序號兌換 | **要** |
 | `npm run check:transit` | 搭乘車的純函式與靜態資料：時間與距離、公車／YouBike 縣市代碼對照、捷運站點與轉乘圖、高鐵站名、天氣鄉鎮對照、API 快取分級（76 項，**不打 TDX**） | 不用 |
+| `npm run check:gamebundle` | 聚會遊戲室的純函式與素材清冊：入口管制九種組合、房間代碼與輸入驗證、分組與開局檢查、計分與速度加成、生命與淘汰、狀態機、猜拳、抽獎資格與抽樣、題庫驗證與快照、倒數校正、遊戲目錄、素材清冊（215 項） | 不用 |
 | `npm run check:expenses` | 記帳本的業務邏輯：建立真測試帳號跑過分類／帳戶／交易／轉帳／預算／目標／固定收支／垃圾桶／批次／CSV／AI 草稿／養成／偏好（120 項），跑完自己清乾淨 | **要** |
 
 另外三支是工具不是測試：`freshwise-sync.mts`（抓農業部行情寫進 Mongo）、

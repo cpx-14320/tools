@@ -346,8 +346,6 @@ export const RECIPES: Record<string, Recipe> = Object.fromEntries(ALL_RECIPES.ma
  *  `ALL_RECIPES.find()`，菜籃有幾個分類就掃幾遍 100 道（微秒等級，但這張表是白拿的）。 */
 const RECIPES_BY_NAME = new Map(ALL_RECIPES.map((r) => [r.name, r]));
 
-export const RECIPE_COUNT = ALL_RECIPES.length;
-
 /* ─────────────────────── 查找與換算 ─────────────────────── */
 
 /**

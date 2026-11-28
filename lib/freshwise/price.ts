@@ -165,12 +165,6 @@ export function valueOf(quote: Pick<PriceQuote, "avgKg" | "yearAvgKg" | "yearLow
   return { level, percent, position };
 }
 
-export const VALUE_LABEL: Record<ValueLevel, string> = {
-  cheap: "划算",
-  fair: "正常價",
-  pricey: "偏貴",
-};
-
 /** 划算度的完整說明句，給詳情頁用（首頁的徽章只放上面那兩三個字）。
  *  `historyDays` 決定比較基準怎麼講（見 historyLabel）。 */
 export function valueSentence(judgement: ValueJudgement, historyDays: number): string {

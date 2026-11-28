@@ -103,17 +103,6 @@ export type SortKey =
   | "volumeDesc"
   | "name";
 
-export const SORT_OPTIONS: readonly { key: SortKey; label: string }[] = [
-  { key: "recommended", label: "推薦" },
-  { key: "cheapest", label: "最划算" },
-  { key: "drop", label: "跌最多" },
-  { key: "rise", label: "漲最多" },
-  { key: "priceAsc", label: "價格低→高" },
-  { key: "priceDesc", label: "價格高→低" },
-  { key: "volumeDesc", label: "成交量多→少" },
-  { key: "name", label: "依名稱" },
-];
-
 /** 中文排序要用字典序（`zh-TW` 的 collator），不是字碼順序——字碼順序排出來的中文清單
  *  在使用者眼裡是亂的。Intl.Collator 建一次重複用，不要每次比較都 new 一個。 */
 const NAME_COLLATOR = new Intl.Collator("zh-TW");

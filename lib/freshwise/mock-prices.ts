@@ -296,8 +296,3 @@ export function buildQuote(code: string, venue: VenueKey, dateISO: string, marke
     markets,
   };
 }
-
-/** 一次組出多個品項的行情（行情頁、首頁清單用）。 */
-export function buildQuotes(codes: string[], venue: VenueKey, dateISO: string, marketCode = ""): PriceQuote[] {
-  return codes.map((code) => buildQuote(code, venue, dateISO, marketCode));
-}

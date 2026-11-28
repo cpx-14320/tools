@@ -65,13 +65,3 @@ export function PriceText({
     </span>
   );
 }
-
-/** 「48～72 元/台斤」這種區間（詳情頁的上價／下價、近一年最高最低）。 */
-export function PriceRange({ lowKg, highKg, unit }: { lowKg: number; highKg: number; unit: UnitKey }) {
-  return (
-    <span className={`whitespace-nowrap ${text.body}`}>
-      {formatPriceIn(lowKg, unit)}～{formatPriceIn(highKg, unit)}
-      <span className={`ml-1 ${text.meta}`}>{unitLabel(unit)}</span>
-    </span>
-  );
-}

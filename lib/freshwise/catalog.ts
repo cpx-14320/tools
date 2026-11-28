@@ -26,10 +26,6 @@ export function categoryName(key: CategoryKey): string {
   return CATEGORIES.find((c) => c.key === key)?.name ?? key;
 }
 
-export function categoryIcon(key: CategoryKey): string {
-  return CATEGORIES.find((c) => c.key === key)?.icon ?? "basket-shopping";
-}
-
 /* ─────────────────────────── 場所 ─────────────────────────── */
 
 /**
