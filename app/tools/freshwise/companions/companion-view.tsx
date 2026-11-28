@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { COMPANIONS, companionLevel, levelOf, unlockedStage, WATER_DEW_COST } from "@/lib/freshwise/companions";
+import { COMPANIONS, companionLevel, levelOf, PET_STAGES, unlockedStage, WATER_DEW_COST } from "@/lib/freshwise/companions";
 import { useCompanion } from "@/components/freshwise/companion-store";
 import { GameIcon, PetArtwork, PetStageArtwork, SlicedArtwork } from "@/components/freshwise/game-art";
 import { DewBalance, QuestSlip } from "@/components/freshwise/companion-widgets";
@@ -11,13 +11,6 @@ import { cx } from "@/components/freshwise/theme";
 import type { PetReactionHandle } from "@/components/freshwise/pet-interaction";
 import type { PetCareAction } from "@/lib/freshwise/pet-expressions";
 import { petLookStage } from "@/lib/freshwise/pet-expressions";
-
-/** 三個成長階段的說明。`from` 是解鎖等級，門檻跟 companions.ts 的 unlockedStage 一致。 */
-const STAGES = [
-  { stage: 1 as const, label: "嫩芽期", from: 1 },
-  { stage: 2 as const, label: "成長期", from: 4 },
-  { stage: 3 as const, label: "成熟期", from: 8 },
-];
 
 /**
  * 夥伴頁。
@@ -143,7 +136,7 @@ export function CompanionView() {
                 {/* 三個階段**都畫出來**，還沒拿到的那幾階用「沒取得」的樣子（淡化去色，跟還沒
                     結識的夥伴同一種處理）。看得到後面長什麼樣才有繼續養的理由；拿到了才變彩色。 */}
                 <div className="fw-collection-stages">
-                  {STAGES.map(({ stage, label, from }) => {
+                  {PET_STAGES.map(({ stage, label, from }) => {
                     const got = unlocked && stage <= reached;
                     // 綠框＝「畫面上正在顯示的就是這一張」，所以只有**陪伴中那一隻**的當前
                     // 階段會亮。其他夥伴各自也有自己的外觀選擇（state.look），但它們沒有被

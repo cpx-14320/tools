@@ -60,3 +60,7 @@ public/freshwise/unused/
 
 # 設計稿。22MB 的 PNG，不是程式碼，也不會被程式讀。
 UIUX示意設計稿/
+
+# 設計參考素材（第三方 bundle ＋ 參考圖，16MB）——放手邊看就好，不進版控。
+# 這個專案的慣例是素材不放 repo，見 docs/README.md。
+/gamebundle設計參考風格/

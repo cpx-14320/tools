@@ -142,10 +142,39 @@ export function claimCompanionQuest(state: CompanionState, id: QuestId, day: str
   if (!quest || current.claimed.includes(id) || questProgress(current, id) < quest.target) return current;
   return { ...current, claimed: [...current.claimed, id], dew: current.dew + quest.reward, stamps: current.stamps + QUEST_STAMP_REWARD };
 }
+/**
+ * 澆水或陪玩。成長值只從這裡增加，所以**升階也只會發生在這裡**。
+ *
+ * 長到新階段時會把那隻夥伴手動挑的外觀清掉（`look` 設回 0 ＝ 跟等級走）。理由：長大是這個
+ * 養成的獎勵，新樣子要**當場看到**，不該還要使用者自己去圖鑑切一次——他根本不知道有新的可切。
+ * 想回去看舊樣子的人，圖鑑三階都還在，挑回來就好。
+ */
 export function careForCompanion(state: CompanionState, action: "water" | "play", day: string): CompanionState {
   const current = dailyState(state, day);
-  if (action === "water") return current.dew < WATER_DEW_COST ? current : { ...current, dew: current.dew - WATER_DEW_COST, xp: current.xp + WATER_XP_GAIN, growth: { ...current.growth, [current.active]: current.xp + WATER_XP_GAIN } };
-  return current.played ? current : { ...current, played: true, xp: current.xp + PLAY_XP_GAIN, growth: { ...current.growth, [current.active]: current.xp + PLAY_XP_GAIN } };
+  if (action === "water" && current.dew < WATER_DEW_COST) return current;
+  if (action === "play" && current.played) return current;
+
+  const gain = action === "water" ? WATER_XP_GAIN : PLAY_XP_GAIN;
+  const xp = current.xp + gain;
+  const next: CompanionState = {
+    ...current,
+    dew: action === "water" ? current.dew - WATER_DEW_COST : current.dew,
+    played: action === "play" ? true : current.played,
+    xp,
+    growth: { ...current.growth, [current.active]: xp },
+  };
+  if (unlockedStage(levelOf(xp)) > unlockedStage(levelOf(current.xp))) {
+    return { ...next, look: { ...next.look, [current.active]: 0 } };
+  }
+  return next;
+}
+
+/** 這一下照護有沒有讓夥伴長到新階段。畫面靠它決定要不要說「長大了」——判斷寫在這裡，
+ *  不要讓每個呼叫端自己比一次等級。 */
+export function stageUnlockedBy(before: CompanionState, after: CompanionState): 1 | 2 | 3 | null {
+  const from = unlockedStage(levelOf(before.xp));
+  const to = unlockedStage(levelOf(after.xp));
+  return to > from ? to : null;
 }
 /**
  * 替某隻夥伴挑外觀階段。
@@ -161,6 +190,22 @@ export function chooseCompanionLook(state: CompanionState, id: CompanionId, choi
   const reached = unlockedStage(levelOf(state.growth[id]));
   if (choice !== 0 && choice > reached) return state;
   return { ...state, look: { ...state.look, [id]: choice } };
+}
+
+/**
+ * 三個成長階段的說明。`from` 是解鎖等級，門檻就是下面的 `unlockedStage`。
+ *
+ * 放在這裡而不是畫面裡：圖鑑要用它標每一格，升級的提示訊息也要用它講「解鎖了什麼」，
+ * 兩邊各寫一份的話改個名字就會有一邊沒跟上。
+ */
+export const PET_STAGES = [
+  { stage: 1 as const, label: "嫩芽期", from: 1 },
+  { stage: 2 as const, label: "成長期", from: 4 },
+  { stage: 3 as const, label: "成熟期", from: 8 },
+];
+
+export function stageLabel(stage: 1 | 2 | 3): string {
+  return PET_STAGES.find((s) => s.stage === stage)?.label ?? "";
 }
 
 /** 這個等級已經長到第幾階。門檻跟 pet-expressions.ts 的 petStage 是同一組

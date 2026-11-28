@@ -2,7 +2,7 @@ import { nextPetEmotion, petEmotionFile, PET_EMOTIONS, petCareFile, PET_CARE_ACT
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
 import assert from "node:assert/strict";
-import { careForCompanion, chooseCompanionLook, PLAY_XP_GAIN, QUESTS, WATER_DEW_COST, WATER_XP_GAIN, claimCompanionQuest, companionDay, COMPANIONS, dailyState, initialCompanionState, levelOf, newlyFilledQuantity, parseCompanionState, questProgress, recordCompanionEvent, selectCompanion, XP_PER_LEVEL } from "../lib/freshwise/companions";
+import { careForCompanion, chooseCompanionLook, PLAY_XP_GAIN, QUESTS, stageUnlockedBy, WATER_DEW_COST, WATER_XP_GAIN, claimCompanionQuest, companionDay, COMPANIONS, dailyState, initialCompanionState, levelOf, newlyFilledQuantity, parseCompanionState, questProgress, recordCompanionEvent, selectCompanion, XP_PER_LEVEL } from "../lib/freshwise/companions";
 import { CATALOG } from "../lib/freshwise/catalog";
 import { ITEM_ART_GROUPS, itemArtwork } from "../lib/freshwise/art-assets";
 
@@ -101,6 +101,45 @@ check("連點澆水不會超扣：扣到不夠就停，而且扣款與成長一�
   assert.equal((startDew - s.dew) / WATER_DEW_COST, s.xp / WATER_XP_GAIN);
   // 餘額不足時完全不動（不是扣一半）。
   assert.deepEqual(careForCompanion(s, "water", day), s);
+});
+
+check("長到新階段時自動換成新的樣子，而且說得出解鎖了第幾階", () => {
+  const day = companionDay();
+  // 第 3 級（第一階）、而且使用者手動把外觀釘在第一階。再澆一次水就會升到第 4 級＝第二階。
+  const before = {
+    ...initialCompanionState(day),
+    dew: WATER_DEW_COST * 2,
+    xp: XP_PER_LEVEL * 3 - WATER_XP_GAIN,
+    growth: { ...initialCompanionState(day).growth, cabbage: XP_PER_LEVEL * 3 - WATER_XP_GAIN },
+    look: { ...initialCompanionState(day).look, cabbage: 1 as const },
+  };
+  assert.equal(levelOf(before.xp), 3);
+  assert.equal(petLookStage(before, "cabbage"), 1);
+
+  const after = careForCompanion(before, "water", day);
+  assert.equal(levelOf(after.xp), 4, "應該升到第 4 級");
+  assert.equal(stageUnlockedBy(before, after), 2, "應該回報解鎖第二階");
+  // 手動釘住的外觀被清掉 → 畫面立刻換成新階段，不用使用者自己去圖鑑切。
+  assert.equal(after.look.cabbage, 0);
+  assert.equal(petLookStage(after, "cabbage"), 2);
+});
+
+check("沒有升階時不動使用者挑的外觀", () => {
+  const day = companionDay();
+  const base = initialCompanionState(day);
+  const pinned = {
+    ...base,
+    dew: WATER_DEW_COST,
+    stamps: 99,
+    xp: XP_PER_LEVEL * 7,
+    growth: { ...base.growth, cabbage: XP_PER_LEVEL * 7 },
+    look: { ...base.look, cabbage: 1 as const },
+  };
+  assert.equal(petLookStage(pinned, "cabbage"), 1, "釘在第一階");
+  const after = careForCompanion(pinned, "water", day);
+  assert.equal(stageUnlockedBy(pinned, after), null, "已經是最後一階，沒有新階段");
+  assert.equal(after.look.cabbage, 1, "外觀選擇要留著");
+  assert.equal(petLookStage(after, "cabbage"), 1);
 });
 
 check("外觀可以挑回長到過的階段，挑不到還沒長到的", () => {

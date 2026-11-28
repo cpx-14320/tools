@@ -6,6 +6,9 @@ import {
   chooseCompanionLook,
   claimCompanionQuest,
   companionDay,
+  companionLevel,
+  stageLabel,
+  stageUnlockedBy,
   COMPANION_STORAGE_KEY,
   dailyState,
   initialCompanionState,
@@ -277,8 +280,17 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
       // **要在 apply() 之前算**：apply 會把 current.current 換成 next，之後再相減一定是 0
       // （訊息就會變成「成長 +0」）。
       const gained = next.xp - current.current.xp;
+      // 長到新階段是這個養成裡最值得講的一件事，蓋過平常那句「成長 +10」——不然畫面只是
+      // 默默換了一張圖，使用者不會發現自己解鎖了新樣子。
+      const unlocked = stageUnlockedBy(current.current, next);
+      setMessage(
+        unlocked
+          ? `${companionLevel(next).pet.nickname}長大了！解鎖${stageLabel(unlocked)}的樣子 🎉`
+          : action === "water"
+            ? `收到你的澆水，成長 +${gained}！`
+            : `一起玩得好開心，成長 +${gained}！`,
+      );
       apply(next);
-      setMessage(action === "water" ? `收到你的澆水，成長 +${gained}！` : `一起玩得好開心，成長 +${gained}！`);
       // 每一下都送一個請求，但 send 會排隊依序送（見上面的註解），伺服器跑的是同一組純
       // 函式，所以連點 N 下的結果跟本地算的一樣。
       void send({ action: "care", care: action });
